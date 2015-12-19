@@ -193,11 +193,73 @@ def test_features():
     assert gp.X[0].hy.SSE(gp.X[0].hy_test) == 0
 
 
+@use_pymock
 def test_create_population():
     from RGP import RootGP
     gp = RootGP(generations=1, popsize=4)
     gp.X = X
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp.y = y
+    override(np.random, 'randint')
+    for i in range(gp.popsize):
+        np.random.randint(gp.nvar)
+        returns(i)
+    replay()
     gp.create_population()
+    assert_almost_equals(gp.population.popsize, gp.popsize)
+    a = map(lambda (x, y): x == y, zip(gp.population.population,
+                                       gp.population._hist))
+    assert np.all(a)
+    l = map(lambda x: x.variable, gp.population.population)
+    assert np.all(map(lambda (x, y): x == y, enumerate(l)))
+
+
+@use_pymock
+def test_best_so_far():
+    from RGP import RootGP
+    gp = RootGP(generations=1, popsize=4)
+    gp.X = X
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp.y = y
+    override(np.random, 'randint')
+    for i in range(gp.popsize):
+        np.random.randint(gp.nvar)
+        returns(i)
+    replay()
+    gp.create_population()
+    p = gp.population.population
+    index = np.argsort(map(lambda x: x.fitness, p))[-1]
+    print p[index].fitness, gp.population.bsf.fitness
+    assert gp.population.bsf == p[index]
+
+
+@use_pymock
+def test_early_stopping():
+    from RGP import RootGP
+    gp = RootGP(generations=1, popsize=4)
+    gp.X = X
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp.y = y
+    override(np.random, 'randint')
+    for i in range(gp.popsize):
+        np.random.randint(gp.nvar)
+        returns(i)
+    replay()
+    gp.create_population()
+    p = gp.population.population
+    fit = np.array(map(lambda x: x.fitness_vs, p))
+    best = fit.max()
+    index = np.where(best == fit)[0][0]
+    assert gp.population.estopping == p[index]
 
 
 @use_pymock
@@ -347,7 +409,7 @@ def test_BER():
     a.eval([v, v1])
     hy = a.hy.sign()
     b = Classification.BER(y[m], hy.tonparray()[m])
-    gp.BER(a)
+    gp.fitness_vs(a)
     print b, a.fitness_vs * 100
     assert_almost_equals(b, -a.fitness_vs * 100)
     # assert False

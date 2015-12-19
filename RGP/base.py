@@ -18,6 +18,55 @@ from .sparse_array import SparseArray
 from .node import Variable
 
 
+class Population(object):
+    def __init__(self):
+        self._p = []
+        self._hist = []
+        self._bsf = None
+        self._estopping = None
+
+    @property
+    def bsf(self):
+        "Best so far"
+        return self._bsf
+
+    @property
+    def estopping(self):
+        "Early stopping individual"
+        return self._estopping
+
+    @estopping.setter
+    def estopping(self, v):
+        if v.fitness_vs is None:
+            return
+        if self.estopping is None:
+            self._estopping = v
+        elif v.fitness_vs > self.estopping.fitness_vs:
+            self._estopping = v
+
+    @bsf.setter
+    def bsf(self, v):
+        if self.bsf is None:
+            self._bsf = v
+        elif v.fitness > self.bsf.fitness:
+            self._bsf = v
+
+    def add(self, v):
+        self._p.append(v)
+        self._hist.append(v)
+        self.bsf = v
+        self.estopping = v
+
+    @property
+    def popsize(self):
+        return len(self._p)
+
+    @property
+    def population(self):
+        "List containing the population"
+        return self._p
+
+
 class RootGP(object):
     def __init__(self, generations=10, popsize=10000,
                  seed=0,
@@ -115,9 +164,13 @@ class RootGP(object):
         f[~m] = 0
         self._mask_vs = SparseArray.fromlist(f)
 
-    def BER(self, v):
-        v.fitness_vs = -((self.y - v.hy.sign()).sign().fabs() *
-                         self._mask_vs).sum()
+    def fitness_vs(self, v):
+        if self._classifier:
+            v.fitness_vs = -((self.y - v.hy.sign()).sign().fabs() *
+                             self._mask_vs).sum()
+        else:
+            m = (self._mask - 1).fabs()
+            v.fitness_vs = -(self.y * m).SSE(v.hy * m)
 
     def convert_features(self, v):
         if isinstance(v[0], Variable):
@@ -170,3 +223,22 @@ class RootGP(object):
                 continue
             return v
         raise RuntimeError("Could not find a suitable random leaf")
+
+    @property
+    def population(self):
+        "Class containing the population and all the individuals generated"
+        return self._p
+
+    def create_population(self):
+        "Create the initial population"
+        self._p = Population()
+        while self.population.popsize < self.popsize:
+            v = self.random_leaf()
+            self.fitness(v)
+            if not np.isfinite(v.fitness):
+                continue
+            if self._tr_fraction < 1:
+                self.fitness_vs(v)
+                if not np.isfinite(v.fitness_vs):
+                    continue
+            self.population.add(v)
