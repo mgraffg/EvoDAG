@@ -283,6 +283,17 @@ def test_sparse_array_if():
                               sa(z))).tonparray()))
 
 
+def test_sparse_array_sign():
+    np.random.seed(0)
+    uno = create_numpy_array()
+    uno[0] = -1
+    suno = SparseArray.fromlist(uno).sign().tonparray()
+    uno = np.sign(uno)
+    print uno[:10]
+    print suno[:10]
+    assert np.all(uno == suno)
+
+
 def test_sparse_array_SAE():
     np.random.seed(0)
     uno = create_numpy_array()

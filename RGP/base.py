@@ -97,6 +97,27 @@ class RootGP(object):
             self._mask = 1.0
         self._ytr = v * self._mask
         self._y = v
+        self.mask_vs()
+
+    def fitness(self, v):
+        v.fitness = -self._ytr.SSE(v.hy * self._mask)
+
+    def mask_vs(self):
+        if not self._classifier:
+            return
+        if self._tr_fraction == 1:
+            return
+        m = ~ self._mask.tonparray().astype(np.bool)
+        f = np.zeros(self._mask.size())
+        y = self.y.tonparray()
+        f[y == -1] = 0.5 / (y[m] == -1).sum()
+        f[y == 1] = 0.5 / (y[m] == 1).sum()
+        f[~m] = 0
+        self._mask_vs = SparseArray.fromlist(f)
+
+    def BER(self, v):
+        v.fitness_vs = -((self.y - v.hy.sign()).sign().fabs() *
+                         self._mask_vs).sum()
 
     def convert_features(self, v):
         if isinstance(v[0], Variable):

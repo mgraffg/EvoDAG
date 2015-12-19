@@ -52,6 +52,7 @@ cdef class SparseArray:
     cpdef SparseArray sq(self)
     cpdef SparseArray sigmoid(self)
     cpdef SparseArray if_func(self, SparseArray y, SparseArray z)
+    cpdef SparseArray sign(self)
     cpdef double SAE(self, SparseArray other)
     cpdef double SSE(self, SparseArray other)
     cpdef double pearsonr(self, SparseArray other)

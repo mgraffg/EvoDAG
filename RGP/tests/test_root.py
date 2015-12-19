@@ -15,7 +15,7 @@ import numpy as np
 from nose.tools import assert_almost_equals
 from pymock import use_pymock, override, returns, replay
 from RGP.node import Variable
-from RGP.node import Add
+from RGP.sparse_array import SparseArray
 
 
 cl = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -293,161 +293,61 @@ def test_regression_y():
     assert gp._ytr.SSE(gp.y) == 0
 
 
-def create_problem_node(nargs=4):
+def test_fitness():
     from RGP import RootGP
     gp = RootGP(generations=1, popsize=4)
+    assert gp._classifier
     gp.X = X
-    gp.Xtest = X
     y = cl.copy()
     mask = y == 0
     y[mask] = 1
     y[~mask] = -1
     gp.y = y
-    return gp, map(lambda x: gp.X[x], range(nargs))
+    l = gp.random_leaf()
+    assert l.fitness is None
+    gp.fitness(l)
+    assert l.fitness < 0
 
 
-def test_node_add():
-    gp, args = create_problem_node()
-    coef = gp.compute_weight(map(lambda x: x.hy, args))
-    n = Add(range(len(args)), ytr=gp._ytr, mask=gp._mask)
-    assert n.eval(args)
-    a = map(lambda (a, b): a.hy * b, zip(args, coef))
-    r = n.cumsum(a)
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
+def test_mask_vs():
+    from RGP import RootGP
+    gp = RootGP(generations=1, popsize=4)
+    assert gp._classifier
+    gp.X = X
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp.y = y
+    m = ~ gp._mask.tonparray().astype(np.bool)
+    f = np.zeros(gp._mask.size())
+    f[y == -1] = 0.5 / (y[m] == -1).sum()
+    f[y == 1] = 0.5 / (y[m] == 1).sum()
+    f[~m] = 0
+    assert gp._mask_vs.SSE(SparseArray.fromlist(f)) == 0
 
 
-def test_node_mul():
-    from RGP.node import Mul
-    gp, args = create_problem_node()
-    r = Mul.cumprod(map(lambda x: x.hy, args))
-    coef = gp.compute_weight([r])[0]
-    n = Mul(range(len(args)), ytr=gp._ytr, mask=gp._mask)
-    assert n.eval(args)
-    r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
-
-
-def test_node_div():
-    from RGP.node import Div
-    gp, args = create_problem_node(nargs=2)
-    a, b = args
-    r = a.hy / b.hy
-    coef = gp.compute_weight([r])[0]
-    n = Div(range(len(args)), ytr=gp._ytr, mask=gp._mask)
-    assert n.eval(args)
-    r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
-
-
-def test_node_fabs():
-    from RGP.node import Fabs
-    gp, args = create_problem_node(nargs=1)
-    r = args[0].hy.fabs()
-    coef = gp.compute_weight([r])[0]
-    n = Fabs(range(len(args)), ytr=gp._ytr, mask=gp._mask)
-    assert n.eval(args)
-    r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
-
-
-def test_node_exp():
-    from RGP.node import Exp
-    gp, args = create_problem_node(nargs=1)
-    r = args[0].hy.exp()
-    coef = gp.compute_weight([r])[0]
-    n = Exp(range(len(args)), ytr=gp._ytr, mask=gp._mask)
-    assert n.eval(args)
-    r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
-
-
-def test_node_sqrt():
-    from RGP.node import Sqrt
-    gp, args = create_problem_node(nargs=1)
-    r = args[0].hy.sqrt()
-    coef = gp.compute_weight([r])[0]
-    n = Sqrt(range(len(args)), ytr=gp._ytr, mask=gp._mask)
-    assert n.eval(args)
-    r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
-
-
-def test_node_sin():
-    from RGP.node import Sin
-    gp, args = create_problem_node(nargs=1)
-    r = args[0].hy.sin()
-    coef = gp.compute_weight([r])[0]
-    n = Sin(range(len(args)), ytr=gp._ytr, mask=gp._mask)
-    assert n.eval(args)
-    r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
-
-
-def test_node_cos():
-    from RGP.node import Cos
-    gp, args = create_problem_node(nargs=1)
-    r = args[0].hy.cos()
-    coef = gp.compute_weight([r])[0]
-    n = Cos(range(len(args)), ytr=gp._ytr, mask=gp._mask)
-    assert n.eval(args)
-    r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
-
-
-def test_node_ln():
-    from RGP.node import Ln
-    gp, args = create_problem_node(nargs=1)
-    r = args[0].hy.ln()
-    coef = gp.compute_weight([r])[0]
-    n = Ln(range(len(args)), ytr=gp._ytr, mask=gp._mask)
-    assert n.eval(args)
-    r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
-
-
-def test_node_sq():
-    from RGP.node import Sq
-    gp, args = create_problem_node(nargs=1)
-    r = args[0].hy.sq()
-    coef = gp.compute_weight([r])[0]
-    n = Sq(range(len(args)), ytr=gp._ytr, mask=gp._mask)
-    assert n.eval(args)
-    r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
-
-
-def test_node_sigmoid():
-    from RGP.node import Sigmoid
-    gp, args = create_problem_node(nargs=1)
-    r = args[0].hy.sigmoid()
-    coef = gp.compute_weight([r])[0]
-    n = Sigmoid(range(len(args)), ytr=gp._ytr, mask=gp._mask)
-    assert n.eval(args)
-    r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
-
-
-def test_node_if():
-    from RGP.node import If
-    gp, args = create_problem_node(nargs=3)
-    r = args[0].hy.if_func(args[1].hy, args[2].hy)
-    coef = gp.compute_weight([r])[0]
-    n = If(range(len(args)), ytr=gp._ytr, mask=gp._mask)
-    assert n.eval(args)
-    r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
-
-
-
+def test_BER():
+    from RGP.node import Add
+    from RGP import RootGP
+    from SimpleGP import Classification
+    gp = RootGP(generations=1, popsize=4)
+    assert gp._classifier
+    gp.X = X
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp.y = y
+    m = ~ gp._mask.tonparray().astype(np.bool)
+    v = gp.random_leaf()
+    v1 = gp.random_leaf()
+    v1 = gp.random_leaf()
+    a = Add([0, 1], ytr=gp._ytr, mask=gp._mask)
+    a.eval([v, v1])
+    hy = a.hy.sign()
+    b = Classification.BER(y[m], hy.tonparray()[m])
+    gp.BER(a)
+    print b, a.fitness_vs * 100
+    assert_almost_equals(b, -a.fitness_vs * 100)
+    # assert False

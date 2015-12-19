@@ -27,6 +27,26 @@ class Variable(object):
         self._eval_ts = None
         self._ytr = ytr
         self._mask = mask
+        self._fitness = None
+        self._fitness_vs = None
+
+    @property
+    def fitness(self):
+        "Stores the fitness on the training set"
+        return self._fitness
+
+    @fitness.setter
+    def fitness(self, v):
+        self._fitness = v
+
+    @property
+    def fitness_vs(self):
+        "Stores the fitness on the validation set"
+        return self._fitness_vs
+
+    @fitness_vs.setter
+    def fitness_vs(self, v):
+        self._fitness_vs = v
 
     @property
     def variable(self):
@@ -60,10 +80,11 @@ class Variable(object):
         return coef
 
     def eval(self, X):
-        w = self.compute_weight([X[self.variable].hy])
-        if w is None:
-            return False
-        self.weight = w
+        if self.weight is None:
+            w = self.compute_weight([X[self.variable].hy])
+            if w is None:
+                return False
+            self.weight = w
         self.hy = X[self.variable].hy * self.weight
         xtest = X[self.variable].hy_test
         if xtest is not None:
@@ -106,10 +127,11 @@ class Add(Variable):
 
     def eval(self, X):
         X = map(lambda x: X[x], self.variable)
-        w = self.compute_weight(map(lambda x: x.hy, X))
-        if w is None:
-            return False
-        self.weight = w
+        if self.weight is None:
+            w = self.compute_weight(map(lambda x: x.hy, X))
+            if w is None:
+                return False
+            self.weight = w
         r = map(lambda (v, w): v.hy * w, zip(X, self.weight))
         r = self.cumsum(r)
         self.hy = r
@@ -133,10 +155,11 @@ class Mul(Variable):
     def eval(self, X):
         X = map(lambda x: X[x], self.variable)
         r = self.cumprod(map(lambda x: x.hy, X))
-        w = self.compute_weight([r])
-        if w is None:
-            return False
-        self.weight = w[0]
+        if self.weight is None:
+            w = self.compute_weight([r])
+            if w is None:
+                return False
+            self.weight = w[0]
         self.hy = r * self.weight
         if X[0].hy_test is not None:
             r = self.cumprod(map(lambda x: x.hy_test, X))
@@ -150,10 +173,11 @@ class Div(Variable):
     def eval(self, X):
         a, b = X[self.variable[0]], X[self.variable[1]]
         r = a.hy / b.hy
-        w = self.compute_weight([r])
-        if w is None:
-            return False
-        self.weight = w[0]
+        if self.weight is None:
+            w = self.compute_weight([r])
+            if w is None:
+                return False
+            self.weight = w[0]
         self.hy = r * self.weight
         if X[0].hy_test is not None:
             r = a.hy_test / b.hy_test
@@ -167,10 +191,11 @@ class Fabs(Variable):
     def eval(self, X):
         X = X[self.variable]
         r = X.hy.fabs()
-        w = self.compute_weight([r])
-        if w is None:
-            return False
-        self.weight = w[0]
+        if self.weight is None:
+            w = self.compute_weight([r])
+            if w is None:
+                return False
+            self.weight = w[0]
         self.hy = r * self.weight
         if X.hy_test is not None:
             self.hy_test = X.hy_test.fabs() * self.weight
@@ -183,10 +208,11 @@ class Exp(Variable):
     def eval(self, X):
         X = X[self.variable]
         r = X.hy.exp()
-        w = self.compute_weight([r])
-        if w is None:
-            return False
-        self.weight = w[0]
+        if self.weight is None:
+            w = self.compute_weight([r])
+            if w is None:
+                return False
+            self.weight = w[0]
         self.hy = r * self.weight
         if X.hy_test is not None:
             self.hy_test = X.hy_test.exp() * self.weight
@@ -199,10 +225,11 @@ class Sqrt(Variable):
     def eval(self, X):
         X = X[self.variable]
         r = X.hy.sqrt()
-        w = self.compute_weight([r])
-        if w is None:
-            return False
-        self.weight = w[0]
+        if self.weight is None:
+            w = self.compute_weight([r])
+            if w is None:
+                return False
+            self.weight = w[0]
         self.hy = r * self.weight
         if X.hy_test is not None:
             self.hy_test = X.hy_test.sqrt() * self.weight
@@ -215,10 +242,11 @@ class Sin(Variable):
     def eval(self, X):
         X = X[self.variable]
         r = X.hy.sin()
-        w = self.compute_weight([r])
-        if w is None:
-            return False
-        self.weight = w[0]
+        if self.weight is None:
+            w = self.compute_weight([r])
+            if w is None:
+                return False
+            self.weight = w[0]
         self.hy = r * self.weight
         if X.hy_test is not None:
             self.hy_test = X.hy_test.sin() * self.weight
@@ -231,10 +259,11 @@ class Cos(Variable):
     def eval(self, X):
         X = X[self.variable]
         r = X.hy.cos()
-        w = self.compute_weight([r])
-        if w is None:
-            return False
-        self.weight = w[0]
+        if self.weight is None:
+            w = self.compute_weight([r])
+            if w is None:
+                return False
+            self.weight = w[0]
         self.hy = r * self.weight
         if X.hy_test is not None:
             self.hy_test = X.hy_test.cos() * self.weight
@@ -247,10 +276,11 @@ class Ln(Variable):
     def eval(self, X):
         X = X[self.variable]
         r = X.hy.ln()
-        w = self.compute_weight([r])
-        if w is None:
-            return False
-        self.weight = w[0]
+        if self.weight is None:
+            w = self.compute_weight([r])
+            if w is None:
+                return False
+            self.weight = w[0]
         self.hy = r * self.weight
         if X.hy_test is not None:
             self.hy_test = X.hy_test.ln() * self.weight
@@ -263,10 +293,11 @@ class Sq(Variable):
     def eval(self, X):
         X = X[self.variable]
         r = X.hy.sq()
-        w = self.compute_weight([r])
-        if w is None:
-            return False
-        self.weight = w[0]
+        if self.weight is None:
+            w = self.compute_weight([r])
+            if w is None:
+                return False
+            self.weight = w[0]
         self.hy = r * self.weight
         if X.hy_test is not None:
             self.hy_test = X.hy_test.sq() * self.weight
@@ -279,10 +310,11 @@ class Sigmoid(Variable):
     def eval(self, X):
         X = X[self.variable]
         r = X.hy.sigmoid()
-        w = self.compute_weight([r])
-        if w is None:
-            return False
-        self.weight = w[0]
+        if self.weight is None:
+            w = self.compute_weight([r])
+            if w is None:
+                return False
+            self.weight = w[0]
         self.hy = r * self.weight
         if X.hy_test is not None:
             self.hy_test = X.hy_test.sigmoid() * self.weight
@@ -296,10 +328,11 @@ class If(Variable):
         X = map(lambda x: X[x], self.variable)
         a, b, c = X
         r = a.hy.if_func(b.hy, c.hy)
-        w = self.compute_weight([r])
-        if w is None:
-            return False
-        self.weight = w[0]
+        if self.weight is None:
+            w = self.compute_weight([r])
+            if w is None:
+                return False
+            self.weight = w[0]
         self.hy = r * self.weight
         if a.hy_test is not None:
             r = a.hy_test.if_func(b.hy_test, c.hy_test)

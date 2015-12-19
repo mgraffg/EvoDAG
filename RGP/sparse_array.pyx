@@ -484,7 +484,21 @@ cdef class SparseArray:
         r = sy.sub(sz)
         res = r.add(z)
         return res
-            
+
+    cpdef SparseArray sign(self):
+        cdef SparseArray res = self.empty(self.nele(), self.size())
+        cdef int i
+        cdef double r
+        for i in xrange(self.nele()):
+            r = self._dataC[i]
+            res._dataC[i] = 0
+            if r > 0:
+                res._dataC[i] = 1
+            elif r < 0:
+                res._dataC[i] = -1
+            res._indexC[i] = self._indexC[i]
+        return res        
+
     cpdef double SAE(self, SparseArray other):
         cdef int a=0, b=0, index=0, c=0
         cdef int anele = self._nele, bnele=other._nele
