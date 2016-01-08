@@ -413,3 +413,92 @@ def test_BER():
     print b, a.fitness_vs * 100
     assert_almost_equals(b, -a.fitness_vs * 100)
     # assert False
+
+
+@use_pymock
+def test_tournament():
+    from RGP import RootGP
+    gp = RootGP(generations=1,
+                tournament_size=4,
+                popsize=4)
+    gp.X = X
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp.y = y
+    override(np.random, 'randint')
+    for i in range(gp.popsize):
+        np.random.randint(gp.nvar)
+        returns(i)
+    replay()
+    gp.create_population()
+    j = gp.population.tournament()
+    index = np.argsort(map(lambda x: x.fitness,
+                           gp.population.population))[-1]
+    assert j == index
+
+
+@use_pymock
+def test_tournament_negative():
+    from RGP import RootGP
+    gp = RootGP(generations=1,
+                tournament_size=4,
+                popsize=4)
+    gp.X = X
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp.y = y
+    override(np.random, 'randint')
+    for i in range(gp.popsize):
+        np.random.randint(gp.nvar)
+        returns(i)
+    replay()
+    gp.create_population()
+    j = gp.population.tournament(negative=True)
+    index = np.argsort(map(lambda x: x.fitness,
+                           gp.population.population))[0]
+    assert j == index
+
+
+@use_pymock
+def test_random_offspring():
+    from RGP import RootGP
+    from RGP.node import Add
+    gp = RootGP(generations=1,
+                tournament_size=2,
+                popsize=10)
+    gp.X = X
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp.y = y
+    gp.create_population()
+    override(np.random, 'randint')
+    np.random.randint(len(gp.function_set))
+    returns(0)
+    replay()
+    a = gp.random_offspring()
+    assert isinstance(a, Add)
+
+
+def test_replace_individual():
+    from RGP import RootGP
+    gp = RootGP(generations=1,
+                tournament_size=2,
+                popsize=10)
+    gp.X = X
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp.y = y
+    gp.create_population()
+    a = gp.random_offspring()
+    assert a.position == 0
+    gp.population.replace(a)
+    assert np.any(map(lambda x: x == a, gp.population.population))
+    assert a.position == 10

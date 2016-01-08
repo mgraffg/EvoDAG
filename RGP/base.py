@@ -16,14 +16,23 @@
 import numpy as np
 from .sparse_array import SparseArray
 from .node import Variable
+from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Ln
+from .node import Sq, Sigmoid, If
 
 
 class Population(object):
-    def __init__(self):
+    def __init__(self, tournament_size=2):
         self._p = []
         self._hist = []
         self._bsf = None
         self._estopping = None
+        self._tournament_size = tournament_size
+        self._index = None
+
+    @property
+    def hist(self):
+        "List containing all the individuals generated"
+        return self._hist
 
     @property
     def bsf(self):
@@ -53,6 +62,15 @@ class Population(object):
 
     def add(self, v):
         self._p.append(v)
+        v.position = len(self._hist)
+        self._hist.append(v)
+        self.bsf = v
+        self.estopping = v
+
+    def replace(self, v):
+        k = self.tournament(negative=True)
+        self._p[k] = v
+        v.position = len(self._hist)
         self._hist.append(v)
         self.bsf = v
         self.estopping = v
@@ -66,17 +84,37 @@ class Population(object):
         "List containing the population"
         return self._p
 
+    def tournament(self, negative=False):
+        if self._index is None or self._index.shape[0] != self.popsize:
+            self._index = np.arange(self.popsize)
+        np.random.shuffle(self._index)
+        vars = self._index[:self._tournament_size]
+        fit = map(lambda x: self.population[x].fitness, vars)
+        if negative:
+            index = np.argsort(fit)[0]
+        else:
+            index = np.argsort(fit)[-1]
+        return vars[index]
+
 
 class RootGP(object):
-    def __init__(self, generations=10, popsize=10000,
+    def __init__(self, generations=np.inf, popsize=10000,
                  seed=0,
+                 tournament_size=2,
+                 early_stopping_rounds=10000,
+                 function_set=[Add, Mul, Div, Fabs,
+                               Exp, Sqrt, Sin, Cos, Ln,
+                               Sq, Sigmoid, If],
                  tr_fraction=0.8,
                  classifier=True):
         self._generations = generations
         self._popsize = popsize
         self._classifier = classifier
         self._tr_fraction = tr_fraction
+        self._early_stopping_rounds = early_stopping_rounds
+        self._tournament_size = tournament_size
         self._seed = seed
+        self._function_set = function_set
         np.random.seed(self._seed)
 
     @property
@@ -147,6 +185,11 @@ class RootGP(object):
         self._ytr = v * self._mask
         self._y = v
         self.mask_vs()
+
+    @property
+    def function_set(self):
+        "List containing the functions used to create the individuals"
+        return self._function_set
 
     def fitness(self, v):
         v.fitness = -self._ytr.SSE(v.hy * self._mask)
@@ -224,14 +267,38 @@ class RootGP(object):
             return v
         raise RuntimeError("Could not find a suitable random leaf")
 
+    def random_offspring(self):
+        "Returns an offspring"
+        for i in range(10):
+            func = self.function_set
+            func = func[np.random.randint(len(func))]
+            args = []
+            for j in range(func.nargs):
+                k = self.population.tournament()
+                while k in args:
+                    k = self.population.tournament()
+                args.append(k)
+            args = map(lambda x: self.population.population[x].position, args)
+            f = func(args, ytr=self._ytr, mask=self._mask)
+            if not f.eval(self._p.hist):
+                continue
+            if not f.isfinite():
+                continue
+            return f
+        raise RuntimeError("Could not find a suitable random offpsring")
+
     @property
     def population(self):
         "Class containing the population and all the individuals generated"
         return self._p
 
+    def population_instance(self):
+        "Population instance"
+        self._p = Population(tournament_size=self._tournament_size)
+
     def create_population(self):
         "Create the initial population"
-        self._p = Population()
+        self.population_instance()
         while self.population.popsize < self.popsize:
             v = self.random_leaf()
             self.fitness(v)

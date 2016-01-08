@@ -29,6 +29,16 @@ class Variable(object):
         self._mask = mask
         self._fitness = None
         self._fitness_vs = None
+        self._position = 0
+
+    @property
+    def position(self):
+        "Position where this variable is in the history"
+        return self._position
+
+    @position.setter
+    def position(self, v):
+        self._position = v
 
     @property
     def fitness(self):
