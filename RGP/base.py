@@ -101,7 +101,7 @@ class RootGP(object):
     def __init__(self, generations=np.inf, popsize=10000,
                  seed=0,
                  tournament_size=2,
-                 early_stopping_rounds=10000,
+                 early_stopping_rounds=-1,
                  function_set=[Add, Mul, Div, Fabs,
                                Exp, Sqrt, Sin, Cos, Ln,
                                Sq, Sigmoid, If],
@@ -111,6 +111,8 @@ class RootGP(object):
         self._popsize = popsize
         self._classifier = classifier
         self._tr_fraction = tr_fraction
+        if early_stopping_rounds is not None and early_stopping_rounds < 0:
+            early_stopping_rounds = popsize
         self._early_stopping_rounds = early_stopping_rounds
         self._tournament_size = tournament_size
         self._seed = seed
@@ -225,7 +227,10 @@ class RootGP(object):
         lst = []
         for var, d in enumerate(X):
             v = Variable(var, 1)
-            v._eval_tr = SparseArray.fromlist(d)
+            if isinstance(d, SparseArray):
+                v._eval_tr = d
+            else:
+                v._eval_tr = SparseArray.fromlist(d)
             lst.append(v)
         return lst
 
@@ -264,11 +269,13 @@ class RootGP(object):
                 continue
             if not v.isfinite():
                 continue
+            if not self.set_fitness(v):
+                continue
             return v
         raise RuntimeError("Could not find a suitable random leaf")
 
     def random_offspring(self):
-        "Returns an offspring"
+        "Returns an offspring with the associated weight(s)"
         for i in range(10):
             func = self.function_set
             func = func[np.random.randint(len(func))]
@@ -284,6 +291,8 @@ class RootGP(object):
                 continue
             if not f.isfinite():
                 continue
+            if not self.set_fitness(f):
+                continue
             return f
         raise RuntimeError("Could not find a suitable random offpsring")
 
@@ -296,16 +305,47 @@ class RootGP(object):
         "Population instance"
         self._p = Population(tournament_size=self._tournament_size)
 
+    def set_fitness(self, v):
+        """Set the fitness to a new node.
+        Returns false in case fitness is not finite"""
+        self.fitness(v)
+        if not np.isfinite(v.fitness):
+            return False
+        if self._tr_fraction < 1:
+            self.fitness_vs(v)
+            if not np.isfinite(v.fitness_vs):
+                return False
+        return True
+
     def create_population(self):
         "Create the initial population"
         self.population_instance()
         while self.population.popsize < self.popsize:
             v = self.random_leaf()
-            self.fitness(v)
-            if not np.isfinite(v.fitness):
-                continue
-            if self._tr_fraction < 1:
-                self.fitness_vs(v)
-                if not np.isfinite(v.fitness_vs):
-                    continue
             self.population.add(v)
+
+    def stopping_criteria(self):
+        "Test whether the stopping criteria has been achieved."
+        if self.generations < np.inf:
+            inds = self.popsize * self.generations
+            flag = inds <= len(self.population.hist)
+        else:
+            flag = False
+        if flag:
+            return True
+        esr = self._early_stopping_rounds
+        if self._tr_fraction < 1 and esr is not None:
+            return (len(self.population.hist) -
+                    self.population.estopping.position) > esr
+        return flag
+
+    def fit(self, X, y, test_set=None):
+        self.X = X
+        self.y = y
+        if test_set is not None:
+            self.Xtest = test_set
+        self.create_population()
+        while not self.stopping_criteria():
+            a = self.random_offspring()
+            self.population.replace(a)
+        return self

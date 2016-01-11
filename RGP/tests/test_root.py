@@ -366,8 +366,6 @@ def test_fitness():
     y[~mask] = -1
     gp.y = y
     l = gp.random_leaf()
-    assert l.fitness is None
-    gp.fitness(l)
     assert l.fitness < 0
 
 
@@ -483,6 +481,7 @@ def test_random_offspring():
     replay()
     a = gp.random_offspring()
     assert isinstance(a, Add)
+    assert np.isfinite(a.fitness)
 
 
 def test_replace_individual():
@@ -502,3 +501,72 @@ def test_replace_individual():
     gp.population.replace(a)
     assert np.any(map(lambda x: x == a, gp.population.population))
     assert a.position == 10
+
+
+def test_X_sparse():
+    from RGP import RootGP
+    from RGP.sparse_array import SparseArray
+    gp = RootGP(generations=1,
+                tournament_size=2,
+                popsize=10)
+    X1 = map(SparseArray.fromlist, X.T)
+    gp.X = X1
+
+
+def test_fit_stopping_criteria_gens():
+    from RGP import RootGP
+    gp = RootGP(generations=2,
+                early_stopping_rounds=None,
+                tournament_size=2,
+                seed=1,
+                popsize=10)
+    gp.X = X
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp.y = y
+    gp.create_population()
+    for i in range(gp.popsize):
+        assert not gp.stopping_criteria()
+        a = gp.random_offspring()
+        gp.population.replace(a)
+    assert gp.stopping_criteria()
+
+
+def test_fit_stopping_criteria_estopping():
+    from RGP import RootGP
+    gp = RootGP(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=10,
+                seed=0,
+                popsize=10)
+    gp.X = X
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp.y = y
+    gp.create_population()
+    print len(gp.population.hist) - gp.population.estopping.position
+    while not gp.stopping_criteria():
+        a = gp.random_offspring()
+        gp.population.replace(a)
+    assert (len(gp.population.hist) - gp.population.estopping.position) > 10
+
+
+def test_fit():
+    from RGP import RootGP
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp = RootGP(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=-1,
+                seed=0,
+                popsize=10).fit(X, y, test_set=X)
+    assert np.isfinite(gp.population.estopping.fitness)
+    assert np.isfinite(gp.population.estopping.fitness_vs)
+    assert gp.population.estopping.hy.isfinite()
+    assert len(gp.population.hist) > 10
