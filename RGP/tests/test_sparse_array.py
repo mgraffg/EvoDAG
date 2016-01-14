@@ -426,3 +426,29 @@ def test_pearson():
     r2 = SparseArray.fromlist(uno).pearsonr(SparseArray.fromlist(dos))
     print r, r2
     assert_almost_equals(r, r2)
+
+
+def parallel_run(a):
+    return a.fabs().sum()
+
+
+def test_parallel():
+    from multiprocessing import Pool
+    np.random.seed(0)
+    uno = create_numpy_array()
+    suno = SparseArray.fromlist(uno)
+    p = Pool(2)
+    r = p.map(parallel_run, [suno, suno])
+    assert suno.fabs().sum() == r[0]
+
+
+def test_pickle():
+    import pickle
+    import StringIO
+    np.random.seed(0)
+    suno = SparseArray.fromlist(create_numpy_array())
+    io = StringIO.StringIO('rw')
+    pickle.dump(suno, io)
+    io.seek(0)
+    s = pickle.load(io)
+    assert s.SSE(suno) == 0

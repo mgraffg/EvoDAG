@@ -28,6 +28,14 @@ cdef extern from "numpy/npy_math.h":
     long double PI "NPY_PI"
 
 
+cpdef rebuild(data, index, size):
+    cdef SparseArray r = SparseArray()
+    r.init(len(data))
+    r.set_size(size)
+    r.set_data_index(data, index)
+    return r
+
+
 @cython.freelist(512)
 cdef class SparseArray:
     def __cinit__(self):
@@ -784,3 +792,11 @@ cdef class SparseArray:
                 data[c] = x.SAE(y)
                 c += 1
 
+    def __reduce__(self):
+        cdef list data = []
+        cdef list index = []
+        cdef int i
+        for i in range(self.nele()):
+            data.append(self._dataC[i])
+            index.append(self._indexC[i])
+        return (rebuild, (data, index, self.size()))
