@@ -570,3 +570,34 @@ def test_fit():
     assert np.isfinite(gp.population.estopping.fitness_vs)
     assert gp.population.estopping.hy.isfinite()
     assert len(gp.population.hist) > 10
+
+
+def test_logging():
+    from RGP import RootGP
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    RootGP(generations=np.inf,
+           tournament_size=2,
+           early_stopping_rounds=-1,
+           seed=0,
+           popsize=10).fit(X, y, test_set=X)
+
+
+def test_infite_evolution():
+    from RGP import RootGP
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    try:
+        RootGP(generations=np.inf,
+               tournament_size=2,
+               tr_fraction=1,
+               early_stopping_rounds=-1,
+               seed=0,
+               popsize=10).fit(X, y, test_set=X)
+        assert False
+    except RuntimeError:
+        pass

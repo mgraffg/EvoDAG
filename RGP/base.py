@@ -14,6 +14,7 @@
 
 
 import numpy as np
+import logging
 from .sparse_array import SparseArray
 from .node import Variable
 from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Ln
@@ -28,6 +29,7 @@ class Population(object):
         self._estopping = None
         self._tournament_size = tournament_size
         self._index = None
+        self._logger = logging.getLogger('RGP.Population')
 
     @property
     def hist(self):
@@ -48,17 +50,33 @@ class Population(object):
     def estopping(self, v):
         if v.fitness_vs is None:
             return
+        flag = False
         if self.estopping is None:
             self._estopping = v
+            flag = True
         elif v.fitness_vs > self.estopping.fitness_vs:
             self._estopping = v
+            flag = True
+        if flag:
+            self._logger.info('ES: %0.4f %0.4f' % (v.fitness, v.fitness_vs))
 
     @bsf.setter
     def bsf(self, v):
+        flag = False
         if self.bsf is None:
             self._bsf = v
+            flag = True
         elif v.fitness > self.bsf.fitness:
             self._bsf = v
+            flag = True
+        if flag:
+            if v.fitness_vs is None:
+                fvs = ""
+            else:
+                fvs = "%0.4f" % v.fitness_vs
+            fts = "%0.4f" % v.fitness
+            self._logger.log(logging.INFO+1, 'BSF: %(fts)s %(fvs)s',
+                             {'fts': fts, 'fvs': fvs})
 
     def add(self, v):
         self._p.append(v)
@@ -118,6 +136,9 @@ class RootGP(object):
         self._seed = seed
         self._function_set = function_set
         np.random.seed(self._seed)
+        if self._generations == np.inf and tr_fraction == 1:
+            raise RuntimeError("Infinite evolution, set generations\
+            or tr_fraction < 1 ")
 
     @property
     def popsize(self):
@@ -287,7 +308,7 @@ class RootGP(object):
                 args.append(k)
             args = map(lambda x: self.population.population[x].position, args)
             f = func(args, ytr=self._ytr, mask=self._mask)
-            if not f.eval(self._p.hist):
+            if not f.eval(self.population.hist):
                 continue
             if not f.isfinite():
                 continue
