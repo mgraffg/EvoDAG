@@ -125,9 +125,11 @@ class Variable(object):
         self._eval_ts = v
 
 
-class Add(Variable):
+class Function(Variable):
     nargs = 2
 
+
+class Add(Function):
     @staticmethod
     def cumsum(r):
         a = r[0]
@@ -152,9 +154,7 @@ class Add(Variable):
         return True
 
 
-class Mul(Variable):
-    nargs = 2
-
+class Mul(Function):
     @staticmethod
     def cumprod(r):
         a = r[0]
@@ -177,9 +177,7 @@ class Mul(Variable):
         return True
 
 
-class Div(Variable):
-    nargs = 2
-
+class Div(Function):
     def eval(self, X):
         a, b = X[self.variable[0]], X[self.variable[1]]
         r = a.hy / b.hy
@@ -195,7 +193,7 @@ class Div(Variable):
         return True
 
 
-class Fabs(Variable):
+class Fabs(Function):
     nargs = 1
 
     def eval(self, X):
@@ -212,7 +210,7 @@ class Fabs(Variable):
         return True
 
 
-class Exp(Variable):
+class Exp(Function):
     nargs = 1
 
     def eval(self, X):
@@ -229,7 +227,7 @@ class Exp(Variable):
         return True
 
 
-class Sqrt(Variable):
+class Sqrt(Function):
     nargs = 1
 
     def eval(self, X):
@@ -246,7 +244,7 @@ class Sqrt(Variable):
         return True
 
 
-class Sin(Variable):
+class Sin(Function):
     nargs = 1
 
     def eval(self, X):
@@ -263,7 +261,7 @@ class Sin(Variable):
         return True
 
 
-class Cos(Variable):
+class Cos(Function):
     nargs = 1
 
     def eval(self, X):
@@ -280,7 +278,7 @@ class Cos(Variable):
         return True
 
 
-class Ln(Variable):
+class Ln(Function):
     nargs = 1
 
     def eval(self, X):
@@ -297,7 +295,7 @@ class Ln(Variable):
         return True
 
 
-class Sq(Variable):
+class Sq(Function):
     nargs = 1
 
     def eval(self, X):
@@ -314,7 +312,7 @@ class Sq(Variable):
         return True
 
 
-class Sigmoid(Variable):
+class Sigmoid(Function):
     nargs = 1
 
     def eval(self, X):
@@ -331,7 +329,7 @@ class Sigmoid(Variable):
         return True
 
 
-class If(Variable):
+class If(Function):
     nargs = 3
 
     def eval(self, X):

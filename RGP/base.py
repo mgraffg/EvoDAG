@@ -15,8 +15,9 @@
 
 import numpy as np
 import logging
+import types
 from .sparse_array import SparseArray
-from .node import Variable
+from .node import Variable, Function
 from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Ln
 from .node import Sq, Sigmoid, If
 
@@ -58,7 +59,10 @@ class Population(object):
             self._estopping = v
             flag = True
         if flag:
-            self._logger.info('ES: %0.4f %0.4f' % (v.fitness, v.fitness_vs))
+            vfvs = v.fitness_vs
+            self._logger.info('(%i) ES: %0.4f %0.4f' % (v.position,
+                                                        v.fitness,
+                                                        vfvs))
 
     @bsf.setter
     def bsf(self, v):
@@ -75,8 +79,9 @@ class Population(object):
             else:
                 fvs = "%0.4f" % v.fitness_vs
             fts = "%0.4f" % v.fitness
-            self._logger.log(logging.INFO+1, 'BSF: %(fts)s %(fvs)s',
-                             {'fts': fts, 'fvs': fvs})
+            self._logger.log(logging.INFO+1,
+                             '(%(position)s) BSF: %(fts)s %(fvs)s',
+                             {'fts': fts, 'fvs': fvs, 'position': v.position})
 
     def add(self, v):
         self._p.append(v)
@@ -130,7 +135,7 @@ class RootGP(object):
         self._classifier = classifier
         self._tr_fraction = tr_fraction
         if early_stopping_rounds is not None and early_stopping_rounds < 0:
-            early_stopping_rounds = popsize
+            early_stopping_rounds = popsize * 2
         self._early_stopping_rounds = early_stopping_rounds
         self._tournament_size = tournament_size
         self._seed = seed
@@ -183,6 +188,9 @@ class RootGP(object):
         """Computes the mask used to create the training and validation set"""
         v = v.tonparray()
         a = np.unique(v)
+        print a
+        if a[0] != -1 or a[1] != 1:
+            raise RuntimeError("The labels must be -1 and 1")
         mask = np.zeros_like(v)
         cnt = min(map(lambda x: (v == x).sum(), a)) * self._tr_fraction
         for i in a:
@@ -354,6 +362,9 @@ class RootGP(object):
             flag = False
         if flag:
             return True
+        if self._tr_fraction < 1:
+            if self.population.estopping.fitness_vs == 0:
+                return True
         esr = self._early_stopping_rounds
         if self._tr_fraction < 1 and esr is not None:
             return (len(self.population.hist) -
@@ -370,3 +381,42 @@ class RootGP(object):
             a = self.random_offspring()
             self.population.replace(a)
         return self
+
+    def trace(self, n):
+        trace_map = {}
+        self._trace(n, trace_map)
+        s = trace_map.keys()
+        s.sort()
+        return s
+
+    def _trace(self, n, trace_map):
+        if n.position in trace_map:
+            return
+        else:
+            trace_map[n.position] = 1
+        if isinstance(n, Function):
+            if isinstance(n.variable, types.ListType):
+                map(lambda x: self._trace(self.population.hist[x], trace_map),
+                    n.variable)
+            else:
+                self._trace(self.population.hist[n.variable], trace_map)
+
+    def decision_function(self, v=None, X=None):
+        if X is None:
+            return self.population.estopping.hy_test
+        X = self.convert_features(X)
+        if v is None:
+            v = self.population.estopping
+        hist = self.population.hist
+        for i in self.trace(v):
+            node = hist[i]
+            if isinstance(node, Function):
+                node.eval(hist)
+            else:
+                node.eval(X)
+        return v.hy_test
+
+    def predict(self, v=None, X=None):
+        if self._classifier:
+            return self.decision_function(v=v, X=X).sign()
+        return self.decision_function(v=v, X=X)

@@ -601,3 +601,64 @@ def test_infite_evolution():
         assert False
     except RuntimeError:
         pass
+
+
+def test_predict():
+    from RGP import RootGP
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp = RootGP(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=-1,
+                seed=0,
+                popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
+    es = gp.population.estopping
+    assert gp.decision_function().SSE(es.hy_test) == 0
+    hy_test = es.hy_test
+    assert gp.decision_function(X=X[-10:]).SSE(hy_test) == 0
+    hy = gp.decision_function(X=X[-10:])
+    assert gp.predict(X=X[-10:]).SSE(hy)
+
+
+def test_trace():
+    from RGP import RootGP
+    from RGP.node import Add
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    Add.nargs = 4
+    gp = RootGP(generations=np.inf,
+                tournament_size=2,
+                function_set=[Add],
+                early_stopping_rounds=-1,
+                seed=0,
+                popsize=10)
+    gp.X = X[:-10]
+    gp.Xtest = X[-10:]
+    gp.y = y[:-10]
+    gp.create_population()
+    a = gp.random_offspring()
+    gp.population.replace(a)
+    print a.position, a.variable, a._weight, gp.population.hist[0].variable
+    s = gp.trace(a)
+    assert len(s) == 5
+
+
+def test_class_values():
+    from RGP import RootGP
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 0
+    y[~mask] = -1
+    try:
+        RootGP(generations=np.inf,
+               tournament_size=2,
+               early_stopping_rounds=-1,
+               seed=0,
+               popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
+        assert False
+    except RuntimeError:
+        pass

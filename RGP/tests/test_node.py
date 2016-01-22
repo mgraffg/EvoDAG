@@ -29,6 +29,13 @@ def create_problem_node(nargs=4):
     return gp, map(lambda x: gp.X[x], range(nargs))
 
 
+def test_nargs_function():
+    from RGP.node import Mul
+    Add.nargs = 4
+    assert Add.nargs == 4
+    assert Mul.nargs == 2
+
+
 def test_node_add():
     gp, args = create_problem_node()
     coef = gp.compute_weight(map(lambda x: x.hy, args))
