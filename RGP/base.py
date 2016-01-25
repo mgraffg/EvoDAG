@@ -139,11 +139,25 @@ class RootGP(object):
         self._early_stopping_rounds = early_stopping_rounds
         self._tournament_size = tournament_size
         self._seed = seed
+        self._multiclass = False
         self._function_set = function_set
         np.random.seed(self._seed)
+        self._logger = logging.getLogger('RGP.RootGP')
         if self._generations == np.inf and tr_fraction == 1:
             raise RuntimeError("Infinite evolution, set generations\
             or tr_fraction < 1 ")
+
+    def get_params(self):
+        import inspect
+        a = inspect.getargspec(self.__init__)[0]
+        out = dict()
+        for key in a[1:]:
+            value = getattr(self, "_%s" % key, None)
+            out[key] = value
+        return out
+
+    def clone(self):
+        return self.__class__(**self.get_params())
 
     @property
     def popsize(self):
@@ -188,7 +202,6 @@ class RootGP(object):
         """Computes the mask used to create the training and validation set"""
         v = v.tonparray()
         a = np.unique(v)
-        print a
         if a[0] != -1 or a[1] != 1:
             raise RuntimeError("The labels must be -1 and 1")
         mask = np.zeros_like(v)
@@ -198,6 +211,19 @@ class RootGP(object):
             np.random.shuffle(index)
             mask[index[:cnt]] = True
         self._mask = SparseArray.fromlist(mask)
+
+    def multiclass(self, X, v, test_set=None):
+        from sklearn import preprocessing
+        if not isinstance(v, np.ndarray):
+            v = v.tonparray()
+        a = preprocessing.LabelBinarizer().fit(v)
+        mask = a.transform(v).astype(np.bool).T
+        self._multiclass_instances = map(lambda x: self.clone(), mask)
+        for m, gp in zip(mask, self._multiclass_instances):
+            y = np.zeros_like(m) - 1
+            y[m] = 1
+            gp.fit(X, y, test_set=test_set)
+        return self
 
     @y.setter
     def y(self, v):
@@ -371,11 +397,22 @@ class RootGP(object):
                     self.population.estopping.position) > esr
         return flag
 
+    def nclasses(self, v):
+        if not self._classifier:
+            return 0
+        if not isinstance(v, np.ndarray):
+            v = v.tonparray()
+        return np.unique(v).shape[0]
+
     def fit(self, X, y, test_set=None):
         self.X = X
+        if self.nclasses(y) > 2:
+            self._multiclass = True
+            return self.multiclass(X, y, test_set=test_set)
         self.y = y
         if test_set is not None:
             self.Xtest = test_set
+        self._logger.info("Starting evolution")
         self.create_population()
         while not self.stopping_criteria():
             a = self.random_offspring()
@@ -402,6 +439,9 @@ class RootGP(object):
                 self._trace(self.population.hist[n.variable], trace_map)
 
     def decision_function(self, v=None, X=None):
+        if self._multiclass:
+            return map(lambda gp: gp.decision_function(v=v, X=X),
+                       self._multiclass_instances)
         if X is None:
             return self.population.estopping.hy_test
         X = self.convert_features(X)
@@ -414,9 +454,14 @@ class RootGP(object):
                 node.eval(hist)
             else:
                 node.eval(X)
-        return v.hy_test
+        return v.hy
 
     def predict(self, v=None, X=None):
         if self._classifier:
-            return self.decision_function(v=v, X=X).sign()
+            if self._multiclass:
+                d = self.decision_function(v=v, X=X)
+                d = np.array(map(lambda x: x.tonparray(), d))
+                return SparseArray.fromlist(d.argmax(axis=0))
+            else:
+                return self.decision_function(v=v, X=X).sign()
         return self.decision_function(v=v, X=X)

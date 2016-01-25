@@ -662,3 +662,69 @@ def test_class_values():
         assert False
     except RuntimeError:
         pass
+
+
+def test_multiclass():
+    from RGP import RootGP
+    y = cl.copy()
+    ncl = np.unique(y).shape[0]
+    gp = RootGP(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=-1,
+                seed=0,
+                popsize=100).fit(X, y)
+    assert len(gp._multiclass_instances) == ncl
+    assert gp._multiclass
+
+
+def test_multiclass_decision_function():
+    from RGP import RootGP
+    y = cl.copy()
+    gp = RootGP(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=-1,
+                seed=0,
+                popsize=100).fit(X, y, test_set=X)
+    d = gp.decision_function()
+    assert len(d) == np.unique(y).shape[0]
+
+
+def test_multiclass_predict():
+    from RGP import RootGP
+    y = cl.copy()
+    gp = RootGP(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=-1,
+                seed=0,
+                popsize=100).fit(X, y, test_set=X)
+    d = gp.predict().tonparray()
+    assert np.unique(d).shape[0] == np.unique(y).shape[0]
+
+
+def test_get_params():
+    from RGP import RootGP
+    # y = cl.copy()
+    gp = RootGP(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=-1,
+                seed=0,
+                popsize=100)
+    p = gp.get_params()
+    assert p['generations'] == np.inf
+    assert p['popsize'] == 100
+    assert p['seed'] == 0
+
+
+def test_get_clone():
+    from RGP import RootGP
+    # y = cl.copy()
+    gp = RootGP(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=-1,
+                seed=0,
+                popsize=100)
+    gp1 = gp.clone()
+    print gp.popsize, gp1.popsize
+    assert gp.popsize == gp1.popsize
+    assert gp._generations == gp1._generations
+    assert gp._seed == gp1._seed
