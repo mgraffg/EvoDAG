@@ -193,7 +193,6 @@ def test_features():
     assert gp.X[0].hy.SSE(gp.X[0].hy_test) == 0
 
 
-@use_pymock
 def test_create_population():
     from RGP import RootGP
     gp = RootGP(generations=1, popsize=4)
@@ -203,18 +202,29 @@ def test_create_population():
     y[mask] = 1
     y[~mask] = -1
     gp.y = y
-    override(np.random, 'randint')
-    for i in range(gp.popsize):
-        np.random.randint(gp.nvar)
-        returns(i)
-    replay()
     gp.create_population()
     assert_almost_equals(gp.population.popsize, gp.popsize)
     a = map(lambda (x, y): x == y, zip(gp.population.population,
                                        gp.population._hist))
     assert np.all(a)
     l = map(lambda x: x.variable, gp.population.population)
+    l.sort()
     assert np.all(map(lambda (x, y): x == y, enumerate(l)))
+
+
+def test_create_population2():
+    from RGP import RootGP
+    from RGP.node import Function
+    gp = RootGP(generations=1, popsize=10)
+    gp.X = X
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp.y = y
+    gp.create_population()
+    for i in gp.population.population[4:]:
+        assert isinstance(i, Function)
 
 
 @use_pymock
@@ -466,6 +476,7 @@ def test_random_offspring():
     from RGP import RootGP
     from RGP.node import Add
     gp = RootGP(generations=1,
+                seed=1,
                 tournament_size=2,
                 popsize=10)
     gp.X = X
@@ -519,7 +530,7 @@ def test_fit_stopping_criteria_gens():
                 early_stopping_rounds=None,
                 tournament_size=2,
                 seed=1,
-                popsize=10)
+                popsize=4)
     gp.X = X
     y = cl.copy()
     mask = y == 0
@@ -538,9 +549,9 @@ def test_fit_stopping_criteria_estopping():
     from RGP import RootGP
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
-                early_stopping_rounds=10,
+                early_stopping_rounds=4,
                 seed=0,
-                popsize=10)
+                popsize=4)
     gp.X = X
     y = cl.copy()
     mask = y == 0
@@ -552,7 +563,7 @@ def test_fit_stopping_criteria_estopping():
     while not gp.stopping_criteria():
         a = gp.random_offspring()
         gp.population.replace(a)
-    assert (len(gp.population.hist) - gp.population.estopping.position) > 10
+    assert (len(gp.population.hist) - gp.population.estopping.position) > 4
 
 
 def test_fit():
@@ -565,11 +576,11 @@ def test_fit():
                 tournament_size=2,
                 early_stopping_rounds=-1,
                 seed=0,
-                popsize=10).fit(X, y, test_set=X)
+                popsize=4).fit(X, y, test_set=X)
     assert np.isfinite(gp.population.estopping.fitness)
     assert np.isfinite(gp.population.estopping.fitness_vs)
     assert gp.population.estopping.hy.isfinite()
-    assert len(gp.population.hist) > 10
+    assert len(gp.population.hist) > 4
 
 
 def test_logging():
@@ -629,13 +640,13 @@ def test_trace():
     mask = y == 0
     y[mask] = 1
     y[~mask] = -1
-    Add.nargs = 4
+    Add.nargs = 3
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
                 function_set=[Add],
                 early_stopping_rounds=-1,
                 seed=0,
-                popsize=10)
+                popsize=4)
     gp.X = X[:-10]
     gp.Xtest = X[-10:]
     gp.y = y[:-10]
@@ -644,7 +655,7 @@ def test_trace():
     gp.population.replace(a)
     print a.position, a.variable, a._weight, gp.population.hist[0].variable
     s = gp.trace(a)
-    assert len(s) == 5
+    assert len(s) == 4
 
 
 def test_class_values():

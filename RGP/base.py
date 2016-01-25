@@ -315,19 +315,35 @@ class RootGP(object):
             return None
         return coef
 
+    def _random_leaf(self, var):
+        v = Variable(var, ytr=self._ytr, mask=self._mask)
+        if not v.eval(self.X):
+            return None
+        if not v.isfinite():
+            return None
+        if not self.set_fitness(v):
+            return None
+        return v
+
     def random_leaf(self):
         "Returns a random variable with the associated weight"
         for i in range(10):
             var = np.random.randint(self.nvar)
-            v = Variable(var, ytr=self._ytr, mask=self._mask)
-            if not v.eval(self.X):
-                continue
-            if not v.isfinite():
-                continue
-            if not self.set_fitness(v):
+            v = self._random_leaf(var)
+            if v is None:
                 continue
             return v
         raise RuntimeError("Could not find a suitable random leaf")
+
+    def _random_offspring(self, func, args):
+        f = func(args, ytr=self._ytr, mask=self._mask)
+        if not f.eval(self.population.hist):
+            return None
+        if not f.isfinite():
+            return None
+        if not self.set_fitness(f):
+            return None
+        return f
 
     def random_offspring(self):
         "Returns an offspring with the associated weight(s)"
@@ -341,12 +357,8 @@ class RootGP(object):
                     k = self.population.tournament()
                 args.append(k)
             args = map(lambda x: self.population.population[x].position, args)
-            f = func(args, ytr=self._ytr, mask=self._mask)
-            if not f.eval(self.population.hist):
-                continue
-            if not f.isfinite():
-                continue
-            if not self.set_fitness(f):
+            f = self._random_offspring(func, args)
+            if f is None:
                 continue
             return f
         raise RuntimeError("Could not find a suitable random offpsring")
@@ -375,8 +387,26 @@ class RootGP(object):
     def create_population(self):
         "Create the initial population"
         self.population_instance()
+        vars = np.arange(len(self.X))
+        np.random.shuffle(vars)
+        vars = vars.tolist()
         while self.population.popsize < self.popsize:
-            v = self.random_leaf()
+            if len(vars):
+                v = self._random_leaf(vars.pop())
+                if v is None:
+                    continue
+            else:
+                func = self.function_set
+                func = func[np.random.randint(len(func))]
+                args = []
+                for j in range(func.nargs):
+                    psize = len(self.population.population)
+                    args.append(np.random.randint(psize))
+                args = map(lambda x: self.population.population[x].position,
+                           args)
+                v = self._random_offspring(func, args)
+                if v is None:
+                    continue
             self.population.add(v)
 
     def stopping_criteria(self):
