@@ -79,7 +79,7 @@ class Population(object):
             else:
                 fvs = "%0.4f" % v.fitness_vs
             fts = "%0.4f" % v.fitness
-            self._logger.log(logging.INFO+1,
+            self._logger.log(logging.INFO-1,
                              '(%(position)s) BSF: %(fts)s %(fvs)s',
                              {'fts': fts, 'fvs': fvs, 'position': v.position})
 
@@ -191,7 +191,10 @@ class RootGP(object):
         else:
             X = v
         for var, d in zip(self.X, X):
-            var._eval_ts = SparseArray.fromlist(d)
+            if isinstance(d, SparseArray):
+                var._eval_ts = d
+            else:
+                var._eval_ts = SparseArray.fromlist(d)
 
     @property
     def y(self):
@@ -348,17 +351,21 @@ class RootGP(object):
     def random_offspring(self):
         "Returns an offspring with the associated weight(s)"
         for i in range(10):
+            # self._logger.debug('Init random offspring %s' % i)
             func = self.function_set
             func = func[np.random.randint(len(func))]
+            # self._logger.debug('Func %s' % func)
             args = []
             for j in range(func.nargs):
                 k = self.population.tournament()
                 while k in args:
                     k = self.population.tournament()
                 args.append(k)
+            # self._logger.debug('Args %s' % args)
             args = map(lambda x: self.population.population[x].position, args)
             f = self._random_offspring(func, args)
             if f is None:
+                # self._logger.debug('Random offspring %s is None' % i)
                 continue
             return f
         raise RuntimeError("Could not find a suitable random offpsring")
