@@ -526,6 +526,8 @@ def test_X_sparse():
 
 def test_fit_stopping_criteria_gens():
     from RGP import RootGP
+    from RGP.node import Add
+    Add.nargs = 2
     gp = RootGP(generations=2,
                 early_stopping_rounds=None,
                 tournament_size=2,

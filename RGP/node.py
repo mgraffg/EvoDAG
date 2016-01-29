@@ -31,6 +31,13 @@ class Variable(object):
         self._fitness_vs = None
         self._position = 0
 
+    def tostore(self):
+        ins = self.__class__(self.variable, weight=self.weight)
+        ins.position = self.position
+        ins._fitness = self._fitness
+        ins._fitness_vs = self._fitness_vs
+        return ins
+
     @property
     def position(self):
         "Position where this variable is in the history"
@@ -128,8 +135,15 @@ class Variable(object):
 class Function(Variable):
     nargs = 2
 
+    def tostore(self):
+        ins = super(Function, self).tostore()
+        ins.nargs = self.nargs
+        return ins
+
 
 class Add(Function):
+    nargs = 5
+
     @staticmethod
     def cumsum(r):
         a = r[0]

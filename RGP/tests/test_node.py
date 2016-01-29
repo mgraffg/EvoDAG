@@ -14,6 +14,7 @@
 
 from test_root import X, cl
 from RGP.node import Add
+import numpy as np
 
 
 def create_problem_node(nargs=4):
@@ -34,6 +35,33 @@ def test_nargs_function():
     Add.nargs = 4
     assert Add.nargs == 4
     assert Mul.nargs == 2
+
+
+def test_node_pickle():
+    import pickle
+    import StringIO
+    gp, args = create_problem_node()
+    n = Add(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    n.position = 10
+    assert n.eval(args)
+    io = StringIO.StringIO('rw')
+    pickle.dump(n, io)
+    io.seek(0)
+    n1 = pickle.load(io)
+    assert n1._mask.SSE(n._mask) == 0
+
+
+def test_node_tostore():
+    gp, args = create_problem_node(nargs=4)
+    Add.nargs = 4
+    n = Add(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    n.position = 10
+    assert n.eval(args)
+    n1 = n.tostore()
+    assert n1.nargs == n.nargs
+    assert n1.position == n.position
+    assert np.all(n1.weight == n.weight)
+    assert n1.hy is None
 
 
 def test_node_add():
