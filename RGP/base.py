@@ -84,6 +84,7 @@ class Population(object):
                              {'fts': fts, 'fvs': fvs, 'position': v.position})
 
     def add(self, v):
+        "Add an individual to the population"
         self._p.append(v)
         v.position = len(self._hist)
         self._hist.append(v)
@@ -91,6 +92,8 @@ class Population(object):
         self.estopping = v
 
     def replace(self, v):
+        """Replace an individual selected by negative tournament selection with
+        individual v"""
         k = self.tournament(negative=True)
         self._p[k] = v
         v.position = len(self._hist)
@@ -108,6 +111,8 @@ class Population(object):
         return self._p
 
     def tournament(self, negative=False):
+        """Tournament selection and when negative is True it performs negative
+        tournament selection"""
         if self._index is None or self._index.shape[0] != self.popsize:
             self._index = np.arange(self.popsize)
         np.random.shuffle(self._index)
@@ -118,6 +123,38 @@ class Population(object):
         else:
             index = np.argsort(fit)[-1]
         return vars[index]
+
+
+class Model(object):
+    """Object to store the necesary elements to make predictions
+    based on an individual"""
+    def __init__(self, trace, hist):
+        self._trace = trace
+        self._hist = hist
+        self._map = {}
+        for k, v in enumerate(self._trace):
+            self._map[v] = k
+        self._hist = map(lambda x: self.transform(self._hist[x].tostore()),
+                         self._trace)
+
+    def transform(self, v):
+        if not isinstance(v, Function):
+            return v
+        if v.nargs == 1:
+            v.variable = self._map[v.variable]
+        else:
+            v.variable = map(lambda x: self._map[x], v.variable)
+        return v
+
+    def decision_function(self, X):
+        "Decision function i.e. the raw data of the prediction"
+        hist = self._hist
+        for node in hist:
+            if isinstance(node, Function):
+                node.eval(hist)
+            else:
+                node.eval(X)
+        return node.hy
 
 
 class RootGP(object):
@@ -148,6 +185,7 @@ class RootGP(object):
             or tr_fraction < 1 ")
 
     def get_params(self):
+        "Parameters used to initialize the class"
         import inspect
         a = inspect.getargspec(self.__init__)[0]
         out = dict()
@@ -157,6 +195,7 @@ class RootGP(object):
         return out
 
     def clone(self):
+        "Clone the class without the population"
         return self.__class__(**self.get_params())
 
     @property
@@ -216,6 +255,7 @@ class RootGP(object):
         self._mask = SparseArray.fromlist(mask)
 
     def multiclass(self, X, v, test_set=None):
+        "Performing One vs All multiclass classification"
         from sklearn import preprocessing
         if not isinstance(v, np.ndarray):
             v = v.tonparray()
@@ -252,9 +292,12 @@ class RootGP(object):
         return self._function_set
 
     def fitness(self, v):
+        "Fitness function in the training set"
         v.fitness = -self._ytr.SSE(v.hy * self._mask)
 
     def mask_vs(self):
+        """Procedure performed in classification to compute
+        more efficiently BER in the validation set"""
         if not self._classifier:
             return
         if self._tr_fraction == 1:
@@ -268,6 +311,8 @@ class RootGP(object):
         self._mask_vs = SparseArray.fromlist(f)
 
     def fitness_vs(self, v):
+        """Fitness function in the validation set
+        In classification it uses BER"""
         if self._classifier:
             v.fitness_vs = -((self.y - v.hy.sign()).sign().fabs() *
                              self._mask_vs).sum()
@@ -435,6 +480,7 @@ class RootGP(object):
         return flag
 
     def nclasses(self, v):
+        "Number of classes of v"
         if not self._classifier:
             return 0
         if not isinstance(v, np.ndarray):
@@ -442,6 +488,7 @@ class RootGP(object):
         return np.unique(v).shape[0]
 
     def fit(self, X, y, test_set=None):
+        "Evolutive process"
         self.X = X
         if self.nclasses(y) > 2:
             self._multiclass = True
@@ -457,6 +504,7 @@ class RootGP(object):
         return self
 
     def trace(self, n):
+        "Restore the position in the history of individual v's nodes"
         trace_map = {}
         self._trace(n, trace_map)
         s = trace_map.keys()
@@ -475,25 +523,29 @@ class RootGP(object):
             else:
                 self._trace(self.population.hist[n.variable], trace_map)
 
+    def model(self, v=None):
+        "Returns the model of node v"
+        if v is None:
+            v = self.population.estopping
+        hist = self.population.hist
+        trace = self.trace(v)
+        m = Model(trace, hist)
+        return m
+
     def decision_function(self, v=None, X=None):
+        "Decision function i.e. the raw data of the prediction"
         if self._multiclass:
             return map(lambda gp: gp.decision_function(v=v, X=X),
                        self._multiclass_instances)
         if X is None:
             return self.population.estopping.hy_test
         X = self.convert_features(X)
-        if v is None:
-            v = self.population.estopping
-        hist = self.population.hist
-        for i in self.trace(v):
-            node = hist[i]
-            if isinstance(node, Function):
-                node.eval(hist)
-            else:
-                node.eval(X)
-        return v.hy
+        m = self.model(v=v)
+        return m.decision_function(X)
 
     def predict(self, v=None, X=None):
+        """In classification this returns the classes, in
+        regression it is equivalent to the decision function"""
         if self._classifier:
             if self._multiclass:
                 d = self.decision_function(v=v, X=X)

@@ -70,6 +70,10 @@ class Variable(object):
         "The variable is indicated by the position in RootGP.X"
         return self._variable
 
+    @variable.setter
+    def variable(self, v):
+        self._variable = v
+
     @property
     def weight(self):
         "The weight is obtained by OLS on RootGP._ytr"

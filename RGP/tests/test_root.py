@@ -632,7 +632,28 @@ def test_predict():
     hy_test = es.hy_test
     assert gp.decision_function(X=X[-10:]).SSE(hy_test) == 0
     hy = gp.decision_function(X=X[-10:])
-    assert gp.predict(X=X[-10:]).SSE(hy)
+    assert gp.predict(X=X[-10:]).SSE(hy.sign()) == 0
+
+
+def test_model_hist():
+    from RGP import RootGP
+    from RGP.base import Model
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp = RootGP(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=-1,
+                seed=0,
+                popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
+    hist = gp.population.hist
+    trace = gp.trace(gp.population.estopping)
+    a = hist[trace[-1]].variable
+    m = Model(trace, hist)
+    print m._map
+    for v1, v2 in zip(a, m._hist[-1].variable):
+        assert m._map[v1] == v2
 
 
 def test_trace():
