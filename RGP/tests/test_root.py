@@ -687,15 +687,12 @@ def test_class_values():
     mask = y == 0
     y[mask] = 0
     y[~mask] = -1
-    try:
-        RootGP(generations=np.inf,
-               tournament_size=2,
-               early_stopping_rounds=-1,
-               seed=0,
-               popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
-        assert False
-    except RuntimeError:
-        pass
+    gp = RootGP(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=-1,
+                seed=0,
+                popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
+    assert np.all(gp._labels == np.array([-1, 0]))
 
 
 def test_multiclass():
@@ -726,6 +723,7 @@ def test_multiclass_decision_function():
 def test_multiclass_predict():
     from RGP import RootGP
     y = cl.copy()
+    y[y == 0] = 3
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
                 early_stopping_rounds=-1,
@@ -733,6 +731,7 @@ def test_multiclass_predict():
                 popsize=100).fit(X, y, test_set=X)
     d = gp.predict().tonparray()
     assert np.unique(d).shape[0] == np.unique(y).shape[0]
+    assert np.all(np.unique(d) == np.unique(y))
 
 
 def test_get_params():
@@ -762,3 +761,40 @@ def test_get_clone():
     assert gp.popsize == gp1.popsize
     assert gp._generations == gp1._generations
     assert gp._seed == gp1._seed
+
+
+def test_pickle_model():
+    from RGP import RootGP
+    import pickle
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp = RootGP(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=-1,
+                seed=0,
+                popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
+    m = gp.model()
+    hy = gp.decision_function(X=X[-10:])
+    m1 = pickle.loads(pickle.dumps(m))
+    hy1 = m1.decision_function(X=X[-10:])
+    assert hy.SSE(hy1) == 0
+
+
+def test_labels():
+    from RGP import RootGP
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = 2
+    gp = RootGP(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=-1,
+                seed=0,
+                popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
+    m = gp.model()
+    hy = m.predict(X=X[:-10])
+    print np.unique(hy.tonparray())
+    print np.array([1, 2])
+    assert np.all(np.unique(hy.tonparray()) == np.array([1, 2]))

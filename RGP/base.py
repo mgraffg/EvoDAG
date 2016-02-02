@@ -50,7 +50,7 @@ class Population(object):
     @estopping.setter
     def estopping(self, v):
         if v.fitness_vs is None:
-            return
+            return None
         flag = False
         if self.estopping is None:
             self._estopping = v
@@ -128,7 +128,7 @@ class Population(object):
 class Model(object):
     """Object to store the necesary elements to make predictions
     based on an individual"""
-    def __init__(self, trace, hist, classifier=True):
+    def __init__(self, trace, hist, classifier=True, labels=None):
         self._classifier = classifier
         self._trace = trace
         self._hist = hist
@@ -138,6 +138,7 @@ class Model(object):
         self._hy_test = self._hist[self._trace[-1]].hy_test
         self._hist = map(lambda x: self.transform(self._hist[x].tostore()),
                          self._trace)
+        self._labels = labels
 
     def transform(self, v):
         if not isinstance(v, Function):
@@ -152,6 +153,7 @@ class Model(object):
         "Decision function i.e. the raw data of the prediction"
         if X is None:
             return self._hy_test
+        X = self.convert_features(X)
         hist = self._hist
         for node in hist:
             if isinstance(node, Function):
@@ -162,14 +164,40 @@ class Model(object):
 
     def predict(self, X):
         if self._classifier:
-            return self.decision_function(X).sign()
+            hy = self.decision_function(X).sign()
+            if self._labels is not None:
+                hy = (hy + 1).sign()
+                hy = self._labels[hy.tonparray().astype(np.int)]
+                hy = SparseArray.fromlist(hy)
+            return hy
         return self.decision_function(X)
+
+    @staticmethod
+    def convert_features(v):
+        if v is None:
+            return None
+        if isinstance(v[0], Variable):
+            return v
+        if isinstance(v, np.ndarray):
+            X = v.T
+        else:
+            X = v
+        lst = []
+        for var, d in enumerate(X):
+            v = Variable(var, 1)
+            if isinstance(d, SparseArray):
+                v._eval_tr = d
+            else:
+                v._eval_tr = SparseArray.fromlist(d)
+            lst.append(v)
+        return lst
 
 
 class Models(object):
     "List of model in multiclass classification"
-    def __init__(self, models):
+    def __init__(self, models, labels=None):
         self._models = models
+        self._labels = labels
 
     def decision_function(self, X):
         return map(lambda x: x.decision_function(X), self._models)
@@ -177,7 +205,10 @@ class Models(object):
     def predict(self, X):
         d = self.decision_function(X)
         d = np.array(map(lambda x: x.tonparray(), d))
-        return SparseArray.fromlist(d.argmax(axis=0))
+        hy = d.argmax(axis=0)
+        if self._labels is not None:
+            hy = self._labels[hy]
+        return SparseArray.fromlist(hy)
 
 
 class RootGP(object):
@@ -189,7 +220,8 @@ class RootGP(object):
                                Exp, Sqrt, Sin, Cos, Ln,
                                Sq, Sigmoid, If],
                  tr_fraction=0.8,
-                 classifier=True):
+                 classifier=True,
+                 labels=None):
         self._generations = generations
         self._popsize = popsize
         self._classifier = classifier
@@ -199,6 +231,7 @@ class RootGP(object):
         self._early_stopping_rounds = early_stopping_rounds
         self._tournament_size = tournament_size
         self._seed = seed
+        self._labels = labels
         self._multiclass = False
         self._function_set = function_set
         np.random.seed(self._seed)
@@ -238,7 +271,7 @@ class RootGP(object):
 
     @X.setter
     def X(self, v):
-        self._X = self.convert_features(v)
+        self._X = Model.convert_features(v)
         self.nvar = len(self._X)
 
     @property
@@ -276,6 +309,7 @@ class RootGP(object):
             np.random.shuffle(index)
             mask[index[:cnt]] = True
         self._mask = SparseArray.fromlist(mask)
+        return SparseArray.fromlist(v)
 
     def multiclass(self, X, v, test_set=None):
         "Performing One vs All multiclass classification"
@@ -296,6 +330,14 @@ class RootGP(object):
         if isinstance(v, np.ndarray):
             v = SparseArray.fromlist(v)
         if self._classifier:
+            if self._labels is not None and\
+               (self._labels[0] != -1 or self._labels[1] != 1):
+                v = v.tonparray()
+                mask = np.ones_like(v, dtype=np.bool)
+                mask[v == self._labels[0]] = False
+                v[mask] = 1
+                v[~mask] = -1
+                v = SparseArray.fromlist(v)
             self.set_classifier_mask(v)
         elif self._tr_fraction < 1:
             index = np.arange(v.size())
@@ -344,23 +386,7 @@ class RootGP(object):
             v.fitness_vs = -(self.y * m).SSE(v.hy * m)
 
     def convert_features(self, v):
-        if v is None:
-            return None
-        if isinstance(v[0], Variable):
-            return v
-        if isinstance(v, np.ndarray):
-            X = v.T
-        else:
-            X = v
-        lst = []
-        for var, d in enumerate(X):
-            v = Variable(var, 1)
-            if isinstance(d, SparseArray):
-                v._eval_tr = d
-            else:
-                v._eval_tr = SparseArray.fromlist(d)
-            lst.append(v)
-        return lst
+        return Model.convert_features(v)
 
     @property
     def nvar(self):
@@ -505,12 +531,13 @@ class RootGP(object):
         return flag
 
     def nclasses(self, v):
-        "Number of classes of v"
+        "Number of classes of v, also sets the labes"
         if not self._classifier:
             return 0
         if not isinstance(v, np.ndarray):
             v = v.tonparray()
-        return np.unique(v).shape[0]
+        self._labels = np.unique(v)
+        return self._labels.shape[0]
 
     def fit(self, X, y, test_set=None):
         "Evolutive process"
@@ -553,17 +580,16 @@ class RootGP(object):
         if self._multiclass:
             models = map(lambda gp: gp.model(v=v),
                          self._multiclass_instances)
-            return Models(models)
+            return Models(models, labels=self._labels)
         if v is None:
             v = self.population.estopping
         hist = self.population.hist
         trace = self.trace(v)
-        m = Model(trace, hist)
+        m = Model(trace, hist, labels=self._labels)
         return m
 
     def decision_function(self, v=None, X=None):
         "Decision function i.e. the raw data of the prediction"
-        X = self.convert_features(X)
         m = self.model(v=v)
         return m.decision_function(X)
 
@@ -571,5 +597,4 @@ class RootGP(object):
         """In classification this returns the classes, in
         regression it is equivalent to the decision function"""
         m = self.model(v=v)
-        X = self.convert_features(X)
         return m.predict(X)
