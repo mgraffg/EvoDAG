@@ -128,12 +128,14 @@ class Population(object):
 class Model(object):
     """Object to store the necesary elements to make predictions
     based on an individual"""
-    def __init__(self, trace, hist):
+    def __init__(self, trace, hist, classifier=True):
+        self._classifier = classifier
         self._trace = trace
         self._hist = hist
         self._map = {}
         for k, v in enumerate(self._trace):
             self._map[v] = k
+        self._hy_test = self._hist[self._trace[-1]].hy_test
         self._hist = map(lambda x: self.transform(self._hist[x].tostore()),
                          self._trace)
 
@@ -148,6 +150,8 @@ class Model(object):
 
     def decision_function(self, X):
         "Decision function i.e. the raw data of the prediction"
+        if X is None:
+            return self._hy_test
         hist = self._hist
         for node in hist:
             if isinstance(node, Function):
@@ -155,6 +159,25 @@ class Model(object):
             else:
                 node.eval(X)
         return node.hy
+
+    def predict(self, X):
+        if self._classifier:
+            return self.decision_function(X).sign()
+        return self.decision_function(X)
+
+
+class Models(object):
+    "List of model in multiclass classification"
+    def __init__(self, models):
+        self._models = models
+
+    def decision_function(self, X):
+        return map(lambda x: x.decision_function(X), self._models)
+
+    def predict(self, X):
+        d = self.decision_function(X)
+        d = np.array(map(lambda x: x.tonparray(), d))
+        return SparseArray.fromlist(d.argmax(axis=0))
 
 
 class RootGP(object):
@@ -321,6 +344,8 @@ class RootGP(object):
             v.fitness_vs = -(self.y * m).SSE(v.hy * m)
 
     def convert_features(self, v):
+        if v is None:
+            return None
         if isinstance(v[0], Variable):
             return v
         if isinstance(v, np.ndarray):
@@ -525,6 +550,10 @@ class RootGP(object):
 
     def model(self, v=None):
         "Returns the model of node v"
+        if self._multiclass:
+            models = map(lambda gp: gp.model(v=v),
+                         self._multiclass_instances)
+            return Models(models)
         if v is None:
             v = self.population.estopping
         hist = self.population.hist
@@ -534,11 +563,6 @@ class RootGP(object):
 
     def decision_function(self, v=None, X=None):
         "Decision function i.e. the raw data of the prediction"
-        if self._multiclass:
-            return map(lambda gp: gp.decision_function(v=v, X=X),
-                       self._multiclass_instances)
-        if X is None:
-            return self.population.estopping.hy_test
         X = self.convert_features(X)
         m = self.model(v=v)
         return m.decision_function(X)
@@ -546,11 +570,6 @@ class RootGP(object):
     def predict(self, v=None, X=None):
         """In classification this returns the classes, in
         regression it is equivalent to the decision function"""
-        if self._classifier:
-            if self._multiclass:
-                d = self.decision_function(v=v, X=X)
-                d = np.array(map(lambda x: x.tonparray(), d))
-                return SparseArray.fromlist(d.argmax(axis=0))
-            else:
-                return self.decision_function(v=v, X=X).sign()
-        return self.decision_function(v=v, X=X)
+        m = self.model(v=v)
+        X = self.convert_features(X)
+        return m.predict(X)
