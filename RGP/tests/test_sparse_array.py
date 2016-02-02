@@ -452,3 +452,12 @@ def test_pickle():
     io.seek(0)
     s = pickle.load(io)
     assert s.SSE(suno) == 0
+
+
+def test_boundaries():
+    suno = SparseArray.fromlist([-12, 23, 0.23]).boundaries(-2, 1)
+    suno = suno.tonparray()
+    assert suno[0] == -2
+    assert suno[1] == 1
+    print suno[2]
+    assert suno[2] == 0.23

@@ -505,8 +505,23 @@ cdef class SparseArray:
             elif r < 0:
                 res._dataC[i] = -1
             res._indexC[i] = self._indexC[i]
-        return res        
+        return res
 
+    cpdef SparseArray boundaries(self, float lower=-1, float upper=1):
+        cdef SparseArray res = self.empty(self.nele(), self.size())
+        cdef int i
+        cdef double r
+        for i in xrange(self.nele()):
+            r = self._dataC[i]
+            if r > upper:
+                res._dataC[i] = upper
+            elif r < lower:
+                res._dataC[i] = lower
+            else:
+                res._dataC[i] = r                
+            res._indexC[i] = self._indexC[i]
+        return res
+    
     cpdef double SAE(self, SparseArray other):
         cdef int a=0, b=0, index=0, c=0
         cdef int anele = self._nele, bnele=other._nele
