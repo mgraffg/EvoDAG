@@ -40,7 +40,7 @@ class RootGP(object):
         self._classifier = classifier
         self._tr_fraction = tr_fraction
         if early_stopping_rounds is not None and early_stopping_rounds < 0:
-            early_stopping_rounds = popsize * 2
+            early_stopping_rounds = popsize
         self._early_stopping_rounds = early_stopping_rounds
         self._tournament_size = tournament_size
         self._seed = seed
