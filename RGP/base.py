@@ -19,7 +19,7 @@ import types
 from .sparse_array import SparseArray
 from .node import Variable, Function
 from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Ln
-from .node import Sq, Sigmoid, If
+from .node import Sq, Sigmoid, If, Min, Max
 from .model import Model, Models
 from .population import Population
 
@@ -31,13 +31,15 @@ class RootGP(object):
                  early_stopping_rounds=-1,
                  function_set=[Add, Mul, Div, Fabs,
                                Exp, Sqrt, Sin, Cos, Ln,
-                               Sq, Sigmoid, If],
+                               Sq, Sigmoid, If, Min, Max],
                  tr_fraction=0.8,
+                 number_tries_feasible_ind=30,
                  classifier=True,
                  labels=None):
         self._generations = generations
         self._popsize = popsize
         self._classifier = classifier
+        self._number_tries_feasible_ind = number_tries_feasible_ind
         self._tr_fraction = tr_fraction
         if early_stopping_rounds is not None and early_stopping_rounds < 0:
             early_stopping_rounds = popsize
@@ -239,7 +241,7 @@ class RootGP(object):
 
     def random_leaf(self):
         "Returns a random variable with the associated weight"
-        for i in range(10):
+        for i in range(self._number_tries_feasible_ind):
             var = np.random.randint(self.nvar)
             v = self._random_leaf(var)
             if v is None:
@@ -259,7 +261,7 @@ class RootGP(object):
 
     def random_offspring(self):
         "Returns an offspring with the associated weight(s)"
-        for i in range(10):
+        for i in range(self._number_tries_feasible_ind):
             # self._logger.debug('Init random offspring %s' % i)
             func = self.function_set
             func = func[np.random.randint(len(func))]

@@ -507,6 +507,104 @@ cdef class SparseArray:
             res._indexC[i] = self._indexC[i]
         return res
 
+    cpdef SparseArray min(self, SparseArray other):
+        cdef SparseArray res = self.empty(self.nunion(other), self.size())
+        cdef int a=0, b=0, index=0, c=0
+        cdef int anele = self.nele(), bnele=other.nele(), rnele=res.nele()
+        cdef double r
+        if anele == rnele and bnele == rnele and res.size() == rnele:
+            for c in range(rnele):
+                if self._dataC[c] < other._dataC[c]:
+                    res._dataC[c] = self._dataC[c]
+                else:
+                    res._dataC[c] = other._dataC[c]
+                res._indexC[c] = c
+            return res
+        for c in range(rnele):
+            if a >= anele:
+                index = other._indexC[b]
+                r = other._dataC[b]
+                if r > 0:
+                    r = 0
+                b += 1
+            elif b >= bnele:
+                index = self._indexC[a]
+                r = self._dataC[a]
+                if r > 0:
+                    r = 0                
+                a += 1
+            else:
+                index = self._indexC[a]
+                if index == other._indexC[b]:
+                    if self._dataC[a] < other._dataC[b]:
+                        r = self._dataC[a]
+                    else:
+                        r = other._dataC[b]
+                    a += 1; b += 1
+                elif index < other._indexC[b]:
+                    r = self._dataC[a]
+                    if r > 0:
+                        r = 0
+                    a += 1
+                else:
+                    r = other._dataC[b]
+                    if r > 0:
+                        r = 0
+                    index = other._indexC[b]
+                    b += 1
+            res._dataC[c] = r
+            res._indexC[c] = index
+        return res
+
+    cpdef SparseArray max(self, SparseArray other):
+        cdef SparseArray res = self.empty(self.nunion(other), self.size())
+        cdef int a=0, b=0, index=0, c=0
+        cdef int anele = self.nele(), bnele=other.nele(), rnele=res.nele()
+        cdef double r
+        if anele == rnele and bnele == rnele and res.size() == rnele:
+            for c in range(rnele):
+                if self._dataC[c] > other._dataC[c]:
+                    res._dataC[c] = self._dataC[c]
+                else:
+                    res._dataC[c] = other._dataC[c]
+                res._indexC[c] = c
+            return res
+        for c in range(rnele):
+            if a >= anele:
+                index = other._indexC[b]
+                r = other._dataC[b]
+                if r < 0:
+                    r = 0
+                b += 1
+            elif b >= bnele:
+                index = self._indexC[a]
+                r = self._dataC[a]
+                if r < 0:
+                    r = 0                
+                a += 1
+            else:
+                index = self._indexC[a]
+                if index == other._indexC[b]:
+                    if self._dataC[a] > other._dataC[b]:
+                        r = self._dataC[a]
+                    else:
+                        r = other._dataC[b]
+                    a += 1; b += 1
+                elif index < other._indexC[b]:
+                    r = self._dataC[a]
+                    if r < 0:
+                        r = 0
+                    a += 1
+                else:
+                    r = other._dataC[b]
+                    if r < 0:
+                        r = 0
+                    index = other._indexC[b]
+                    b += 1
+            res._dataC[c] = r
+            res._indexC[c] = index
+        return res
+
     cpdef SparseArray boundaries(self, float lower=-1, float upper=1):
         cdef SparseArray res = self.empty(self.nele(), self.size())
         cdef int i

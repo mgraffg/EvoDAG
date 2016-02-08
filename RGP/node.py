@@ -364,3 +364,54 @@ class If(Function):
             r = a.hy_test.if_func(b.hy_test, c.hy_test)
             self.hy_test = r * self.weight
         return True
+
+
+class Min(Function):
+    nargs = 2
+
+    @staticmethod
+    def cummin(r):
+        a = r[0]
+        for x in r[1:]:
+            a = a.min(x)
+        return a
+
+    def eval(self, X):
+        X = map(lambda x: X[x], self.variable)
+        r = self.cummin(map(lambda x: x.hy, X))
+        if self.weight is None:
+            w = self.compute_weight([r])
+            if w is None:
+                return False
+            self.weight = w[0]
+        self.hy = r * self.weight
+        if X[0].hy_test is not None:
+            r = self.cummin(map(lambda x: x.hy_test, X))
+            self.hy_test = r * self.weight
+        return True
+
+
+class Max(Function):
+    nargs = 2
+
+    @staticmethod
+    def cummax(r):
+        a = r[0]
+        for x in r[1:]:
+            a = a.max(x)
+        return a
+
+    def eval(self, X):
+        X = map(lambda x: X[x], self.variable)
+        r = self.cummax(map(lambda x: x.hy, X))
+        if self.weight is None:
+            w = self.compute_weight([r])
+            if w is None:
+                return False
+            self.weight = w[0]
+        self.hy = r * self.weight
+        if X[0].hy_test is not None:
+            r = self.cummax(map(lambda x: x.hy_test, X))
+            self.hy_test = r * self.weight
+        return True
+        

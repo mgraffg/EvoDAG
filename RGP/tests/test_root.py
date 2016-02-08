@@ -645,13 +645,13 @@ def test_model_hist():
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
                 early_stopping_rounds=-1,
-                seed=0,
+                seed=1,
                 popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
     hist = gp.population.hist
     trace = gp.trace(gp.population.estopping)
     a = hist[trace[-1]].variable
     m = Model(trace, hist)
-    print m._map
+    print m._map, a, m._hist[-1].variable
     for v1, v2 in zip(a, m._hist[-1].variable):
         assert m._map[v1] == v2
 

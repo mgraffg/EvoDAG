@@ -294,6 +294,34 @@ def test_sparse_array_sign():
     assert np.all(uno == suno)
 
 
+def test_sparse_array_min():
+    np.random.seed(0)
+    uno = create_numpy_array(nvalues=50)
+    dos = create_numpy_array(nvalues=50)
+    r = map(min, zip(uno, dos))
+    sdos = SparseArray.fromlist(dos)
+    rs = SparseArray.fromlist(uno).min(sdos)
+    print uno[:5]
+    print dos[:5]
+    print r[:5]
+    print rs.tonparray()[:5]
+    assert np.all(rs.tonparray() == r)
+
+
+def test_sparse_array_max():
+    np.random.seed(0)
+    uno = create_numpy_array(nvalues=50)
+    dos = create_numpy_array(nvalues=50)
+    r = map(max, zip(uno, dos))
+    sdos = SparseArray.fromlist(dos)
+    rs = SparseArray.fromlist(uno).max(sdos)
+    print uno[:5]
+    print dos[:5]
+    print r[:5]
+    print rs.tonparray()[:5]
+    assert np.all(rs.tonparray() == r)
+
+
 def test_sparse_array_SAE():
     np.random.seed(0)
     uno = create_numpy_array()

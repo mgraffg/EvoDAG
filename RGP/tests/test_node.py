@@ -206,3 +206,30 @@ def test_node_if():
     r = r * coef
     assert n.hy.SSE(r) == 0
     assert n.hy_test.SSE(r) == 0
+
+
+def test_node_min():
+    from RGP.node import Min
+    gp, args = create_problem_node(nargs=3)
+    r = args[0].hy.min(args[1].hy).min(args[2].hy)
+    coef = gp.compute_weight([r])
+    n = Min(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    assert n.eval(args)
+    r = r * coef
+    assert n.hy.SSE(r) == 0
+    assert n.hy_test.SSE(r) == 0
+    assert n.weight == coef
+
+
+def test_node_max():
+    from RGP.node import Max
+    gp, args = create_problem_node(nargs=3)
+    r = args[0].hy.max(args[1].hy).max(args[2].hy)
+    coef = gp.compute_weight([r])
+    n = Max(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    assert n.eval(args)
+    r = r * coef
+    assert n.hy.SSE(r) == 0
+    assert n.hy_test.SSE(r) == 0
+    assert n.weight == coef
+    
