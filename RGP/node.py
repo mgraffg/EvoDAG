@@ -18,7 +18,8 @@ import types
 
 
 class Variable(object):
-    def __init__(self, variable, weight=None, ytr=None, mask=None):
+    def __init__(self, variable, weight=None, ytr=None, mask=None,
+                 height=0):
         if isinstance(variable, types.ListType):
             variable = variable if len(variable) > 1 else variable[0]
         self._variable = variable
@@ -30,10 +31,20 @@ class Variable(object):
         self._fitness = None
         self._fitness_vs = None
         self._position = 0
+        self._height = height
+
+    @property
+    def height(self):
+        return self._height
+
+    @height.setter
+    def height(self, v):
+        self._height = v
 
     def tostore(self):
         ins = self.__class__(self.variable, weight=self.weight)
         ins.position = self.position
+        ins.height = self.height
         ins._fitness = self._fitness
         ins._fitness_vs = self._fitness_vs
         return ins

@@ -251,6 +251,7 @@ class RootGP(object):
 
     def _random_offspring(self, func, args):
         f = func(args, ytr=self._ytr, mask=self._mask)
+        f.height = max(map(lambda x: self.population.hist[x].height, args)) + 1
         if not f.eval(self.population.hist):
             return None
         if not f.isfinite():
@@ -403,7 +404,8 @@ class RootGP(object):
             v = self.population.estopping
         hist = self.population.hist
         trace = self.trace(v)
-        m = Model(trace, hist, labels=self._labels)
+        m = Model(trace, hist, classifier=self._classifier,
+                  labels=self._labels)
         return m
 
     def decision_function(self, v=None, X=None):

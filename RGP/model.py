@@ -101,3 +101,64 @@ class Models(object):
         if self._labels is not None:
             hy = self._labels[hy]
         return SparseArray.fromlist(hy)
+
+
+class Ensemble(object):
+    "Ensemble that predicts using the average"
+    def __init__(self, models):
+        self._models = models
+        self._labels = self._models[0]._labels
+        self._classifier = False
+        flag = False
+        if isinstance(self._models[0], Models):
+            if self._models[0]._models[0]._classifier:
+                flag = True
+        elif self._models[0]._classifier:
+            flag = True
+        self._classifier = flag
+
+    @property
+    def classifier(self):
+        return self._classifier
+
+    def decision_function(self, X):
+        if self.classifier:
+            return self.decision_function_cl(X)
+        raise RuntimeError("Regression is not implemented")
+
+    def decision_function_cl(self, X):
+        r = map(lambda m: m.decision_function(X), self._models)
+        res = r[0]
+        for x in r[1:]:
+            if isinstance(x, SparseArray):
+                res = res + x
+            else:
+                res = map(lambda (x, y): x + y, zip(res, x))
+        if isinstance(res, SparseArray):
+            return res / len(r)
+        else:
+            return map(lambda x: x / len(r), res)
+
+    def predict(self, X):
+        if self.classifier:
+            return self.predict_cl(X)
+        raise RuntimeError("Regression is not implemented")
+
+    def predict_cl(self, X):
+        hy = self.decision_function_cl(X)
+        if isinstance(hy, SparseArray):
+            hy = hy.sign()
+            if self._labels is not None:
+                hy = (hy + 1).sign()
+                hy = self._labels[hy.tonparray().astype(np.int)]
+                hy = SparseArray.fromlist(hy)
+            return hy
+        else:
+            d = np.array(map(lambda x: x.tonparray(), hy))
+            hy = d.argmax(axis=0)
+            if self._labels is not None:
+                hy = self._labels[hy]
+            return SparseArray.fromlist(hy)
+
+
+                

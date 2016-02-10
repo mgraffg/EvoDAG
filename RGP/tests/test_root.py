@@ -635,27 +635,6 @@ def test_predict():
     assert gp.predict(X=X[-10:]).SSE(hy.sign()) == 0
 
 
-def test_model_hist():
-    from RGP import RootGP
-    from RGP.base import Model
-    y = cl.copy()
-    mask = y == 0
-    y[mask] = 1
-    y[~mask] = -1
-    gp = RootGP(generations=np.inf,
-                tournament_size=2,
-                early_stopping_rounds=-1,
-                seed=1,
-                popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
-    hist = gp.population.hist
-    trace = gp.trace(gp.population.estopping)
-    a = hist[trace[-1]].variable
-    m = Model(trace, hist)
-    print m._map, a, m._hist[-1].variable
-    for v1, v2 in zip(a, m._hist[-1].variable):
-        assert m._map[v1] == v2
-
-
 def test_trace():
     from RGP import RootGP
     from RGP.node import Add
@@ -763,25 +742,6 @@ def test_get_clone():
     assert gp._seed == gp1._seed
 
 
-def test_pickle_model():
-    from RGP import RootGP
-    import pickle
-    y = cl.copy()
-    mask = y == 0
-    y[mask] = 1
-    y[~mask] = -1
-    gp = RootGP(generations=np.inf,
-                tournament_size=2,
-                early_stopping_rounds=-1,
-                seed=0,
-                popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
-    m = gp.model()
-    hy = gp.decision_function(X=X[-10:])
-    m1 = pickle.loads(pickle.dumps(m))
-    hy1 = m1.decision_function(X=X[-10:])
-    assert hy.SSE(hy1) == 0
-
-
 def test_labels():
     from RGP import RootGP
     y = cl.copy()
@@ -798,3 +758,26 @@ def test_labels():
     print np.unique(hy.tonparray())
     print np.array([1, 2])
     assert np.all(np.unique(hy.tonparray()) == np.array([1, 2]))
+
+
+def test_height():
+    from RGP import RootGP
+    from RGP.node import Mul
+    gp = RootGP(generations=1,
+                seed=1,
+                tournament_size=2,
+                popsize=5)
+    gp.X = X
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp.y = y
+    gp.create_population()
+    assert np.all(map(lambda x: x.height == 0,
+                      gp.population.population[:4]))
+    n = gp.population.population[-1]
+    assert n.height == 1
+    args = [3, 4]
+    f = gp._random_offspring(Mul, args)
+    assert f.height == 2
