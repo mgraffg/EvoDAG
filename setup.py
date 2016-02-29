@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import numpy
-from setuptools import setup, find_packages
+from setuptools import setup
 from setuptools import Extension
 from Cython.Distutils import build_ext
 from distutils import sysconfig
@@ -60,7 +60,18 @@ setup(
     name="RGP",
     description="""Root Genetic Programming""",
     version=version,
-    url='http://ingeotec.mx/~mgraffg',
+    classifiers=[
+        "Development Status :: 3 - Alpha",
+        "Environment :: Console",
+        "Intended Audience :: Science/Research",
+        "License :: OSI Approved :: Apache Software License",
+        "Natural Language :: English",
+        "Operating System :: MacOS :: MacOS X",
+        "Operating System :: POSIX :: Linux",
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        "Topic :: Scientific/Engineering :: Artificial Intelligence"],
+    url='http://ingeotec.mx',
     author="Mario Graff",
     author_email="mgraffg@ieee.org",
     cmdclass={"build_ext": build_ext, "clean": Clean},
@@ -71,13 +82,3 @@ setup(
     package_data={'': ['*.pxd']},
     install_requires=['cython >= 0.19.2', 'numpy >= 1.6.2']
 )
-
-
-
-
-
-
-
-
-
-
