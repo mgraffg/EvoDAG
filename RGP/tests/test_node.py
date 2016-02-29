@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from test_root import X, cl
 from RGP.node import Add
 import numpy as np
@@ -27,7 +28,7 @@ def create_problem_node(nargs=4):
     y[mask] = 1
     y[~mask] = -1
     gp.y = y
-    return gp, map(lambda x: gp.X[x], range(nargs))
+    return gp, [gp.X[x] for x in range(nargs)]
 
 
 def test_nargs_function():
@@ -39,22 +40,22 @@ def test_nargs_function():
 
 def test_node_pickle():
     import pickle
-    import StringIO
+    import tempfile
     gp, args = create_problem_node()
-    n = Add(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    n = Add(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     n.position = 10
     assert n.eval(args)
-    io = StringIO.StringIO('rw')
-    pickle.dump(n, io)
-    io.seek(0)
-    n1 = pickle.load(io)
-    assert n1._mask.SSE(n._mask) == 0
+    with tempfile.TemporaryFile('w+b') as io:
+        pickle.dump(n, io)
+        io.seek(0)
+        n1 = pickle.load(io)
+        assert n1._mask.SSE(n._mask) == 0
 
 
 def test_node_tostore():
     gp, args = create_problem_node(nargs=4)
     Add.nargs = 4
-    n = Add(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    n = Add(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     n.position = 10
     assert n.eval(args)
     n1 = n.tostore()
@@ -66,10 +67,11 @@ def test_node_tostore():
 
 def test_node_add():
     gp, args = create_problem_node()
-    coef = gp.compute_weight(map(lambda x: x.hy, args))
-    n = Add(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    coef = gp.compute_weight([x.hy for x in args])
+    n = Add(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     assert n.eval(args)
-    a = map(lambda (a, b): a.hy * b, zip(args, coef))
+    # a = map(lambda (a, b): a.hy * b, zip(args, coef))
+    a = [a.hy * b for a, b in zip(args, coef)]
     r = n.cumsum(a)
     assert n.hy.SSE(r) == 0
     assert n.hy_test.SSE(r) == 0
@@ -78,9 +80,9 @@ def test_node_add():
 def test_node_mul():
     from RGP.node import Mul
     gp, args = create_problem_node()
-    r = Mul.cumprod(map(lambda x: x.hy, args))
+    r = Mul.cumprod([x.hy for x in args])
     coef = gp.compute_weight([r])[0]
-    n = Mul(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    n = Mul(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     assert n.eval(args)
     r = r * coef
     assert n.hy.SSE(r) == 0
@@ -93,7 +95,7 @@ def test_node_div():
     a, b = args
     r = a.hy / b.hy
     coef = gp.compute_weight([r])[0]
-    n = Div(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    n = Div(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     assert n.eval(args)
     r = r * coef
     assert n.hy.SSE(r) == 0
@@ -105,7 +107,7 @@ def test_node_fabs():
     gp, args = create_problem_node(nargs=1)
     r = args[0].hy.fabs()
     coef = gp.compute_weight([r])[0]
-    n = Fabs(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    n = Fabs(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     assert n.eval(args)
     r = r * coef
     assert n.hy.SSE(r) == 0
@@ -117,7 +119,7 @@ def test_node_exp():
     gp, args = create_problem_node(nargs=1)
     r = args[0].hy.exp()
     coef = gp.compute_weight([r])[0]
-    n = Exp(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    n = Exp(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     assert n.eval(args)
     r = r * coef
     assert n.hy.SSE(r) == 0
@@ -129,7 +131,7 @@ def test_node_sqrt():
     gp, args = create_problem_node(nargs=1)
     r = args[0].hy.sqrt()
     coef = gp.compute_weight([r])[0]
-    n = Sqrt(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    n = Sqrt(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     assert n.eval(args)
     r = r * coef
     assert n.hy.SSE(r) == 0
@@ -141,7 +143,7 @@ def test_node_sin():
     gp, args = create_problem_node(nargs=1)
     r = args[0].hy.sin()
     coef = gp.compute_weight([r])[0]
-    n = Sin(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    n = Sin(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     assert n.eval(args)
     r = r * coef
     assert n.hy.SSE(r) == 0
@@ -153,7 +155,7 @@ def test_node_cos():
     gp, args = create_problem_node(nargs=1)
     r = args[0].hy.cos()
     coef = gp.compute_weight([r])[0]
-    n = Cos(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    n = Cos(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     assert n.eval(args)
     r = r * coef
     assert n.hy.SSE(r) == 0
@@ -165,7 +167,7 @@ def test_node_ln():
     gp, args = create_problem_node(nargs=1)
     r = args[0].hy.ln()
     coef = gp.compute_weight([r])[0]
-    n = Ln(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    n = Ln(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     assert n.eval(args)
     r = r * coef
     assert n.hy.SSE(r) == 0
@@ -177,7 +179,7 @@ def test_node_sq():
     gp, args = create_problem_node(nargs=1)
     r = args[0].hy.sq()
     coef = gp.compute_weight([r])[0]
-    n = Sq(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    n = Sq(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     assert n.eval(args)
     r = r * coef
     assert n.hy.SSE(r) == 0
@@ -189,7 +191,7 @@ def test_node_sigmoid():
     gp, args = create_problem_node(nargs=1)
     r = args[0].hy.sigmoid()
     coef = gp.compute_weight([r])[0]
-    n = Sigmoid(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    n = Sigmoid(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     assert n.eval(args)
     r = r * coef
     assert n.hy.SSE(r) == 0
@@ -201,7 +203,7 @@ def test_node_if():
     gp, args = create_problem_node(nargs=3)
     r = args[0].hy.if_func(args[1].hy, args[2].hy)
     coef = gp.compute_weight([r])[0]
-    n = If(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    n = If(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     assert n.eval(args)
     r = r * coef
     assert n.hy.SSE(r) == 0
@@ -213,7 +215,7 @@ def test_node_min():
     gp, args = create_problem_node(nargs=3)
     r = args[0].hy.min(args[1].hy).min(args[2].hy)
     coef = gp.compute_weight([r])
-    n = Min(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    n = Min(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     assert n.eval(args)
     r = r * coef
     assert n.hy.SSE(r) == 0
@@ -226,7 +228,7 @@ def test_node_max():
     gp, args = create_problem_node(nargs=3)
     r = args[0].hy.max(args[1].hy).max(args[2].hy)
     coef = gp.compute_weight([r])
-    n = Max(range(len(args)), ytr=gp._ytr, mask=gp._mask)
+    n = Max(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     assert n.eval(args)
     r = r * coef
     assert n.hy.SSE(r) == 0

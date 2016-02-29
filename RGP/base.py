@@ -13,6 +13,10 @@
 # limitations under the License.
 
 
+
+
+
+
 import numpy as np
 import logging
 import types
@@ -92,7 +96,7 @@ class RootGP(object):
     @property
     def Xtest(self):
         "Features or variables used in the test set"
-        return map(lambda x: x.hy_test, self.X)
+        return [x.hy_test for x in self.X]
 
     @Xtest.setter
     def Xtest(self, v):
@@ -118,7 +122,7 @@ class RootGP(object):
         if a[0] != -1 or a[1] != 1:
             raise RuntimeError("The labels must be -1 and 1")
         mask = np.zeros_like(v)
-        cnt = min(map(lambda x: (v == x).sum(), a)) * self._tr_fraction
+        cnt = min([(v == x).sum() for x in a]) * self._tr_fraction
         for i in a:
             index = np.where(v == i)[0]
             np.random.shuffle(index)
@@ -133,7 +137,7 @@ class RootGP(object):
             v = v.tonparray()
         a = preprocessing.LabelBinarizer().fit(v)
         mask = a.transform(v).astype(np.bool).T
-        self._multiclass_instances = map(lambda x: self.clone(), mask)
+        self._multiclass_instances = [self.clone() for x in mask]
         for m, gp in zip(mask, self._multiclass_instances):
             y = np.zeros_like(m) - 1
             y[m] = 1
@@ -215,7 +219,7 @@ class RootGP(object):
     def compute_weight(self, r):
         """Returns the weight (w) using OLS of r * w = gp._ytr """
         A = np.empty((len(r), len(r)))
-        b = np.array(map(lambda f: (f * self._ytr).sum(), r))
+        b = np.array([(f * self._ytr).sum() for f in r])
         for i in range(len(r)):
             r[i] = r[i] * self._mask
             for j in range(i, len(r)):
@@ -251,7 +255,7 @@ class RootGP(object):
 
     def _random_offspring(self, func, args):
         f = func(args, ytr=self._ytr, mask=self._mask)
-        f.height = max(map(lambda x: self.population.hist[x].height, args)) + 1
+        f.height = max([self.population.hist[x].height for x in args]) + 1
         if not f.eval(self.population.hist):
             return None
         if not f.isfinite():
@@ -274,7 +278,7 @@ class RootGP(object):
                     k = self.population.tournament()
                 args.append(k)
             # self._logger.debug('Args %s' % args)
-            args = map(lambda x: self.population.population[x].position, args)
+            args = [self.population.population[x].position for x in args]
             f = self._random_offspring(func, args)
             if f is None:
                 # self._logger.debug('Random offspring %s is None' % i)
@@ -321,8 +325,7 @@ class RootGP(object):
                 for j in range(func.nargs):
                     psize = len(self.population.population)
                     args.append(np.random.randint(psize))
-                args = map(lambda x: self.population.population[x].position,
-                           args)
+                args = [self.population.population[x].position for x in args]
                 v = self._random_offspring(func, args)
                 if v is None:
                     continue
@@ -378,7 +381,7 @@ class RootGP(object):
         "Restore the position in the history of individual v's nodes"
         trace_map = {}
         self._trace(n, trace_map)
-        s = trace_map.keys()
+        s = list(trace_map.keys())
         s.sort()
         return s
 
@@ -388,17 +391,16 @@ class RootGP(object):
         else:
             trace_map[n.position] = 1
         if isinstance(n, Function):
-            if isinstance(n.variable, types.ListType):
-                map(lambda x: self._trace(self.population.hist[x], trace_map),
-                    n.variable)
+            if isinstance(n.variable, list):
+                for x in n.variable:
+                    self._trace(self.population.hist[x], trace_map)
             else:
                 self._trace(self.population.hist[n.variable], trace_map)
 
     def model(self, v=None):
         "Returns the model of node v"
         if self._multiclass:
-            models = map(lambda gp: gp.model(v=v),
-                         self._multiclass_instances)
+            models = [gp.model(v=v) for gp in self._multiclass_instances]
             return Models(models, labels=self._labels)
         if v is None:
             v = self.population.estopping

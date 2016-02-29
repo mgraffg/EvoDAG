@@ -272,6 +272,11 @@ cdef class SparseArray:
             return self.div(other)
         return self.div2(other)
 
+    def __truediv__(self, other):
+        if isinstance(other, SparseArray):
+            return self.div(other)
+        return self.div2(other)
+
     @cython.cdivision(True)
     cpdef SparseArray div(self, SparseArray other):
         cdef SparseArray res = self.empty(self.nintersection(other), self.size())
@@ -331,7 +336,7 @@ cdef class SparseArray:
         cdef double epsilon = 1e-9
         cdef array.array[double] var, mu_x
         for x, mu_x in zip(X, mu):
-            var = array.array('d', map(lambda x: 0, range(ncl)))
+            var = array.array('d', [0] * ncl)
             k = 0
             i = 0
             xnele = x.nele()
@@ -363,7 +368,7 @@ cdef class SparseArray:
         cdef list m=[]
         cdef array.array[double] mu
         for x in X:
-            mu = array.array('d', map(lambda x: 0, range(ncl)))
+            mu = array.array('d', [0] * ncl)
             k = 0
             i = 0
             xnele = x.nele()
@@ -392,7 +397,7 @@ cdef class SparseArray:
     def class_freq(self, int ncl):
         cdef int i
         cdef list f
-        cdef array.array[double] mu = array.array('d', map(lambda x: 0, range(ncl)))
+        cdef array.array[double] mu = array.array('d', [0] * ncl)
         for i in range(self.nele()):
             mu[int(self._dataC[i])] += 1.0
         mu[0] = self.size() - sum(mu[1:])
@@ -752,7 +757,7 @@ cdef class SparseArray:
                 break
         res = self.empty(cnt, stop - start)
         for i in range(init, init+cnt):
-            res._indexC[i - init] = self._indexC[i]
+            res._indexC[i - init] = self._indexC[i] - start
             res._dataC[i - init] = self._dataC[i]
         return res
 
@@ -795,7 +800,7 @@ cdef class SparseArray:
         
     def tolist(self):
         cdef int i, ele
-        lst = map(lambda x: 0, xrange(self.size()))
+        lst = [0] * self.size()
         for i in range(self.nele()):
             ele = self._indexC[i]
             lst[ele] = self._dataC[i]
@@ -866,9 +871,7 @@ cdef class SparseArray:
     @cython.boundscheck(False)
     @cython.nonecheck(False)        
     def BER(self, SparseArray yh, array.array[double] class_freq):
-        cdef array.array[double] err = array.array('d',
-                                                   map(lambda x: 0,
-                                                       range(len(class_freq))))
+        cdef array.array[double] err = array.array('d', [0] * len(class_freq))
         cdef int i=0, j=0, k=0, ynele=self.nele(), yhnele=yh.nele()
         cdef int c1=0, c2=0
         cdef double res=0

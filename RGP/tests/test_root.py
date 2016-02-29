@@ -11,9 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+
 import numpy as np
 from nose.tools import assert_almost_equals
-from pymock import use_pymock, override, returns, replay
+try:
+    from mock import MagicMock
+except ImportError:
+    from unittest.mock import MagicMock
 from RGP.node import Variable
 from RGP.sparse_array import SparseArray
 
@@ -186,7 +191,7 @@ def test_features():
     gp = RootGP(generations=1)
     gp.X = X
     assert gp.nvar == 4
-    print gp.X
+    print(gp.X)
     assert isinstance(gp.X[0], Variable)
     assert isinstance(gp.X[0].hy, SparseArray)
     gp.Xtest = X
@@ -204,12 +209,15 @@ def test_create_population():
     gp.y = y
     gp.create_population()
     assert_almost_equals(gp.population.popsize, gp.popsize)
-    a = map(lambda (x, y): x == y, zip(gp.population.population,
-                                       gp.population._hist))
+    # a = map(lambda (x, y): x == y, zip(gp.population.population,
+    #                                    gp.population._hist))
+    a = [x == y1 for x, y1 in zip(gp.population.population,
+                                  gp.population._hist)]
     assert np.all(a)
-    l = map(lambda x: x.variable, gp.population.population)
+    l = [x.variable for x in gp.population.population]
     l.sort()
-    assert np.all(map(lambda (x, y): x == y, enumerate(l)))
+    # assert np.all(map(lambda (x, y): x == y, enumerate(l)))
+    assert np.all([x == y1 for x, y1 in enumerate(l)])
 
 
 def test_create_population2():
@@ -227,7 +235,6 @@ def test_create_population2():
         assert isinstance(i, Function)
 
 
-@use_pymock
 def test_best_so_far():
     from RGP import RootGP
     gp = RootGP(generations=1, popsize=4)
@@ -237,19 +244,18 @@ def test_best_so_far():
     y[mask] = 1
     y[~mask] = -1
     gp.y = y
-    override(np.random, 'randint')
-    for i in range(gp.popsize):
-        np.random.randint(gp.nvar)
-        returns(i)
-    replay()
+    randint = np.random.randint
+    mock = MagicMock()
+    mock.side_effect = list(range(gp.popsize))
+    np.random.randint = mock
     gp.create_population()
     p = gp.population.population
-    index = np.argsort(map(lambda x: x.fitness, p))[-1]
-    print p[index].fitness, gp.population.bsf.fitness
+    index = np.argsort([x.fitness for x in p])[-1]
+    print(p[index].fitness, gp.population.bsf.fitness)
     assert gp.population.bsf == p[index]
+    np.random.randint = randint
 
 
-@use_pymock
 def test_early_stopping():
     from RGP import RootGP
     gp = RootGP(generations=1, popsize=4)
@@ -259,25 +265,24 @@ def test_early_stopping():
     y[mask] = 1
     y[~mask] = -1
     gp.y = y
-    override(np.random, 'randint')
-    for i in range(gp.popsize):
-        np.random.randint(gp.nvar)
-        returns(i)
-    replay()
+    randint = np.random.randint
+    mock = MagicMock()
+    mock.side_effect = list(range(gp.popsize))
+    np.random.randint = mock
     gp.create_population()
     p = gp.population.population
-    fit = np.array(map(lambda x: x.fitness_vs, p))
+    fit = np.array([x.fitness_vs for x in p])
     best = fit.max()
     index = np.where(best == fit)[0][0]
     assert gp.population.estopping == p[index]
+    np.random.randint = randint
 
 
-@use_pymock
 def test_variable():
     from RGP import RootGP
     gp = RootGP(generations=1, popsize=4)
     gp.X = X
-    Xtest = map(lambda x: x, X)
+    Xtest = [x for x in X]
     Xtest[0] = Xtest[0] + np.inf
     gp.Xtest = Xtest
     y = cl.copy()
@@ -285,17 +290,16 @@ def test_variable():
     y[mask] = 1
     y[~mask] = -1
     gp.y = y
-    override(np.random, 'randint')
-    for i in range(2):
-        np.random.randint(gp.nvar)
-        returns(i)
-    replay()
+    randint = np.random.randint
+    mock = MagicMock()
+    mock.side_effect = list(range(gp.popsize))
+    np.random.randint = mock
     var = gp.random_leaf()
     assert var.isfinite()
     assert var.hy.isfinite()
+    np.random.randint = randint
 
 
-@use_pymock
 def test_random_leaf():
     from RGP import RootGP
     gp = RootGP(generations=1, popsize=4, tr_fraction=1)
@@ -305,23 +309,22 @@ def test_random_leaf():
     y[mask] = 1
     y[~mask] = -1
     gp.y = y
-    override(np.random, 'randint')
-    np.random.randint(gp.nvar)
-    returns(0)
-    replay()
+    randint = np.random.randint
+    mock = MagicMock(return_value=0)
+    np.random.randint = mock
     mask = gp._mask.tonparray().astype(np.bool)
     weight = np.linalg.lstsq(X[mask, 0][:, np.newaxis], y[mask])[0][0]
     var = gp.random_leaf()
     assert isinstance(var, Variable)
-    print weight, var.weight
-    assert_almost_equals(weight, var.weight)
+    print(weight, var.weight)
+    assert_almost_equals(weight, var.weight[0])
+    np.random.randint = randint
 
 
-@use_pymock
 def test_random_leaf_inf():
     from RGP import RootGP
     gp = RootGP(generations=1, classifier=False, popsize=4, tr_fraction=1)
-    Xc = map(lambda x: x, X)
+    Xc = [x for x in X]
     Xc[0] = Xc[0] + np.inf
     gp.X = Xc
     y = cl.copy()
@@ -329,12 +332,17 @@ def test_random_leaf_inf():
     y[mask] = 1
     y[~mask] = -1
     gp.y = y
-    override(np.random, 'randint')
-    for i in range(2):
-        np.random.randint(gp.nvar)
-        returns(i)
-    replay()
+    randint = np.random.randint
+    mock = MagicMock()
+    mock.side_effect = list(range(2))
+    np.random.randint = mock
     gp.random_leaf()
+    try:
+        assert mock()
+        assert False
+    except Exception:
+        pass
+    np.random.randint = randint
 
 
 def test_classification_y():
@@ -400,7 +408,7 @@ def test_mask_vs():
 def test_BER():
     from RGP.node import Add
     from RGP import RootGP
-    from SimpleGP import Classification
+    from RGP.utils import BER
     gp = RootGP(generations=1, popsize=4)
     assert gp._classifier
     gp.X = X
@@ -416,14 +424,13 @@ def test_BER():
     a = Add([0, 1], ytr=gp._ytr, mask=gp._mask)
     a.eval([v, v1])
     hy = a.hy.sign()
-    b = Classification.BER(y[m], hy.tonparray()[m])
+    b = BER(y[m], hy.tonparray()[m])
     gp.fitness_vs(a)
-    print b, a.fitness_vs * 100
+    print(b, a.fitness_vs * 100)
     assert_almost_equals(b, -a.fitness_vs * 100)
     # assert False
 
 
-@use_pymock
 def test_tournament():
     from RGP import RootGP
     gp = RootGP(generations=1,
@@ -435,19 +442,17 @@ def test_tournament():
     y[mask] = 1
     y[~mask] = -1
     gp.y = y
-    override(np.random, 'randint')
-    for i in range(gp.popsize):
-        np.random.randint(gp.nvar)
-        returns(i)
-    replay()
+    randint = np.random.randint
+    mock = MagicMock()
+    mock.side_effect = list(range(gp.popsize))
+    np.random.randint = mock
     gp.create_population()
     j = gp.population.tournament()
-    index = np.argsort(map(lambda x: x.fitness,
-                           gp.population.population))[-1]
+    index = np.argsort([x.fitness for x in gp.population.population])[-1]
     assert j == index
+    np.random.randint = randint
 
 
-@use_pymock
 def test_tournament_negative():
     from RGP import RootGP
     gp = RootGP(generations=1,
@@ -459,19 +464,17 @@ def test_tournament_negative():
     y[mask] = 1
     y[~mask] = -1
     gp.y = y
-    override(np.random, 'randint')
-    for i in range(gp.popsize):
-        np.random.randint(gp.nvar)
-        returns(i)
-    replay()
+    randint = np.random.randint
+    mock = MagicMock()
+    mock.side_effect = list(range(gp.popsize))
+    np.random.randint = mock
     gp.create_population()
     j = gp.population.tournament(negative=True)
-    index = np.argsort(map(lambda x: x.fitness,
-                           gp.population.population))[0]
+    index = np.argsort([x.fitness for x in gp.population.population])[0]
     assert j == index
+    np.random.randint = randint
 
 
-@use_pymock
 def test_random_offspring():
     from RGP import RootGP
     from RGP.node import Add
@@ -486,13 +489,14 @@ def test_random_offspring():
     y[~mask] = -1
     gp.y = y
     gp.create_population()
-    override(np.random, 'randint')
-    np.random.randint(len(gp.function_set))
-    returns(0)
-    replay()
+    randint = np.random.randint
+    mock = MagicMock(return_value=0)
+    np.random.randint = mock
     a = gp.random_offspring()
+    np.random.randint.assert_called_with(len(gp.function_set))
     assert isinstance(a, Add)
     assert np.isfinite(a.fitness)
+    np.random.randint = randint
 
 
 def test_replace_individual():
@@ -510,7 +514,7 @@ def test_replace_individual():
     a = gp.random_offspring()
     assert a.position == 0
     gp.population.replace(a)
-    assert np.any(map(lambda x: x == a, gp.population.population))
+    assert np.any([x == a for x in gp.population.population])
     assert a.position == 10
 
 
@@ -520,7 +524,7 @@ def test_X_sparse():
     gp = RootGP(generations=1,
                 tournament_size=2,
                 popsize=10)
-    X1 = map(SparseArray.fromlist, X.T)
+    X1 = list(map(SparseArray.fromlist, X.T))
     gp.X = X1
 
 
@@ -561,7 +565,7 @@ def test_fit_stopping_criteria_estopping():
     y[~mask] = -1
     gp.y = y
     gp.create_population()
-    print len(gp.population.hist) - gp.population.estopping.position
+    print(len(gp.population.hist) - gp.population.estopping.position)
     while not gp.stopping_criteria():
         a = gp.random_offspring()
         gp.population.replace(a)
@@ -655,7 +659,7 @@ def test_trace():
     gp.create_population()
     a = gp.random_offspring()
     gp.population.replace(a)
-    print a.position, a.variable, a._weight, gp.population.hist[0].variable
+    print(a.position, a.variable, a._weight, gp.population.hist[0].variable)
     s = gp.trace(a)
     assert len(s) == 4
 
@@ -736,7 +740,7 @@ def test_get_clone():
                 seed=0,
                 popsize=100)
     gp1 = gp.clone()
-    print gp.popsize, gp1.popsize
+    print(gp.popsize, gp1.popsize)
     assert gp.popsize == gp1.popsize
     assert gp._generations == gp1._generations
     assert gp._seed == gp1._seed
@@ -755,8 +759,8 @@ def test_labels():
                 popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
     m = gp.model()
     hy = m.predict(X=X[:-10])
-    print np.unique(hy.tonparray())
-    print np.array([1, 2])
+    print(np.unique(hy.tonparray()))
+    print(np.array([1, 2]))
     assert np.all(np.unique(hy.tonparray()) == np.array([1, 2]))
 
 
@@ -774,10 +778,25 @@ def test_height():
     y[~mask] = -1
     gp.y = y
     gp.create_population()
-    assert np.all(map(lambda x: x.height == 0,
-                      gp.population.population[:4]))
+    assert np.all([x.height == 0 for x in gp.population.population[:4]])
     n = gp.population.population[-1]
     assert n.height == 1
     args = [3, 4]
     f = gp._random_offspring(Mul, args)
     assert f.height == 2
+
+
+def test_regression():
+    from RGP import RootGP
+    from RGP.sparse_array import SparseArray
+    x = np.linspace(-1, 1, 100)
+    y = 4.3*x**2 + 3.2 * x - 3.2
+    gp = RootGP(classifier=False,
+                popsize=10,
+                generations=2).fit([SparseArray.fromlist(x)], y,
+                                   test_set=[SparseArray.fromlist(x)])
+    model = gp.model()
+    yh = gp.predict()
+    assert not model._classifier
+    yh1 = model.predict(X=[SparseArray.fromlist(x)])
+    assert yh.SSE(yh1) == 0

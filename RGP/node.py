@@ -13,14 +13,18 @@
 # limitations under the License.
 
 
+
+
+
 import numpy as np
 import types
+list = list
 
 
 class Variable(object):
     def __init__(self, variable, weight=None, ytr=None, mask=None,
                  height=0):
-        if isinstance(variable, types.ListType):
+        if isinstance(variable, list):
             variable = variable if len(variable) > 1 else variable[0]
         self._variable = variable
         self._weight = weight
@@ -97,7 +101,7 @@ class Variable(object):
     def compute_weight(self, r):
         """Returns the weight (w) using OLS of r * w = gp._ytr """
         A = np.empty((len(r), len(r)))
-        b = np.array(map(lambda f: (f * self._ytr).sum(), r))
+        b = np.array([(f * self._ytr).sum() for f in r])
         for i in range(len(r)):
             r[i] = r[i] * self._mask
             for j in range(i, len(r)):
@@ -167,17 +171,19 @@ class Add(Function):
         return a
 
     def eval(self, X):
-        X = map(lambda x: X[x], self.variable)
+        X = [X[x] for x in self.variable]
         if self.weight is None:
-            w = self.compute_weight(map(lambda x: x.hy, X))
+            w = self.compute_weight([x.hy for x in X])
             if w is None:
                 return False
             self.weight = w
-        r = map(lambda (v, w): v.hy * w, zip(X, self.weight))
+        # r = map(lambda (v, w): v.hy * w, zip(X, self.weight))
+        r = [v.hy * w1 for v, w1 in zip(X, self.weight)]
         r = self.cumsum(r)
         self.hy = r
         if X[0].hy_test is not None:
-            r = map(lambda (v, w): v.hy_test * w, zip(X, self.weight))
+            # r = map(lambda (v, w): v.hy_test * w, zip(X, self.weight))
+            r = [v.hy_test * w1 for v, w1 in zip(X, self.weight)]
             r = self.cumsum(r)
             self.hy_test = r
         return True
@@ -192,8 +198,8 @@ class Mul(Function):
         return a
 
     def eval(self, X):
-        X = map(lambda x: X[x], self.variable)
-        r = self.cumprod(map(lambda x: x.hy, X))
+        X = [X[x] for x in self.variable]
+        r = self.cumprod([x.hy for x in X])
         if self.weight is None:
             w = self.compute_weight([r])
             if w is None:
@@ -201,7 +207,7 @@ class Mul(Function):
             self.weight = w[0]
         self.hy = r * self.weight
         if X[0].hy_test is not None:
-            r = self.cumprod(map(lambda x: x.hy_test, X))
+            r = self.cumprod([x.hy_test for x in X])
             self.hy_test = r * self.weight
         return True
 
@@ -362,7 +368,7 @@ class If(Function):
     nargs = 3
 
     def eval(self, X):
-        X = map(lambda x: X[x], self.variable)
+        X = [X[x] for x in self.variable]
         a, b, c = X
         r = a.hy.if_func(b.hy, c.hy)
         if self.weight is None:
@@ -388,8 +394,8 @@ class Min(Function):
         return a
 
     def eval(self, X):
-        X = map(lambda x: X[x], self.variable)
-        r = self.cummin(map(lambda x: x.hy, X))
+        X = [X[x] for x in self.variable]
+        r = self.cummin([x.hy for x in X])
         if self.weight is None:
             w = self.compute_weight([r])
             if w is None:
@@ -397,7 +403,7 @@ class Min(Function):
             self.weight = w[0]
         self.hy = r * self.weight
         if X[0].hy_test is not None:
-            r = self.cummin(map(lambda x: x.hy_test, X))
+            r = self.cummin([x.hy_test for x in X])
             self.hy_test = r * self.weight
         return True
 
@@ -413,8 +419,8 @@ class Max(Function):
         return a
 
     def eval(self, X):
-        X = map(lambda x: X[x], self.variable)
-        r = self.cummax(map(lambda x: x.hy, X))
+        X = [X[x] for x in self.variable]
+        r = self.cummax([x.hy for x in X])
         if self.weight is None:
             w = self.compute_weight([r])
             if w is None:
@@ -422,7 +428,7 @@ class Max(Function):
             self.weight = w[0]
         self.hy = r * self.weight
         if X[0].hy_test is not None:
-            r = self.cummax(map(lambda x: x.hy_test, X))
+            r = self.cummax([x.hy_test for x in X])
             self.hy_test = r * self.weight
         return True
         

@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+
+
+
 from test_root import cl
 from test_root import X
 import numpy as np
@@ -52,7 +56,7 @@ def test_model_hist():
     trace = gp.trace(gp.population.estopping)
     a = hist[trace[-1]].variable
     m = Model(trace, hist)
-    print m._map, a, m._hist[-1].variable
+    print((m._map, a, m._hist[-1].variable))
     for v1, v2 in zip(a, m._hist[-1].variable):
         assert m._map[v1] == v2
 
@@ -62,18 +66,17 @@ def test_ensemble():
     from RGP.model import Ensemble
     from RGP.node import Add
     y = cl.copy()
-    gps = map(lambda seed: RootGP(generations=np.inf,
+    gps = [RootGP(generations=np.inf,
                                   tournament_size=2,
                                   early_stopping_rounds=-1,
                                   seed=seed,
                                   popsize=10).fit(X[:-10],
                                                   y[:-10],
-                                                  test_set=X),
-              range(3))
-    ens = Ensemble(map(lambda gp: gp.model(), gps))
-    res = map(lambda gp: gp.decision_function(), gps)
-    res = map(lambda j: Add.cumsum(map(lambda x: x[j], res)), range(3))
-    res = map(lambda x: x / 3., res)
+                                                  test_set=X) for seed in range(3)]
+    ens = Ensemble([gp.model() for gp in gps])
+    res = [gp.decision_function() for gp in gps]
+    res = [Add.cumsum([x[j] for x in res]) for j in range(3)]
+    res = [x / 3. for x in res]
     r2 = ens.decision_function(None)
     for a, b in zip(res, r2):
         assert a.SSE(b) == 0
@@ -89,19 +92,34 @@ def test_ensemble_model():
     mask = y == 0
     y[mask] = 1
     y[~mask] = -1
-    gps = map(lambda seed: RootGP(generations=np.inf,
+    gps = [RootGP(generations=np.inf,
                                   tournament_size=2,
                                   early_stopping_rounds=-1,
                                   seed=seed,
                                   popsize=10).fit(X[:-10],
                                                   y[:-10],
-                                                  test_set=X),
-              range(3))
-    ens = Ensemble(map(lambda gp: gp.model(), gps))
-    res = map(lambda gp: gp.decision_function(), gps)
+                                                  test_set=X) for seed in range(3)]
+    ens = Ensemble([gp.model() for gp in gps])
+    res = [gp.decision_function() for gp in gps]
     res = Add.cumsum(res) / 3
     r2 = ens.decision_function(None)
     assert res.SSE(r2) == 0
     a = ens.predict(None)
     assert r2.sign().SSE(a) == 0
 
+
+def test_regression():
+    from RGP import RootGP
+    from RGP.sparse_array import SparseArray
+    from RGP.model import Ensemble
+    x = np.linspace(-1, 1, 100)
+    y = 4.3*x**2 + 3.2 * x - 3.2
+    gps = [RootGP(classifier=False,
+                     seed=seed,
+                     popsize=10,
+                     generations=2).fit([SparseArray.fromlist(x)], y,
+                                        test_set=[SparseArray.fromlist(x)]) for seed in range(3)]
+    ens = Ensemble([gp.model() for gp in gps])
+    hy = np.median([gp.predict().tonparray() for gp in gps], axis=0)
+    hy1 = ens.predict(X=[SparseArray.fromlist(x)]).tonparray()
+    assert np.all(hy == hy1)

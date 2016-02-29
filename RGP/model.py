@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+import numpy as np
 from .sparse_array import SparseArray
 from .node import Variable, Function
-import numpy as np
 
 
 class Model(object):
@@ -28,8 +29,8 @@ class Model(object):
         for k, v in enumerate(self._trace):
             self._map[v] = k
         self._hy_test = self._hist[self._trace[-1]].hy_test
-        self._hist = map(lambda x: self.transform(self._hist[x].tostore()),
-                         self._trace)
+        self._hist = [self.transform(self._hist[x].tostore()) for x in
+                      self._trace]
         self._labels = labels
 
     def transform(self, v):
@@ -38,7 +39,7 @@ class Model(object):
         if v.nargs == 1:
             v.variable = self._map[v.variable]
         else:
-            v.variable = map(lambda x: self._map[x], v.variable)
+            v.variable = [self._map[x] for x in v.variable]
         return v
 
     def decision_function(self, X):
@@ -92,11 +93,11 @@ class Models(object):
         self._labels = labels
 
     def decision_function(self, X):
-        return map(lambda x: x.decision_function(X), self._models)
+        return [x.decision_function(X) for x in self._models]
 
     def predict(self, X):
         d = self.decision_function(X)
-        d = np.array(map(lambda x: x.tonparray(), d))
+        d = np.array([x.tonparray() for x in d])
         hy = d.argmax(axis=0)
         if self._labels is not None:
             hy = self._labels[hy]
@@ -124,25 +125,28 @@ class Ensemble(object):
     def decision_function(self, X):
         if self.classifier:
             return self.decision_function_cl(X)
-        raise RuntimeError("Regression is not implemented")
+        r = np.array([m.decision_function(X).tonparray() for m in
+                      self._models])
+        sp = SparseArray.fromlist
+        return sp(np.median(r, axis=0))
 
     def decision_function_cl(self, X):
-        r = map(lambda m: m.decision_function(X), self._models)
+        r = [m.decision_function(X) for m in self._models]
         res = r[0]
         for x in r[1:]:
             if isinstance(x, SparseArray):
                 res = res + x
             else:
-                res = map(lambda (x, y): x + y, zip(res, x))
+                res = [x + y for (x, y) in zip(res, x)]
         if isinstance(res, SparseArray):
             return res / len(r)
         else:
-            return map(lambda x: x / len(r), res)
+            return [x / len(r) for x in res]
 
     def predict(self, X):
         if self.classifier:
             return self.predict_cl(X)
-        raise RuntimeError("Regression is not implemented")
+        return self.decision_function(X)
 
     def predict_cl(self, X):
         hy = self.decision_function_cl(X)
@@ -154,11 +158,9 @@ class Ensemble(object):
                 hy = SparseArray.fromlist(hy)
             return hy
         else:
-            d = np.array(map(lambda x: x.tonparray(), hy))
+            d = np.array([x.tonparray() for x in hy])
             hy = d.argmax(axis=0)
             if self._labels is not None:
                 hy = self._labels[hy]
             return SparseArray.fromlist(hy)
 
-
-                

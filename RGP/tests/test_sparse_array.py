@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 from RGP.sparse_array import SparseArray
 from nose.tools import assert_almost_equals
 import numpy as np
@@ -30,11 +31,11 @@ def test_sparse_array():
     np.random.seed(0)
     var = create_numpy_array()
     array = SparseArray.fromlist(var)
-    print array.size()
+    print((array.size()))
     assert array.size() == 100
-    print array.print_data()
-    print var[:50]
-    print np.array(array.tolist())[:50]
+    print((array.print_data()))
+    print((var[:50]))
+    print((np.array(array.tolist())[:50]))
     assert np.fabs(var - np.array(array.tolist())).sum() == 0
     sp = SparseArray().empty(100, 1000)
     assert sp.size() == 1000
@@ -62,8 +63,8 @@ def test_nunion():
     mask[~(uno == 0)] = True
     mask[~(dos == 0)] = True
     r = suno.nunion(sdos)
-    print mask.sum(), "-", r
-    assert mask.sum() == suno.nunion(sdos)
+    print((mask.sum(), "-", r))
+    assert(mask.sum() == suno.nunion(sdos))
 
 
 def test_nintersection():
@@ -78,7 +79,7 @@ def test_nintersection():
     dos_m = ~(dos == 0)
     mask[uno_m & dos_m] = True
     r = suno.nintersection(sdos)
-    print mask.sum(), "-", r
+    print((mask.sum(), "-", r))
     assert mask.sum() == r
 
 
@@ -93,8 +94,8 @@ def test_sparse_array_sum():
     assert ((suno - r).fabs()).sum() == 0
     sr = (suno + sdos).tonparray()
     r = uno + dos
-    print r[:10]
-    print sr[:10]
+    print((r[:10]))
+    print((sr[:10]))
     assert np.all(r == sr)
 
 
@@ -116,10 +117,10 @@ def test_sparse_array_sub():
     sr = (suno - sdos).tonparray()
     r = uno - dos
     m = r != sr
-    print uno[m]
-    print dos[m]
-    print r[m]
-    print sr[m]
+    print((uno[m]))
+    print((dos[m]))
+    print((r[m]))
+    print((sr[m]))
     assert np.all(r == sr)
     tmp = sdos.constant(0, sdos.size()) - sdos
     tmp.print_data()
@@ -144,8 +145,8 @@ def test_sparse_array_mul():
     sr = suno * sdos
     sr = np.array((sr).tolist())
     r = uno * dos
-    print r[:10]
-    print sr[:10]
+    print((r[:10]))
+    print((sr[:10]))
     assert np.all(r == sr)
 
 
@@ -160,8 +161,8 @@ def test_sparse_array_div():
     sr = (suno / sdos).tonparray()
     r = uno / dos
     r[1] = 0
-    print r[:10]
-    print sr[:10]
+    print((r[:10]))
+    print((sr[:10]))
     assert np.all(r == sr)
 
 
@@ -183,7 +184,7 @@ def test_sparse_array_std():
     np.random.seed(0)
     uno = create_numpy_array()
     suno = SparseArray.fromlist(uno)
-    print suno.std(), uno.std()
+    print((suno.std(), uno.std()))
     assert_almost_equals(suno.std(), uno.std())
 
 
@@ -198,7 +199,7 @@ def test_sparse_array_exp():
     np.random.seed(0)
     uno = create_numpy_array()
     suno = SparseArray.fromlist(uno).exp().tonparray()
-    print np.exp(uno), suno
+    print((np.exp(uno), suno))
     assert np.all(np.exp(uno) == suno)
 
 
@@ -206,8 +207,8 @@ def test_sparse_array_sin():
     np.random.seed(0)
     uno = create_numpy_array()
     suno = SparseArray.fromlist(uno).sin().tonparray()
-    print uno[:10]
-    print suno[:10]
+    print((uno[:10]))
+    print((suno[:10]))
     assert np.all(np.sin(uno) == suno)
 
 
@@ -215,8 +216,8 @@ def test_sparse_array_cos():
     np.random.seed(0)
     uno = create_numpy_array()
     suno = SparseArray.fromlist(uno).cos().tonparray()
-    print uno[:10]
-    print suno[:10]
+    print((uno[:10]))
+    print((suno[:10]))
     assert np.all(np.cos(uno) == suno)
 
 
@@ -226,8 +227,8 @@ def test_sparse_array_ln():
     suno = SparseArray.fromlist(uno).ln().tonparray()
     uno = np.log(np.fabs(uno))
     uno[np.isinf(uno)] = 0
-    print uno[:10]
-    print suno[:10]
+    print((uno[:10]))
+    print((suno[:10]))
     assert np.all(uno == suno)
 
 
@@ -235,8 +236,8 @@ def test_sparse_array_sq():
     np.random.seed(0)
     uno = create_numpy_array()
     suno = SparseArray.fromlist(uno).sq().tonparray()
-    print uno[:10]
-    print suno[:10]
+    print((uno[:10]))
+    print((suno[:10]))
     assert np.all(uno**2 == suno)
 
 
@@ -246,8 +247,8 @@ def test_sparse_array_sqrt():
     uno[0] = -1
     suno = SparseArray.fromlist(uno).sqrt().tonparray()
     uno = np.sqrt(uno)
-    print uno[:10]
-    print suno[:10]
+    print((uno[:10]))
+    print((suno[:10]))
     assert np.all(uno[1:] == suno[1:])
     assert np.isnan(uno[0]) and np.isnan(suno[0])
 
@@ -259,9 +260,10 @@ def test_sparse_array_sigmoid():
     uno[1] = 1000
     suno = SparseArray.fromlist(uno).sigmoid().tonparray()
     uno = 1 / (1 + np.exp((-uno + 1) * 30))
-    print uno[:10]
-    print suno[:10]
-    map(lambda x: assert_almost_equals(x[0], x[1]), zip(uno, suno))
+    print((uno[:10]))
+    print((suno[:10]))
+    for x in zip(uno, suno):
+        assert_almost_equals(x[0], x[1])
 
 
 def test_sparse_array_if():
@@ -278,9 +280,9 @@ def test_sparse_array_if():
     s = sigmoid(x)
     r = s * y - s * z + z
     # print r
-    map(lambda x: assert_almost_equals(x[0], x[1]),
-        zip(r, (sa(x).if_func(sa(y),
-                              sa(z))).tonparray()))
+    for x in zip(r, (sa(x).if_func(sa(y),
+                                   sa(z))).tonparray()):
+        assert_almost_equals(x[0], x[1])
 
 
 def test_sparse_array_sign():
@@ -289,8 +291,8 @@ def test_sparse_array_sign():
     uno[0] = -1
     suno = SparseArray.fromlist(uno).sign().tonparray()
     uno = np.sign(uno)
-    print uno[:10]
-    print suno[:10]
+    print((uno[:10]))
+    print((suno[:10]))
     assert np.all(uno == suno)
 
 
@@ -298,13 +300,13 @@ def test_sparse_array_min():
     np.random.seed(0)
     uno = create_numpy_array(nvalues=50)
     dos = create_numpy_array(nvalues=50)
-    r = map(min, zip(uno, dos))
+    r = list(map(min, list(zip(uno, dos))))
     sdos = SparseArray.fromlist(dos)
     rs = SparseArray.fromlist(uno).min(sdos)
-    print uno[:5]
-    print dos[:5]
-    print r[:5]
-    print rs.tonparray()[:5]
+    print((uno[:5]))
+    print((dos[:5]))
+    print((r[:5]))
+    print((rs.tonparray()[:5]))
     assert np.all(rs.tonparray() == r)
 
 
@@ -312,13 +314,13 @@ def test_sparse_array_max():
     np.random.seed(0)
     uno = create_numpy_array(nvalues=50)
     dos = create_numpy_array(nvalues=50)
-    r = map(max, zip(uno, dos))
+    r = list(map(max, list(zip(uno, dos))))
     sdos = SparseArray.fromlist(dos)
     rs = SparseArray.fromlist(uno).max(sdos)
-    print uno[:5]
-    print dos[:5]
-    print r[:5]
-    print rs.tonparray()[:5]
+    print((uno[:5]))
+    print((dos[:5]))
+    print((r[:5]))
+    print((rs.tonparray()[:5]))
     assert np.all(rs.tonparray() == r)
 
 
@@ -328,7 +330,7 @@ def test_sparse_array_SAE():
     dos = create_numpy_array()
     suno = SparseArray.fromlist(uno)
     sdos = SparseArray.fromlist(dos)
-    print suno.SAE(sdos), np.fabs(uno-dos).sum()
+    print((suno.SAE(sdos), np.fabs(uno-dos).sum()))
     assert_almost_equals(suno.SAE(sdos), np.fabs(uno-dos).sum())
     uno[0] = np.nan
     suno = SparseArray.fromlist(uno)
@@ -337,7 +339,7 @@ def test_sparse_array_SAE():
 
 def test_sparse_constant():
     s = SparseArray().constant(12, 10)
-    assert len(filter(lambda x: x == 12, s.tolist())) == 10
+    assert len([x for x in s.tolist() if x == 12]) == 10
 
 
 def test_tonparray():
@@ -398,8 +400,8 @@ def test_slice2():
     assert suno[index].size() == index.shape[0]
     index = np.where(uno == 0)[0]
     assert suno[index].nele() == 0
-    print index, suno.get_index()
-    print suno[index].size(), index.shape[0]
+    print((index, suno.get_index()))
+    print((suno[index].size(), index.shape[0]))
     assert suno[index].size() == index.shape[0]
 
 
@@ -409,9 +411,18 @@ def test_slice3():
     suno = SparseArray.fromlist(uno)
     index = np.array([np.where(uno > 0)[0][0]] * 5)
     index = np.concatenate((index, np.where(uno > 0)[0][1:]), axis=0)
-    print suno[index].tonparray()
-    print uno[index]
+    print((suno[index].tonparray()))
+    print((uno[index]))
     assert np.all(suno[index].tonparray() == uno[index])
+
+
+def test_slice4():
+    np.random.seed(3)
+    uno = create_numpy_array(100, 50)
+    suno = SparseArray.fromlist(uno)
+    suno = suno[10:90]
+    print((suno.tonparray()[:10], uno[10:20]))
+    assert np.all(suno.tonparray() == uno[10:90])
 
 
 def test_concatenate():
@@ -422,8 +433,8 @@ def test_concatenate():
     sdos = SparseArray.fromlist(dos)
     res = np.concatenate((uno, dos), axis=0)
     sres = suno.concatenate(sdos).tonparray()
-    print res[:10]
-    print sres[:10]
+    print((res[:10]))
+    print((sres[:10]))
     assert np.all(res == sres)
 
 
@@ -435,14 +446,14 @@ def test_copy():
 def test_mul_vec_cons():
     uno = create_numpy_array()
     suno = SparseArray.fromlist(uno)
-    print (suno * 12.3).tonparray(), (uno * 12.3)
+    print((suno * 12.3).tonparray(), (uno * 12.3))
     assert np.all((uno * 12.3) == (suno * 12.3).tonparray())
 
 
 def test_div_vec_cons():
     uno = create_numpy_array()
     suno = SparseArray.fromlist(uno)
-    print (suno / 12.3).tonparray(), (uno / 12.3)
+    print((suno / 12.3).tonparray(), (uno / 12.3))
     assert np.all((uno / 12.3) == (suno / 12.3).tonparray())
 
 
@@ -452,7 +463,7 @@ def test_pearson():
     dos = create_numpy_array(100, 50)
     r = stats.pearsonr(uno, dos)[0]
     r2 = SparseArray.fromlist(uno).pearsonr(SparseArray.fromlist(dos))
-    print r, r2
+    print((r, r2))
     assert_almost_equals(r, r2)
 
 
@@ -472,14 +483,14 @@ def test_parallel():
 
 def test_pickle():
     import pickle
-    import StringIO
+    import tempfile
     np.random.seed(0)
     suno = SparseArray.fromlist(create_numpy_array())
-    io = StringIO.StringIO('rw')
-    pickle.dump(suno, io)
-    io.seek(0)
-    s = pickle.load(io)
-    assert s.SSE(suno) == 0
+    with tempfile.TemporaryFile('w+b') as io:
+        pickle.dump(suno, io)
+        io.seek(0)
+        s = pickle.load(io)
+        assert s.SSE(suno) == 0
 
 
 def test_boundaries():
@@ -487,5 +498,5 @@ def test_boundaries():
     suno = suno.tonparray()
     assert suno[0] == -2
     assert suno[1] == 1
-    print suno[2]
+    print((suno[2]))
     assert suno[2] == 0.23

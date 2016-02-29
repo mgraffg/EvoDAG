@@ -110,7 +110,7 @@ class Population(object):
             self._index = np.arange(self.popsize)
         np.random.shuffle(self._index)
         vars = self._index[:self._tournament_size]
-        fit = map(lambda x: self.population[x].fitness, vars)
+        fit = [self.population[x].fitness for x in vars]
         if negative:
             index = np.argsort(fit)[0]
         else:
