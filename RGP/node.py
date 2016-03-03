@@ -13,12 +13,7 @@
 # limitations under the License.
 
 
-
-
-
 import numpy as np
-import types
-list = list
 
 
 class Variable(object):
@@ -153,15 +148,29 @@ class Variable(object):
 
 class Function(Variable):
     nargs = 2
+    color = 1
 
     def tostore(self):
         ins = super(Function, self).tostore()
         ins.nargs = self.nargs
         return ins
 
+    def signature(self):
+        vars = self._variable
+        if not isinstance(vars, list):
+            vars = [vars]
+        c = self.symbol + '|' + '|'.join([str(x) for x in vars])
+        return c
+
 
 class Add(Function):
     nargs = 5
+    symbol = '+'
+    color = 1
+
+    def __init__(self, *args, **kwargs):
+        super(Add, self).__init__(*args, **kwargs)
+        self._variable = sorted(self._variable)
 
     @staticmethod
     def cumsum(r):
@@ -190,6 +199,13 @@ class Add(Function):
 
 
 class Mul(Function):
+    symbol = '*'
+    color = 1
+
+    def __init__(self, *args, **kwargs):
+        super(Mul, self).__init__(*args, **kwargs)
+        self._variable = sorted(self._variable)
+
     @staticmethod
     def cumprod(r):
         a = r[0]
@@ -213,6 +229,9 @@ class Mul(Function):
 
 
 class Div(Function):
+    symbol = '/'
+    color = 1
+
     def eval(self, X):
         a, b = X[self.variable[0]], X[self.variable[1]]
         r = a.hy / b.hy
@@ -230,6 +249,8 @@ class Div(Function):
 
 class Fabs(Function):
     nargs = 1
+    symbol = 'fabs'
+    color = 2
 
     def eval(self, X):
         X = X[self.variable]
@@ -247,6 +268,8 @@ class Fabs(Function):
 
 class Exp(Function):
     nargs = 1
+    symbol = 'exp'
+    color = 3
 
     def eval(self, X):
         X = X[self.variable]
@@ -264,7 +287,9 @@ class Exp(Function):
 
 class Sqrt(Function):
     nargs = 1
-
+    symbol = 'sqrt'
+    color = 4
+    
     def eval(self, X):
         X = X[self.variable]
         r = X.hy.sqrt()
@@ -281,6 +306,8 @@ class Sqrt(Function):
 
 class Sin(Function):
     nargs = 1
+    symbol = 'sin'
+    color = 5
 
     def eval(self, X):
         X = X[self.variable]
@@ -298,6 +325,8 @@ class Sin(Function):
 
 class Cos(Function):
     nargs = 1
+    symbol = 'cos'
+    color = 5
 
     def eval(self, X):
         X = X[self.variable]
@@ -315,7 +344,9 @@ class Cos(Function):
 
 class Ln(Function):
     nargs = 1
-
+    symbol = 'ln'
+    color = 6
+    
     def eval(self, X):
         X = X[self.variable]
         r = X.hy.ln()
@@ -332,6 +363,8 @@ class Ln(Function):
 
 class Sq(Function):
     nargs = 1
+    symbol = 'sq'
+    color = 4
 
     def eval(self, X):
         X = X[self.variable]
@@ -349,6 +382,8 @@ class Sq(Function):
 
 class Sigmoid(Function):
     nargs = 1
+    symbol = 's'
+    color = 6
 
     def eval(self, X):
         X = X[self.variable]
@@ -366,6 +401,8 @@ class Sigmoid(Function):
 
 class If(Function):
     nargs = 3
+    symbol = 'if'
+    color = 7
 
     def eval(self, X):
         X = [X[x] for x in self.variable]
@@ -385,6 +422,12 @@ class If(Function):
 
 class Min(Function):
     nargs = 2
+    symbol = 'min'
+    color = 8
+    
+    def __init__(self, *args, **kwargs):
+        super(Min, self).__init__(*args, **kwargs)
+        self._variable = sorted(self._variable)
 
     @staticmethod
     def cummin(r):
@@ -410,6 +453,12 @@ class Min(Function):
 
 class Max(Function):
     nargs = 2
+    symbol = 'max'
+    color = 8
+
+    def __init__(self, *args, **kwargs):
+        super(Max, self).__init__(*args, **kwargs)
+        self._variable = sorted(self._variable)
 
     @staticmethod
     def cummax(r):

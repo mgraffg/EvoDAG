@@ -800,3 +800,21 @@ def test_regression():
     assert not model._classifier
     yh1 = model.predict(X=[SparseArray.fromlist(x)])
     assert yh.SSE(yh1) == 0
+
+
+def test_unique():
+    from RGP import RootGP
+    mock = MagicMock(side_effect=RuntimeError('Mock'))
+    ui = RootGP.unique_individual
+    RootGP.unique_individual = mock
+    gp = RootGP(generations=np.inf,
+                tournament_size=2,
+                unique_individuals=True,
+                early_stopping_rounds=-1,
+                seed=0,
+                popsize=100)
+    try:
+        gp.fit(X, cl)
+    except RuntimeError:
+        pass
+    RootGP.unique_individual = ui

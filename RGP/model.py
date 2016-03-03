@@ -65,6 +65,31 @@ class Model(object):
             return hy
         return self.decision_function(X)
 
+    def graphviz(self, fpt):
+        fpt.write("digraph RGP {\n")
+        # fpt.write("""edge [dir="none"];\n""")
+        # fpt.write("""edge;\n""")
+        last = len(self._hist) - 1
+        for k, n in enumerate(self._hist):
+            if isinstance(n, Function):
+                name = n.__class__.__name__
+                extra = "colorscheme=blues9 style=filled color={0}".format(n.color)
+                if k == last:
+                    extra = "fillcolor=blue style=filled"
+                fpt.write("n{0} [label=\"{1}\" {2}];\n".format(k,
+                                                               name,
+                                                               extra))
+                vars = n._variable
+                if not isinstance(vars, list):
+                    vars = [vars]
+                for j in vars:
+                    fpt.write("n{0} -> n{1};\n".format(k, j))
+                    # fpt.write("n{0} -> n{1};\n".format(j, k))
+            else:
+                cdn = "n{0} [label=\"X{1}\" fillcolor=red style=filled];\n"
+                fpt.write(cdn.format(k, n._variable))
+        fpt.write("}\n")
+
     @staticmethod
     def convert_features(v):
         if v is None:
@@ -102,8 +127,8 @@ class Models(object):
         if self._labels is not None:
             hy = self._labels[hy]
         return SparseArray.fromlist(hy)
-
-
+        
+        
 class Ensemble(object):
     "Ensemble that predicts using the average"
     def __init__(self, models):
@@ -125,8 +150,8 @@ class Ensemble(object):
     def decision_function(self, X):
         if self.classifier:
             return self.decision_function_cl(X)
-        r = np.array([m.decision_function(X).tonparray() for m in
-                      self._models])
+        r = np.array([m.decision_function(X).tonparray()
+                      for m in self._models])
         sp = SparseArray.fromlist
         return sp(np.median(r, axis=0))
 

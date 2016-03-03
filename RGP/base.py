@@ -13,13 +13,8 @@
 # limitations under the License.
 
 
-
-
-
-
 import numpy as np
 import logging
-import types
 from .sparse_array import SparseArray
 from .node import Variable, Function
 from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Ln
@@ -38,6 +33,7 @@ class RootGP(object):
                                Sq, Sigmoid, If, Min, Max],
                  tr_fraction=0.8,
                  number_tries_feasible_ind=30,
+                 unique_individuals=True,
                  classifier=True,
                  labels=None):
         self._generations = generations
@@ -54,6 +50,8 @@ class RootGP(object):
         self._multiclass = False
         self._function_set = function_set
         np.random.seed(self._seed)
+        self._unique_individuals = unique_individuals
+        self._unique_individuals_set = set()
         self._logger = logging.getLogger('RGP.RootGP')
         if self._generations == np.inf and tr_fraction == 1:
             raise RuntimeError("Infinite evolution, set generations\
@@ -253,8 +251,18 @@ class RootGP(object):
             return v
         raise RuntimeError("Could not find a suitable random leaf")
 
+    def unique_individual(self, v):
+        "Test whether v has not been explored during the evolution"
+        return v not in self._unique_individuals_set
+
     def _random_offspring(self, func, args):
         f = func(args, ytr=self._ytr, mask=self._mask)
+        if self._unique_individuals:
+            sig = f.signature()
+            if self.unique_individual(sig):
+                self._unique_individuals_set.add(sig)
+            else:
+                return None
         f.height = max([self.population.hist[x].height for x in args]) + 1
         if not f.eval(self.population.hist):
             return None

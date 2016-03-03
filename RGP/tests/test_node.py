@@ -235,3 +235,27 @@ def test_node_max():
     assert n.hy_test.SSE(r) == 0
     assert n.weight == coef
     
+
+def test_node_symbol():
+    from RGP.node import Add, Mul, Div, Fabs,\
+        Exp, Sqrt, Sin, Cos, Ln,\
+        Sq, Sigmoid, If, Min, Max
+    for f, s in zip([Add, Mul, Div, Fabs,
+                     Exp, Sqrt, Sin, Cos, Ln,
+                     Sq, Sigmoid, If, Min, Max],
+                    ['+', '*', '/', 'fabs', 'exp',
+                     'sqrt', 'sin', 'cos', 'ln',
+                     'sq', 's', 'if', 'min', 'max']):
+        assert f.symbol == s
+
+
+def test_node_hash():
+    from RGP.node import Add, Mul
+    add = Add([21, 3])
+    sets = set()
+    sets.add(add.signature())
+    add2 = Add([21, 3])
+    assert add2.signature() in sets
+    assert Add([3, 21]).signature() in sets
+    assert Mul([2, 3]).signature() == Mul([3, 2]).signature()
+

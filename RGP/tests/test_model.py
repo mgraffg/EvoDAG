@@ -13,9 +13,6 @@
 # limitations under the License.
 
 
-
-
-
 from test_root import cl
 from test_root import X
 import numpy as np
@@ -67,12 +64,13 @@ def test_ensemble():
     from RGP.node import Add
     y = cl.copy()
     gps = [RootGP(generations=np.inf,
-                                  tournament_size=2,
-                                  early_stopping_rounds=-1,
-                                  seed=seed,
-                                  popsize=10).fit(X[:-10],
-                                                  y[:-10],
-                                                  test_set=X) for seed in range(3)]
+                  tournament_size=2,
+                  early_stopping_rounds=-1,
+                  seed=seed,
+                  popsize=10).fit(X[:-10],
+                                  y[:-10],
+                                  test_set=X)
+           for seed in range(3)]
     ens = Ensemble([gp.model() for gp in gps])
     res = [gp.decision_function() for gp in gps]
     res = [Add.cumsum([x[j] for x in res]) for j in range(3)]
@@ -93,12 +91,13 @@ def test_ensemble_model():
     y[mask] = 1
     y[~mask] = -1
     gps = [RootGP(generations=np.inf,
-                                  tournament_size=2,
-                                  early_stopping_rounds=-1,
-                                  seed=seed,
-                                  popsize=10).fit(X[:-10],
-                                                  y[:-10],
-                                                  test_set=X) for seed in range(3)]
+                  tournament_size=2,
+                  early_stopping_rounds=-1,
+                  seed=seed,
+                  popsize=10).fit(X[:-10],
+                                  y[:-10],
+                                  test_set=X)
+           for seed in range(3)]
     ens = Ensemble([gp.model() for gp in gps])
     res = [gp.decision_function() for gp in gps]
     res = Add.cumsum(res) / 3
@@ -115,11 +114,43 @@ def test_regression():
     x = np.linspace(-1, 1, 100)
     y = 4.3*x**2 + 3.2 * x - 3.2
     gps = [RootGP(classifier=False,
-                     seed=seed,
-                     popsize=10,
-                     generations=2).fit([SparseArray.fromlist(x)], y,
-                                        test_set=[SparseArray.fromlist(x)]) for seed in range(3)]
+                  seed=seed,
+                  popsize=10,
+                  generations=2).fit([SparseArray.fromlist(x)], y,
+                                     test_set=[SparseArray.fromlist(x)])
+           for seed in range(3)]
     ens = Ensemble([gp.model() for gp in gps])
     hy = np.median([gp.predict().tonparray() for gp in gps], axis=0)
     hy1 = ens.predict(X=[SparseArray.fromlist(x)]).tonparray()
     assert np.all(hy == hy1)
+
+
+def test_model_graphviz():
+    from RGP import RootGP
+    from RGP.node import Function
+    import tempfile
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp = RootGP(generations=3,
+                tournament_size=2,
+                early_stopping_rounds=-1,
+                seed=0,
+                popsize=10).fit(X, y)
+    m = gp.model()
+    print(m._hist)
+    print(m._hist[-1].position, m._hist[-1]._variable)
+    with tempfile.TemporaryFile('w+') as io:
+        m.graphviz(io)
+        io.seek(0)
+        l = io.readlines()
+    cnt = len(m._hist)
+    for k in m._hist:
+        if isinstance(k, Function):
+            v = k._variable
+            if isinstance(v, list):
+                cnt += len(v)
+            else:
+                cnt += 1
+    assert 3 + cnt == len(l)
