@@ -13,16 +13,22 @@
 # limitations under the License.
 import logging
 import numpy as np
+from .node import Function
+from .model import Model
 
 
 class Population(object):
-    def __init__(self, tournament_size=2):
+    def __init__(self, tournament_size=2,
+                 classifier=True,
+                 labels=None):
         self._p = []
         self._hist = []
         self._bsf = None
         self._estopping = None
         self._tournament_size = tournament_size
         self._index = None
+        self._classifier = classifier
+        self._labels = labels
         self._logger = logging.getLogger('RGP.Population')
 
     @property
@@ -76,6 +82,36 @@ class Population(object):
                              '(%(position)s) BSF: %(fts)s %(fvs)s',
                              {'fts': fts, 'fvs': fvs, 'position': v.position})
 
+    def model(self, v=None):
+        "Returns the model of node v"
+        if v is None:
+            v = self.estopping
+        hist = self.hist
+        trace = self.trace(v)
+        m = Model(trace, hist, classifier=self._classifier,
+                  labels=self._labels)
+        return m
+            
+    def trace(self, n):
+        "Restore the position in the history of individual v's nodes"
+        trace_map = {}
+        self._trace(n, trace_map)
+        s = list(trace_map.keys())
+        s.sort()
+        return s
+
+    def _trace(self, n, trace_map):
+        if n.position in trace_map:
+            return
+        else:
+            trace_map[n.position] = 1
+        if isinstance(n, Function):
+            if isinstance(n.variable, list):
+                for x in n.variable:
+                    self._trace(self.hist[x], trace_map)
+            else:
+                self._trace(self.hist[n.variable], trace_map)
+    
     def add(self, v):
         "Add an individual to the population"
         self._p.append(v)

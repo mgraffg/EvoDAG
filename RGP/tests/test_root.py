@@ -841,4 +841,20 @@ def test_RSE():
     print(rse(y, yh.tonparray()), model._hist[-1].fitness_vs)
     assert_almost_equals(rse(y, yh.tonparray()),
                          -model._hist[-1].fitness_vs)
-    
+
+
+def test_population_as_parameter():
+    from RGP import RootGP
+    mock = MagicMock(side_effect=RuntimeError('Mock'))
+    gp = RootGP(generations=np.inf,
+                population_class=mock,
+                tournament_size=2,
+                unique_individuals=True,
+                early_stopping_rounds=-1,
+                seed=0,
+                popsize=100)
+    try:
+        gp.fit(X, cl)
+        assert False
+    except RuntimeError:
+        pass

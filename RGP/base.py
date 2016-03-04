@@ -16,7 +16,7 @@
 import numpy as np
 import logging
 from .sparse_array import SparseArray
-from .node import Variable, Function
+from .node import Variable
 from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Ln
 from .node import Sq, Sigmoid, If, Min, Max
 from .model import Model, Models
@@ -32,6 +32,7 @@ class RootGP(object):
                                Exp, Sqrt, Sin, Cos, Ln,
                                Sq, Sigmoid, If, Min, Max],
                  tr_fraction=0.8,
+                 population_class=Population,
                  number_tries_feasible_ind=30,
                  unique_individuals=True,
                  classifier=True,
@@ -49,6 +50,7 @@ class RootGP(object):
         self._labels = labels
         self._multiclass = False
         self._function_set = function_set
+        self._population_class = population_class
         np.random.seed(self._seed)
         self._unique_individuals = unique_individuals
         self._unique_individuals_set = set()
@@ -308,7 +310,9 @@ class RootGP(object):
 
     def population_instance(self):
         "Population instance"
-        self._p = Population(tournament_size=self._tournament_size)
+        self._p = self._population_class(tournament_size=self._tournament_size,
+                                         classifier=self._classifier,
+                                         labels=self._labels)
 
     def set_fitness(self, v):
         """Set the fitness to a new node.
@@ -394,36 +398,14 @@ class RootGP(object):
 
     def trace(self, n):
         "Restore the position in the history of individual v's nodes"
-        trace_map = {}
-        self._trace(n, trace_map)
-        s = list(trace_map.keys())
-        s.sort()
-        return s
-
-    def _trace(self, n, trace_map):
-        if n.position in trace_map:
-            return
-        else:
-            trace_map[n.position] = 1
-        if isinstance(n, Function):
-            if isinstance(n.variable, list):
-                for x in n.variable:
-                    self._trace(self.population.hist[x], trace_map)
-            else:
-                self._trace(self.population.hist[n.variable], trace_map)
+        return self.population.trace(n)
 
     def model(self, v=None):
         "Returns the model of node v"
         if self._multiclass:
             models = [gp.model(v=v) for gp in self._multiclass_instances]
             return Models(models, labels=self._labels)
-        if v is None:
-            v = self.population.estopping
-        hist = self.population.hist
-        trace = self.trace(v)
-        m = Model(trace, hist, classifier=self._classifier,
-                  labels=self._labels)
-        return m
+        return self.population.model(v=v)
 
     def decision_function(self, v=None, X=None):
         "Decision function i.e. the raw data of the prediction"

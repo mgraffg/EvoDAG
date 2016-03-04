@@ -153,4 +153,6 @@ def test_model_graphviz():
                 cnt += len(v)
             else:
                 cnt += 1
-    assert 3 + cnt == len(l)
+    print("".join(l))
+    print(cnt, len(l))
+    assert 2 + cnt == len(l)
