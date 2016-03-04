@@ -175,7 +175,10 @@ class RootGP(object):
 
     def fitness(self, v):
         "Fitness function in the training set"
-        v.fitness = -self._ytr.SSE(v.hy * self._mask)
+        if self._classifier:
+            v.fitness = -self._ytr.SSE(v.hy * self._mask)
+        else:
+            v.fitness = -self._ytr.SAE(v.hy * self._mask)
 
     def mask_vs(self):
         """Procedure performed in classification to compute
@@ -194,13 +197,17 @@ class RootGP(object):
 
     def fitness_vs(self, v):
         """Fitness function in the validation set
-        In classification it uses BER"""
+        In classification it uses BER and RSE in regression"""
         if self._classifier:
             v.fitness_vs = -((self.y - v.hy.sign()).sign().fabs() *
                              self._mask_vs).sum()
         else:
             m = (self._mask - 1).fabs()
-            v.fitness_vs = -(self.y * m).SSE(v.hy * m)
+            x = self.y * m
+            y = v.hy * m
+            a = (x - y).sq().sum()
+            b = (x - x.sum() / x.size()).sq().sum()
+            v.fitness_vs = -a / b
 
     def convert_features(self, v):
         return Model.convert_features(v)

@@ -818,3 +818,27 @@ def test_unique():
     except RuntimeError:
         pass
     RootGP.unique_individual = ui
+
+
+def test_RSE():
+    def rse(x, y):
+        return ((x - y)**2).sum() / ((x - x.sum()/x.size)**2).sum()
+        
+    from RGP import RootGP
+    from RGP.sparse_array import SparseArray
+    x = np.linspace(-1, 1, 100)
+    y = 4.3*x**2 + 3.2 * x - 3.2
+    gp = RootGP(classifier=False,
+                popsize=10,
+                generations=2).fit([SparseArray.fromlist(x)], y,
+                                   test_set=[SparseArray.fromlist(x)])
+    model = gp.model()
+    yh = gp.predict()
+    assert not model._classifier
+    model.predict(X=[SparseArray.fromlist(x)])
+    gp._mask = SparseArray.fromlist([2] * yh.size())
+    gp.fitness_vs(model._hist[-1])
+    print(rse(y, yh.tonparray()), model._hist[-1].fitness_vs)
+    assert_almost_equals(rse(y, yh.tonparray()),
+                         -model._hist[-1].fitness_vs)
+    
