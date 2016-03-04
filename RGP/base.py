@@ -211,6 +211,12 @@ class RootGP(object):
             b = (x - x.sum() / x.size()).sq().sum()
             v.fitness_vs = -a / b
 
+    def es_extra_test(self, v):
+        """This function is called from population before setting
+        the early stopping individual and after the comparisons with
+        the validation set fitness"""
+        return True
+
     def convert_features(self, v):
         return Model.convert_features(v)
 
@@ -312,7 +318,8 @@ class RootGP(object):
         "Population instance"
         self._p = self._population_class(tournament_size=self._tournament_size,
                                          classifier=self._classifier,
-                                         labels=self._labels)
+                                         labels=self._labels,
+                                         es_extra_test=self.es_extra_test)
 
     def set_fitness(self, v):
         """Set the fitness to a new node.
@@ -340,9 +347,11 @@ class RootGP(object):
             else:
                 func = self.function_set
                 func = func[np.random.randint(len(func))]
-                args = []
-                for j in range(func.nargs):
-                    psize = len(self.population.population)
+                psize = len(self.population.population)
+                args = np.arange(psize)
+                np.random.shuffle(args)
+                args = args[:func.nargs].tolist()
+                for j in range(len(args), func.nargs):
                     args.append(np.random.randint(psize))
                 args = [self.population.population[x].position for x in args]
                 v = self._random_offspring(func, args)

@@ -150,10 +150,11 @@ class Ensemble(object):
     def decision_function(self, X):
         if self.classifier:
             return self.decision_function_cl(X)
-        r = np.array([m.decision_function(X).tonparray()
-                      for m in self._models])
+        r = [m.decision_function(X) for m in self._models]
+        r = np.array([x.tonparray() for x in r if x.isfinite()])
         sp = SparseArray.fromlist
-        return sp(np.median(r, axis=0))
+        r = sp(np.median(r, axis=0))
+        return r
 
     def decision_function_cl(self, X):
         r = [m.decision_function(X) for m in self._models]

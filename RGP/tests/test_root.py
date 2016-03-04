@@ -858,3 +858,19 @@ def test_population_as_parameter():
         assert False
     except RuntimeError:
         pass
+
+
+def test_es_extra_test():
+    from RGP import RootGP
+    from RGP.sparse_array import SparseArray
+    x = np.linspace(-1, 1, 100)
+    y = 4.3*x**2 + 3.2 * x - 3.2
+    RootGP.es_extra_test = MagicMock(side_effect=RuntimeError('Mock'))
+    try:
+        RootGP(classifier=False,
+               popsize=10,
+               generations=2).fit([SparseArray.fromlist(x)], y,
+                                  test_set=[SparseArray.fromlist(x)])
+        assert False
+    except RuntimeError:
+        pass

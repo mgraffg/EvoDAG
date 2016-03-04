@@ -20,7 +20,8 @@ from .model import Model
 class Population(object):
     def __init__(self, tournament_size=2,
                  classifier=True,
-                 labels=None):
+                 labels=None,
+                 es_extra_test=lambda x: True):
         self._p = []
         self._hist = []
         self._bsf = None
@@ -28,6 +29,7 @@ class Population(object):
         self._tournament_size = tournament_size
         self._index = None
         self._classifier = classifier
+        self._es_extra_test = es_extra_test
         self._labels = labels
         self._logger = logging.getLogger('RGP.Population')
 
@@ -52,9 +54,13 @@ class Population(object):
             return None
         flag = False
         if self.estopping is None:
+            if not self._es_extra_test(v):
+                return None
             self._estopping = v
             flag = True
         elif v.fitness_vs > self.estopping.fitness_vs:
+            if not self._es_extra_test(v):
+                return None
             self._estopping = v
             flag = True
         if flag:
