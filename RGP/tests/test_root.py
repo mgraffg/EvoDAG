@@ -874,3 +874,16 @@ def test_es_extra_test():
         assert False
     except RuntimeError:
         pass
+
+
+def test_fname():
+    from RGP.node import Add
+    from RGP import RootGP
+    x = np.linspace(-1, 1, 100)
+    y = 4.3*x**2 + 3.2 * x - 3.2
+    Add.nargs = 10
+    gp = RootGP(classifier=False,
+                popsize=10,
+                generations=2).fit([SparseArray.fromlist(x)], y,
+                                   test_set=[SparseArray.fromlist(x)])
+    assert gp.signature.count('Add10') == 1
