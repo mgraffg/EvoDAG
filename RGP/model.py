@@ -33,6 +33,11 @@ class Model(object):
                       self._trace]
         self._labels = labels
 
+    @property
+    def fitness_vs(self):
+        "Fitness in the validation set"
+        return self._hist[-1].fitness_vs
+
     def transform(self, v):
         if not isinstance(v, Function):
             return v
@@ -117,6 +122,11 @@ class Models(object):
         self._models = models
         self._labels = labels
 
+    @property
+    def models(self):
+        "List containing the different models. One model for each class"
+        return self._models
+
     def decision_function(self, X):
         return [x.decision_function(X) for x in self._models]
 
@@ -127,8 +137,8 @@ class Models(object):
         if self._labels is not None:
             hy = self._labels[hy]
         return SparseArray.fromlist(hy)
-        
-        
+
+
 class Ensemble(object):
     "Ensemble that predicts using the average"
     def __init__(self, models):
@@ -142,6 +152,11 @@ class Ensemble(object):
         elif self._models[0]._classifier:
             flag = True
         self._classifier = flag
+
+    @property
+    def models(self):
+        "List containing the models that compose the ensemble"
+        return self._models
 
     @property
     def classifier(self):
