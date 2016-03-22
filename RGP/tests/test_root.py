@@ -632,8 +632,8 @@ def test_predict():
                 seed=0,
                 popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
     es = gp.population.estopping
-    assert gp.decision_function().SSE(es.hy_test) == 0
-    hy_test = es.hy_test
+    assert gp.decision_function().SSE(es.hy_test.boundaries()) == 0
+    hy_test = es.hy_test.boundaries()
     assert gp.decision_function(X=X[-10:]).SSE(hy_test) == 0
     hy = gp.decision_function(X=X[-10:])
     assert gp.predict(X=X[-10:]).SSE(hy.sign()) == 0
@@ -865,6 +865,7 @@ def test_es_extra_test():
     from RGP.sparse_array import SparseArray
     x = np.linspace(-1, 1, 100)
     y = 4.3*x**2 + 3.2 * x - 3.2
+    es_extra_test = RootGP.es_extra_test
     RootGP.es_extra_test = MagicMock(side_effect=RuntimeError('Mock'))
     try:
         RootGP(classifier=False,
@@ -873,7 +874,7 @@ def test_es_extra_test():
                                   test_set=[SparseArray.fromlist(x)])
         assert False
     except RuntimeError:
-        pass
+        RootGP.es_extra_test = es_extra_test
 
 
 def test_fname():
@@ -886,4 +887,4 @@ def test_fname():
                 popsize=10,
                 generations=2).fit([SparseArray.fromlist(x)], y,
                                    test_set=[SparseArray.fromlist(x)])
-    assert gp.signature.count('Add10') == 1
+    assert gp.signature.count('Ad10') == 1

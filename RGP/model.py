@@ -50,6 +50,8 @@ class Model(object):
     def decision_function(self, X):
         "Decision function i.e. the raw data of the prediction"
         if X is None:
+            if self._classifier:
+                return self._hy_test.boundaries()
             return self._hy_test
         X = self.convert_features(X)
         hist = self._hist
@@ -58,6 +60,8 @@ class Model(object):
                 node.eval(hist)
             else:
                 node.eval(X)
+        if self._classifier:
+            return node.hy.boundaries()
         return node.hy
 
     def predict(self, X):
