@@ -23,7 +23,7 @@ from .model import Model, Models
 from .population import Population
 
 
-class RootGP(object):
+class RGP(object):
     def __init__(self, generations=np.inf, popsize=10000,
                  seed=0,
                  tournament_size=2,
@@ -446,3 +446,5 @@ class RootGP(object):
         regression it is equivalent to the decision function"""
         m = self.model(v=v)
         return m.predict(X)
+
+RootGP = RGP

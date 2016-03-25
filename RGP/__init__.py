@@ -13,5 +13,5 @@
 # limitations under the License.
 
 
-from .base import RootGP
-__all__ = ["RootGP"]
+from .base import RGP, RootGP
+__all__ = ["RGP", "RootGP"]
