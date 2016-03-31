@@ -32,6 +32,19 @@ class Population(object):
         self._es_extra_test = es_extra_test
         self._labels = labels
         self._logger = logging.getLogger('RGP.Population')
+        self._previous_estopping = False
+
+    @property
+    def previous_estopping(self):
+        """
+        Returns whether the last individual set in the population was
+        an early stopping individual
+        """
+        return self._previous_estopping
+
+    @previous_estopping.setter
+    def previous_estopping(self, v):
+        self._previous_estopping = v
 
     @property
     def hist(self):
@@ -50,6 +63,7 @@ class Population(object):
 
     @estopping.setter
     def estopping(self, v):
+        self.previous_estopping = False
         if v.fitness_vs is None:
             return None
         flag = False
@@ -64,6 +78,7 @@ class Population(object):
             self._estopping = v
             flag = True
         if flag:
+            self.previous_estopping = flag
             vfvs = v.fitness_vs
             self._logger.info('(%i) ES: %0.4f %0.4f' % (v.position,
                                                         v.fitness,
@@ -97,7 +112,7 @@ class Population(object):
         m = Model(trace, hist, classifier=self._classifier,
                   labels=self._labels)
         return m
-            
+
     def trace(self, n):
         "Restore the position in the history of individual v's nodes"
         trace_map = {}
@@ -117,7 +132,7 @@ class Population(object):
                     self._trace(self.hist[x], trace_map)
             else:
                 self._trace(self.hist[n.variable], trace_map)
-    
+
     def add(self, v):
         "Add an individual to the population"
         self._p.append(v)

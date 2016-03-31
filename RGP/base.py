@@ -41,6 +41,8 @@ class RGP(object):
         self._popsize = popsize
         self._classifier = classifier
         self._number_tries_feasible_ind = number_tries_feasible_ind
+        self._unfeasible_counter = 0
+        self._number_tries_unique_args = 3
         self._tr_fraction = tr_fraction
         if early_stopping_rounds is not None and early_stopping_rounds < 0:
             early_stopping_rounds = popsize
@@ -92,7 +94,7 @@ class RGP(object):
                 v = str(v)
             l.append('{0}_{1}'.format(n, v))
         return '-'.join(l)
-        
+
     @property
     def popsize(self):
         """Population size"""
@@ -290,6 +292,10 @@ class RGP(object):
         "Test whether v has not been explored during the evolution"
         return v not in self._unique_individuals_set
 
+    def unfeasible_offspring(self):
+        self._unfeasible_counter += 1
+        return None
+
     def _random_offspring(self, func, args):
         f = func(args, ytr=self._ytr, mask=self._mask)
         if self._unique_individuals:
@@ -297,14 +303,14 @@ class RGP(object):
             if self.unique_individual(sig):
                 self._unique_individuals_set.add(sig)
             else:
-                return None
+                return self.unfeasible_offspring()
         f.height = max([self.population.hist[x].height for x in args]) + 1
         if not f.eval(self.population.hist):
-            return None
+            return self.unfeasible_offspring()
         if not f.isfinite():
-            return None
+            return self.unfeasible_offspring()
         if not self.set_fitness(f):
-            return None
+            return self.unfeasible_offspring()
         return f
 
     def random_offspring(self):
@@ -317,8 +323,11 @@ class RGP(object):
             args = []
             for j in range(func.nargs):
                 k = self.population.tournament()
-                while k in args:
-                    k = self.population.tournament()
+                for _ in range(self._number_tries_unique_args):
+                    if k not in args:
+                        break
+                    else:
+                        k = self.population.tournament()
                 args.append(k)
             # self._logger.debug('Args %s' % args)
             args = [self.population.population[x].position for x in args]
@@ -377,7 +386,7 @@ class RGP(object):
                 v = self._random_offspring(func, args)
                 if v is None:
                     continue
-            self.population.add(v)
+            self.add(v)
 
     def stopping_criteria(self):
         "Test whether the stopping criteria has been achieved."
@@ -396,7 +405,8 @@ class RGP(object):
             position = self.population.estopping.position
             if position < self.popsize:
                 position = self.popsize
-            return (len(self.population.hist) -
+            return (len(self.population.hist) +
+                    self._unfeasible_counter -
                     position) > esr
         return flag
 
@@ -408,6 +418,18 @@ class RGP(object):
             v = v.tonparray()
         self._labels = np.unique(v)
         return self._labels.shape[0]
+
+    def add(self, a):
+        "Add individual a to the population"
+        self.population.add(a)
+        if self.population.previous_estopping:
+            self._unfeasible_counter = 0
+
+    def replace(self, a):
+        "Replace an individual in the population with individual a"
+        self.population.replace(a)
+        if self.population.previous_estopping:
+            self._unfeasible_counter = 0
 
     def fit(self, X, y, test_set=None):
         "Evolutive process"
@@ -422,7 +444,7 @@ class RGP(object):
         self.create_population()
         while not self.stopping_criteria():
             a = self.random_offspring()
-            self.population.replace(a)
+            self.replace(a)
         return self
 
     def trace(self, n):

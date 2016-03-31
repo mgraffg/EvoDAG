@@ -888,3 +888,89 @@ def test_fname():
                 generations=2).fit([SparseArray.fromlist(x)], y,
                                    test_set=[SparseArray.fromlist(x)])
     assert gp.signature.count('Ad10') == 1
+
+
+def test_unfeasible_counter():
+    from RGP import RGP
+    gp = RGP(generations=np.inf,
+             tournament_size=2,
+             early_stopping_rounds=-1,
+             seed=0,
+             popsize=100)
+    assert gp._unfeasible_counter == 0
+    assert gp.unfeasible_offspring() is None
+    assert gp._unfeasible_counter == 1
+
+
+def test_replace_population_previous_estopping():
+    from RGP import RGP
+    gp = RGP(generations=np.inf,
+             tournament_size=2,
+             early_stopping_rounds=-1,
+             seed=0,
+             popsize=3)
+    gp.X = X
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp.y = y
+    gp.create_population()
+    gp.unfeasible_offspring()
+    es = gp.population.estopping
+    for i in range(10):
+        n = gp.random_offspring()
+        if n.fitness_vs > es.fitness_vs:
+            break
+    print(es.fitness_vs, n.fitness_vs, gp._unfeasible_counter)
+    assert gp._unfeasible_counter >= 1
+    gp.replace(n)
+    assert gp.population.previous_estopping
+
+
+def test_add():
+    from RGP import RGP
+    gp = RGP(generations=np.inf,
+             tournament_size=2,
+             early_stopping_rounds=-1,
+             seed=0,
+             popsize=3)
+    gp.X = X
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp.y = y
+    gp.create_population()
+    gp.unfeasible_offspring()
+    es = gp.population.estopping
+    for i in range(10):
+        n = gp.random_offspring()
+        if n.fitness_vs > es.fitness_vs:
+            break
+    gp.add(n)
+    assert gp._unfeasible_counter == 0
+
+
+def test_unfeasible_counter_fit():
+    from RGP import RGP
+
+    class RGP2(RGP):
+        def replace(self, a):
+            self.population.replace(a)
+
+        def add(self, a):
+            self.population.add(a)
+
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    gp = RGP2(generations=10,
+              tournament_size=2,
+              early_stopping_rounds=-1,
+              seed=0,
+              popsize=3)
+    [gp.unfeasible_offspring() for _ in range(100)]
+    gp.fit(X, y)
+    assert len(gp.population.hist) == 3
