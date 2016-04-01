@@ -368,7 +368,8 @@ class RGP(object):
         vars = np.arange(len(self.X))
         np.random.shuffle(vars)
         vars = vars.tolist()
-        while self.population.popsize < self.popsize:
+        while (self.population.popsize < self.popsize and
+               not self.stopping_criteria()):
             if len(vars):
                 v = self._random_leaf(vars.pop())
                 if v is None:
@@ -397,11 +398,12 @@ class RGP(object):
             flag = False
         if flag:
             return True
+        est = self.population.estopping
         if self._tr_fraction < 1:
-            if self.population.estopping.fitness_vs == 0:
+            if est is not None and est.fitness_vs == 0:
                 return True
         esr = self._early_stopping_rounds
-        if self._tr_fraction < 1 and esr is not None:
+        if self._tr_fraction < 1 and esr is not None and est is not None:
             position = self.population.estopping.position
             if position < self.popsize:
                 position = self.popsize
