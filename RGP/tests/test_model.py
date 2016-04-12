@@ -156,3 +156,31 @@ def test_model_graphviz():
     print("".join(l))
     print(cnt, len(l))
     assert 2 + cnt == len(l)
+
+
+def test_random_selection():
+    from RGP import RootGP
+    y = cl.copy()
+    mask = y == 0
+    y[mask] = 1
+    y[~mask] = -1
+    RootGP(generations=np.inf,
+           tournament_size=1,
+           early_stopping_rounds=-1,
+           seed=0,
+           popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
+
+
+def test_model_iter():
+    from RGP import RGP
+    rgp = RGP(popsize=5).fit(X, cl)
+    m = rgp.model()
+    x = [x for x in m]
+    print(x)
+
+
+def test_model_len():
+    from RGP import RGP
+    rgp = RGP(popsize=5).fit(X, cl)
+    m = rgp.model()
+    print(len(m))

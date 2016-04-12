@@ -131,6 +131,15 @@ class Models(object):
         "List containing the different models. One model for each class"
         return self._models
 
+    def __iter__(self):
+        "Iterates on the models"
+        for i in self.models:
+            yield i
+
+    def __len__(self):
+        "Number of models"
+        return len(self.models)
+
     def decision_function(self, X):
         return [x.decision_function(X) for x in self._models]
 
