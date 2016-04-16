@@ -23,3 +23,7 @@ def BER(y, yh):
         m = y == cl
         b += (~(y[m] == yh[m])).sum() / float(m.sum())
     return (b / float(u.shape[0])) * 100.
+
+
+def RSE(x, y):
+    return ((x - y)**2).sum() / ((x - x.mean())**2).sum()
