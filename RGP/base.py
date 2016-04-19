@@ -145,6 +145,7 @@ class RGP(object):
             raise RuntimeError("The labels must be -1 and 1")
         mask = np.zeros_like(v)
         cnt = min([(v == x).sum() for x in a]) * self._tr_fraction
+        cnt = int(round(cnt))
         for i in a:
             index = np.where(v == i)[0]
             np.random.shuffle(index)
@@ -205,7 +206,7 @@ class RGP(object):
             v.fitness = -self._ytr.SAE(v.hy * self._mask)
 
     def mask_vs(self):
-        """Procedure performed in classification to compute
+        """Procedure to perform, in classification,
         more efficiently BER in the validation set"""
         if not self._classifier:
             return

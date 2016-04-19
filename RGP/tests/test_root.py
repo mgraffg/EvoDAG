@@ -974,3 +974,16 @@ def test_unfeasible_counter_fit():
     [gp.unfeasible_offspring() for _ in range(100)]
     gp.fit(X, y)
     assert len(gp.population.hist) == 3
+
+
+def test_one_instance():
+    from RGP import RGP
+    y = cl.copy()
+    y[:-1] = -1
+    y[-1:] = 1
+    gp = RGP(generations=np.inf,
+             tournament_size=2,
+             early_stopping_rounds=-1,
+             seed=0,
+             popsize=10).fit(X, y, test_set=X)
+    assert gp
