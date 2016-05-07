@@ -15,6 +15,7 @@
 
 from test_root import cl
 from test_root import X
+from RGP.sparse_array import SparseArray
 import numpy as np
 
 
@@ -78,7 +79,7 @@ def test_ensemble():
     r2 = ens.decision_function(None)
     for a, b in zip(res, r2):
         assert a.SSE(b) == 0
-    r2 = ens.predict(None).tonparray()
+    r2 = ens.predict(None)
     assert np.all(np.unique(r2) == np.unique(y))
 
 
@@ -103,7 +104,7 @@ def test_ensemble_model():
     res = Add.cumsum(res) / 3
     r2 = ens.decision_function(None)
     assert res.SSE(r2) == 0
-    a = ens.predict(None)
+    a = SparseArray.fromlist(ens.predict(None))
     assert r2.sign().SSE(a) == 0
 
 
@@ -120,8 +121,8 @@ def test_regression():
                                      test_set=[SparseArray.fromlist(x)])
            for seed in range(3)]
     ens = Ensemble([gp.model() for gp in gps])
-    hy = np.median([gp.predict().tonparray() for gp in gps], axis=0)
-    hy1 = ens.predict(X=[SparseArray.fromlist(x)]).tonparray()
+    hy = np.median([gp.predict() for gp in gps], axis=0)
+    hy1 = ens.predict(X=[SparseArray.fromlist(x)])
     assert np.all(hy == hy1)
 
 

@@ -70,9 +70,8 @@ class Model(object):
             if self._labels is not None:
                 hy = (hy + 1).sign()
                 hy = self._labels[hy.tonparray().astype(np.int)]
-                hy = SparseArray.fromlist(hy)
             return hy
-        return self.decision_function(X)
+        return self.decision_function(X).tonparray()
 
     def graphviz(self, fpt):
         fpt.write("digraph RGP {\n")
@@ -149,7 +148,7 @@ class Models(object):
         hy = d.argmax(axis=0)
         if self._labels is not None:
             hy = self._labels[hy]
-        return SparseArray.fromlist(hy)
+        return hy
 
 
 class Ensemble(object):
@@ -200,7 +199,7 @@ class Ensemble(object):
     def predict(self, X):
         if self.classifier:
             return self.predict_cl(X)
-        return self.decision_function(X)
+        return self.decision_function(X).tonparray()
 
     def predict_cl(self, X):
         hy = self.decision_function_cl(X)
@@ -209,12 +208,10 @@ class Ensemble(object):
             if self._labels is not None:
                 hy = (hy + 1).sign()
                 hy = self._labels[hy.tonparray().astype(np.int)]
-                hy = SparseArray.fromlist(hy)
-            return hy
         else:
             d = np.array([x.tonparray() for x in hy])
             hy = d.argmax(axis=0)
             if self._labels is not None:
                 hy = self._labels[hy]
-            return SparseArray.fromlist(hy)
+        return hy
 
