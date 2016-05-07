@@ -23,7 +23,7 @@ from .model import Model, Models
 from .population import Population
 
 
-class RGP(object):
+class EvoDAG(object):
     def __init__(self, generations=np.inf, popsize=10000,
                  seed=0,
                  tournament_size=2,
@@ -56,7 +56,7 @@ class RGP(object):
         np.random.seed(self._seed)
         self._unique_individuals = unique_individuals
         self._unique_individuals_set = set()
-        self._logger = logging.getLogger('RGP.RootGP')
+        self._logger = logging.getLogger('EvoDAG')
         if self._generations == np.inf and tr_fraction == 1:
             raise RuntimeError("Infinite evolution, set generations\
             or tr_fraction < 1 ")
@@ -472,4 +472,5 @@ class RGP(object):
         m = self.model(v=v)
         return m.predict(X)
 
+RGP = EvoDAG
 RootGP = RGP

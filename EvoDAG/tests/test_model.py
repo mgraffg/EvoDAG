@@ -15,12 +15,12 @@
 
 from test_root import cl
 from test_root import X
-from RGP.sparse_array import SparseArray
+from EvoDAG.sparse_array import SparseArray
 import numpy as np
 
 
 def test_pickle_model():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     import pickle
     y = cl.copy()
     mask = y == 0
@@ -39,8 +39,8 @@ def test_pickle_model():
 
 
 def test_model_hist():
-    from RGP import RootGP
-    from RGP.base import Model
+    from EvoDAG import RootGP
+    from EvoDAG.base import Model
     y = cl.copy()
     mask = y == 0
     y[mask] = 1
@@ -60,9 +60,9 @@ def test_model_hist():
 
 
 def test_ensemble():
-    from RGP import RootGP
-    from RGP.model import Ensemble
-    from RGP.node import Add
+    from EvoDAG import RootGP
+    from EvoDAG.model import Ensemble
+    from EvoDAG.node import Add
     y = cl.copy()
     gps = [RootGP(generations=np.inf,
                   tournament_size=2,
@@ -84,9 +84,9 @@ def test_ensemble():
 
 
 def test_ensemble_model():
-    from RGP import RootGP
-    from RGP.model import Ensemble
-    from RGP.node import Add
+    from EvoDAG import RootGP
+    from EvoDAG.model import Ensemble
+    from EvoDAG.node import Add
     y = cl.copy()
     mask = y == 0
     y[mask] = 1
@@ -109,9 +109,9 @@ def test_ensemble_model():
 
 
 def test_regression():
-    from RGP import RootGP
-    from RGP.sparse_array import SparseArray
-    from RGP.model import Ensemble
+    from EvoDAG import RootGP
+    from EvoDAG.sparse_array import SparseArray
+    from EvoDAG.model import Ensemble
     x = np.linspace(-1, 1, 100)
     y = 4.3*x**2 + 3.2 * x - 3.2
     gps = [RootGP(classifier=False,
@@ -127,8 +127,8 @@ def test_regression():
 
 
 def test_model_graphviz():
-    from RGP import RootGP
-    from RGP.node import Function
+    from EvoDAG import RootGP
+    from EvoDAG.node import Function
     import tempfile
     y = cl.copy()
     mask = y == 0
@@ -160,7 +160,7 @@ def test_model_graphviz():
 
 
 def test_random_selection():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     y = cl.copy()
     mask = y == 0
     y[mask] = 1
@@ -173,7 +173,7 @@ def test_random_selection():
 
 
 def test_model_iter():
-    from RGP import RGP
+    from EvoDAG import RGP
     rgp = RGP(popsize=5).fit(X, cl)
     m = rgp.model()
     x = [x for x in m]
@@ -181,7 +181,7 @@ def test_model_iter():
 
 
 def test_model_len():
-    from RGP import RGP
+    from EvoDAG import RGP
     rgp = RGP(popsize=5).fit(X, cl)
     m = rgp.model()
     print(len(m))

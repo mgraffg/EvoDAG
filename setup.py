@@ -25,7 +25,7 @@ class Clean(clean):
     def run(self):
         clean.run(self)
         if self.all:
-            for dir, dirs, files in os.walk('RGP'):
+            for dir, dirs, files in os.walk('EvoDAG'):
                 abspath = os.path.abspath(dir)
                 for f in files:
                     ext = f.split('.')[-1]
@@ -41,24 +41,24 @@ for k, v in zip(lst, sysconfig.get_config_vars(*lst)):
         continue
     v = v.replace('-mno-fused-madd', '')
     os.environ[k] = v
-ext_modules = [Extension("RGP.sparse_array",
-                         [join("RGP", "sparse_array.pxd"),
-                          join("RGP", "sparse_array.pyx")],
+ext_modules = [Extension("EvoDAG.sparse_array",
+                         [join("EvoDAG", "sparse_array.pxd"),
+                          join("EvoDAG", "sparse_array.pyx")],
                          # libraries=["m"],
                          include_dirs=[numpy.get_include()])]
 
 version = open("VERSION").readline().lstrip().rstrip()
-lst = open(join("RGP", "__init__.py")).readlines()
+lst = open(join("EvoDAG", "__init__.py")).readlines()
 for k in range(len(lst)):
     v = lst[k]
     if v.count("__version__"):
         lst[k] = "__version__ = '%s'\n" % version
-with open(join("RGP", "__init__.py"), "w") as fpt:
+with open(join("EvoDAG", "__init__.py"), "w") as fpt:
     fpt.write("".join(lst))
 
 setup(
-    name="RGP",
-    description="""Root Genetic Programming""",
+    name="EvoDAG",
+    description="""Evolving Directed Acyclic Graph""",
     version=version,
     classifiers=[
         "Development Status :: 3 - Alpha",
@@ -76,7 +76,7 @@ setup(
     author_email="mgraffg@ieee.org",
     cmdclass={"build_ext": build_ext, "clean": Clean},
     ext_modules=ext_modules,
-    packages=['RGP', 'RGP/tests'],
+    packages=['EvoDAG', 'EvoDAG/tests'],
     include_package_data=True,
     zip_safe=False,
     package_data={'': ['*.pxd']},

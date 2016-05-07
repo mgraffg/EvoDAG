@@ -19,8 +19,8 @@ try:
     from mock import MagicMock
 except ImportError:
     from unittest.mock import MagicMock
-from RGP.node import Variable
-from RGP.sparse_array import SparseArray
+from EvoDAG.node import Variable
+from EvoDAG.sparse_array import SparseArray
 
 
 cl = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -186,8 +186,8 @@ X = np.array([[5.1, 3.5, 1.4, 0.2],
 
 
 def test_features():
-    from RGP.sparse_array import SparseArray
-    from RGP import RootGP
+    from EvoDAG.sparse_array import SparseArray
+    from EvoDAG import RootGP
     gp = RootGP(generations=1)
     gp.X = X
     assert gp.nvar == 4
@@ -199,7 +199,7 @@ def test_features():
 
 
 def test_create_population():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     gp = RootGP(generations=1, popsize=4)
     gp.X = X
     y = cl.copy()
@@ -221,8 +221,8 @@ def test_create_population():
 
 
 def test_create_population2():
-    from RGP import RootGP
-    from RGP.node import Function
+    from EvoDAG import RootGP
+    from EvoDAG.node import Function
     gp = RootGP(generations=1, popsize=10)
     gp.X = X
     y = cl.copy()
@@ -236,7 +236,7 @@ def test_create_population2():
 
 
 def test_best_so_far():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     gp = RootGP(generations=1, popsize=4)
     gp.X = X
     y = cl.copy()
@@ -257,7 +257,7 @@ def test_best_so_far():
 
 
 def test_early_stopping():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     gp = RootGP(generations=1, popsize=4)
     gp.X = X
     y = cl.copy()
@@ -279,7 +279,7 @@ def test_early_stopping():
 
 
 def test_variable():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     gp = RootGP(generations=1, popsize=4)
     gp.X = X
     Xtest = [x for x in X]
@@ -301,7 +301,7 @@ def test_variable():
 
 
 def test_random_leaf():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     gp = RootGP(generations=1, popsize=4, tr_fraction=1)
     gp.X = X
     y = cl.copy()
@@ -322,7 +322,7 @@ def test_random_leaf():
 
 
 def test_random_leaf_inf():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     gp = RootGP(generations=1, classifier=False, popsize=4, tr_fraction=1)
     Xc = [x for x in X]
     Xc[0] = Xc[0] + np.inf
@@ -346,7 +346,7 @@ def test_random_leaf_inf():
 
 
 def test_classification_y():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     gp = RootGP(generations=1, popsize=4)
     assert gp._classifier
     gp.X = X
@@ -361,7 +361,7 @@ def test_classification_y():
 
 
 def test_regression_y():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     gp = RootGP(generations=1, popsize=4, classifier=False)
     assert not gp._classifier
     gp.X = X
@@ -374,7 +374,7 @@ def test_regression_y():
 
 
 def test_fitness():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     gp = RootGP(generations=1, popsize=4)
     assert gp._classifier
     gp.X = X
@@ -388,7 +388,7 @@ def test_fitness():
 
 
 def test_mask_vs():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     gp = RootGP(generations=1, popsize=4)
     assert gp._classifier
     gp.X = X
@@ -406,9 +406,9 @@ def test_mask_vs():
 
 
 def test_BER():
-    from RGP.node import Add
-    from RGP import RootGP
-    from RGP.utils import BER
+    from EvoDAG.node import Add
+    from EvoDAG import RootGP
+    from EvoDAG.utils import BER
     gp = RootGP(generations=1, popsize=4)
     assert gp._classifier
     gp.X = X
@@ -432,7 +432,7 @@ def test_BER():
 
 
 def test_tournament():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     gp = RootGP(generations=1,
                 tournament_size=4,
                 popsize=4)
@@ -454,7 +454,7 @@ def test_tournament():
 
 
 def test_tournament_negative():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     gp = RootGP(generations=1,
                 tournament_size=4,
                 popsize=4)
@@ -476,8 +476,8 @@ def test_tournament_negative():
 
 
 def test_random_offspring():
-    from RGP import RootGP
-    from RGP.node import Add
+    from EvoDAG import RootGP
+    from EvoDAG.node import Add
     gp = RootGP(generations=1,
                 seed=1,
                 tournament_size=2,
@@ -500,7 +500,7 @@ def test_random_offspring():
 
 
 def test_replace_individual():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     gp = RootGP(generations=1,
                 tournament_size=2,
                 popsize=10)
@@ -519,8 +519,8 @@ def test_replace_individual():
 
 
 def test_X_sparse():
-    from RGP import RootGP
-    from RGP.sparse_array import SparseArray
+    from EvoDAG import RootGP
+    from EvoDAG.sparse_array import SparseArray
     gp = RootGP(generations=1,
                 tournament_size=2,
                 popsize=10)
@@ -529,8 +529,8 @@ def test_X_sparse():
 
 
 def test_fit_stopping_criteria_gens():
-    from RGP import RootGP
-    from RGP.node import Add
+    from EvoDAG import RootGP
+    from EvoDAG.node import Add
     Add.nargs = 2
     gp = RootGP(generations=2,
                 early_stopping_rounds=None,
@@ -552,7 +552,7 @@ def test_fit_stopping_criteria_gens():
 
 
 def test_fit_stopping_criteria_estopping():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
                 early_stopping_rounds=4,
@@ -573,7 +573,7 @@ def test_fit_stopping_criteria_estopping():
 
 
 def test_fit():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     y = cl.copy()
     mask = y == 0
     y[mask] = 1
@@ -590,7 +590,7 @@ def test_fit():
 
 
 def test_logging():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     y = cl.copy()
     mask = y == 0
     y[mask] = 1
@@ -603,7 +603,7 @@ def test_logging():
 
 
 def test_infite_evolution():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     y = cl.copy()
     mask = y == 0
     y[mask] = 1
@@ -621,7 +621,7 @@ def test_infite_evolution():
 
 
 def test_predict():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     y = cl.copy()
     mask = y == 0
     y[mask] = 1
@@ -641,8 +641,8 @@ def test_predict():
 
 
 def test_trace():
-    from RGP import RootGP
-    from RGP.node import Add
+    from EvoDAG import RootGP
+    from EvoDAG.node import Add
     y = cl.copy()
     mask = y == 0
     y[mask] = 1
@@ -666,7 +666,7 @@ def test_trace():
 
 
 def test_class_values():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     y = cl.copy()
     mask = y == 0
     y[mask] = 0
@@ -680,7 +680,7 @@ def test_class_values():
 
 
 def test_multiclass():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     y = cl.copy()
     ncl = np.unique(y).shape[0]
     gp = RootGP(generations=np.inf,
@@ -693,7 +693,7 @@ def test_multiclass():
 
 
 def test_multiclass_decision_function():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     y = cl.copy()
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
@@ -705,7 +705,7 @@ def test_multiclass_decision_function():
 
 
 def test_multiclass_predict():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     y = cl.copy()
     y[y == 0] = 3
     gp = RootGP(generations=np.inf,
@@ -719,7 +719,7 @@ def test_multiclass_predict():
 
 
 def test_get_params():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     # y = cl.copy()
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
@@ -733,7 +733,7 @@ def test_get_params():
 
 
 def test_get_clone():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     # y = cl.copy()
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
@@ -748,7 +748,7 @@ def test_get_clone():
 
 
 def test_labels():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     y = cl.copy()
     mask = y == 0
     y[mask] = 1
@@ -766,8 +766,8 @@ def test_labels():
 
 
 def test_height():
-    from RGP import RootGP
-    from RGP.node import Mul
+    from EvoDAG import RootGP
+    from EvoDAG.node import Mul
     gp = RootGP(generations=1,
                 seed=1,
                 tournament_size=2,
@@ -788,8 +788,8 @@ def test_height():
 
 
 def test_regression():
-    from RGP import RootGP
-    from RGP.sparse_array import SparseArray
+    from EvoDAG import RootGP
+    from EvoDAG.sparse_array import SparseArray
     x = np.linspace(-1, 1, 100)
     y = 4.3*x**2 + 3.2 * x - 3.2
     gp = RootGP(classifier=False,
@@ -805,7 +805,7 @@ def test_regression():
 
 
 def test_unique():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     mock = MagicMock(side_effect=RuntimeError('Mock'))
     ui = RootGP.unique_individual
     RootGP.unique_individual = mock
@@ -826,8 +826,8 @@ def test_RSE():
     def rse(x, y):
         return ((x - y)**2).sum() / ((x - x.sum()/x.size)**2).sum()
         
-    from RGP import RootGP
-    from RGP.sparse_array import SparseArray
+    from EvoDAG import RootGP
+    from EvoDAG.sparse_array import SparseArray
     x = np.linspace(-1, 1, 100)
     y = 4.3*x**2 + 3.2 * x - 3.2
     gp = RootGP(classifier=False,
@@ -846,7 +846,7 @@ def test_RSE():
 
 
 def test_population_as_parameter():
-    from RGP import RootGP
+    from EvoDAG import RootGP
     mock = MagicMock(side_effect=RuntimeError('Mock'))
     gp = RootGP(generations=np.inf,
                 population_class=mock,
@@ -863,8 +863,8 @@ def test_population_as_parameter():
 
 
 def test_es_extra_test():
-    from RGP import RootGP
-    from RGP.sparse_array import SparseArray
+    from EvoDAG import RootGP
+    from EvoDAG.sparse_array import SparseArray
     x = np.linspace(-1, 1, 100)
     y = 4.3*x**2 + 3.2 * x - 3.2
     es_extra_test = RootGP.es_extra_test
@@ -880,8 +880,8 @@ def test_es_extra_test():
 
 
 def test_fname():
-    from RGP.node import Add
-    from RGP import RootGP
+    from EvoDAG.node import Add
+    from EvoDAG import RootGP
     x = np.linspace(-1, 1, 100)
     y = 4.3*x**2 + 3.2 * x - 3.2
     Add.nargs = 10
@@ -893,7 +893,7 @@ def test_fname():
 
 
 def test_unfeasible_counter():
-    from RGP import RGP
+    from EvoDAG import RGP
     gp = RGP(generations=np.inf,
              tournament_size=2,
              early_stopping_rounds=-1,
@@ -905,7 +905,7 @@ def test_unfeasible_counter():
 
 
 def test_replace_population_previous_estopping():
-    from RGP import RGP
+    from EvoDAG import RGP
     gp = RGP(generations=np.inf,
              tournament_size=2,
              early_stopping_rounds=-1,
@@ -931,7 +931,7 @@ def test_replace_population_previous_estopping():
 
 
 def test_add():
-    from RGP import RGP
+    from EvoDAG import RGP
     gp = RGP(generations=np.inf,
              tournament_size=2,
              early_stopping_rounds=-1,
@@ -955,7 +955,7 @@ def test_add():
 
 
 def test_unfeasible_counter_fit():
-    from RGP import RGP
+    from EvoDAG import RGP
 
     class RGP2(RGP):
         def replace(self, a):
@@ -980,7 +980,7 @@ def test_unfeasible_counter_fit():
 
 
 def test_one_instance():
-    from RGP import RGP
+    from EvoDAG import RGP
     y = cl.copy()
     y[:-1] = -1
     y[-1:] = 1

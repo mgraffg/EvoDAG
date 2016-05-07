@@ -14,12 +14,12 @@
 
 
 from test_root import X, cl
-from RGP.node import Add
+from EvoDAG.node import Add
 import numpy as np
 
 
 def create_problem_node(nargs=4):
-    from RGP import RootGP
+    from EvoDAG import RootGP
     gp = RootGP(generations=1, popsize=4)
     gp.X = X
     gp.Xtest = X
@@ -32,7 +32,7 @@ def create_problem_node(nargs=4):
 
 
 def test_nargs_function():
-    from RGP.node import Mul
+    from EvoDAG.node import Mul
     Add.nargs = 4
     assert Add.nargs == 4
     assert Mul.nargs == 2
@@ -78,7 +78,7 @@ def test_node_add():
 
 
 def test_node_mul():
-    from RGP.node import Mul
+    from EvoDAG.node import Mul
     gp, args = create_problem_node()
     r = Mul.cumprod([x.hy for x in args])
     coef = gp.compute_weight([r])[0]
@@ -90,7 +90,7 @@ def test_node_mul():
 
 
 def test_node_div():
-    from RGP.node import Div
+    from EvoDAG.node import Div
     gp, args = create_problem_node(nargs=2)
     a, b = args
     r = a.hy / b.hy
@@ -103,7 +103,7 @@ def test_node_div():
 
 
 def test_node_fabs():
-    from RGP.node import Fabs
+    from EvoDAG.node import Fabs
     gp, args = create_problem_node(nargs=1)
     r = args[0].hy.fabs()
     coef = gp.compute_weight([r])[0]
@@ -115,7 +115,7 @@ def test_node_fabs():
 
 
 def test_node_exp():
-    from RGP.node import Exp
+    from EvoDAG.node import Exp
     gp, args = create_problem_node(nargs=1)
     r = args[0].hy.exp()
     coef = gp.compute_weight([r])[0]
@@ -127,7 +127,7 @@ def test_node_exp():
 
 
 def test_node_sqrt():
-    from RGP.node import Sqrt
+    from EvoDAG.node import Sqrt
     gp, args = create_problem_node(nargs=1)
     r = args[0].hy.sqrt()
     coef = gp.compute_weight([r])[0]
@@ -139,7 +139,7 @@ def test_node_sqrt():
 
 
 def test_node_sin():
-    from RGP.node import Sin
+    from EvoDAG.node import Sin
     gp, args = create_problem_node(nargs=1)
     r = args[0].hy.sin()
     coef = gp.compute_weight([r])[0]
@@ -151,7 +151,7 @@ def test_node_sin():
 
 
 def test_node_cos():
-    from RGP.node import Cos
+    from EvoDAG.node import Cos
     gp, args = create_problem_node(nargs=1)
     r = args[0].hy.cos()
     coef = gp.compute_weight([r])[0]
@@ -163,7 +163,7 @@ def test_node_cos():
 
 
 def test_node_ln():
-    from RGP.node import Ln
+    from EvoDAG.node import Ln
     gp, args = create_problem_node(nargs=1)
     r = args[0].hy.ln()
     coef = gp.compute_weight([r])[0]
@@ -175,7 +175,7 @@ def test_node_ln():
 
 
 def test_node_sq():
-    from RGP.node import Sq
+    from EvoDAG.node import Sq
     gp, args = create_problem_node(nargs=1)
     r = args[0].hy.sq()
     coef = gp.compute_weight([r])[0]
@@ -187,7 +187,7 @@ def test_node_sq():
 
 
 def test_node_sigmoid():
-    from RGP.node import Sigmoid
+    from EvoDAG.node import Sigmoid
     gp, args = create_problem_node(nargs=1)
     r = args[0].hy.sigmoid()
     coef = gp.compute_weight([r])[0]
@@ -199,7 +199,7 @@ def test_node_sigmoid():
 
 
 def test_node_if():
-    from RGP.node import If
+    from EvoDAG.node import If
     gp, args = create_problem_node(nargs=3)
     r = args[0].hy.if_func(args[1].hy, args[2].hy)
     coef = gp.compute_weight([r])[0]
@@ -211,7 +211,7 @@ def test_node_if():
 
 
 def test_node_min():
-    from RGP.node import Min
+    from EvoDAG.node import Min
     gp, args = create_problem_node(nargs=3)
     r = args[0].hy.min(args[1].hy).min(args[2].hy)
     coef = gp.compute_weight([r])
@@ -224,7 +224,7 @@ def test_node_min():
 
 
 def test_node_max():
-    from RGP.node import Max
+    from EvoDAG.node import Max
     gp, args = create_problem_node(nargs=3)
     r = args[0].hy.max(args[1].hy).max(args[2].hy)
     coef = gp.compute_weight([r])
@@ -237,7 +237,7 @@ def test_node_max():
     
 
 def test_node_symbol():
-    from RGP.node import Add, Mul, Div, Fabs,\
+    from EvoDAG.node import Add, Mul, Div, Fabs,\
         Exp, Sqrt, Sin, Cos, Ln,\
         Sq, Sigmoid, If, Min, Max
     for f, s in zip([Add, Mul, Div, Fabs,
@@ -250,7 +250,7 @@ def test_node_symbol():
 
 
 def test_node_hash():
-    from RGP.node import Add, Mul
+    from EvoDAG.node import Add, Mul
     add = Add([21, 3])
     sets = set()
     sets.add(add.signature())

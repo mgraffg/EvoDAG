@@ -13,5 +13,5 @@
 # limitations under the License.
 
 
-from .base import RGP, RootGP
-__all__ = ["RGP", "RootGP"]
+from .base import EvoDAG, RGP, RootGP
+__all__ = ["EvoDAG", "RGP", "RootGP"]

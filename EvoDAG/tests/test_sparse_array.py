@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from RGP.sparse_array import SparseArray
+from EvoDAG.sparse_array import SparseArray
 from nose.tools import assert_almost_equals
 import numpy as np
 np.set_printoptions(precision=3)
