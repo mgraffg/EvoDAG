@@ -71,7 +71,7 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         "Topic :: Scientific/Engineering :: Artificial Intelligence"],
-    url='http://ingeotec.mx',
+    url='https://github.com/mgraffg/EvoDAG',
     author="Mario Graff",
     author_email="mgraffg@ieee.org",
     cmdclass={"build_ext": build_ext, "clean": Clean},
