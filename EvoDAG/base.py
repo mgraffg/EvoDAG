@@ -155,11 +155,13 @@ class EvoDAG(object):
 
     def multiclass(self, X, v, test_set=None):
         "Performing One vs All multiclass classification"
-        from sklearn import preprocessing
         if not isinstance(v, np.ndarray):
             v = v.tonparray()
-        a = preprocessing.LabelBinarizer().fit(v)
-        mask = a.transform(v).astype(np.bool).T
+        mask = None
+        for i in self._labels:
+            _ = np.empty_like(v, dtype=np.bool)
+            _[v == i] = 1
+            mask = np.vstack((mask, _)) if mask is not None else _
         self._multiclass_instances = [self.clone() for x in mask]
         for m, gp in zip(mask, self._multiclass_instances):
             y = np.zeros_like(m) - 1
