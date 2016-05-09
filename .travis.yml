@@ -1,18 +1,19 @@
 language: python
 python:
   - "2.7"
-  - "3.2"
-  - "3.3"
-  - "3.4"
   - "3.5"
-  - "3.5-dev" # 3.5 development branch
-  - "nightly" # currently points to 3.6-dev
-# command to install dependencies
-# install: "pip install -r requirements.txt"
+
+addons:
+  apt:
+    packages:
+      # only required by the DISTRIB="ubuntu" build:
+      - python-scipy
+
 before_install:
   - pip install cython
   - pip install numpy
   - pip install scikit-learn
   - python setup.py build_ext --inplace
+
 # command to run tests
 script: nosetests
