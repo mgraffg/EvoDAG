@@ -159,8 +159,8 @@ class EvoDAG(object):
             v = v.tonparray()
         mask = None
         for i in self._labels:
-            _ = np.empty_like(v, dtype=np.bool)
-            _[v == i] = 1
+            _ = np.zeros_like(v, dtype=np.bool)
+            _[v == i] = True
             mask = np.vstack((mask, _)) if mask is not None else _
         self._multiclass_instances = [self.clone() for x in mask]
         for m, gp in zip(mask, self._multiclass_instances):

@@ -80,6 +80,7 @@ def test_ensemble():
     for a, b in zip(res, r2):
         assert a.SSE(b) == 0
     r2 = ens.predict(None)
+    print(np.unique(r2), np.unique(y))
     assert np.all(np.unique(r2) == np.unique(y))
 
 
