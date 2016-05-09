@@ -1,4 +1,8 @@
-# RGP
+[![Build Status](https://travis-ci.org/mgraffg/EvoDAG.svg?branch=master)](https://travis-ci.org/mgraffg/EvoDAG)
+
+[![PyPI version](https://badge.fury.io/py/EvoDAG.svg)](https://badge.fury.io/py/EvoDAG)
+
+# EvoDAG
 
 Evolving Directed Acyclic Graph (EvoDAG) is a steady-state Genetic Programming system
 with tournament selection. The main characteristic of EvoDAG is that
@@ -10,10 +14,14 @@ _et al._ and the implementation performed by
 _et al_.
 
 
-## Install RGP
+## Install EvoDAG
 
+*Install using pip
+```pip install EvoDAG```
+
+### Using the source code
 * Clone the repository  
-```git clone  https://github.com/mgraffg/RGP.git```
+```git clone  https://github.com/mgraffg/EvoDAG.git```
 * Install the package as usual  
 ```python setup.py install```
 * To install only for the use then  
