@@ -16,7 +16,7 @@ _et al_.
 
 ## Install EvoDAG
 
-*Install using pip
+* Install using pip 
 ```pip install EvoDAG```
 
 ### Using the source code
