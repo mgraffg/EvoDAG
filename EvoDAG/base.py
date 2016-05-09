@@ -217,8 +217,16 @@ class EvoDAG(object):
         m = ~ self._mask.tonparray().astype(np.bool)
         f = np.zeros(self._mask.size())
         y = self.y.tonparray()
-        f[y == -1] = 0.5 / (y[m] == -1).sum()
-        f[y == 1] = 0.5 / (y[m] == 1).sum()
+        den = (y[m] == -1).sum()
+        if den:
+            f[y == -1] = 0.5 / den
+        else:
+            f[y == -1] = 0.5
+        den = (y[m] == 1).sum()
+        if den:
+            f[y == 1] = 0.5 / den
+        else:
+            f[y == 1] = 0.5
         f[~m] = 0
         self._mask_vs = SparseArray.fromlist(f)
 
