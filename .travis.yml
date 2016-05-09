@@ -12,5 +12,6 @@ python:
 before_install:
   - pip install cython
   - pip install numpy
+  - python setup.py build_ext --inplace
 # command to run tests
 script: nosetests
