@@ -458,10 +458,16 @@ def test_div_vec_cons():
 
 
 def test_pearson():
-    from scipy import stats
+    def _sum_of_squares(x):
+        return (x**2).sum()
     uno = create_numpy_array(100, 50)
     dos = create_numpy_array(100, 50)
-    r = stats.pearsonr(uno, dos)[0]
+    mx = uno.mean()
+    my = dos.mean()
+    xm, ym = uno - mx, dos - my
+    r_num = np.add.reduce(xm * ym)
+    r_den = np.sqrt(_sum_of_squares(xm) * _sum_of_squares(ym))
+    r = r_num / r_den
     r2 = SparseArray.fromlist(uno).pearsonr(SparseArray.fromlist(dos))
     print((r, r2))
     assert_almost_equals(r, r2)
