@@ -3,14 +3,11 @@ python:
   - "2.7"
   - "3.5"
 
-sudo: required
-dist: trusty
-
 before_install:
-  - sudo apt-get -qq update
-  - sudo apt-get install -y python-sklearn
   - pip install cython
   - pip install numpy
+  - pip install scipy
+  - pip install scikit-learn
   - python setup.py build_ext --inplace
 
 # command to run tests
