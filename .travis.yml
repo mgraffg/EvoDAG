@@ -3,6 +3,11 @@ python:
   - "2.7"
   - "3.5"
 
+addons:
+  apt:
+    packages:
+    - python-sklearn
+
 before_install:
   - pip install cython
   - pip install numpy
