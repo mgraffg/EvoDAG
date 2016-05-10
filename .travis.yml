@@ -3,10 +3,16 @@ python:
   - "2.7"
   - "3.5"
 
+addons:
+  apt:
+    packages:
+      - libatlas3gf-base
+      - libatlas-dev
+      - python-scipy
+
+
 before_install:
   - pip install cython
-  - pip install numpy
-  - pip install scipy
   - pip install scikit-learn
   - python setup.py build_ext --inplace
 
