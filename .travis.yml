@@ -1,24 +1,12 @@
-sudo: required
-dist: trusty
-
-
 language: python
 python:
   - "2.7"
   - "3.5"
 
 
-addons:
-  apt:
-    packages:
-      - libatlas3gf-base
-      - libatlas-dev
-      - python-scipy
-
-
 before_install:
+  - pip install numpy
   - pip install cython
-  - pip install scikit-learn
   - python setup.py build_ext --inplace
 
 
