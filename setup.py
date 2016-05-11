@@ -47,6 +47,8 @@ ext_modules = [Extension("EvoDAG.sparse_array",
                          # libraries=["m"],
                          include_dirs=[numpy.get_include()])]
 
+with open('README.md') as fpt:
+    long_desc = fpt.read()
 version = open("VERSION").readline().lstrip().rstrip()
 lst = open(join("EvoDAG", "__init__.py")).readlines()
 for k in range(len(lst)):
@@ -59,6 +61,7 @@ with open(join("EvoDAG", "__init__.py"), "w") as fpt:
 setup(
     name="EvoDAG",
     description="""Evolving Directed Acyclic Graph""",
+    long_description=long_desc,
     version=version,
     classifiers=[
         "Development Status :: 3 - Alpha",
