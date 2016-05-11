@@ -47,7 +47,7 @@ ext_modules = [Extension("EvoDAG.sparse_array",
                          # libraries=["m"],
                          include_dirs=[numpy.get_include()])]
 
-with open('README.md') as fpt:
+with open('README.rst') as fpt:
     long_desc = fpt.read()
 version = open("VERSION").readline().lstrip().rstrip()
 lst = open(join("EvoDAG", "__init__.py")).readlines()
