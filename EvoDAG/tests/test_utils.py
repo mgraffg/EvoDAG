@@ -13,18 +13,51 @@
 # limitations under the License.
 
 
+import numpy as np
+
+
 def test_parameter_grid_results():
-    from EvoDAG.utils import parameter_grid_results
-    a = parameter_grid_results()
-    assert len(a) == 1468
+    from EvoDAG.utils import RandomParameterSearch
+    a = RandomParameterSearch()
+    assert len([x for x in a]) == 1468
 
 
 def test_process_params():
-    from EvoDAG.utils import parameter_grid_results, process_params
+    from EvoDAG.utils import RandomParameterSearch
     from EvoDAG import EvoDAG
-    args = parameter_grid_results()[0]
-    evo = EvoDAG(**process_params(args))
+    rs = RandomParameterSearch(npoints=1)
+    args = [x for x in rs][0]
+    evo = EvoDAG(**rs.process_params(args))
     params = evo.get_params()
     for k, v in args.items():
         if k in params:
             assert v == params[k]
+
+
+def test_random_parameter_search_len():
+    from itertools import product
+    from EvoDAG.utils import RandomParameterSearch
+    params = {'a': [1, 2, 3],
+              'b': [-1, -2],
+              'c': ['a', 'b', 'c', 'd', 'e']}
+    rs = RandomParameterSearch(params=params)
+    params = sorted(params.items())
+    a = product(*[x[1] for x in params])
+    assert len([x for x in a]) == len(rs)
+
+
+def test_random_parameter_search_getitem():
+    from itertools import product
+    from EvoDAG.utils import RandomParameterSearch
+    params = {'a': [1, 2, 3],
+              'b': [-1, -2],
+              'c': ['a', 'b', 'c', 'd', 'e']}
+    rs = RandomParameterSearch(params=params)
+    params = sorted(params.items())
+    a = product(*[x[1] for x in params])
+    for k, v in enumerate(a):
+        v1 = [x[1] for x in sorted(rs[k].items())]
+        print(v, v1)
+        assert np.all([x == y for x, y in zip(v, v1)])
+
+    

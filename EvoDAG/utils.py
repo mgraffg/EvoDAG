@@ -15,24 +15,6 @@
 
 import numpy as np
 
-PARAMS = {'Add': [2, 5, 10, 15, 20, 25, 30],
-          'Mul': [0, 2, 5, 10, 15, 20, 25, 30],
-          'Min': [0, 2, 5, 10, 15, 20, 25, 30],
-          'Max': [0, 2, 5, 10, 15, 20, 25, 30],
-          'Div': [True, False],
-          'Fabs': [True, False],
-          'Exp': [True, False],
-          'Sqrt': [True, False],
-          'Sin': [True, False],
-          'Cos': [True, False],
-          'Ln': [True, False],
-          'Sq': [True, False],
-          'Sigmoid': [True, False],
-          'If': [True, False],
-          'unique_individuals': [True, False],
-          'popsize': [500, 1000, 2000, 3000],
-          'early_stopping_rounds': [125, 250, 500, 1000, 2000]}
-
 
 def BER(y, yh):
     u = np.unique(y)
@@ -47,36 +29,72 @@ def RSE(x, y):
     return ((x - y)**2).sum() / ((x - x.mean())**2).sum()
 
 
-def parameter_grid_results(npoints=1468):
-    from sklearn import grid_search
-    from EvoDAG import EvoDAG
-    fs = EvoDAG().function_set
-    ps = grid_search.ParameterSampler(PARAMS, n_iter=npoints, random_state=0)
-    args = []
-    for m in ps:
-        x1 = m.copy()
-        function_set = [x for x in fs if m.get(x.__name__, True)]
-        if fs[0] not in function_set:
-            function_set.insert(0, fs[0])
-            x1['Add'] = 2
-        for x in fs:
-            x = x.__name__
-            if isinstance(x1[x], bool):
-                del x1[x]
-        x1['function_set'] = function_set
-        args.append(x1)
-    return args
+class RandomParameterSearch(object):
+    def __init__(self, params={'Add': [2, 5, 10, 15, 20, 25, 30],
+                               'Mul': [0, 2, 5, 10, 15, 20, 25, 30],
+                               'Min': [0, 2, 5, 10, 15, 20, 25, 30],
+                               'Max': [0, 2, 5, 10, 15, 20, 25, 30],
+                               'Div': [True, False],
+                               'Fabs': [True, False],
+                               'Exp': [True, False],
+                               'Sqrt': [True, False],
+                               'Sin': [True, False],
+                               'Cos': [True, False],
+                               'Ln': [True, False],
+                               'Sq': [True, False],
+                               'Sigmoid': [True, False],
+                               'If': [True, False],
+                               'unique_individuals': [True, False],
+                               'popsize': [500, 1000, 2000, 3000],
+                               'early_stopping_rounds':
+                               [125, 250, 500, 1000, 2000]},
+                 npoints=1468,
+                 seed=0):
+        self._params = sorted(params.items())
+        self._params.reverse()
+        self._len = None
+        self._npoints = npoints
+        self._seed = seed
 
+    def __len__(self):
+        if self._len is None:
+            _ = np.product([len(x[1]) for x in self._params])
+            self._len = _
+        return self._len
 
-def process_params(a):
-    from EvoDAG import EvoDAG
-    fs_class = {}
-    for x in EvoDAG()._function_set:
-        fs_class[x.__name__] = x
-    args = {}
-    for k, v in a.items():
-        if k in fs_class:
-            fs_class[k].nargs = v
-        else:
-            args[k] = v
-    return args
+    def __getitem__(self, key):
+        res = {}
+        lens = [len(x[1]) for x in self._params]
+        for l, k_v in zip(lens, self._params):
+            k, v = k_v
+            key, residual = divmod(key, l)
+            res[k] = v[residual]
+        return res
+
+    def __iter__(self):
+        np.random.seed(self._seed)
+        m = {}
+        for i in range(self._npoints):
+            k = np.random.randint(len(self))
+            while k in m:
+                k = np.random.randint(len(self))
+            m[k] = 1
+            yield self[k]
+
+    @staticmethod
+    def process_params(a):
+        from EvoDAG import EvoDAG
+        fs_class = {}
+        function_set = []
+        for x in EvoDAG()._function_set:
+            fs_class[x.__name__] = x
+        args = {}
+        for k, v in a.items():
+            if k in fs_class:
+                fs_class[k].nargs = v
+                if v > 0:
+                    function_set.append(fs_class[k])
+            else:
+                args[k] = v
+        args['function_set'] = function_set
+        return args

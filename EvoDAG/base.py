@@ -187,7 +187,7 @@ class EvoDAG(object):
             index = np.arange(v.size())
             np.random.shuffle(index)
             ones = np.ones(v.size())
-            ones[index[self._tr_fraction * v.size():]] = 0
+            ones[index[int(self._tr_fraction * v.size()):]] = 0
             self._mask = SparseArray.fromlist(ones)
         else:
             self._mask = 1.0
