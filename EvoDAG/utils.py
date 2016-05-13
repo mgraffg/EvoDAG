@@ -91,8 +91,9 @@ class RandomParameterSearch(object):
         args = {}
         for k, v in a.items():
             if k in fs_class:
-                fs_class[k].nargs = v
-                if v > 0:
+                if not isinstance(v, bool):
+                    fs_class[k].nargs = v
+                if v:
                     function_set.append(fs_class[k])
             else:
                 args[k] = v

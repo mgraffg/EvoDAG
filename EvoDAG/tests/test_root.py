@@ -638,6 +638,7 @@ def test_predict():
     hy = gp.decision_function(X=X[-10:])
     _ = gp.predict(X=X[-10:])
     assert SparseArray.fromlist(_).SSE(hy.sign()) == 0
+    assert len(gp.Xtest)
 
 
 def test_trace():
