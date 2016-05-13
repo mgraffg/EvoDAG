@@ -242,7 +242,12 @@ class EvoDAG(object):
             y = v.hy * m
             a = (x - y).sq().sum()
             b = (x - x.sum() / x.size()).sq().sum()
-            v.fitness_vs = -a / b
+            if a == 0:
+                v.fitness_vs = 0
+            elif b == 0:
+                v.fitness_vs = -np.inf
+            else:
+                v.fitness_vs = -a / b
 
     def es_extra_test(self, v):
         """This function is called from population before setting
