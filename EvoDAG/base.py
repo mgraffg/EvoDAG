@@ -201,8 +201,12 @@ class EvoDAG(object):
         elif self._tr_fraction < 1:
             for i in range(self._number_tries_feasible_ind):
                 self.set_regression_mask(v)
-                if self.test_regression_mask(v):
+                flag = self.test_regression_mask(v)
+                if flag:
                     break
+            if not flag:
+                msg = "Unsuitable validation set (RSE: average equals zero)"
+                raise RuntimeError(msg)
         else:
             self._mask = 1.0
         self._ytr = v * self._mask
@@ -256,8 +260,6 @@ class EvoDAG(object):
             y = v.hy * m
             a = (x - y).sq().sum()
             b = (x - x.sum() / x.size()).sq().sum()
-            if b == 0:
-                raise RuntimeError('RSE: average equals zero')
             v.fitness_vs = -a / b
 
     def es_extra_test(self, v):
