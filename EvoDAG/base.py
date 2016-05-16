@@ -153,6 +153,21 @@ class EvoDAG(object):
         self._mask = SparseArray.fromlist(mask)
         return SparseArray.fromlist(v)
 
+    def set_regression_mask(self, v):
+        """Computes the mask used to create the training and validation set"""
+        index = np.arange(v.size())
+        np.random.shuffle(index)
+        ones = np.ones(v.size())
+        ones[index[int(self._tr_fraction * v.size()):]] = 0
+        self._mask = SparseArray.fromlist(ones)
+
+    def test_regression_mask(self, v):
+        """Test whether the average prediction is different than zero"""
+        m = (self._mask - 1).fabs()
+        x = v * m
+        b = (x - x.sum() / x.size()).sq().sum()
+        return b != 0
+
     def multiclass(self, X, v, test_set=None):
         "Performing One vs All multiclass classification"
         if not isinstance(v, np.ndarray):
@@ -184,11 +199,10 @@ class EvoDAG(object):
                 v = SparseArray.fromlist(v)
             self.set_classifier_mask(v)
         elif self._tr_fraction < 1:
-            index = np.arange(v.size())
-            np.random.shuffle(index)
-            ones = np.ones(v.size())
-            ones[index[int(self._tr_fraction * v.size()):]] = 0
-            self._mask = SparseArray.fromlist(ones)
+            for i in range(self._number_tries_feasible_ind):
+                self.set_regression_mask(v)
+                if self.test_regression_mask(v):
+                    break
         else:
             self._mask = 1.0
         self._ytr = v * self._mask
@@ -242,12 +256,9 @@ class EvoDAG(object):
             y = v.hy * m
             a = (x - y).sq().sum()
             b = (x - x.sum() / x.size()).sq().sum()
-            if a == 0:
-                v.fitness_vs = 0
-            elif b == 0:
-                v.fitness_vs = -np.inf
-            else:
-                v.fitness_vs = -a / b
+            if b == 0:
+                raise RuntimeError('RSE: average equals zero')
+            v.fitness_vs = -a / b
 
     def es_extra_test(self, v):
         """This function is called from population before setting

@@ -824,13 +824,12 @@ def test_unique():
 
 
 def test_RSE():
-    def rse(x, y):
-        return ((x - y)**2).sum() / ((x - x.sum()/x.size)**2).sum()
-        
     from EvoDAG import RootGP
     from EvoDAG.sparse_array import SparseArray
+    from EvoDAG.utils import RSE as rse
     x = np.linspace(-1, 1, 100)
     y = 4.3*x**2 + 3.2 * x - 3.2
+    y[10:12] = 0
     gp = RootGP(classifier=False,
                 popsize=10,
                 generations=2).fit([SparseArray.fromlist(x)], y,
@@ -844,6 +843,40 @@ def test_RSE():
     print(rse(y, yh), model._hist[-1].fitness_vs)
     assert_almost_equals(rse(y, yh),
                          -model._hist[-1].fitness_vs)
+
+
+def test_RSE_avg_zero():
+    from EvoDAG import EvoDAG
+    from EvoDAG.sparse_array import SparseArray
+
+    class EvoDAG2(EvoDAG):
+        def __init__(self, **kw):
+            super(EvoDAG2, self).__init__(**kw)
+            self._times = 0
+
+        def set_regression_mask(self, v):
+            mask = np.ones(v.size())
+            if self._times == 0:
+                mask[10:12] = 0
+            else:
+                mask[10:13] = 0
+            self._mask = SparseArray.fromlist(mask)
+            self._times += 1
+
+    x = np.linspace(-1, 1, 100)
+    y = 4.3*x**2 + 3.2 * x - 3.2
+    y[10:12] = 0
+    gp = EvoDAG2(classifier=False,
+                 popsize=10,
+                 generations=2)
+    gp.X = [SparseArray.fromlist(x)]
+    gp.y = y
+    print(gp._times)
+    assert gp._times == 2
+    gp.create_population()
+    while not gp.stopping_criteria():
+        a = gp.random_offspring()
+        gp.replace(a)
 
 
 def test_population_as_parameter():
