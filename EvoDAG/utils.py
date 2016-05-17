@@ -97,5 +97,7 @@ class RandomParameterSearch(object):
                     function_set.append(fs_class[k])
             else:
                 args[k] = v
-        args['function_set'] = function_set
+            fs_evo = EvoDAG()._function_set
+            fs_evo = filter(lambda x: x in function_set, fs_evo)
+            args['function_set'] = [x for x in fs_evo]
         return args
