@@ -14,4 +14,4 @@ before_install:
 # command to run tests
 script: nosetests --with-coverage --cover-package=EvoDAG
 
-after_sucess: coveralls || echo "Coveralls upload failed"
+after_success: coveralls || echo "Coveralls upload failed"
