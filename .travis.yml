@@ -8,6 +8,7 @@ before_install:
   - pip install numpy
   - pip install cython
   - pip install coverage
+  - pip install coveralls
   - python setup.py build_ext --inplace
 
 
