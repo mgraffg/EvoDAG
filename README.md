@@ -2,6 +2,8 @@
 
 [![PyPI version](https://badge.fury.io/py/EvoDAG.svg)](https://badge.fury.io/py/EvoDAG)
 
+[![Coverage Status](https://coveralls.io/repos/github/mgraffg/EvoDAG/badge.svg?branch=master)](https://coveralls.io/github/mgraffg/EvoDAG?branch=master)
+
 # EvoDAG
 
 Evolving Directed Acyclic Graph (EvoDAG) is a steady-state Genetic Programming system

@@ -2,6 +2,8 @@
 
 |PyPI version|
 
+|Coverage Status|
+
 EvoDAG
 ======
 
@@ -34,3 +36,5 @@ Using the source code
    :target: https://travis-ci.org/mgraffg/EvoDAG
 .. |PyPI version| image:: https://badge.fury.io/py/EvoDAG.svg
    :target: https://badge.fury.io/py/EvoDAG
+.. |Coverage Status| image:: https://coveralls.io/repos/github/mgraffg/EvoDAG/badge.svg?branch=master
+   :target: https://coveralls.io/github/mgraffg/EvoDAG?branch=master
