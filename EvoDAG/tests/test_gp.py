@@ -49,3 +49,88 @@ def test_indindividual_decision_function():
     hy = ind._ind[0].hy.tonparray()
     [assert_almost_equals(a, b) for a, b in zip(hy, y)]
     
+
+def test_gp_population_full():
+    Add.nargs = 2
+    Mul.nargs = 2
+    from EvoDAG.gp import Population
+    from EvoDAG import EvoDAG
+    fs = EvoDAG()._function_set
+
+    class Population2(Population):
+        def __init__(self, *args, **kwargs):
+            super(Population2, self).__init__(*args, **kwargs)
+            self._funcs = [Add, Sin]
+            self._terms = [2, 0]
+
+        def random_function(self):
+            func = self._funcs.pop()
+            if func.nargs == 1:
+                return func(0, weight=1)
+            return func(range(func.nargs), weight=np.ones(func.nargs))
+
+        def random_terminal(self):
+            return Variable(self._terms.pop(), 1)
+
+    pop = Population2(fs, nterminals=3)
+    ind = pop.create_random_ind_full(depth=2)
+    assert len(pop._funcs) == 0 and len(pop._terms) == 0
+    assert isinstance(ind[0], Sin) and isinstance(ind[1], Add)
+    assert ind[2].variable == 0 and ind[3].variable == 2
+    ind = Individual(ind)
+    print(X.shape, ind.individual)
+    hy = ind.decision_function(X)
+    assert hy.isfinite()
+
+
+def test_gp_population_grow():
+    Add.nargs = 2
+    Mul.nargs = 2
+    from EvoDAG.gp import Population
+    from EvoDAG import EvoDAG
+    fs = EvoDAG()._function_set
+
+    class Population2(Population):
+        def __init__(self, *args, **kwargs):
+            super(Population2, self).__init__(*args, **kwargs)
+            self._funcs = [Sin, Add]
+            self._terms = [2, 0]
+            self._g_funcs = [0, 1, 1]
+
+        def random_function(self):
+            func = self._funcs.pop()
+            if func.nargs == 1:
+                return func(0, weight=1)
+            return func(range(func.nargs), weight=np.ones(func.nargs))
+
+        def random_terminal(self):
+            return Variable(self._terms.pop(), 1)
+
+        def grow_use_function(self, depth=0):
+            if depth == 0:
+                return False
+            return self._g_funcs.pop()
+
+    pop = Population2(fs, nterminals=3)
+    ind = pop.create_random_ind_grow(depth=2)
+    print(ind)
+    assert len(pop._funcs) == 0 and len(pop._terms) == 0
+    assert len(pop._g_funcs) == 0
+    assert isinstance(ind[0], Add) and isinstance(ind[1], Sin)
+    assert ind[2].variable == 0 and ind[3].variable == 2
+    ind = Individual(ind)
+    print(X.shape, ind.individual)
+    hy = ind.decision_function(X)
+    assert hy.isfinite()
+
+
+def test_gp_create_population():
+    Add.nargs = 2
+    Mul.nargs = 2
+    from EvoDAG.gp import Population
+    from EvoDAG import EvoDAG
+    fs = EvoDAG()._function_set
+    pop = Population(fs, nterminals=X.shape[1])
+    inds = pop.create_population(X=X)
+    for i in inds:
+        assert i[0].hy.isfinite()

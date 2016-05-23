@@ -13,8 +13,9 @@
 # limitations under the License.
 
 
-from .node import Function
+from .node import Function, Variable, Add
 from .model import Model
+import numpy as np
 
 
 class Individual(object):
@@ -32,16 +33,8 @@ class Individual(object):
         "Individual"
         return self._ind
 
-    @individual.setter
-    def individual(self, v):
-        self._ind = v
-
     def decision_function(self, X):
         "Decision function i.e. the raw data of the prediction"
-        if X is None:
-            if self._classifier:
-                return self._hy_test.boundaries()
-            return self._hy_test
         self._X = Model.convert_features(X)
         self._eval()
         return self._ind[0].hy
@@ -57,3 +50,87 @@ class Individual(object):
         else:
             node.eval(self._X)
         return node
+
+
+class Population(object):
+    "Population of a tree-based GP system"
+    def __init__(self, function_set=None, nterminals=None):
+        assert function_set is not None
+        assert nterminals is not None
+        self._function_set = function_set
+        self._nterminals = nterminals
+
+    def random_function(self):
+        func = np.random.randint(len(self._function_set))
+        func = self._function_set[func]
+        if issubclass(func, Add) and func.nargs > 1:
+            return func(range(func.nargs), weight=np.ones(func.nargs))
+        elif func.nargs == 1:
+            return func(0, weight=1)
+        return func(range(func.nargs), weight=1)
+
+    def random_terminal(self):
+        terminal = np.random.randint(self._nterminals)
+        return Variable(terminal, 1)
+
+    def create_random_ind_full(self, depth=0):
+        "Random individual using full method"
+        lst = []
+        self._create_random_ind_full(depth=depth, output=lst)
+        return lst
+
+    def _create_random_ind_full(self, depth=0, output=None):
+        if depth == 0:
+            output.append(self.random_terminal())
+        else:
+            func = self.random_function()
+            output.append(func)
+            depth -= 1
+            [self._create_random_ind_full(depth=depth, output=output)
+             for x in range(func.nargs)]
+
+    def grow_use_function(self, depth=0):
+        "Select either function or terminal in grow method"
+        if depth == 0:
+            return False
+        return np.random.randint(2) == 0
+
+    def create_random_ind_grow(self, depth=0):
+        "Random individual using grow method"
+        lst = []
+        self._create_random_ind_grow(depth=depth, output=lst)
+        return lst
+
+    def _create_random_ind_grow(self, depth=0, output=None):
+        if self.grow_use_function(depth=depth):
+            func = self.random_function()
+            output.append(func)
+            depth -= 1
+            [self._create_random_ind_grow(depth=depth, output=output)
+             for x in range(func.nargs)]
+        else:
+            output.append(self.random_terminal())
+
+    def create_population(self, popsize=1000, min_depth=2,
+                          max_depth=7, X=None):
+        "Creates random population using ramped half-and-half method"
+        full = True
+        depth = min_depth
+        output = []
+        while len(output) < popsize:
+            if full:
+                ind = self.create_random_ind_full(depth=depth)
+            else:
+                ind = self.create_random_ind_grow(depth=depth)
+            flag = True
+            if X is not None:
+                x = Individual(ind)
+                x.decision_function(X)
+                flag = x.individual[0].isfinite()
+            if flag:
+                full = full ^ True
+                depth += 1
+                if depth > max_depth:
+                    depth = min_depth
+                output.append(ind)
+        return output
