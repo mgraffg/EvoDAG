@@ -16,6 +16,7 @@
 from .node import Function, Variable, Add
 from .model import Model
 import numpy as np
+import logging
 
 
 class Individual(object):
@@ -47,6 +48,9 @@ class Individual(object):
         if isinstance(node, Function):
             args = [self._eval() for x in range(node.nargs)]
             node.eval(args)
+            for x in args:
+                x.hy = None
+                x.hy_test = None
         else:
             node.eval(self._X)
         return node
@@ -54,11 +58,13 @@ class Individual(object):
 
 class Population(object):
     "Population of a tree-based GP system"
-    def __init__(self, function_set=None, nterminals=None):
+    def __init__(self, function_set=None, nterminals=None, seed=0):
         assert function_set is not None
         assert nterminals is not None
         self._function_set = function_set
         self._nterminals = nterminals
+        self._logger = logging.getLogger('EvoDAG.gp')
+        np.random.seed(seed)
 
     def random_function(self):
         func = np.random.randint(len(self._function_set))
@@ -93,7 +99,7 @@ class Population(object):
         "Select either function or terminal in grow method"
         if depth == 0:
             return False
-        return np.random.randint(2) == 0
+        return np.random.random() < 0.5
 
     def create_random_ind_grow(self, depth=0):
         "Random individual using grow method"
@@ -112,12 +118,20 @@ class Population(object):
             output.append(self.random_terminal())
 
     def create_population(self, popsize=1000, min_depth=2,
-                          max_depth=7, X=None):
+                          max_depth=4,
+                          X=None):
         "Creates random population using ramped half-and-half method"
-        full = True
-        depth = min_depth
+        import itertools
+        args = [x for x in itertools.product(range(min_depth,
+                                                   max_depth+1),
+                                             [True, False])]
+        index = 0
         output = []
         while len(output) < popsize:
+            depth, full = args[index]
+            index += 1
+            if index >= len(args):
+                index = 0
             if full:
                 ind = self.create_random_ind_full(depth=depth)
             else:
@@ -127,10 +141,9 @@ class Population(object):
                 x = Individual(ind)
                 x.decision_function(X)
                 flag = x.individual[0].isfinite()
+            l_vars = (flag, len(output), full, depth, len(ind))
+            l_str = " flag: %s len(output): %s full: %s depth: %s len(ind): %s"
+            self._logger.debug(l_str % l_vars)
             if flag:
-                full = full ^ True
-                depth += 1
-                if depth > max_depth:
-                    depth = min_depth
                 output.append(ind)
         return output
