@@ -122,15 +122,7 @@ class EvoDAG(object):
 
     @Xtest.setter
     def Xtest(self, v):
-        if isinstance(v, np.ndarray):
-            X = v.T
-        else:
-            X = v
-        for var, d in zip(self.X, X):
-            if isinstance(d, SparseArray):
-                var._eval_ts = d
-            else:
-                var._eval_ts = SparseArray.fromlist(d)
+        Model.convert_features_test_set(self.X, v)
 
     @property
     def y(self):
@@ -279,23 +271,6 @@ class EvoDAG(object):
     @nvar.setter
     def nvar(self, v):
         self._nvar = v
-
-    def compute_weight(self, r):
-        """Returns the weight (w) using OLS of r * w = gp._ytr """
-        A = np.empty((len(r), len(r)))
-        b = np.array([(f * self._ytr).sum() for f in r])
-        for i in range(len(r)):
-            r[i] = r[i] * self._mask
-            for j in range(i, len(r)):
-                A[i, j] = (r[i] * r[j]).sum()
-                A[j, i] = A[i, j]
-        if not np.isfinite(A).all() or not np.isfinite(b).all():
-            return None
-        try:
-            coef = np.linalg.solve(A, b)
-        except np.linalg.LinAlgError:
-            return None
-        return coef
 
     def _random_leaf(self, var):
         v = Variable(var, ytr=self._ytr, mask=self._mask)

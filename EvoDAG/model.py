@@ -118,6 +118,18 @@ class Model(object):
             lst.append(v)
         return lst
 
+    @staticmethod
+    def convert_features_test_set(vars, v):
+        if isinstance(v, np.ndarray):
+            X = v.T
+        else:
+            X = v
+        for var, d in zip(vars, X):
+            if isinstance(d, SparseArray):
+                var._eval_ts = d
+            else:
+                var._eval_ts = SparseArray.fromlist(d)
+
 
 class Models(object):
     "List of model in multiclass classification"
