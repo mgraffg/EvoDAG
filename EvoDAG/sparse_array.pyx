@@ -230,6 +230,8 @@ cdef class SparseArray:
     def __mul__(self, other):
         if isinstance(other, SparseArray):
             return self.mul(other)
+        if other == 1:
+            return self
         return self.mul2(other)
 
     cpdef SparseArray mul(self, SparseArray other):

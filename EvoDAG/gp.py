@@ -99,11 +99,14 @@ class Population(object):
         "Select either function or terminal in grow method"
         if depth == 0:
             return False
+        if depth == self._depth:
+            return True
         return np.random.random() < 0.5
 
     def create_random_ind_grow(self, depth=0):
         "Random individual using grow method"
         lst = []
+        self._depth = depth
         self._create_random_ind_grow(depth=depth, output=lst)
         return lst
 
