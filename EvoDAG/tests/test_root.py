@@ -565,11 +565,11 @@ def test_fit_stopping_criteria_estopping():
     y[~mask] = -1
     gp.y = y
     gp.create_population()
-    print(len(gp.population.hist) - gp.population.estopping.position)
     while not gp.stopping_criteria():
         a = gp.random_offspring()
         gp.population.replace(a)
-    assert (len(gp.population.hist) - gp.population.estopping.position) > 4
+    print(len(gp.population.hist) - gp.population.estopping.position)
+    assert (len(gp.population.hist) - gp.population.estopping.position) <= 9
 
 
 def test_fit():

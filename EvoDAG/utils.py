@@ -28,26 +28,28 @@ def BER(y, yh):
 def RSE(x, y):
     return ((x - y)**2).sum() / ((x - x.mean())**2).sum()
 
+PARAMS = {'Add': [2, 5, 10, 15, 20, 25, 30],
+          'Mul': [0, 2, 5, 10, 15, 20, 25, 30],
+          'Min': [0, 2, 5, 10, 15, 20, 25, 30],
+          'Max': [0, 2, 5, 10, 15, 20, 25, 30],
+          'Div': [True, False],
+          'Fabs': [True, False],
+          'Exp': [True, False],
+          'Sqrt': [True, False],
+          'Sin': [True, False],
+          'Cos': [True, False],
+          'Ln': [True, False],
+          'Sq': [True, False],
+          'Sigmoid': [True, False],
+          'If': [True, False],
+          'unique_individuals': [True, False],
+          'popsize': [500, 1000, 2000, 3000],
+          'early_stopping_rounds':
+          [125, 250, 500, 1000, 2000]}
+
 
 class RandomParameterSearch(object):
-    def __init__(self, params={'Add': [2, 5, 10, 15, 20, 25, 30],
-                               'Mul': [0, 2, 5, 10, 15, 20, 25, 30],
-                               'Min': [0, 2, 5, 10, 15, 20, 25, 30],
-                               'Max': [0, 2, 5, 10, 15, 20, 25, 30],
-                               'Div': [True, False],
-                               'Fabs': [True, False],
-                               'Exp': [True, False],
-                               'Sqrt': [True, False],
-                               'Sin': [True, False],
-                               'Cos': [True, False],
-                               'Ln': [True, False],
-                               'Sq': [True, False],
-                               'Sigmoid': [True, False],
-                               'If': [True, False],
-                               'unique_individuals': [True, False],
-                               'popsize': [500, 1000, 2000, 3000],
-                               'early_stopping_rounds':
-                               [125, 250, 500, 1000, 2000]},
+    def __init__(self, params=PARAMS,
                  npoints=1468,
                  seed=0):
         self._params = sorted(params.items())

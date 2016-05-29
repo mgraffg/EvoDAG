@@ -186,3 +186,10 @@ def test_model_len():
     rgp = RGP(popsize=5).fit(X, cl)
     m = rgp.model()
     print(len(m))
+
+
+def test_models_fitness_vs():
+    from EvoDAG import EvoDAG
+    evo = EvoDAG(popsize=10, early_stopping_rounds=2).fit(X, cl)
+    l_fs = [x.fitness_vs for x in evo.model().models]
+    assert evo.model().fitness_vs == np.median(l_fs)

@@ -83,5 +83,8 @@ setup(
     include_package_data=True,
     zip_safe=False,
     package_data={'': ['*.pxd']},
-    install_requires=['cython >= 0.19.2', 'numpy >= 1.6.2']
+    install_requires=['cython >= 0.19.2', 'numpy >= 1.6.2'],
+    entry_points={
+        'console_scripts': ['EvoDAG=EvoDAG.command_line:main'],
+    }
 )

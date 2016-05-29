@@ -142,6 +142,12 @@ class Models(object):
         "List containing the different models. One model for each class"
         return self._models
 
+    @property
+    def fitness_vs(self):
+        "Median Fitness in the validation set"
+        l = [x.fitness_vs for x in self.models]
+        return np.median(l)
+
     def __iter__(self):
         "Iterates on the models"
         for i in self.models:
