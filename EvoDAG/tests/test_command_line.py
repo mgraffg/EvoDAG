@@ -21,7 +21,7 @@ from test_root import X, cl
 def training_set():
     import tempfile
     fname = tempfile.mktemp()
-    with open(fname, 'x') as fpt:
+    with open(fname, 'w') as fpt:
         for x, v in zip(X, cl):
             l = x.tolist()
             l.append(v)
