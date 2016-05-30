@@ -91,8 +91,27 @@ def test_cpu_cores():
                 'cache.evodag.gz', '-p10', '-e2', '-r', '2', fname]
     c = CommandLine()
     c.parse_args()
-    os.unlink(fname)
-    os.unlink(c.data.output_file)
     assert c.evo._popsize == 10
     assert os.path.isfile('cache.evodag.gz')
+    os.unlink(c.data.output_file)
+    c = CommandLine()
+    c.parse_args()
     os.unlink('cache.evodag.gz')
+    os.unlink(fname)
+    os.unlink(c.data.output_file)
+    
+
+def test_ensemble_size():
+    import os
+    from EvoDAG.model import Ensemble
+    fname = training_set()
+    sys.argv = ['EvoDAG', '-u2', '-n2', '--cache-file',
+                'cache.evodag.gz', '-p10', '-e2', '-r', '2', fname]
+    c = CommandLine()
+    c.parse_args()
+    os.unlink(fname)
+    os.unlink(c.data.output_file)
+    assert os.path.isfile('cache.evodag.gz')
+    assert isinstance(c.model, Ensemble)
+    os.unlink('cache.evodag.gz')
+    

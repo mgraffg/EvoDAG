@@ -14,6 +14,7 @@
 import argparse
 import numpy as np
 from EvoDAG.utils import RandomParameterSearch, PARAMS
+from EvoDAG.model import Ensemble
 from multiprocessing import Pool
 from EvoDAG import EvoDAG
 import os
@@ -46,7 +47,15 @@ class CommandLine(object):
         self.test_set()
         self.optimize_parameters()
         self.cores()
+        self.ensemble()
 
+    def ensemble(self):
+        self.parser.add_argument('-n', '--ensemble-size',
+                                 help='Ensemble size',
+                                 dest='ensemble_size',
+                                 default=1,
+                                 type=int)
+            
     def cores(self):
         self.parser.add_argument('-u', '--cpu-cores',
                                  help='Number of cores',
@@ -130,8 +139,16 @@ class CommandLine(object):
             self.data.output_file = a + '.evodag.gz'
         return self.data.output_file
 
-    def store_model(self):
-        self.model = self.evo.model()
+    def store_model(self, kw):
+        if self.data.ensemble_size == 1:
+            self.evo = EvoDAG(**kw).fit(self.X, self.y)
+            self.model = self.evo.model()
+        else:
+            seed = self.data.seed
+            esize = self.data.ensemble_size
+            evo = [(EvoDAG(seed=i, **kw)).fit(self.X, self.y)
+                   for i in range(seed, seed+esize)]
+            self.model = Ensemble([x.model() for x in evo])
         output_file = self.get_output_file()
         with gzip.open(output_file, 'w') as fpt:
             pickle.dump(self.model, fpt)
@@ -170,8 +187,7 @@ class CommandLine(object):
                     with gzip.open(self.data.cache_file, 'w') as fpt:
                         pickle.dump(res, fpt)
             kw = RandomParameterSearch.process_params(res[0][1])
-        self.evo = EvoDAG(**kw).fit(self.X, self.y)
-        self.store_model()
+        self.store_model(kw)
 
     def main(self):
         self.read_training_set()
