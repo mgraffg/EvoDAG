@@ -230,6 +230,14 @@ class CommandLine(object):
             self.data.output_file = self.data.test_set + '.evodag.csv'
         return self.data.output_file
 
+    def id2word(self, x):
+        if not self.data.classifier:
+            return x
+        if len(self.word2id) == 0:
+            return x
+        i2w = dict([(i[1], i[0]) for i in self.word2id.items()])
+        return [i2w[int(i)] for i in x]
+
     def main(self):
         self.read_training_set()
         test_set = self.read_test_set()
@@ -239,7 +247,7 @@ class CommandLine(object):
                 kw[k] = getattr(self.data, k)
         self.evolve(kw)
         if test_set:
-            hy = self.model.predict(self.Xtest)
+            hy = self.id2word(self.model.predict(self.Xtest))
             with open(self.get_output_file(), 'w') as fpt:
                 fpt.write('\n'.join(map(str, hy)))
 

@@ -148,3 +148,25 @@ def test_output_file():
     assert os.path.isfile('output.evodag.csv')
     os.unlink('output.evodag.csv')
     
+
+def test_id2word():
+    import tempfile
+    fname = tempfile.mktemp()
+    id2word = dict([[0, 'a'], [1, 'b'], [2, 'c']])
+    with open(fname, 'w') as fpt:
+        for x, v in zip(X, cl):
+            l = x.tolist()
+            l.append(id2word[v])
+            fpt.write(','.join(map(str, l)))
+            fpt.write('\n')
+    sys.argv = ['EvoDAG', '-e2', '-p10', fname, '-t',
+                fname, '-o', 'output.txt']
+    c = CommandLine()
+    c.parse_args()
+    with open('output.txt', 'r') as fpt:
+        a = fpt.readlines()
+    for i in a:
+        assert i.rstrip() in ['a', 'b', 'c']
+    os.unlink(fname)
+    os.unlink('output.txt')
+    
