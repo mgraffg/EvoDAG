@@ -198,7 +198,7 @@ class CommandLine(object):
             if len(kw):
                 params = PARAMS.copy()
                 for k, v in kw.items():
-                    if k in params:
+                    if k in params and v is not None:
                         params[k] = [v]
             cache_file = self.data.cache_file
             if cache_file is not None and os.path.isfile(cache_file):
