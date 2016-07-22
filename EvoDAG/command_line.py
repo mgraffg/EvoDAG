@@ -13,8 +13,9 @@
 # limitations under the License.
 import argparse
 import numpy as np
-from EvoDAG.utils import RandomParameterSearch, PARAMS
-from EvoDAG.model import Ensemble
+from .utils import RandomParameterSearch, PARAMS
+from .sparse_array import SparseArray
+from .model import Ensemble
 from multiprocessing import Pool
 from EvoDAG import EvoDAG
 import os
@@ -160,34 +161,27 @@ class CommandLine(object):
                 num_terms -= 1
         return num_terms
 
-    @staticmethod
-    def _sparse_array(x, num_rows):
-        from EvoDAG.sparse_array import SparseArray
-        sp = SparseArray()
-        sp.init(len(x))
-        sp.set_data_index([i[1] for i in x], [i[0] for i in x])
-        sp.set_size(num_rows)
-        return sp
-
     def read_data_json(self, fname):
         import json
         X = None
         y = []
         with open(fname, 'r') as fpt:
             l = fpt.readlines()
-        for i, d in enumerate(l):
+        for row, d in enumerate(l):
             a = json.loads(d)
             if X is None:
                 X = [list() for i in range(self._num_terms(a))]
             for k, v in a.items():
                 try:
                     k = int(k)
-                    X[k].append((i, self.convert(v)))
+                    X[k].append((row, self.convert(v)))
                 except ValueError:
                     if k == 'klass' or k == 'y':
                         y.append(self.convert(v))
         num_rows = len(l)
-        X = [self._sparse_array(x, num_rows) for x in X]
+        X = [SparseArray.init_index_data([i[0] for i in x],
+                                         [i[1] for i in x],
+                                         num_rows) for x in X]
         if len(y) == 0:
             y = None
         else:
@@ -287,11 +281,11 @@ class CommandLine(object):
 
     def get_output_file(self):
         if self.data.output_file is None:
-            self.data.output_file = self.data.test_set + '.evodag'
-            if self.data.json:
-                self.data.output_file += '.json'
-            else:
-                self.data.output_file += '.csv'
+            self.data.output_file = self.data.test_set + '.evodag.csv'
+            # if self.data.json:
+            #     self.data.output_file += '.json'
+            # else:
+            #     self.data.output_file += '.csv'
         return self.data.output_file
 
     def id2word(self, x):

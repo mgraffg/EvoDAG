@@ -821,6 +821,14 @@ cdef class SparseArray:
             print self._dataC[i]
 
     @classmethod
+    def init_index_data(cls, list index, list data, int _size):
+        self = cls()
+        self.init(len(data))
+        self.set_data_index(data, index)    
+        self.set_size(_size)
+        return self
+        
+    @classmethod
     def fromlist(cls, iter, bint force_finite=False):
         self = cls()
         data = []

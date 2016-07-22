@@ -181,6 +181,7 @@ def test_json():
             a['klass'] = int(y)
             a['num_terms'] = len(x)
             fpt.write(json.dumps(a) + '\n')
+    print("termine con el json")
     sys.argv = ['EvoDAG', '-m', 'temp.evodag.gz', '--json',
                 '-e', '10', '-p', '100', fname, '-ooutput.evodag', '-t', fname]
     main()
