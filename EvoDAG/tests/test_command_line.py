@@ -170,3 +170,21 @@ def test_id2word():
     os.unlink(fname)
     os.unlink('output.txt')
     
+
+def test_json():
+    import tempfile
+    import json
+    fname = tempfile.mktemp()
+    with open(fname, 'w') as fpt:
+        for x, y in zip(X, cl):
+            a = {k: v for k, v in enumerate(x)}
+            a['klass'] = int(y)
+            a['num_terms'] = len(x)
+            fpt.write(json.dumps(a) + '\n')
+    sys.argv = ['EvoDAG', '-m', 'temp.evodag.gz', '--json',
+                '-e', '10', '-p', '100', fname, '-ooutput.evodag', '-t', fname]
+    main()
+    os.unlink(fname)
+    os.unlink('temp.evodag.gz')
+    print(open('output.evodag').read())
+    os.unlink('output.evodag')

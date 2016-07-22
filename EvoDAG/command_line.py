@@ -116,6 +116,10 @@ class CommandLine(object):
         pa('-s', '--seed', dest='seed',
            default=0,
            type=int, help='Seed')
+        pa('-j', '--json', dest='json',
+           action="store_true",
+           help='Whether the inputs are in json format',
+           default=False)
 
     def training_set(self):
         cdn = 'File containing the training set on csv.'
@@ -146,19 +150,75 @@ class CommandLine(object):
                 X.append([self.convert(i) for i in x.split(',')])
         return X
 
+    @staticmethod
+    def _num_terms(a):
+        if 'num_terms' in a:
+            num_terms = a['num_terms']
+        else:
+            num_terms = len(a)
+            if 'klass' in a:
+                num_terms -= 1
+        return num_terms
+
+    @staticmethod
+    def _sparse_array(x, num_rows):
+        from EvoDAG.sparse_array import SparseArray
+        sp = SparseArray()
+        sp.init(len(x))
+        sp.set_data_index([i[1] for i in x], [i[0] for i in x])
+        sp.set_size(num_rows)
+        return sp
+
+    def read_data_json(self, fname):
+        import json
+        X = None
+        y = []
+        with open(fname, 'r') as fpt:
+            l = fpt.readlines()
+        for i, d in enumerate(l):
+            a = json.loads(d)
+            if X is None:
+                X = [list() for i in range(self._num_terms(a))]
+            for k, v in a.items():
+                try:
+                    k = int(k)
+                    X[k].append((i, self.convert(v)))
+                except ValueError:
+                    if k == 'klass' or k == 'y':
+                        y.append(self.convert(v))
+        num_rows = len(l)
+        X = [self._sparse_array(x, num_rows) for x in X]
+        if len(y) == 0:
+            y = None
+        else:
+            y = np.array(y)
+        return X, y
+
     def read_training_set(self):
         if self.data.training_set is None:
             return
-        d = np.array(self.read_data(self.data.training_set))
-        self.X = d[:, :-1]
-        self.y = d[:, -1]
+        if not self.data.json:
+            d = np.array(self.read_data(self.data.training_set))
+            self.X = d[:, :-1]
+            self.y = d[:, -1]
+            return True
+        else:
+            X, y = self.read_data_json(self.data.training_set)
+            self.X = X
+            self.y = y
+            return True
 
     def read_test_set(self):
         if self.data.test_set is None:
             return False
-        d = np.array(self.read_data(self.data.test_set))
-        self.Xtest = d
-        return True
+        if not self.data.json:
+            d = np.array(self.read_data(self.data.test_set))
+            self.Xtest = d
+            return True
+        else:
+            X, _ = self.read_data_json(self.data.test_set)
+            self.Xtest = X
+            return True
 
     def get_model_file(self):
         if self.data.model_file is None:
@@ -227,7 +287,11 @@ class CommandLine(object):
 
     def get_output_file(self):
         if self.data.output_file is None:
-            self.data.output_file = self.data.test_set + '.evodag.csv'
+            self.data.output_file = self.data.test_set + '.evodag'
+            if self.data.json:
+                self.data.output_file += '.json'
+            else:
+                self.data.output_file += '.csv'
         return self.data.output_file
 
     def id2word(self, x):
