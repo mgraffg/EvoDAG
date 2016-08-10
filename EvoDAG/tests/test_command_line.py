@@ -57,7 +57,7 @@ def test_main():
 def test_optimize_parameters():
     import os
     fname = training_set()
-    sys.argv = ['EvoDAG', '--cache-file',
+    sys.argv = ['EvoDAG', '--parameters',
                 'cache.evodag.gz', '-p10', '-e2', '-r', '2', fname]
     c = CommandLine()
     c.parse_args()
@@ -90,7 +90,7 @@ def test_previous_model():
 def test_cpu_cores():
     import os
     fname = training_set()
-    sys.argv = ['EvoDAG', '-u2', '--cache-file',
+    sys.argv = ['EvoDAG', '-u2', '--parameters',
                 'cache.evodag.gz', '-p10', '-e2', '-r', '2', fname]
     c = CommandLine()
     c.parse_args()
@@ -108,7 +108,7 @@ def test_ensemble_size():
     import os
     from EvoDAG.model import Ensemble
     fname = training_set()
-    sys.argv = ['EvoDAG', '-u2', '-n2', '--cache-file',
+    sys.argv = ['EvoDAG', '-u2', '-n2', '--parameters',
                 'cache.evodag.gz', '-p10', '-e2', '-r', '2', fname]
     c = CommandLine()
     c.parse_args()

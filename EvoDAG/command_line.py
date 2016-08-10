@@ -87,8 +87,8 @@ class CommandLine(object):
                                  dest='optimize_parameters',
                                  type=int, help=cdn)
         cdn = 'File to store the fitness of the configuration explored'
-        self.parser.add_argument('--cache-file',
-                                 dest='cache_file',
+        self.parser.add_argument('--parameters',
+                                 dest='parameters',
                                  type=str,
                                  help=cdn)
 
@@ -254,9 +254,9 @@ class CommandLine(object):
                 for k, v in kw.items():
                     if k in params and v is not None:
                         params[k] = [v]
-            cache_file = self.data.cache_file
-            if cache_file is not None and os.path.isfile(cache_file):
-                with gzip.open(self.data.cache_file, 'r') as fpt:
+            parameters = self.data.parameters
+            if parameters is not None and os.path.isfile(parameters):
+                with gzip.open(self.data.parameters, 'r') as fpt:
                     res = pickle.load(fpt)
             else:
                 npoints = self.data.optimize_parameters
@@ -273,8 +273,8 @@ class CommandLine(object):
                                            total=len(args))]
                     p.close()
                 res.sort(key=lambda x: np.median(x[0]), reverse=True)
-                if self.data.cache_file is not None:
-                    with gzip.open(self.data.cache_file, 'w') as fpt:
+                if self.data.parameters is not None:
+                    with gzip.open(self.data.parameters, 'w') as fpt:
                         pickle.dump(res, fpt)
             kw = RandomParameterSearch.process_params(res[0][1])
         self.store_model(kw)
