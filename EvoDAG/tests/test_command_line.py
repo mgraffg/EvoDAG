@@ -203,7 +203,11 @@ def test_params():
     os.unlink(fname)
     assert os.path.isfile('cache.evodag.gz')
     with gzip.open('cache.evodag.gz', 'rb') as fpt:
-        a = json.loads(str(fpt.read(), encoding='utf-8'))
+        try:
+            d = fpt.read()
+            a = json.loads(str(d, encoding='utf-8'))
+        except TypeError:
+            a = json.loads(d)
     os.unlink('cache.evodag.gz')
     assert len(a) == len([x for x in a if 'fitness' in x])
     print(a)

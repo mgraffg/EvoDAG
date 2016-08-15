@@ -375,7 +375,10 @@ class CommandLineParams(CommandLine):
         res.sort(key=lambda x: np.median(x['fitness']), reverse=True)
         if parameters.endswith('.gz'):
             with gzip.open(parameters, 'wb') as fpt:
-                fpt.write(bytes(json.dumps(res, sort_keys=True), encoding='utf-8'))
+                try:
+                    fpt.write(bytes(json.dumps(res, sort_keys=True), encoding='utf-8'))
+                except TypeError:
+                    fpt.write(json.dumps(res, sort_keys=True))
         else:
             with open(parameters, 'w') as fpt:
                 fpt.write(json.dumps(res, sort_keys=True))
@@ -436,7 +439,11 @@ class CommandLineTrain(CommandLine):
         else:
             func = open
         with func(parameters, 'rb') as fpt:
-            res = json.loads(str(fpt.read(), encoding='utf-8'))
+            try:
+                d = fpt.read()
+                res = json.loads(str(d, encoding='utf-8'))
+            except TypeError:
+                res = json.loads(d)
         try:
             kw = res[0]
         except KeyError:
