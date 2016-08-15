@@ -203,7 +203,7 @@ def test_params():
     os.unlink(fname)
     assert os.path.isfile('cache.evodag.gz')
     with gzip.open('cache.evodag.gz', 'rb') as fpt:
-        a = json.loads(str(fpt.read(), encoding='utf8'))
+        a = json.loads(str(fpt.read(), encoding='utf-8'))
     os.unlink('cache.evodag.gz')
     assert len(a) == len([x for x in a if 'fitness' in x])
     print(a)
@@ -225,8 +225,8 @@ def test_train():
     os.unlink('cache.evodag.gz')
     assert os.path.isfile('model.evodag')
     os.unlink('model.evodag')
-    
-    
+
+
 def test_predict():
     import os
     from EvoDAG.command_line import params, train, predict

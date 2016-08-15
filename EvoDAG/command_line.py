@@ -374,11 +374,11 @@ class CommandLineParams(CommandLine):
         [x.update(kw) for x in res]
         res.sort(key=lambda x: np.median(x['fitness']), reverse=True)
         if parameters.endswith('.gz'):
-            func = gzip.open
+            with gzip.open(parameters, 'wb') as fpt:
+                fpt.write(bytes(json.dumps(res, sort_keys=True), encoding='utf-8'))
         else:
-            func = open
-        with func(parameters, 'wb') as fpt:
-            fpt.write(bytes(json.dumps(res, sort_keys=True), encoding='utf8'))
+            with open(parameters, 'w') as fpt:
+                fpt.write(json.dumps(res, sort_keys=True))
 
     def main(self):
         self.read_training_set()
@@ -436,7 +436,7 @@ class CommandLineTrain(CommandLine):
         else:
             func = open
         with func(parameters, 'rb') as fpt:
-            res = json.loads(str(fpt.read(), encoding='utf8'))
+            res = json.loads(str(fpt.read(), encoding='utf-8'))
         try:
             kw = res[0]
         except KeyError:
