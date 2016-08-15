@@ -34,6 +34,11 @@ class Model(object):
         self._labels = labels
 
     @property
+    def classifier(self):
+        "whether this is classification or regression task"
+        return self._classifier
+
+    @property
     def fitness_vs(self):
         "Fitness in the validation set"
         return self._hist[-1].fitness_vs
@@ -136,6 +141,11 @@ class Models(object):
     def __init__(self, models, labels=None):
         self._models = models
         self._labels = labels
+
+    @property
+    def classifier(self):
+        "whether this is classification or regression task"
+        return self.models[0].classifier
 
     @property
     def models(self):

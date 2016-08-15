@@ -189,3 +189,62 @@ def test_json():
     os.unlink('temp.evodag.gz')
     print(open('output.evodag').read())
     os.unlink('output.evodag')
+
+
+def test_params():
+    import os
+    import gzip
+    from EvoDAG.command_line import params
+    import json
+    fname = training_set()
+    sys.argv = ['EvoDAG', '--parameters',
+                'cache.evodag.gz', '-p10', '-e2', '-r', '2', fname]
+    params()
+    os.unlink(fname)
+    assert os.path.isfile('cache.evodag.gz')
+    with gzip.open('cache.evodag.gz', 'rb') as fpt:
+        a = json.loads(str(fpt.read(), encoding='utf8'))
+    os.unlink('cache.evodag.gz')
+    assert len(a) == len([x for x in a if 'fitness' in x])
+    print(a)
+
+
+def test_train():
+    import os
+    from EvoDAG.command_line import params, train
+    fname = training_set()
+    sys.argv = ['EvoDAG', '--parameters',
+                'cache.evodag.gz', '-p10', '-e2', '-r', '2', fname]
+    params()
+    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag.gz',
+                '-n2',
+                '--model', 'model.evodag',
+                '--test', fname, fname]
+    train()
+    os.unlink(fname)
+    os.unlink('cache.evodag.gz')
+    assert os.path.isfile('model.evodag')
+    os.unlink('model.evodag')
+    
+    
+def test_predict():
+    import os
+    from EvoDAG.command_line import params, train, predict
+    fname = training_set()
+    sys.argv = ['EvoDAG', '--parameters',
+                'cache.evodag.gz', '-p10', '-e2', '-r', '2', fname]
+    params()
+    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag.gz',
+                '-n2',
+                '--model', 'model.evodag',
+                '--test', fname, fname]
+    train()
+    sys.argv = ['EvoDAG', '--output', 'output.evodag',
+                '--model', 'model.evodag', fname]
+    predict()
+    os.unlink(fname)
+    os.unlink('cache.evodag.gz')
+    os.unlink('model.evodag')
+    assert os.path.isfile('output.evodag')
+    os.unlink('output.evodag')
+    

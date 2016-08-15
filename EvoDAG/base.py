@@ -36,7 +36,7 @@ class EvoDAG(object):
                  number_tries_feasible_ind=30,
                  unique_individuals=True,
                  classifier=True,
-                 labels=None):
+                 labels=None, **kwargs):
         self._generations = generations
         self._popsize = popsize
         self._classifier = classifier
@@ -60,6 +60,7 @@ class EvoDAG(object):
         if self._generations == np.inf and tr_fraction == 1:
             raise RuntimeError("Infinite evolution, set generations\
             or tr_fraction < 1 ")
+        self._extras = kwargs
 
     def get_params(self):
         "Parameters used to initialize the class"

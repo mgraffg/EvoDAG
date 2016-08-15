@@ -17,9 +17,11 @@ from .utils import RandomParameterSearch, PARAMS
 from .sparse_array import SparseArray
 from .model import Ensemble
 from multiprocessing import Pool
+import EvoDAG as evodag
 from EvoDAG import EvoDAG
 import os
 import gzip
+import json
 import pickle
 try:
     from tqdm import tqdm
@@ -58,6 +60,12 @@ class CommandLine(object):
         self.cores()
         self.ensemble()
         self.output_file()
+        self.version()
+
+    def version(self):
+        pa = self.parser.add_argument
+        pa('--version',
+           action='version', version='EvoDAG %s' % evodag.__version__)
 
     def output_file(self):
         self.parser.add_argument('-o', '--output-file',
@@ -222,7 +230,7 @@ class CommandLine(object):
 
     def store_model(self, kw):
         if self.data.ensemble_size == 1:
-            self.evo = EvoDAG(**kw).fit(self.X, self.y)
+            self.evo = EvoDAG(**kw).fit(self.X, self.y, test_set=self.Xtest)
             self.model = self.evo.model()
         else:
             seed = self.data.seed
@@ -310,7 +318,201 @@ class CommandLine(object):
                 fpt.write('\n'.join(map(str, hy)))
 
 
+class CommandLineParams(CommandLine):
+    def __init__(self):
+        self.Xtest = None
+        self.word2id = {}
+        self.parser = argparse.ArgumentParser(description="EvoDAG")
+        self.training_set()
+        self.init_params()
+        self.optimize_parameters()
+        self.cores()
+        self.version()
+
+    def optimize_parameters(self):
+        cdn = '''Optimize parameters sampling
+        N (734 by default) points from the parameter space'''
+        self.parser.add_argument('-r', '--optimize-parameters',
+                                 dest='optimize_parameters',
+                                 default=734,
+                                 type=int, help=cdn)
+        cdn = 'File to store the fitness of the parameters explored'
+        self.parser.add_argument('--parameters',
+                                 dest='parameters',
+                                 type=str,
+                                 help=cdn)
+
+    def version(self):
+        pa = self.parser.add_argument
+        pa('--version',
+           action='version', version='EvoDAG %s' % evodag.__version__)
+
+    def evolve(self, kw):
+        if len(kw):
+            params = PARAMS.copy()
+            for k, v in kw.items():
+                if k in params and v is not None:
+                    params[k] = [v]
+        parameters = self.data.parameters
+        if parameters is None:
+            parameters = self.data.training_set + '.EvoDAGparams'
+        npoints = self.data.optimize_parameters
+        rs = RandomParameterSearch(params=params,
+                                   seed=self.data.seed,
+                                   npoints=npoints)
+        if self.data.cpu_cores == 1:
+            res = [rs_evodag((args, self.X, self.y))
+                   for args in tqdm(rs, total=rs._npoints)]
+        else:
+            p = Pool(self.data.cpu_cores)
+            args = [(args, self.X, self.y) for args in rs]
+            res = [x for x in tqdm(p.imap_unordered(rs_evodag, args),
+                                   total=len(args))]
+            p.close()
+        [x[1].update(dict(fitness=x[0])) for x in res]
+        res = [x[1] for x in res]
+        [x.update(kw) for x in res]
+        res.sort(key=lambda x: np.median(x['fitness']), reverse=True)
+        if parameters.endswith('.gz'):
+            func = gzip.open
+        else:
+            func = open
+        with func(parameters, 'wb') as fpt:
+            fpt.write(bytes(json.dumps(res, sort_keys=True), encoding='utf8'))
+
+    def main(self):
+        self.read_training_set()
+        kw = {}
+        for k, v in EvoDAG().get_params().items():
+            if hasattr(self.data, k):
+                kw[k] = getattr(self.data, k)
+        self.evolve(kw)
+
+
+class CommandLineTrain(CommandLine):
+    def __init__(self):
+        self.Xtest = None
+        self.word2id = {}
+        self.parser = argparse.ArgumentParser(description="EvoDAG")
+        self.training_set()
+        self.parameters()
+        self.model()
+        self.cores()
+        self.ensemble()
+        self.test_set()
+        self.version()
+
+    def parameters(self):
+        cdn = 'File containing a list of parameters explored,\
+        the first one being the best'
+        self.parser.add_argument('--parameters',
+                                 dest='parameters',
+                                 type=str,
+                                 help=cdn)
+
+    def model(self):
+        cdn = 'File to store EvoDAG model'
+        pa = self.parser.add_argument
+        pa('-m', '--model',
+           dest='model_file',
+           type=str,
+           help=cdn)
+        pa('-j', '--json', dest='json',
+           action="store_true",
+           help='Whether the inputs are in json format',
+           default=False)
+
+    def version(self):
+        pa = self.parser.add_argument
+        pa('--version',
+           action='version', version='EvoDAG %s' % evodag.__version__)
+
+    def main(self):
+        self.read_training_set()
+        self.read_test_set()
+        parameters = self.data.parameters
+        if parameters.endswith('.gz'):
+            func = gzip.open
+        else:
+            func = open
+        with func(parameters, 'rb') as fpt:
+            res = json.loads(str(fpt.read(), encoding='utf8'))
+        try:
+            kw = res[0]
+        except KeyError:
+            kw = res
+        kw = RandomParameterSearch.process_params(kw)
+        if 'seed' in kw:
+            self.data.seed = kw['seed']
+            del kw['seed']
+        self.store_model(kw)
+
+
+class CommandLinePredict(CommandLine):
+    def __init__(self):
+        self.Xtest = None
+        self.word2id = {}
+        self.parser = argparse.ArgumentParser(description="EvoDAG")
+        self.model()
+        self.test_set()
+        self.output_file()
+        self.version()
+
+    def test_set(self):
+        cdn = 'File containing the test set on csv.'
+        self.parser.add_argument('test_set',
+                                 default=None,
+                                 help=cdn)
+
+    def model(self):
+        cdn = 'EvoDAG model'
+        pa = self.parser.add_argument
+        pa('-m', '--model',
+           dest='model_file',
+           type=str,
+           help=cdn)
+        pa('-j', '--json', dest='json',
+           action="store_true",
+           help='Whether the inputs are in json format',
+           default=False)
+
+    def version(self):
+        pa = self.parser.add_argument
+        pa('--version',
+           action='version', version='EvoDAG %s' % evodag.__version__)
+
+    def main(self):
+        self.read_test_set()
+        model_file = self.get_model_file()
+        with gzip.open(model_file, 'r') as fpt:
+            m = pickle.load(fpt)
+            self.word2id = pickle.load(fpt)
+        self.data.classifier = m.classifier
+        hy = self.id2word(m.predict(self.Xtest))
+        with open(self.get_output_file(), 'w') as fpt:
+            fpt.write('\n'.join(map(str, hy)))
+
+
 def main():
     "Command line main"
     c = CommandLine()
     c.parse_args()
+
+
+def params():
+    "EvoDAG-params command line"
+    c = CommandLineParams()
+    c.parse_args()
+
+
+def train():
+    "EvoDAG-params command line"
+    c = CommandLineTrain()
+    c.parse_args()
+
+
+def predict():
+    "EvoDAG-params command line"
+    c = CommandLinePredict()
+    c.parse_args()
+
