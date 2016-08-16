@@ -387,7 +387,7 @@ class CommandLineParams(CommandLine):
         self.read_training_set()
         kw = {}
         for k, v in EvoDAG().get_params().items():
-            if hasattr(self.data, k):
+            if hasattr(self.data, k) and getattr(self.data, k) is not None:
                 kw[k] = getattr(self.data, k)
         self.evolve(kw)
 
