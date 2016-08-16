@@ -408,7 +408,7 @@ class CommandLineTrain(CommandLine):
     def parameters(self):
         cdn = 'File containing a list of parameters explored,\
         the first one being the best'
-        self.parser.add_argument('--parameters',
+        self.parser.add_argument('-P', '--parameters',
                                  dest='parameters',
                                  type=str,
                                  help=cdn)
