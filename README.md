@@ -15,7 +15,7 @@ _et al._ and the implementation performed by
 [Leonardo Vanneschi](https://scholar.google.com.mx/citations?user=uR5K07QAAAAJ&hl=en&oi=ao)
 _et al_.
 
-# Citing EvoDAG #
+## Citing EvoDAG ##
 
 If you like EvoDAG, and it is used in a scientific publication, I would
 appreciate citations to the following paper:
