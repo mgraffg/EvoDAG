@@ -27,10 +27,10 @@ curl -O https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data
 
 ### Random search on the EvoDAG's parameters space
 
-The recommended first step is to optimize the parameters used by
-EvoDAG. In order to free from this task, EvoDAG can perform a random
-search on the parameter space and select the best configuration found
-in this random search. This can be performed as follows:
+Firstly, it is recommended to optimize the parameters used by
+EvoDAG. In order to free the user from this task, EvoDAG can perform a random
+search on the parameter space. EvoDAG selects the best configuration found
+on the random search. This can be performed as follows:
 
 ```bash__
 EvoDAG-params -P params.evodag -r 8 -u 4 iris.data
@@ -73,14 +73,14 @@ cpu cores, and `iris.data` is the dataset.
 ...
 ```
 
-where `fitness` is the balance error rate on a validation set randomly
-taken from the training set, in this case the 20\% of the `iris.data`.
+where `fitness` is the balance error rate on a validation set, which
+is randomly taken from the training set, in this case the 20% of `iris.data`.
 
 ### Training EvoDAG
 
-At this point we are in the position to train a model. Let us assume
+At this point, we are in the position to train a model. Let us assume
 one would like to create an ensemble of 10 classifiers on
-`iris.data`. Then the following command would do the job:
+`iris.data`. The following command performs this action: 
 
 ```bash   
 EvoDAG-train -P params.evodag -m model.evodag -n 10 -u 4 iris.data 
@@ -93,11 +93,11 @@ the number of cpu cores, and `iris.data` is the dataset.
 
 ### Predict using EvoDAG model
 
-At this point, EvoDAG has been trained and the model is store in
+At this point, EvoDAG has been trained and the model is stored in
 `model.evodag`, the next step is to use this model to predict some
-unknown data. Given that we did not split `iris.data` in a training
-and test set let us assume that `iris.data` contains the unknown
-data. This can be achieved as follows:
+unknown data. Given that `iris.data` was not split into a training
+and test set, let us assume that `iris.data` contains some unknown
+data. In order to predict `iris.data` one would do:
 
 ```bash   
 EvoDAG-predict -m model.evodag -o iris.predicted iris.data
@@ -119,6 +119,40 @@ Iris-setosa
 
 # Performance #
 
+The next table presents the average performance with 95%
+confidence intervals in terms of the balance error rate (BER) of
+auto-sklearn, SVM, and EvoDAG on thirteen classification
+problems (these benchmarks can be found:
+[matlab](http://theoval.cmp.uea.ac.uk/matlab/benchmarks) and [text](http://ws.ingeotec.mx/~mgraffg/classification)).
+  
+
+The best performance among each classification dataset is in
+bold face to facilitate the reading; it was compared against the others in order to know whether
+the difference in performance was statistically significant. The
+superscript $^*$ indicates that the difference between the best
+performance and the one having the superscript is statistically
+significant with a 95% confidence. This statistical test was
+performed using the Wilcoxon signed-rank test
+and the $p$-values were adjusted using 
+the Holm-Bonferroni method in order to consider the multiple
+comparisons performed.
+
+It can be observed from the table that SVM obtained
+the best performance in four of the datasets, and EvoDAG obtained the
+best performance in the rest of the datasets (nine). In all the cases, the
+difference in performance was statistically significant. One
+characteristic that caught our attention is the high confidence
+intervals of auto-sklearn, it is one order of magnitude higher than
+the other systems. Analyzing the predictions performed by
+auto-sklearn, it is found that in some of the trails the algorithm
+predicts only one class, obtaining, consequently, the worst possible
+performance, i.e., BER equals 50. This behaviour, clearly, can be
+automatically spotted, and, one possible solution could be as simple
+as execute auto-sklearn again on that particular case. Nonetheless, we
+decided to keep auto-sklearn without modification, and, instead, it
+is decided to include another table that presents the performance using the median.
+
+
 |dataset| [auto-sklearn](https://github.com/automl/auto-sklearn) | [SVC](http://scikit-learn.org/stable/) | EvoDAG |
 |------|---------------------------------------------:|------------------------------:|-------:|
 |banana | $28.00 \pm 3.69^*$ | **$11.27 \pm 0.18$** | $12.20 \pm 0.19^*$|
@@ -135,6 +169,17 @@ Iris-setosa
 |waveform | $22.67 \pm 3.53^*$ | $10.62 \pm 0.21^*$ | **$10.45 \pm 0.11$**|
 |splice | $10.79 \pm 7.43^*$ | $11.23 \pm 0.37^*$ | **$9.33 \pm 0.56$**|
 
+The next table presents the median performance (BER) of
+the different classifiers, it is observed from the table, that
+auto-sklearn obtained the best performance on two datasets, SVM
+obtained the best performance on four datasets, and EvoDAG had the
+best performance in seven datasets. Comparing the average and median
+performance, it can be observed that EvoDAG had the best average
+performance in \textit{titanic} and \textit{splice}, and on median performance SVM and
+auto-sklearn have the best performance on these dataset
+respectively; whereas, SVM had the best average performance in \textit{image}
+dataset, and on median performance auto-skearn has the best
+performance on this dataset.
 
 |dataset| [auto-sklearn](https://github.com/automl/auto-sklearn) | [SVC](http://scikit-learn.org/stable/) | EvoDAG |
 |------|---------------------------------------------:|------------------------------:|-------:|
@@ -151,59 +196,6 @@ Iris-setosa
 |image | **$3.06$** | $3.41$ | $3.66$|
 |waveform | $11.41$ | $10.45$ | **$10.36$**|
 |splice | **$3.39$** | $11.07$ | $9.26$|
-
-
-## Dataset ##
-
-```python   
-import glob
-for train in glob.glob('data/*train_data*.asc'):
-    label = train.split('/')[1].replace('data', 'labels')
-    label = train.split('/')[0] + '/' + label
-    with open(train) as fpt:
-        t = fpt.readlines()
-    with open(label) as fpt:
-        l = fpt.readlines()
-    with open(train, 'w') as fpt:
-        for a, b in zip(t, l):
-            d = [x.rstrip().rstrip() for x in a.split(" ")]
-            d = [x for x in d if len(x)]
-            d.append(b.rstrip().lstrip())
-            fpt.write(",".join(d) + '\n')
-
-for test in glob.glob('data/*test_data*.asc'):
-    with open(test) as fpt:
-        l = fpt.readlines()
-    with open(test, 'w') as fpt:
-        for a in l:
-            d = [x.rstrip().rstrip() for x in a.split(" ")]
-            d = [x for x in d if len(x)]
-            fpt.write(",".join(d) + '\n')
-```
-
-## Execute EvoDAG in the dataset (using a cluster with SGE) ##
-
-```bash
-#!/bin/sh
-for i in data/*train_data*.asc;
-do
-    seed=`python -c "import sys; print(sys.argv[1].split('.asc')[0].split('_')[-1])" $i`;
-    test=`python -c "import sys; print(sys.argv[1].replace('train', 'test'))" $i`;
-    output=data/`basename $test .asc`.evodag
-    cache=$i.rs.evodag
-    cpu=2
-    if [ ! -f $cache ]
-       then
-	echo \#!/bin/sh > job.sh
-	echo \#$ -N `basename $i .asc` >> job.sh
-	echo \#$ -S /bin/sh >> job.sh
-	echo \#$ -cwd >> job.sh
-	echo \#$ -j y >> job.sh
-	echo ~/miniconda3/bin/EvoDAG -s $seed -u $cpu -o $output -m $output -t $test --cache-file $cache -r 734 $i >> job.sh
-	qsub job.sh
-    fi
-done
-```
 
 ## Install EvoDAG ##
 
