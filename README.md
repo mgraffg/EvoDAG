@@ -15,6 +15,26 @@ _et al._ and the implementation performed by
 [Leonardo Vanneschi](https://scholar.google.com.mx/citations?user=uR5K07QAAAAJ&hl=en&oi=ao)
 _et al_.
 
+# Citing EvoDAG #
+
+If you like EvoDAG, and it is used in a scientific publication, I would
+appreciate citations to the following paper:
+
+[Semantic Genetic Programming Operators Based on Projections in the Phenotype Space](http://www.rcs.cic.ipn.mx/rcs/2015_94/Semantic%20Genetic%20Programming%20Operators%20Based%20on%20Projections%20in%20the%20Phenotype%20Space.pdf).
+M Graff, ES Tellez, E Villasenor, S Miranda-Jiménez. Research in Computing Science 94, 73-85
+
+```bibtex
+@article{graff2015semantic,
+  title={Semantic Genetic Programming Operators Based on Projections in the Phenotype Space},
+  author={Graff, Mario and Tellez, Eric Sadit and Villasenor, Elio and Miranda-Jim{\'e}nez, Sabino},
+  journal={Research in Computing Science},
+  volume={94},
+  pages={73--85},
+  year={2015},
+  publisher={National Polytechnic Institute, Mexico}
+}
+```
+
 ## Example using command line ##
 
 Let us assume one wants to create a classifier of iris dataset. The
