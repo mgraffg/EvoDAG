@@ -197,14 +197,14 @@ performance on this dataset.
 |waveform | $11.41$ | $10.45$ | **$10.36$**|
 |splice | **$3.39$** | $11.07$ | $9.26$|
 
-## Install EvoDAG ##
+# Install EvoDAG #
 
 * Install using pip  
 ```bash   
 pip install EvoDAG
 ```
 
-### Using source code ###
+## Using source code ##
 
 * Clone the repository  
 ```git clone  https://github.com/mgraffg/EvoDAG.git```
