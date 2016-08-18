@@ -175,9 +175,9 @@ auto-sklearn obtained the best performance on two datasets, SVM
 obtained the best performance on four datasets, and EvoDAG had the
 best performance in seven datasets. Comparing the average and median
 performance, it can be observed that EvoDAG had the best average
-performance in \textit{titanic} and \textit{splice}, and on median performance SVM and
+performance in _titanic_ and _splice_, and on median performance SVM and
 auto-sklearn have the best performance on these dataset
-respectively; whereas, SVM had the best average performance in \textit{image}
+respectively; whereas, SVM had the best average performance in _image_
 dataset, and on median performance auto-skearn has the best
 performance on this dataset.
 
