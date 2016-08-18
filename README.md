@@ -25,23 +25,97 @@ Repository
 curl -O https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data
 ```
 
-In order to train the EvoDAG using a population of 10 individuals,
-using early stopping to 11, sampling 100 different parameter configurations, creating
-an ensemble of 12, and using 4 cores then the following command is used:
+### Random search on the EvoDAG's parameters space
 
-```bash   
-~/.local/bin/EvoDAG -e 10 -p 11 -r 100 -u 4 -n 12 iris.data
+The recommended first step is to optimize the parameters used by
+EvoDAG. In order to free from this task, EvoDAG can perform a random
+search on the parameter space and select the best configuration found
+in this random search. This can be performed as follows:
+
+```bash__
+EvoDAG-params -P params.evodag -r 8 -u 4 iris.data
 ```
 
-The EvoDAG ensemble is stored in iris.evodag.gz. 
+where `-P` indicates the file name where the parameters sampled are
+stored, `-r` specifies the number of samples, `-u` indicates the number of
+cpu cores, and `iris.data` is the dataset.
 
-Now that the ensemble has been initialized one can predict a test set
-and store the output in file called output.csv using the following command.
+`params.evodag` looks like:
 
-```bash   
-~/.local/bin/EvoDAG -m iris.evodag.gz -t iris.data -o output.csv
+```json   
+[
+    {
+        "Add": 30,
+        "Cos": false,
+        "Div": true,
+        "Exp": true,
+        "Fabs": true,
+        "If": true,
+        "Ln": true,
+        "Max": 5,
+        "Min": 30,
+        "Mul": 0,
+        "Sigmoid": true,
+        "Sin": false,
+        "Sq": true,
+        "Sqrt": true,
+        "classifier": true,
+        "early_stopping_rounds": 2000,
+        "fitness": [
+            0.0,
+            0.0,
+            0.0
+        ],
+        "popsize": 500,
+        "seed": 0,
+        "unique_individuals": true
+    },
+...
 ```
 
+where `fitness` is the balance error rate on a validation set randomly
+taken from the training set, in this case the 20\% of the `iris.data`.
+
+### Training EvoDAG
+
+At this point we are in the position to train a model. Let us assume
+one would like to create an ensemble of 10 classifiers on
+`iris.data`. Then the following command would do the job:
+
+```bash   
+EvoDAG-train -P params.evodag -m model.evodag -n 10 -u 4 iris.data 
+```
+
+where `-m` specifies the file name used to store the model, `-n` is
+the size of the ensemble, `-P` receives EvoDAG's parameters, `-u` is
+the number of cpu cores, and `iris.data` is the dataset. 
+
+
+### Predict using EvoDAG model
+
+At this point, EvoDAG has been trained and the model is store in
+`model.evodag`, the next step is to use this model to predict some
+unknown data. Given that we did not split `iris.data` in a training
+and test set let us assume that `iris.data` contains the unknown
+data. This can be achieved as follows:
+
+```bash   
+EvoDAG-predict -m model.evodag -o iris.predicted iris.data
+```
+
+where `-o` indicates the file name used to store the predictions, `-m`
+contains the model, and `iris.data` has the test set.
+
+`iris.predicted` looks like:
+
+```
+Iris-setosa
+Iris-setosa
+Iris-setosa
+Iris-setosa
+Iris-setosa
+...
+```
 
 # Performance #
 
