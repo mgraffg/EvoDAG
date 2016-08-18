@@ -337,7 +337,7 @@ class CommandLineParams(CommandLine):
                                  default=734,
                                  type=int, help=cdn)
         cdn = 'File to store the fitness of the parameters explored'
-        self.parser.add_argument('--parameters',
+        self.parser.add_argument('-P', '--parameters',
                                  dest='parameters',
                                  type=str,
                                  help=cdn)
