@@ -17,7 +17,7 @@ _et al_.
 
 Currently, it is under review (submitted to
 [ROPEC 2016](http://ropec.org)) a paper that describes EvoDAG. The
-paper can be download from [here](http://ws.ingeotec.mx/~mgraffg/publications/pdf/ropec2016.pdf)
+paper can be download from [here](http://ws.ingeotec.mx/~mgraffg/publications/pdf/ropec2016.pdf).
 
 ## Citing EvoDAG ##
 
@@ -39,7 +39,7 @@ M Graff, ES Tellez, E Villasenor, S Miranda-Jiménez. Research in Computing Scie
 }
 ```
 
-## Example using command line ##
+## EvoDAG from command line ##
 
 Let us assume one wants to create a classifier of iris dataset. The
 first step is to download the dataset from the UCI Machine Learning
