@@ -15,6 +15,10 @@ _et al._ and the implementation performed by
 [Leonardo Vanneschi](https://scholar.google.com.mx/citations?user=uR5K07QAAAAJ&hl=en&oi=ao)
 _et al_.
 
+Currently, it is under review (submitted to
+[ROPEC 2016](http://ropec.org)) a paper that describes EvoDAG. The
+paper can be download from [here](http://ws.ingeotec.mx/~mgraffg/publications/pdf/ropec2016.pdf)
+
 ## Citing EvoDAG ##
 
 If you like EvoDAG, and it is used in a scientific publication, I would
