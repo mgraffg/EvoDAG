@@ -56,7 +56,7 @@ class EvoDAG(object):
         self._function_set = function_set
         if not inspect.isclass(population_class):
             pop = importlib.import_module('EvoDAG.population')
-            print(pop, population_class)
+            # print(pop, population_class)
             population_class = getattr(pop, population_class)
         self._population_class = population_class
         np.random.seed(self._seed)
