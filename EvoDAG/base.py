@@ -22,6 +22,7 @@ from .node import Sq, Sigmoid, If, Min, Max
 from .model import Model, Models
 from .population import SteadyState
 import importlib
+import inspect
 
 
 class EvoDAG(object):
@@ -53,8 +54,9 @@ class EvoDAG(object):
         self._labels = labels
         self._multiclass = False
         self._function_set = function_set
-        if isinstance(population_class, str):
+        if not inspect.isclass(population_class):
             pop = importlib.import_module('EvoDAG.population')
+            print(pop, population_class)
             population_class = getattr(pop, population_class)
         self._population_class = population_class
         np.random.seed(self._seed)

@@ -266,7 +266,11 @@ def test_generational():
     c = CommandLineParams()
     c.parse_args()
     with gzip.open('cache.evodag.gz') as fpt:
-        a = json.loads(str(fpt.read(), encoding='utf-8'))
+        data = fpt.read()
+        try:
+            a = json.loads(str(data, encoding='utf-8'))
+        except TypeError:
+            a = json.loads(data)
     a = a[0]
     assert 'population_class' in a
     assert a['population_class'] == 'Generational'

@@ -880,8 +880,11 @@ def test_RSE_avg_zero():
 
 
 def test_population_as_parameter():
+    class Mock(object):
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError('Mock')
     from EvoDAG import RootGP
-    mock = MagicMock(side_effect=RuntimeError('Mock'))
+    mock = Mock
     gp = RootGP(generations=np.inf,
                 population_class=mock,
                 tournament_size=2,
