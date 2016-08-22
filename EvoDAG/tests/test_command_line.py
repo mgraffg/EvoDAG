@@ -252,3 +252,23 @@ def test_predict():
     assert os.path.isfile('output.evodag')
     os.unlink('output.evodag')
     
+
+def test_generational():
+    import os
+    from EvoDAG.command_line import CommandLineParams
+    import gzip
+    import json
+    fname = training_set()
+    sys.argv = ['EvoDAG', '--parameters',
+                'cache.evodag.gz', '-p10', '-e2',
+                '--evolution', 'Generational',
+                '-r', '2', fname]
+    c = CommandLineParams()
+    c.parse_args()
+    with gzip.open('cache.evodag.gz') as fpt:
+        a = json.loads(str(fpt.read(), encoding='utf-8'))
+    a = a[0]
+    assert 'population_class' in a
+    assert a['population_class'] == 'Generational'
+    os.unlink('cache.evodag.gz')
+    print(a)

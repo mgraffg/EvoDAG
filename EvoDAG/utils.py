@@ -45,7 +45,8 @@ PARAMS = {'Add': [2, 5, 10, 15, 20, 25, 30],
           'unique_individuals': [True, False],
           'popsize': [500, 1000, 2000, 3000],
           'early_stopping_rounds':
-          [125, 250, 500, 1000, 2000]}
+          [125, 250, 500, 1000, 2000],
+          'population_class': ['SteadyState']}
 
 
 class RandomParameterSearch(object):

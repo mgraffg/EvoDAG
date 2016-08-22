@@ -31,7 +31,11 @@ def test_process_params():
     params = evo.get_params()
     for k, v in args.items():
         if k in params:
-            assert v == params[k]
+            print(v, params[k])
+            if hasattr(params[k], '__name__'):
+                assert v == params[k].__name__
+            else:
+                assert v == params[k]
 
 
 def test_random_parameter_search_len():

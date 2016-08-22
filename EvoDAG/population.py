@@ -17,7 +17,7 @@ from .node import Function
 from .model import Model
 
 
-class Population(object):
+class SteadyState(object):
     def __init__(self, tournament_size=2,
                  classifier=True,
                  labels=None,
@@ -135,7 +135,7 @@ class Population(object):
 
     def add(self, v):
         "Add an individual to the population"
-        self._p.append(v)
+        self.population.append(v)
         v.position = len(self._hist)
         self._hist.append(v)
         self.bsf = v
@@ -145,7 +145,7 @@ class Population(object):
         """Replace an individual selected by negative tournament selection with
         individual v"""
         k = self.tournament(negative=True)
-        self._p[k] = v
+        self.population[k] = v
         v.position = len(self._hist)
         self._hist.append(v)
         self.bsf = v
@@ -153,7 +153,7 @@ class Population(object):
 
     @property
     def popsize(self):
-        return len(self._p)
+        return len(self.population)
 
     @property
     def population(self):
@@ -173,3 +173,20 @@ class Population(object):
         else:
             index = np.argsort(fit)[-1]
         return vars[index]
+
+
+class Generational(SteadyState):
+    "Generational GP using a steady-state as base"
+    def __init__(self, *args, **kwargs):
+        self._inner = []
+        super(Generational, self).__init__(*args, **kwargs)
+
+    def replace(self, v):
+        v.position = len(self._hist)
+        self._hist.append(v)
+        self.bsf = v
+        self.estopping = v
+        self._inner.append(v)
+        if len(self._inner) == self.popsize:
+            self._p = self._inner
+            self._inner = []

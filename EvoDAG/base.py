@@ -20,7 +20,8 @@ from .node import Variable
 from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Ln
 from .node import Sq, Sigmoid, If, Min, Max
 from .model import Model, Models
-from .population import Population
+from .population import SteadyState
+import importlib
 
 
 class EvoDAG(object):
@@ -32,7 +33,7 @@ class EvoDAG(object):
                                Exp, Sqrt, Sin, Cos, Ln,
                                Sq, Sigmoid, If, Min, Max],
                  tr_fraction=0.8,
-                 population_class=Population,
+                 population_class=SteadyState,
                  number_tries_feasible_ind=30,
                  unique_individuals=True,
                  classifier=True,
@@ -52,6 +53,9 @@ class EvoDAG(object):
         self._labels = labels
         self._multiclass = False
         self._function_set = function_set
+        if isinstance(population_class, str):
+            pop = importlib.import_module('EvoDAG.population')
+            population_class = getattr(pop, population_class)
         self._population_class = population_class
         np.random.seed(self._seed)
         self._unique_individuals = unique_individuals
