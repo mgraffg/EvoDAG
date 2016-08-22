@@ -129,6 +129,10 @@ class CommandLine(object):
            action="store_true",
            help='Whether the inputs are in json format',
            default=False)
+        pa('--evolution', dest='population_class',
+           help="Type of evolution (SteadyState|Generational)",
+           type=str,
+           default='SteadyState')
 
     def training_set(self):
         cdn = 'File containing the training set on csv.'
