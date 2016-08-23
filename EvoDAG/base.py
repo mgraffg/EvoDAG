@@ -456,7 +456,10 @@ class EvoDAG(object):
         self._logger.info("Starting evolution")
         self.create_population()
         while not self.stopping_criteria():
-            a = self.random_offspring()
+            try:
+                a = self.random_offspring()
+            except RuntimeError:
+                return self
             self.replace(a)
         return self
 

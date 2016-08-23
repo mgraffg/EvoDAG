@@ -15,4 +15,4 @@
 
 from .base import EvoDAG, RGP, RootGP
 __all__ = ["EvoDAG", "RGP", "RootGP"]
-__version__ = '0.2.13'
+__version__ = '0.2.14'
