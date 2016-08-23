@@ -177,21 +177,21 @@ decided to keep auto-sklearn without modification, and, instead, it
 is decided to include another table that presents the performance using the median.
 
 
-|dataset| [auto-sklearn](https://github.com/automl/auto-sklearn) | [SVC](http://scikit-learn.org/stable/) | EvoDAG |
-|------|---------------------------------------------:|------------------------------:|-------:|
-|banana | $28.00 \pm 3.69^*$ | **$11.27 \pm 0.18$** | $12.20 \pm 0.19^*$|
-|titanic | $37.18 \pm 1.64^*$ | $30.27 \pm 0.36^*$ | **$30.04 \pm 0.26$**|
-|thyroid | $23.38 \pm 3.99^*$ | **$6.13 \pm 0.76$** | $8.06 \pm 0.83^*$|
-|diabetis | $37.65 \pm 2.01^*$ | $26.65 \pm 0.44^*$ | **$24.85 \pm 0.42$**|
-|breast-cancer | $42.36 \pm 1.38^*$ | $36.25 \pm 1.04^*$ | **$34.67 \pm 1.08$**|
-|flare-solar | $39.05 \pm 1.49^*$ | $33.41 \pm 0.38^*$ | **$32.88 \pm 0.32$**|
-|heart | $27.69 \pm 2.85^*$ | $18.12 \pm 0.63^*$ | **$16.58 \pm 0.73$**|
-|ringnorm | $15.49 \pm 4.24^*$ | **$1.96 \pm 0.10$** | $2.56 \pm 0.08^*$|
-|twonorm | $20.87 \pm 4.49^*$ | $2.90 \pm 0.09^*$ | **$2.70 \pm 0.04$**|
-|german | $39.45 \pm 1.62^*$ | $29.00 \pm 0.50^*$ | **$28.77 \pm 0.53$**|
-|image | $21.29 \pm 10.54^*$ | **$3.32 \pm 0.29$** | $3.88 \pm 0.43^*$|
-|waveform | $22.67 \pm 3.53^*$ | $10.62 \pm 0.21^*$ | **$10.45 \pm 0.11$**|
-|splice | $10.79 \pm 7.43^*$ | $11.23 \pm 0.37^*$ | **$9.33 \pm 0.56$**|
+|dataset| [auto-sklearn](https://github.com/automl/auto-sklearn) | [SVC](http://scikit-learn.org/stable/) | EvoDAG (SteadyState)|EvoDAG (Generational)|
+|------|---------------------------------------------:|------------------------------:|-------:|-----------:|
+|banana | $25.63 \pm 3.22^*$ | **$11.09 \pm 0.19$** | $12.04 \pm 0.19^*$ | $11.86 \pm 0.18^*$|
+|titanic | $27.06 \pm 1.47^*$ | **$23.61 \pm 0.49$** | $24.09 \pm 0.46^*$ | $23.92 \pm 0.41^*$|
+|thyroid | $14.61 \pm 2.32^*$ | **$4.37 \pm 0.48$** | $5.53 \pm 0.52^*$ | $5.19 \pm 0.50^*$|
+|diabetis | $29.00 \pm 0.99^*$ | $26.67 \pm 0.40^*$ | $24.83 \pm 0.40^*$ | **$24.52 \pm 0.36$**|
+|breast-cancer | **$27.74 \pm 0.93$** | $33.96 \pm 1.09^*$ | $32.65 \pm 0.99^*$ | $32.88 \pm 0.97^*$|
+|flare-solar | $41.15 \pm 1.92^*$ | $34.45 \pm 0.40^*$ | **$34.20 \pm 0.34$** | $34.23 \pm 0.32^*$|
+|heart | $25.87 \pm 2.48^*$ | $17.91 \pm 0.63^*$ | $16.29 \pm 0.70^*$ | **$16.10 \pm 0.69$**|
+|ringnorm | $15.35 \pm 4.20^*$ | **$1.95 \pm 0.10$** | $2.55 \pm 0.08^*$ | $2.44 \pm 0.09^*$|
+|twonorm | $20.87 \pm 4.49^*$ | $2.90 \pm 0.09^*$ | $2.70 \pm 0.04^*$ | **$2.66 \pm 0.04$**|
+|german | **$26.39 \pm 0.66$** | $29.43 \pm 0.59^*$ | $28.84 \pm 0.55^*$ | $28.81 \pm 0.52^*$|
+|image | $24.17 \pm 12.16^*$ | **$3.27 \pm 0.28$** | $3.83 \pm 0.41^*$ | $4.54 \pm 0.40^*$|
+|waveform | $17.08 \pm 2.05^*$ | $12.09 \pm 0.27^*$ | $12.08 \pm 0.16^*$ | **$11.99 \pm 0.15$**|
+|splice | $10.52 \pm 7.11^*$ | $11.28 \pm 0.37^*$ | **$9.36 \pm 0.57$** | $10.04 \pm 0.53^*$|
 
 The next table presents the median performance (BER) of
 the different classifiers, it is observed from the table, that
@@ -205,21 +205,21 @@ respectively; whereas, SVM had the best average performance in _image_
 dataset, and on median performance auto-skearn has the best
 performance on this dataset.
 
-|dataset| [auto-sklearn](https://github.com/automl/auto-sklearn) | [SVC](http://scikit-learn.org/stable/) | EvoDAG |
-|------|---------------------------------------------:|------------------------------:|-------:|
-|banana | $13.39$ | **$11.02$** | $12.05$|
-|titanic | $33.10$ | **$29.63$** | $29.75$|
-|thyroid | $11.96$ | **$5.95$** | $8.27$|
-|diabetis | $31.17$ | $26.58$ | **$24.51$**|
-|breast-cancer | $41.64$ | $35.38$ | **$34.83$**|
-|flare-solar | $34.90$ | $33.31$ | **$32.99$**|
-|heart | $20.68$ | $18.28$ | **$15.96$**|
-|ringnorm | $2.07$ | **$1.83$** | $2.51$|
-|twonorm | $3.29$ | $2.83$ | **$2.69$**|
-|german | $36.25$ | $28.88$ | **$28.57$**|
-|image | **$3.06$** | $3.41$ | $3.66$|
-|waveform | $11.41$ | $10.45$ | **$10.36$**|
-|splice | **$3.39$** | $11.07$ | $9.26$|
+|dataset| [auto-sklearn](https://github.com/automl/auto-sklearn) | [SVC](http://scikit-learn.org/stable/) | EvoDAG (SteadyState)|EvoDAG (Generational)|
+|------|---------------------------------------------:|------------------------------:|-------:|-----------:|
+|banana | $13.01$ | **$10.90$** | $11.92$ | $11.76$|
+|titanic | $24.82$ | **$22.87$** | $23.01$ | $23.11$|
+|thyroid | $9.33$ | **$4.00$** | $5.33$ | $5.33$|
+|diabetis | $26.83$ | $26.67$ | $24.67$ | **$24.50$**|
+|breast-cancer | **$27.27$** | $33.77$ | $32.47$ | $33.77$|
+|flare-solar | $35.88$ | **$34.25$** | $34.38$ | $34.25$|
+|heart | $20.00$ | $18.00$ | **$16.00$** | $16.00$|
+|ringnorm | $2.06$ | **$1.82$** | $2.51$ | $2.38$|
+|twonorm | $3.29$ | $2.83$ | $2.69$ | **$2.63$**|
+|german | **$26.00$** | $29.33$ | $28.67$ | $28.67$|
+|image | **$2.87$** | $3.42$ | $3.61$ | $4.46$|
+|waveform | **$10.63$** | $11.95$ | $12.02$ | $11.95$|
+|splice | **$3.43$** | $11.10$ | $9.26$ | $10.11$|
 
 # Install EvoDAG #
 
