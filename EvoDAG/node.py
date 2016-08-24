@@ -77,7 +77,7 @@ class Variable(object):
 
     @property
     def variable(self):
-        "The variable is indicated by the position in RootGP.X"
+        "The variable is indicated by the position in EvoDAG.X"
         return self._variable
 
     @variable.setter
@@ -110,16 +110,26 @@ class Variable(object):
             return None
         return coef
 
-    def eval(self, X):
+    def raw_outputs(self, X):
+        r = X[self.variable].hy
+        hr = X[self.variable].hy_test
+        return r, hr
+
+    def set_weight(self, r):
         if self.weight is None:
-            w = self.compute_weight([X[self.variable].hy])
+            w = self.compute_weight([r])
             if w is None:
                 return False
             self.weight = w
-        self.hy = X[self.variable].hy * self.weight
-        xtest = X[self.variable].hy_test
-        if xtest is not None:
-            self.hy_test = xtest * self.weight
+        return True
+
+    def eval(self, X):
+        r, hr = self.raw_outputs(X)
+        if not self.set_weight(r):
+            return False
+        self.hy = r * self.weight
+        if hr is not None:
+            self.hy_test = hr * self.weight
         return True
 
     def isfinite(self):
@@ -163,6 +173,16 @@ class Function(Variable):
         return c
 
 
+class Function1(Function):
+    def set_weight(self, r):
+        if self.weight is None:
+            w = self.compute_weight([r])
+            if w is None:
+                return False
+            self.weight = w[0]
+        return True
+
+
 class Add(Function):
     nargs = 5
     symbol = '+'
@@ -198,7 +218,7 @@ class Add(Function):
         return True
 
 
-class Mul(Function):
+class Mul(Function1):
     symbol = '*'
     color = 1
 
@@ -213,214 +233,140 @@ class Mul(Function):
             a = a * x
         return a
 
-    def eval(self, X):
+    def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
         r = self.cumprod([x.hy for x in X])
-        if self.weight is None:
-            w = self.compute_weight([r])
-            if w is None:
-                return False
-            self.weight = w[0]
-        self.hy = r * self.weight
+        hr = None
         if X[0].hy_test is not None:
-            r = self.cumprod([x.hy_test for x in X])
-            self.hy_test = r * self.weight
-        return True
+            hr = self.cumprod([x.hy_test for x in X])
+        return r, hr
 
 
-class Div(Function):
+class Div(Function1):
     symbol = '/'
     color = 1
 
-    def eval(self, X):
+    def raw_outputs(self, X):
         a, b = X[self.variable[0]], X[self.variable[1]]
         r = a.hy / b.hy
-        if self.weight is None:
-            w = self.compute_weight([r])
-            if w is None:
-                return False
-            self.weight = w[0]
-        self.hy = r * self.weight
+        hr = None
         if X[0].hy_test is not None:
-            r = a.hy_test / b.hy_test
-            self.hy_test = r * self.weight
-        return True
+            hr = a.hy_test / b.hy_test
+        return r, hr
 
 
-class Fabs(Function):
+class Fabs(Function1):
     nargs = 1
     symbol = 'fabs'
     color = 2
 
-    def eval(self, X):
+    def raw_outputs(self, X):
         X = X[self.variable]
         r = X.hy.fabs()
-        if self.weight is None:
-            w = self.compute_weight([r])
-            if w is None:
-                return False
-            self.weight = w[0]
-        self.hy = r * self.weight
-        if X.hy_test is not None:
-            self.hy_test = X.hy_test.fabs() * self.weight
-        return True
+        hr = X.hy_test.fabs() if X.hy_test is not None else None
+        return r, hr
 
 
-class Exp(Function):
+class Exp(Function1):
     nargs = 1
     symbol = 'exp'
     color = 3
 
-    def eval(self, X):
+    def raw_outputs(self, X):
         X = X[self.variable]
         r = X.hy.exp()
-        if self.weight is None:
-            w = self.compute_weight([r])
-            if w is None:
-                return False
-            self.weight = w[0]
-        self.hy = r * self.weight
-        if X.hy_test is not None:
-            self.hy_test = X.hy_test.exp() * self.weight
-        return True
+        hr = X.hy_test.exp() if X.hy_test is not None else None
+        return r, hr
 
 
-class Sqrt(Function):
+class Sqrt(Function1):
     nargs = 1
     symbol = 'sqrt'
     color = 4
-    
-    def eval(self, X):
+
+    def raw_outputs(self, X):
         X = X[self.variable]
         r = X.hy.sqrt()
-        if self.weight is None:
-            w = self.compute_weight([r])
-            if w is None:
-                return False
-            self.weight = w[0]
-        self.hy = r * self.weight
-        if X.hy_test is not None:
-            self.hy_test = X.hy_test.sqrt() * self.weight
-        return True
+        hr = X.hy_test.sqrt() if X.hy_test is not None else None
+        return r, hr
 
 
-class Sin(Function):
+class Sin(Function1):
     nargs = 1
     symbol = 'sin'
     color = 5
 
-    def eval(self, X):
+    def raw_outputs(self, X):
         X = X[self.variable]
         r = X.hy.sin()
-        if self.weight is None:
-            w = self.compute_weight([r])
-            if w is None:
-                return False
-            self.weight = w[0]
-        self.hy = r * self.weight
-        if X.hy_test is not None:
-            self.hy_test = X.hy_test.sin() * self.weight
-        return True
+        hr = X.hy_test.sin() if X.hy_test is not None else None
+        return r, hr
 
 
-class Cos(Function):
+class Cos(Function1):
     nargs = 1
     symbol = 'cos'
     color = 5
 
-    def eval(self, X):
+    def raw_outputs(self, X):
         X = X[self.variable]
         r = X.hy.cos()
-        if self.weight is None:
-            w = self.compute_weight([r])
-            if w is None:
-                return False
-            self.weight = w[0]
-        self.hy = r * self.weight
-        if X.hy_test is not None:
-            self.hy_test = X.hy_test.cos() * self.weight
-        return True
+        hr = X.hy_test.cos() if X.hy_test is not None else None
+        return r, hr
 
 
-class Ln(Function):
+class Ln(Function1):
     nargs = 1
     symbol = 'ln'
     color = 6
-    
-    def eval(self, X):
+
+    def raw_outputs(self, X):
         X = X[self.variable]
         r = X.hy.ln()
-        if self.weight is None:
-            w = self.compute_weight([r])
-            if w is None:
-                return False
-            self.weight = w[0]
-        self.hy = r * self.weight
-        if X.hy_test is not None:
-            self.hy_test = X.hy_test.ln() * self.weight
-        return True
+        hr = X.hy_test.ln() if X.hy_test is not None else None
+        return r, hr
 
 
-class Sq(Function):
+class Sq(Function1):
     nargs = 1
     symbol = 'sq'
     color = 4
 
-    def eval(self, X):
+    def raw_outputs(self, X):
         X = X[self.variable]
         r = X.hy.sq()
-        if self.weight is None:
-            w = self.compute_weight([r])
-            if w is None:
-                return False
-            self.weight = w[0]
-        self.hy = r * self.weight
-        if X.hy_test is not None:
-            self.hy_test = X.hy_test.sq() * self.weight
-        return True
+        hr = X.hy_test.sq() if X.hy_test is not None else None
+        return r, hr
 
 
-class Sigmoid(Function):
+class Sigmoid(Function1):
     nargs = 1
     symbol = 's'
     color = 6
 
-    def eval(self, X):
+    def raw_outputs(self, X):
         X = X[self.variable]
         r = X.hy.sigmoid()
-        if self.weight is None:
-            w = self.compute_weight([r])
-            if w is None:
-                return False
-            self.weight = w[0]
-        self.hy = r * self.weight
-        if X.hy_test is not None:
-            self.hy_test = X.hy_test.sigmoid() * self.weight
-        return True
+        hr = X.hy_test.sigmoid() if X.hy_test is not None else None
+        return r, hr
 
 
-class If(Function):
+class If(Function1):
     nargs = 3
     symbol = 'if'
     color = 7
 
-    def eval(self, X):
+    def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
         a, b, c = X
         r = a.hy.if_func(b.hy, c.hy)
-        if self.weight is None:
-            w = self.compute_weight([r])
-            if w is None:
-                return False
-            self.weight = w[0]
-        self.hy = r * self.weight
+        hr = None
         if a.hy_test is not None:
-            r = a.hy_test.if_func(b.hy_test, c.hy_test)
-            self.hy_test = r * self.weight
-        return True
+            hr = a.hy_test.if_func(b.hy_test, c.hy_test)
+        return r, hr
 
 
-class Min(Function):
+class Min(Function1):
     nargs = 2
     symbol = 'min'
     color = 8
@@ -436,22 +382,16 @@ class Min(Function):
             a = a.min(x)
         return a
 
-    def eval(self, X):
+    def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
         r = self.cummin([x.hy for x in X])
-        if self.weight is None:
-            w = self.compute_weight([r])
-            if w is None:
-                return False
-            self.weight = w[0]
-        self.hy = r * self.weight
+        hr = None
         if X[0].hy_test is not None:
-            r = self.cummin([x.hy_test for x in X])
-            self.hy_test = r * self.weight
-        return True
+            hr = self.cummin([x.hy_test for x in X])
+        return r, hr
 
 
-class Max(Function):
+class Max(Function1):
     nargs = 2
     symbol = 'max'
     color = 8
@@ -467,17 +407,10 @@ class Max(Function):
             a = a.max(x)
         return a
 
-    def eval(self, X):
+    def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
         r = self.cummax([x.hy for x in X])
-        if self.weight is None:
-            w = self.compute_weight([r])
-            if w is None:
-                return False
-            self.weight = w[0]
-        self.hy = r * self.weight
+        hr = None
         if X[0].hy_test is not None:
-            r = self.cummax([x.hy_test for x in X])
-            self.hy_test = r * self.weight
-        return True
-        
+            hr = self.cummax([x.hy_test for x in X])
+        return r, hr
