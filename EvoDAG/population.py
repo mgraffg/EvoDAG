@@ -21,6 +21,7 @@ class SteadyState(object):
     def __init__(self, tournament_size=2,
                  classifier=True,
                  labels=None,
+                 popsize=10000,
                  es_extra_test=lambda x: True):
         self._p = []
         self._hist = []
@@ -31,8 +32,9 @@ class SteadyState(object):
         self._classifier = classifier
         self._es_extra_test = es_extra_test
         self._labels = labels
-        self._logger = logging.getLogger('RGP.Population')
+        self._logger = logging.getLogger('EvoDAG.Population')
         self._previous_estopping = False
+        self._popsize = popsize
 
     @property
     def previous_estopping(self):
@@ -144,6 +146,8 @@ class SteadyState(object):
     def replace(self, v):
         """Replace an individual selected by negative tournament selection with
         individual v"""
+        if self.popsize < self._popsize:
+            return self.add(v)
         k = self.tournament(negative=True)
         self.population[k] = v
         v.position = len(self._hist)
@@ -182,11 +186,13 @@ class Generational(SteadyState):
         super(Generational, self).__init__(*args, **kwargs)
 
     def replace(self, v):
+        if self.popsize < self._popsize:
+            return self.add(v)
         v.position = len(self._hist)
         self._hist.append(v)
         self.bsf = v
         self.estopping = v
         self._inner.append(v)
-        if len(self._inner) == self.popsize:
+        if len(self._inner) == self._popsize:
             self._p = self._inner
             self._inner = []

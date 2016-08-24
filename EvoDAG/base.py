@@ -38,7 +38,8 @@ class EvoDAG(object):
                  number_tries_feasible_ind=30,
                  unique_individuals=True,
                  classifier=True,
-                 labels=None, **kwargs):
+                 labels=None, all_inputs=False,
+                 **kwargs):
         self._generations = generations
         self._popsize = popsize
         self._classifier = classifier
@@ -63,6 +64,7 @@ class EvoDAG(object):
         self._unique_individuals = unique_individuals
         self._unique_individuals_set = set()
         self._logger = logging.getLogger('EvoDAG')
+        self._all_inputs = all_inputs
         if self._generations == np.inf and tr_fraction == 1:
             raise RuntimeError("Infinite evolution, set generations\
             or tr_fraction < 1 ")
@@ -359,7 +361,8 @@ class EvoDAG(object):
         self._p = self._population_class(tournament_size=self._tournament_size,
                                          classifier=self._classifier,
                                          labels=self._labels,
-                                         es_extra_test=self.es_extra_test)
+                                         es_extra_test=self.es_extra_test,
+                                         popsize=self._popsize)
 
     def set_fitness(self, v):
         """Set the fitness to a new node.
@@ -379,12 +382,15 @@ class EvoDAG(object):
         vars = np.arange(len(self.X))
         np.random.shuffle(vars)
         vars = vars.tolist()
-        while (self.population.popsize < self.popsize and
+        while ((self._all_inputs or
+                self.population.popsize < self.popsize) and
                not self.stopping_criteria()):
             if len(vars):
                 v = self._random_leaf(vars.pop())
                 if v is None:
                     continue
+            elif self._all_inputs:
+                break
             else:
                 func = self.function_set
                 func = func[np.random.randint(len(func))]

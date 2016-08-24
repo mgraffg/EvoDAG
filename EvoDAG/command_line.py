@@ -133,6 +133,10 @@ class CommandLine(object):
            help="Type of evolution (SteadyState|Generational)",
            type=str,
            default='SteadyState')
+        pa('--all-inputs', dest='all_inputs',
+           help="The initial population has all the inputs available",
+           action="store_true",
+           default=False)
 
     def training_set(self):
         cdn = 'File containing the training set on csv.'

@@ -39,3 +39,41 @@ def test_generational_generation():
     assert len(gp.population._inner) == 0
     for a, b in zip(gp.population.population, p):
         assert a == b
+
+
+def test_all_inputs():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    y[y != 1] = -1
+    for pc in ['Generational', 'SteadyState']:
+        gp = EvoDAG(population_class=pc,
+                    all_inputs=True,
+                    popsize=10)
+        gp.X = X
+        gp.y = y
+        gp.create_population()
+        assert len(gp.population.population) < 10
+        for i in range(gp.population.popsize,
+                       gp.population._popsize):
+            a = gp.random_offspring()
+            gp.replace(a)
+        assert len(gp.population.population) == 10
+
+
+def test_all_inputs2():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    y[y != 1] = -1
+    gp = EvoDAG(population_class='Generational',
+                all_inputs=True,
+                popsize=3)
+    gp.X = X
+    gp.y = y
+    gp.create_population()
+    print(len(gp.population.population), len(gp.X))
+    assert len(gp.population.population) == len(gp.X)
+    for i in range(gp.popsize):
+        a = gp.random_offspring()
+        gp.replace(a)
+    assert len(gp.population.population) == gp.popsize
+        

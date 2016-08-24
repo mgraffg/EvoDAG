@@ -276,3 +276,16 @@ def test_generational():
     assert a['population_class'] == 'Generational'
     os.unlink('cache.evodag.gz')
     print(a)
+
+
+def test_all_inputs():
+    import os
+    from EvoDAG.command_line import CommandLineParams
+    fname = training_set()
+    sys.argv = ['EvoDAG', '--parameters',
+                'cache.evodag.gz', '-p6', '-e2',
+                '--all-inputs', '-r', '2', fname]
+    c = CommandLineParams()
+    c.parse_args()
+    os.unlink('cache.evodag.gz')
+    

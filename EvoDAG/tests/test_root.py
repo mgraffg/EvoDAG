@@ -503,7 +503,7 @@ def test_replace_individual():
     from EvoDAG import RootGP
     gp = RootGP(generations=1,
                 tournament_size=2,
-                popsize=10)
+                popsize=5)
     gp.X = X
     y = cl.copy()
     mask = y == 0
@@ -511,10 +511,12 @@ def test_replace_individual():
     y[~mask] = -1
     gp.y = y
     gp.create_population()
+    print(gp.population.popsize)
     a = gp.random_offspring()
     assert a.position == 0
     gp.population.replace(a)
     assert np.any([x == a for x in gp.population.population])
+    print(a.position, len(gp.population.population))
     assert a.position == len(gp.population.population)
 
 
