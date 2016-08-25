@@ -21,6 +21,7 @@ from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Ln
 from .node import Sq, Sigmoid, If, Min, Max
 from .model import Model, Models
 from .population import SteadyState
+import time
 import importlib
 import inspect
 
@@ -36,6 +37,7 @@ class EvoDAG(object):
                  tr_fraction=0.8,
                  population_class=SteadyState,
                  number_tries_feasible_ind=30,
+                 time_limit=None,
                  unique_individuals=True,
                  classifier=True,
                  labels=None, all_inputs=False,
@@ -55,6 +57,8 @@ class EvoDAG(object):
         self._labels = labels
         self._multiclass = False
         self._function_set = function_set
+        self._time_limit = time_limit
+        self._init_time = time.time()
         if not inspect.isclass(population_class):
             pop = importlib.import_module('EvoDAG.population')
             # print(pop, population_class)
@@ -178,7 +182,11 @@ class EvoDAG(object):
             _ = np.zeros_like(v, dtype=np.bool)
             _[v == i] = True
             mask = np.vstack((mask, _)) if mask is not None else _
+        time_limit = self._time_limit
+        if time_limit is not None:
+            self._time_limit = time_limit / float(len(self._labels))
         self._multiclass_instances = [self.clone() for x in mask]
+        self._time_limit = time_limit
         for m, gp in zip(mask, self._multiclass_instances):
             y = np.zeros_like(m) - 1
             y[m] = 1
@@ -415,6 +423,9 @@ class EvoDAG(object):
 
     def stopping_criteria(self):
         "Test whether the stopping criteria has been achieved."
+        if self._time_limit is not None:
+            if time.time() - self._init_time > self._time_limit:
+                return True
         if self.generations < np.inf:
             inds = self.popsize * self.generations
             flag = inds <= len(self.population.hist)
@@ -459,6 +470,7 @@ class EvoDAG(object):
 
     def fit(self, X, y, test_set=None):
         "Evolutive process"
+        self._init_time = time.time()
         self.X = X
         if self.nclasses(y) > 2:
             self._multiclass = True

@@ -1029,3 +1029,23 @@ def test_one_instance():
              seed=0,
              popsize=10).fit(X, y, test_set=X)
     assert gp
+
+
+def test_time_limit():
+    from EvoDAG import RGP
+    import time
+    y = cl.copy()
+    t = time.time()
+    gp = RGP(generations=np.inf,
+             tournament_size=2,
+             early_stopping_rounds=100,
+             time_limit=0.9,
+             seed=0,
+             popsize=10000).fit(X, y, test_set=X)
+    t2 = time.time()
+    print(t2 - t)
+    assert t2 - t < 1
+    assert gp._time_limit == 0.9
+    for x in gp._multiclass_instances:
+        assert x._time_limit == 0.3
+    

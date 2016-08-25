@@ -289,3 +289,26 @@ def test_all_inputs():
     c.parse_args()
     os.unlink('cache.evodag.gz')
     
+
+def test_time_limit():
+    import os
+    from EvoDAG.command_line import params, train
+    import json
+    fname = training_set()
+    sys.argv = ['EvoDAG', '--parameters',
+                'cache.evodag', '-p10', '-e2',
+                '--time-limit', '10',
+                '-r', '2', fname]
+    params()
+    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
+                '-n2',
+                '--model', 'model.evodag',
+                '--test', fname, fname]
+    train()
+    os.unlink(fname)
+    with open('cache.evodag') as fpt:
+        a = json.loads(fpt.read())[0]
+    assert 'time_limit' in a
+    os.unlink('cache.evodag')
+    assert os.path.isfile('model.evodag')
+    os.unlink('model.evodag')

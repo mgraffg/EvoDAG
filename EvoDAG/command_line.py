@@ -137,6 +137,9 @@ class CommandLine(object):
            help="The initial population has all the inputs available",
            action="store_true",
            default=False)
+        pa('--time-limit', dest='time_limit',
+           help='Time limit in seconds',
+           type=int)
 
     def training_set(self):
         cdn = 'File containing the training set on csv.'
