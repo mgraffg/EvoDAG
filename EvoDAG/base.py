@@ -376,20 +376,27 @@ class EvoDAG(object):
                 return False
         return True
 
+    @property
+    def init_popsize(self):
+        if self._all_inputs:
+            return self._init_popsize
+        return self.popsize
+
     def create_population(self):
         "Create the initial population"
         self.population_instance()
         vars = np.arange(len(self.X))
         np.random.shuffle(vars)
         vars = vars.tolist()
-        while ((self._all_inputs or
-                self.population.popsize < self.popsize) and
-               not self.stopping_criteria()):
+        while (self._all_inputs or
+               (self.population.popsize < self.popsize and
+                not self.stopping_criteria())):
             if len(vars):
                 v = self._random_leaf(vars.pop())
                 if v is None:
                     continue
             elif self._all_inputs:
+                self._init_popsize = self.population.popsize
                 break
             else:
                 func = self.function_set
@@ -422,8 +429,8 @@ class EvoDAG(object):
         esr = self._early_stopping_rounds
         if self._tr_fraction < 1 and esr is not None and est is not None:
             position = self.population.estopping.position
-            if position < self.popsize:
-                position = self.popsize
+            if position < self.init_popsize:
+                position = self.init_popsize
             return (len(self.population.hist) +
                     self._unfeasible_counter -
                     position) > esr

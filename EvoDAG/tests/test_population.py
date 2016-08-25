@@ -76,4 +76,25 @@ def test_all_inputs2():
         a = gp.random_offspring()
         gp.replace(a)
     assert len(gp.population.population) == gp.popsize
-        
+
+
+def test_all_init_popsize():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    y[y != 1] = -1
+    gp = EvoDAG(population_class='Generational',
+                all_inputs=True,
+                early_stopping_rounds=1,
+                popsize=2)
+    gp.X = X
+    gp.y = y
+    gp.create_population()
+    assert gp.init_popsize == len(gp.X)
+    gp = EvoDAG(population_class='Generational',
+                # all_inputs=True,
+                early_stopping_rounds=1,
+                popsize=2)
+    gp.X = X
+    gp.y = y
+    gp.create_population()
+    assert gp.init_popsize == gp.popsize
