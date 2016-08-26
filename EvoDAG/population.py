@@ -184,6 +184,7 @@ class Generational(SteadyState):
     def __init__(self, *args, **kwargs):
         self._inner = []
         super(Generational, self).__init__(*args, **kwargs)
+        self.generations = 1
 
     def replace(self, v):
         if self.popsize < self._popsize:
@@ -196,3 +197,14 @@ class Generational(SteadyState):
         if len(self._inner) == self._popsize:
             self._p = self._inner
             self._inner = []
+            self.generations += 1
+
+
+class RandomFirstGeneration(Generational):
+    def tournament(self, negative=False):
+        """Tournament selection and when negative is True it performs negative
+        tournament selection"""
+        if self.generations == 1:
+            return np.random.randint(self.popsize)
+        return super(RandomFirstGeneration, self).tournament(negative=negative)
+

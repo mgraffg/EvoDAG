@@ -14,6 +14,8 @@
 
 
 import numpy as np
+import json
+import os
 
 
 def BER(y, yh):
@@ -28,27 +30,9 @@ def BER(y, yh):
 def RSE(x, y):
     return ((x - y)**2).sum() / ((x - x.mean())**2).sum()
 
-PARAMS = {'Add': [2, 5, 10, 15, 20, 25, 30],
-          'Mul': [0, 2, 5, 10, 15, 20, 25, 30],
-          'Min': [0, 2, 5, 10, 15, 20, 25, 30],
-          'Max': [0, 2, 5, 10, 15, 20, 25, 30],
-          'Div': [True, False],
-          'Fabs': [True, False],
-          'Exp': [True, False],
-          'Sqrt': [True, False],
-          'Sin': [True, False],
-          'Cos': [True, False],
-          'Ln': [True, False],
-          'Sq': [True, False],
-          'Sigmoid': [True, False],
-          'If': [True, False],
-          'unique_individuals': [True, False],
-          'popsize': [500, 1000, 2000, 3000],
-          'early_stopping_rounds':
-          [125, 250, 500, 1000, 2000],
-          'population_class': ['SteadyState', 'Generational'],
-          'all_inputs': [False],
-          'time_limit': [None]}
+params_fname = os.path.join(os.path.dirname(__file__), 'conf', 'parameter_values.json')
+with open(params_fname, 'r') as fpt:
+    PARAMS = json.loads(fpt.read())
 
 
 class RandomParameterSearch(object):

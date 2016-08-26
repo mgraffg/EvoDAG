@@ -82,7 +82,8 @@ setup(
     packages=['EvoDAG', 'EvoDAG/tests'],
     include_package_data=True,
     zip_safe=False,
-    package_data={'': ['*.pxd']},
+    package_data={'': ['*.pxd'],
+                  'EvoDAG/conf': ['parameter_values.json']},
     install_requires=['cython >= 0.19.2', 'numpy >= 1.6.2'],
     entry_points={
         'console_scripts': ['EvoDAG=EvoDAG.command_line:main',

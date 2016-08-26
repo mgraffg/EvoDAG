@@ -213,6 +213,25 @@ def test_params():
     print(a)
 
 
+def test_parameters_values():
+    import os
+    from EvoDAG.command_line import params
+    import json
+    fname = training_set()
+    with open('p.conf', 'w') as fpt:
+        fpt.write(json.dumps(dict(popsize=['x'])))
+    sys.argv = ['EvoDAG', '-Pcache.evodag.gz', '-p10', '-e2',
+                '--parameters-values', 'p.conf',
+                '-r', '2', fname]
+    try:
+        params()
+        assert False
+    except ValueError:
+        pass
+    os.unlink('p.conf')
+    os.unlink(fname)
+
+
 def test_train():
     import os
     from EvoDAG.command_line import params, train

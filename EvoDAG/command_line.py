@@ -352,6 +352,10 @@ class CommandLineParams(CommandLine):
                                  dest='parameters',
                                  type=str,
                                  help=cdn)
+        self.parser.add_argument('--parameters-values',
+                                 dest='parameters_values',
+                                 type=str,
+                                 help=cdn)
 
     def version(self):
         pa = self.parser.add_argument
@@ -359,6 +363,9 @@ class CommandLineParams(CommandLine):
            action='version', version='EvoDAG %s' % evodag.__version__)
 
     def evolve(self, kw):
+        if self.data.parameters_values:
+            with open(self.data.parameters_values, 'r') as fpt:
+                PARAMS = json.loads(fpt.read())
         if len(kw):
             params = PARAMS.copy()
             for k, v in kw.items():
