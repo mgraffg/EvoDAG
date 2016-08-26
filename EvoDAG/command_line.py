@@ -365,9 +365,10 @@ class CommandLineParams(CommandLine):
     def evolve(self, kw):
         if self.data.parameters_values:
             with open(self.data.parameters_values, 'r') as fpt:
-                PARAMS = json.loads(fpt.read())
-        if len(kw):
+                params = json.loads(fpt.read())
+        else:
             params = PARAMS.copy()
+        if len(kw):
             for k, v in kw.items():
                 if k in params and v is not None:
                     params[k] = [v]
