@@ -130,7 +130,7 @@ class CommandLine(object):
            help='Whether the inputs are in json format',
            default=False)
         pa('--evolution', dest='population_class',
-           help="Type of evolution (SteadyState|Generational)",
+           help="Type of evolution (SteadyState|Generational|RandomFirstGeneration)",
            type=str,
            default='SteadyState')
         pa('--all-inputs', dest='all_inputs',
@@ -352,6 +352,7 @@ class CommandLineParams(CommandLine):
                                  dest='parameters',
                                  type=str,
                                  help=cdn)
+        cdn = 'File containing the parameters values (json) to be explored'
         self.parser.add_argument('--parameters-values',
                                  dest='parameters_values',
                                  type=str,

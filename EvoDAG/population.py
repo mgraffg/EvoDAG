@@ -143,12 +143,19 @@ class SteadyState(object):
         self.bsf = v
         self.estopping = v
 
+    def clean(self, v):
+        if self.estopping is not None and v == self.estopping:
+            return
+        v.y = None
+        v.hy = None
+
     def replace(self, v):
         """Replace an individual selected by negative tournament selection with
         individual v"""
         if self.popsize < self._popsize:
             return self.add(v)
         k = self.tournament(negative=True)
+        self.clean(self.population[k])
         self.population[k] = v
         v.position = len(self._hist)
         self._hist.append(v)
@@ -195,6 +202,7 @@ class Generational(SteadyState):
         self.estopping = v
         self._inner.append(v)
         if len(self._inner) == self._popsize:
+            [self.clean(x) for x in self.population]
             self._p = self._inner
             self._inner = []
             self.generations += 1

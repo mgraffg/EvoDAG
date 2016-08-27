@@ -114,3 +114,28 @@ def test_random_first_generation():
     for i in range(3):
         gp.replace(gp.random_offspring())
     assert gp.population.generations == 2
+
+
+def test_clean():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    y[y != 1] = -1
+    for pc in ['Generational', 'SteadyState']:
+        gp = EvoDAG(population_class=pc,
+                    popsize=5)
+        gp.X = X
+        gp.y = y
+        gp.create_population()
+        for i in range(10):
+            v = gp.random_offspring()
+            gp.replace(v)
+        pop = gp.population.population
+        esi = gp.population.estopping
+        for i in gp.population._hist:
+            if i == esi:
+                assert i.hy is not None
+            elif i in pop:
+                assert i.hy is not None
+            else:
+                assert i.hy is None
+        assert gp.population.estopping.hy is not None
