@@ -22,6 +22,7 @@ from EvoDAG import EvoDAG
 import os
 import gzip
 import json
+import gc
 import pickle
 try:
     from tqdm import tqdm
@@ -33,7 +34,9 @@ except ImportError:
 def init_evodag(seed_args_X_y_test):
     seed, args, X, y, test = seed_args_X_y_test
     m = EvoDAG(seed=seed, **args).fit(X, y, test_set=test)
-    return m.model()
+    m = m.model()
+    gc.collect()
+    return m
 
 
 def rs_evodag(args_X_y):
@@ -44,6 +47,7 @@ def rs_evodag(args_X_y):
         evo = EvoDAG(seed=seed,
                      **rs.process_params(args)).fit(X, y)
         fit.append(evo.model().fitness_vs)
+    gc.collect()
     return fit, args
 
 
@@ -251,7 +255,7 @@ class CommandLine(object):
             if self.data.cpu_cores == 1:
                 evo = [init_evodag(x) for x in tqdm(args, total=len(args))]
             else:
-                p = Pool(self.data.cpu_cores)
+                p = Pool(self.data.cpu_cores, maxtasksperchild=1)
                 evo = [x for x in tqdm(p.imap_unordered(init_evodag, args),
                                        total=len(args))]
                 p.close()
@@ -286,7 +290,7 @@ class CommandLine(object):
                     res = [rs_evodag((args, self.X, self.y))
                            for args in tqdm(rs, total=rs._npoints)]
                 else:
-                    p = Pool(self.data.cpu_cores)
+                    p = Pool(self.data.cpu_cores, maxtasksperchild=1)
                     args = [(args, self.X, self.y) for args in rs]
                     res = [x for x in tqdm(p.imap_unordered(rs_evodag, args),
                                            total=len(args))]
@@ -384,7 +388,7 @@ class CommandLineParams(CommandLine):
             res = [rs_evodag((args, self.X, self.y))
                    for args in tqdm(rs, total=rs._npoints)]
         else:
-            p = Pool(self.data.cpu_cores)
+            p = Pool(self.data.cpu_cores, maxtasksperchild=1)
             args = [(args, self.X, self.y) for args in rs]
             res = [x for x in tqdm(p.imap_unordered(rs_evodag, args),
                                    total=len(args))]
