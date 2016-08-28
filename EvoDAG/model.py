@@ -16,6 +16,7 @@
 import numpy as np
 from .sparse_array import SparseArray
 from .node import Variable, Function
+import gc
 
 
 class Model(object):
@@ -66,8 +67,14 @@ class Model(object):
             else:
                 node.eval(X)
         if self._classifier:
-            return node.hy.boundaries()
-        return node.hy
+            r = node.hy.boundaries()
+        else:
+            r = node.hy
+        for i in hist[:-1]:
+            i.hy = None
+            i.hy_test = None
+        gc.collect()
+        return r
 
     def predict(self, X):
         if self._classifier:
