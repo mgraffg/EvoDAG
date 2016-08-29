@@ -23,6 +23,7 @@ class SteadyState(object):
                  classifier=True,
                  labels=None,
                  popsize=10000,
+                 random_generations=0,
                  es_extra_test=lambda x: True):
         self._p = []
         self._hist = []
@@ -38,6 +39,7 @@ class SteadyState(object):
         self._popsize = popsize
         self._inds_replace = 0
         self.generation = 1
+        self._random_generations = random_generations
 
     @property
     def previous_estopping(self):
@@ -179,9 +181,14 @@ class SteadyState(object):
         "List containing the population"
         return self._p
 
+    def random_selection(self, negative=False):
+        return np.random.randint(self.popsize)
+
     def tournament(self, negative=False):
         """Tournament selection and when negative is True it performs negative
         tournament selection"""
+        if self.generation <= self._random_generations:
+            return self.random_selection(negative=negative)
         if self._index is None or self._index.shape[0] != self.popsize:
             self._index = np.arange(self.popsize)
         np.random.shuffle(self._index)
@@ -214,13 +221,3 @@ class Generational(SteadyState):
             self._inner = []
             self.generation += 1
             gc.collect()
-
-
-class RandomFirstGeneration(Generational):
-    def tournament(self, negative=False):
-        """Tournament selection and when negative is True it performs negative
-        tournament selection"""
-        if self.generation == 1:
-            return np.random.randint(self.popsize)
-        return super(RandomFirstGeneration, self).tournament(negative=negative)
-

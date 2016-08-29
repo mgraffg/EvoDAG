@@ -12,6 +12,9 @@
   "time_limit": [
     null
   ],
+  "random_generations": [
+    0
+  ],
   "popsize": [
     500,
     1000,

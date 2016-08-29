@@ -41,6 +41,7 @@ class EvoDAG(object):
                  unique_individuals=True,
                  classifier=True,
                  labels=None, all_inputs=False,
+                 random_generations=0,
                  **kwargs):
         self._generations = generations
         self._popsize = popsize
@@ -59,6 +60,7 @@ class EvoDAG(object):
         self._function_set = function_set
         self._time_limit = time_limit
         self._init_time = time.time()
+        self._random_generations = random_generations
         if not inspect.isclass(population_class):
             pop = importlib.import_module('EvoDAG.population')
             # print(pop, population_class)
@@ -370,7 +372,8 @@ class EvoDAG(object):
                                          classifier=self._classifier,
                                          labels=self._labels,
                                          es_extra_test=self.es_extra_test,
-                                         popsize=self._popsize)
+                                         popsize=self._popsize,
+                                         random_generations=self._random_generations)
 
     def set_fitness(self, v):
         """Set the fitness to a new node.

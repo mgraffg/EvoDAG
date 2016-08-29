@@ -170,7 +170,7 @@ def test_id2word():
         assert i.rstrip() in ['a', 'b', 'c']
     os.unlink(fname)
     os.unlink('output.txt')
-    
+
 
 def test_json():
     import tempfile
@@ -355,3 +355,43 @@ def test_word2id2():
     assert len(c.word2id) == 0
     os.unlink('cache.evodag')
     os.unlink(fname)
+
+
+def test_decision_function():
+    import os
+    from EvoDAG.command_line import params, train, predict
+    fname = training_set()
+    sys.argv = ['EvoDAG', '--parameters',
+                'cache.evodag', '-p3', '-e1',
+                '-r', '1', fname]
+    params()
+    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
+                '-n2',
+                '--model', 'model.evodag',
+                '--test', fname, fname]
+    train()
+    sys.argv = ['EvoDAG', '--output', 'output.evodag',
+                '--decision-function',
+                '--model', 'model.evodag', fname]
+    predict()
+    os.unlink(fname)
+    os.unlink('cache.evodag')
+    os.unlink('model.evodag')
+    os.unlink('output.evodag')
+
+
+def test_random_generations():
+    import os
+    import json
+    from EvoDAG.command_line import params
+    fname = training_set()
+    sys.argv = ['EvoDAG', '--parameters',
+                'cache.evodag', '-p3', '-e1',
+                '--random-generations', '1',
+                '-r', '1', fname]
+    params()
+    os.unlink(fname)
+    with open('cache.evodag') as fpt:
+        a = json.loads(fpt.read())[0]
+    assert 'random_generations' in a
+    os.unlink('cache.evodag')

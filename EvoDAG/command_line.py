@@ -145,6 +145,10 @@ class CommandLine(object):
         pa('--time-limit', dest='time_limit',
            help='Time limit in seconds',
            type=int)
+        pa('--random-generations', dest='random_generations',
+           help='Number of random generations',
+           default=0,
+           type=int)
 
     def training_set(self):
         cdn = 'File containing the training set on csv.'
@@ -526,6 +530,9 @@ class CommandLinePredict(CommandLine):
            action="store_true",
            help='Whether the inputs are in json format',
            default=False)
+        pa('--decision-function', dest='decision_function', default=False,
+           action='store_true',
+           help='Outputs the decision functions instead of the class')
 
     def version(self):
         pa = self.parser.add_argument
@@ -540,9 +547,19 @@ class CommandLinePredict(CommandLine):
             self.word2id = pickle.load(fpt)
             self.label2id = pickle.load(fpt)
         self.data.classifier = m.classifier
-        hy = self.id2label(m.predict(self.Xtest))
+        if self.data.decision_function:
+            hy = m.decision_function(self.Xtest)
+            if isinstance(hy, SparseArray):
+                hy = hy.tonparray()
+                hy = "\n".join(map(str, hy))
+            else:
+                hy = np.array([x.tonparray() for x in hy]).T
+                hy = "\n".join([",".join([str(i) for i in x]) for x in hy])
+        else:
+            hy = self.id2label(m.predict(self.Xtest))
+            hy = "\n".join(map(str, hy))
         with open(self.get_output_file(), 'w') as fpt:
-            fpt.write('\n'.join(map(str, hy)))
+            fpt.write(hy)
 
 
 def main():
