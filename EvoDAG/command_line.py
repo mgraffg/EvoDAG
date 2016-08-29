@@ -541,12 +541,12 @@ class CommandLinePredict(CommandLine):
            action='version', version='EvoDAG %s' % evodag.__version__)
 
     def main(self):
-        self.read_test_set()
         model_file = self.get_model_file()
         with gzip.open(model_file, 'r') as fpt:
             m = pickle.load(fpt)
             self.word2id = pickle.load(fpt)
             self.label2id = pickle.load(fpt)
+        self.read_test_set()
         self.data.classifier = m.classifier
         if self.data.decision_function:
             hy = m.decision_function(self.Xtest, cpu_cores=self.data.cpu_cores)
