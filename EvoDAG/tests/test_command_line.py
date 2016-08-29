@@ -422,3 +422,18 @@ def test_predict_cpu():
     os.unlink('model.evodag')
     os.unlink('output.evodag')
     
+
+def test_classifier_params():
+    import os
+    import json
+    from EvoDAG.command_line import params
+    fname = training_set()
+    sys.argv = ['EvoDAG', '--parameters',
+                'cache.evodag', '-p3', '-e1',
+                '-r', '1', fname]
+    params()
+    os.unlink(fname)
+    with open('cache.evodag') as fpt:
+        a = json.loads(fpt.read())[0]
+    assert 'classifier' in a
+    os.unlink('cache.evodag')
