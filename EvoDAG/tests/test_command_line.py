@@ -235,7 +235,7 @@ def test_parameters_values():
 
 def test_train():
     import os
-    from EvoDAG.command_line import params, train
+    from EvoDAG.command_line import params, CommandLineTrain
     fname = training_set()
     sys.argv = ['EvoDAG', '--parameters',
                 'cache.evodag.gz', '-p10', '-e2', '-r', '2', fname]
@@ -243,8 +243,10 @@ def test_train():
     sys.argv = ['EvoDAG', '--parameters', 'cache.evodag.gz',
                 '-n2',
                 '--model', 'model.evodag',
-                '--test', fname, fname]
-    train()
+                '--test_set', fname, fname]
+    c = CommandLineTrain()
+    c.parse_args()
+    assert os.path.isfile(c.data.test_set)
     os.unlink(fname)
     os.unlink('cache.evodag.gz')
     assert os.path.isfile('model.evodag')
@@ -395,3 +397,27 @@ def test_random_generations():
         a = json.loads(fpt.read())[0]
     assert 'random_generations' in a
     os.unlink('cache.evodag')
+
+
+# def test_decision_function():
+#     import os
+#     from EvoDAG.command_line import params, train, predict
+#     fname = training_set()
+#     sys.argv = ['EvoDAG', '--parameters',
+#                 'cache.evodag', '-p3', '-e1',
+#                 '-r', '1', fname]
+#     params()
+#     sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
+#                 '-n2',
+#                 '--model', 'model.evodag',
+#                 '--test', fname, fname]
+#     train()
+#     sys.argv = ['EvoDAG', '--output', 'output.evodag',
+#                 '--decision-function',
+#                 '--model', 'model.evodag', fname]
+#     predict()
+#     os.unlink(fname)
+#     os.unlink('cache.evodag')
+#     os.unlink('model.evodag')
+#     os.unlink('output.evodag')
+    
