@@ -399,25 +399,26 @@ def test_random_generations():
     os.unlink('cache.evodag')
 
 
-# def test_decision_function():
-#     import os
-#     from EvoDAG.command_line import params, train, predict
-#     fname = training_set()
-#     sys.argv = ['EvoDAG', '--parameters',
-#                 'cache.evodag', '-p3', '-e1',
-#                 '-r', '1', fname]
-#     params()
-#     sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
-#                 '-n2',
-#                 '--model', 'model.evodag',
-#                 '--test', fname, fname]
-#     train()
-#     sys.argv = ['EvoDAG', '--output', 'output.evodag',
-#                 '--decision-function',
-#                 '--model', 'model.evodag', fname]
-#     predict()
-#     os.unlink(fname)
-#     os.unlink('cache.evodag')
-#     os.unlink('model.evodag')
-#     os.unlink('output.evodag')
+def test_predict_cpu():
+    import os
+    from EvoDAG.command_line import params, train, predict
+    fname = training_set()
+    sys.argv = ['EvoDAG', '--parameters',
+                'cache.evodag', '-p3', '-e1',
+                '-r', '1', fname]
+    params()
+    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
+                '-n2',
+                '--model', 'model.evodag',
+                '--test', fname, fname]
+    train()
+    sys.argv = ['EvoDAG', '--output', 'output.evodag',
+                '--decision-function',
+                '-u2',
+                '--model', 'model.evodag', fname]
+    predict()
+    os.unlink(fname)
+    os.unlink('cache.evodag')
+    os.unlink('model.evodag')
+    os.unlink('output.evodag')
     

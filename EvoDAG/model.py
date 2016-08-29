@@ -16,7 +16,18 @@
 import numpy as np
 from .sparse_array import SparseArray
 from .node import Variable, Function
+from multiprocessing import Pool
 import gc
+try:
+    from tqdm import tqdm
+except ImportError:
+    def tqdm(x, **kwargs):
+        return x
+
+
+def decision_function(model_X):
+    model, X = model_X
+    return model.decision_function(X)
 
 
 class Model(object):
@@ -53,7 +64,7 @@ class Model(object):
             v.variable = [self._map[x] for x in v.variable]
         return v
 
-    def decision_function(self, X):
+    def decision_function(self, X, **kwargs):
         "Decision function i.e. the raw data of the prediction"
         if X is None:
             if self._classifier:
@@ -76,14 +87,14 @@ class Model(object):
         gc.collect()
         return r
 
-    def predict(self, X):
+    def predict(self, X, **kwargs):
         if self._classifier:
-            hy = self.decision_function(X).sign()
+            hy = self.decision_function(X, **kwargs).sign()
             if self._labels is not None:
                 hy = (hy + 1).sign()
                 hy = self._labels[hy.tonparray().astype(np.int)]
             return hy
-        return self.decision_function(X).tonparray()
+        return self.decision_function(X, **kwargs).tonparray()
 
     def graphviz(self, fpt):
         fpt.write("digraph RGP {\n")
@@ -174,11 +185,11 @@ class Models(object):
         "Number of models"
         return len(self.models)
 
-    def decision_function(self, X):
+    def decision_function(self, X, **kwargs):
         return [x.decision_function(X) for x in self._models]
 
-    def predict(self, X):
-        d = self.decision_function(X)
+    def predict(self, X, **kwargs):
+        d = self.decision_function(X, **kwargs)
         d = np.array([x.tonparray() for x in d])
         hy = d.argmax(axis=0)
         if self._labels is not None:
@@ -209,35 +220,55 @@ class Ensemble(object):
     def classifier(self):
         return self._classifier
 
-    def decision_function(self, X):
+    def decision_function(self, X, cpu_cores=1):
         if self.classifier:
-            return self.decision_function_cl(X)
-        r = [m.decision_function(X) for m in self._models]
+            return self.decision_function_cl(X, cpu_cores=cpu_cores)
+        if cpu_cores == 1:
+            r = [m.decision_function(X) for m in self._models]
+        else:
+            p = Pool(cpu_cores)
+            args = [(m, X) for m in self._models]
+            r = [x for x in tqdm(p.imap_unordered(decision_function,
+                                                  args),
+                                 total=len(args))]
+            p.close()
         r = np.array([x.tonparray() for x in r if x.isfinite()])
         sp = SparseArray.fromlist
         r = sp(np.median(r, axis=0))
         return r
 
-    def decision_function_cl(self, X):
-        r = [m.decision_function(X) for m in self._models]
+    def decision_function_cl(self, X, cpu_cores=1):
+        if cpu_cores == 1:
+            r = [m.decision_function(X) for m in self._models]
+        else:
+            p = Pool(cpu_cores)
+            args = [(m, X) for m in self._models]
+            r = [x for x in tqdm(p.imap_unordered(decision_function,
+                                                  args),
+                                 total=len(args))]
+            p.close()
         res = r[0]
+        if isinstance(res, SparseArray):
+            res = res.boundaries()
+        else:
+            res = [x.boundaries() for x in res]
         for x in r[1:]:
             if isinstance(x, SparseArray):
-                res = res + x
+                res = res + x.boundaries()
             else:
-                res = [x + y for (x, y) in zip(res, x)]
+                res = [x + y.boundaries() for (x, y) in zip(res, x)]
         if isinstance(res, SparseArray):
             return res / len(r)
         else:
             return [x / len(r) for x in res]
 
-    def predict(self, X):
+    def predict(self, X, cpu_cores=1):
         if self.classifier:
-            return self.predict_cl(X)
-        return self.decision_function(X).tonparray()
+            return self.predict_cl(X, cpu_cores=cpu_cores)
+        return self.decision_function(X, cpu_cores=cpu_cores).tonparray()
 
-    def predict_cl(self, X):
-        hy = self.decision_function_cl(X)
+    def predict_cl(self, X, cpu_cores=1):
+        hy = self.decision_function(X, cpu_cores=cpu_cores)
         if isinstance(hy, SparseArray):
             hy = hy.sign()
             if self._labels is not None:

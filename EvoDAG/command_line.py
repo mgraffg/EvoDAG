@@ -511,6 +511,7 @@ class CommandLinePredict(CommandLine):
         self.model()
         self.test_set()
         self.output_file()
+        self.cores()
         self.version()
 
     def test_set(self):
@@ -548,7 +549,7 @@ class CommandLinePredict(CommandLine):
             self.label2id = pickle.load(fpt)
         self.data.classifier = m.classifier
         if self.data.decision_function:
-            hy = m.decision_function(self.Xtest)
+            hy = m.decision_function(self.Xtest, cpu_cores=self.data.cpu_cores)
             if isinstance(hy, SparseArray):
                 hy = hy.tonparray()
                 hy = "\n".join(map(str, hy))
@@ -556,7 +557,7 @@ class CommandLinePredict(CommandLine):
                 hy = np.array([x.tonparray() for x in hy]).T
                 hy = "\n".join([",".join([str(i) for i in x]) for x in hy])
         else:
-            hy = self.id2label(m.predict(self.Xtest))
+            hy = self.id2label(m.predict(self.Xtest, cpu_cores=self.data.cpu_cores))
             hy = "\n".join(map(str, hy))
         with open(self.get_output_file(), 'w') as fpt:
             fpt.write(hy)
