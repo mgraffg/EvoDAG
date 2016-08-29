@@ -80,6 +80,7 @@ def test_previous_model():
     with gzip.open(c.data.model_file, 'w') as fpt:
         pickle.dump([], fpt)
         pickle.dump([], fpt)
+        pickle.dump([], fpt)
     c = CommandLine()
     c.parse_args()
     os.unlink(fname)
@@ -331,3 +332,26 @@ def test_time_limit():
     os.unlink('cache.evodag')
     assert os.path.isfile('model.evodag')
     os.unlink('model.evodag')
+
+
+def test_word2id2():
+    import tempfile
+    import os
+    from EvoDAG.command_line import CommandLineParams
+    fname = tempfile.mktemp()
+    id2word = dict([[0, 'a'], [1, 'b'], [2, 'c']])
+    with open(fname, 'w') as fpt:
+        for x, v in zip(X, cl):
+            l = x.tolist()
+            l.append(id2word[v])
+            fpt.write(','.join(map(str, l)))
+            fpt.write('\n')
+    sys.argv = ['EvoDAG', '--parameters',
+                'cache.evodag', '-p3', '-e1',
+                '-r', '1', fname]
+    c = CommandLineParams()
+    c.parse_args()
+    print(len(c.word2id))
+    assert len(c.word2id) == 0
+    os.unlink('cache.evodag')
+    os.unlink(fname)

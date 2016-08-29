@@ -113,8 +113,24 @@ def test_random_first_generation():
     gp.create_population()
     for i in range(3):
         gp.replace(gp.random_offspring())
-    assert gp.population.generations == 2
+    assert gp.population.generation == 2
 
+
+def test_SteadyState_generation():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    y[y != 1] = -1
+    gp = EvoDAG(population_class='SteadyState',
+                all_inputs=True,
+                early_stopping_rounds=1,
+                popsize=2)
+    gp.X = X
+    gp.y = y
+    gp.create_population()
+    for i in range(3):
+        gp.replace(gp.random_offspring())
+    assert gp.population.generation == 2
+    
 
 def test_clean():
     from EvoDAG import EvoDAG

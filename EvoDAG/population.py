@@ -15,6 +15,7 @@ import logging
 import numpy as np
 from .node import Function
 from .model import Model
+import gc
 
 
 class SteadyState(object):
@@ -35,6 +36,8 @@ class SteadyState(object):
         self._logger = logging.getLogger('EvoDAG.Population')
         self._previous_estopping = False
         self._popsize = popsize
+        self._inds_replace = 0
+        self.generation = 1
 
     @property
     def previous_estopping(self):
@@ -161,6 +164,11 @@ class SteadyState(object):
         self._hist.append(v)
         self.bsf = v
         self.estopping = v
+        self._inds_replace += 1
+        if self._inds_replace == self._popsize:
+            self._inds_replace = 0
+            self.generation += 1
+            gc.collect()
 
     @property
     def popsize(self):
@@ -191,7 +199,6 @@ class Generational(SteadyState):
     def __init__(self, *args, **kwargs):
         self._inner = []
         super(Generational, self).__init__(*args, **kwargs)
-        self.generations = 1
 
     def replace(self, v):
         if self.popsize < self._popsize:
@@ -205,14 +212,15 @@ class Generational(SteadyState):
             [self.clean(x) for x in self.population]
             self._p = self._inner
             self._inner = []
-            self.generations += 1
+            self.generation += 1
+            gc.collect()
 
 
 class RandomFirstGeneration(Generational):
     def tournament(self, negative=False):
         """Tournament selection and when negative is True it performs negative
         tournament selection"""
-        if self.generations == 1:
+        if self.generation == 1:
             return np.random.randint(self.popsize)
         return super(RandomFirstGeneration, self).tournament(negative=negative)
 

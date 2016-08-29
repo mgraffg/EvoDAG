@@ -55,6 +55,7 @@ class CommandLine(object):
     def __init__(self):
         self.Xtest = None
         self.word2id = {}
+        self.label2id = {}
         self.parser = argparse.ArgumentParser(description="EvoDAG")
         self.training_set()
         self.init_params()
@@ -164,6 +165,14 @@ class CommandLine(object):
                 self.word2id[x] = len(self.word2id)
             return self.word2id[x]
 
+    def convert_label(self, x):
+        try:
+            return float(x)
+        except ValueError:
+            if x not in self.label2id:
+                self.label2id[x] = len(self.label2id)
+            return self.label2id[x]
+
     def read_data(self, fname):
         with open(fname, 'r') as fpt:
             l = fpt.readlines()
@@ -171,7 +180,8 @@ class CommandLine(object):
         for i in l:
             x = i.rstrip().lstrip()
             if len(x):
-                X.append([self.convert(i) for i in x.split(',')])
+                # X.append([self.convert(i) for i in x.split(',')])
+                X.append([i for i in x.split(',')])
         return X
 
     @staticmethod
@@ -200,7 +210,7 @@ class CommandLine(object):
                     X[k].append((row, self.convert(v)))
                 except ValueError:
                     if k == 'klass' or k == 'y':
-                        y.append(self.convert(v))
+                        y.append(self.convert_label(v))
         num_rows = len(l)
         X = [SparseArray.init_index_data([i[0] for i in x],
                                          [i[1] for i in x],
@@ -215,9 +225,14 @@ class CommandLine(object):
         if self.data.training_set is None:
             return
         if not self.data.json:
-            d = np.array(self.read_data(self.data.training_set))
-            self.X = d[:, :-1]
-            self.y = d[:, -1]
+            d = self.read_data(self.data.training_set)
+            X = []
+            y = []
+            for x in d:
+                X.append([self.convert(i) for i in x[:-1]])
+                y.append(self.convert_label(x[-1]))
+            self.X = np.array(X)
+            self.y = np.array(y)
             return True
         else:
             X, y = self.read_data_json(self.data.training_set)
@@ -229,8 +244,8 @@ class CommandLine(object):
         if self.data.test_set is None:
             return False
         if not self.data.json:
-            d = np.array(self.read_data(self.data.test_set))
-            self.Xtest = d
+            X = self.read_data(self.data.test_set)
+            self.Xtest = np.array([[self.convert(i) for i in x] for x in X])
             return True
         else:
             X, _ = self.read_data_json(self.data.test_set)
@@ -264,12 +279,14 @@ class CommandLine(object):
         with gzip.open(model_file, 'w') as fpt:
             pickle.dump(self.model, fpt)
             pickle.dump(self.word2id, fpt)
+            pickle.dump(self.label2id, fpt)
 
     def evolve(self, kw):
         if os.path.isfile(self.get_model_file()):
             with gzip.open(self.get_model_file(), 'r') as fpt:
                 self.model = pickle.load(fpt)
                 self.word2id = pickle.load(fpt)
+                self.label2id = pickle.load(fpt)
                 return
         if self.data.optimize_parameters is not None:
             if len(kw):
@@ -311,12 +328,12 @@ class CommandLine(object):
             #     self.data.output_file += '.csv'
         return self.data.output_file
 
-    def id2word(self, x):
+    def id2label(self, x):
         if not self.data.classifier:
             return x
-        if len(self.word2id) == 0:
+        if len(self.label2id) == 0:
             return x
-        i2w = dict([(i[1], i[0]) for i in self.word2id.items()])
+        i2w = dict([(i[1], i[0]) for i in self.label2id.items()])
         return [i2w[int(i)] for i in x]
 
     def main(self):
@@ -328,7 +345,7 @@ class CommandLine(object):
                 kw[k] = getattr(self.data, k)
         self.evolve(kw)
         if test_set:
-            hy = self.id2word(self.model.predict(self.Xtest))
+            hy = self.id2label(self.model.predict(self.Xtest))
             with open(self.get_output_file(), 'w') as fpt:
                 fpt.write('\n'.join(map(str, hy)))
 
@@ -337,6 +354,7 @@ class CommandLineParams(CommandLine):
     def __init__(self):
         self.Xtest = None
         self.word2id = {}
+        self.label2id = {}
         self.parser = argparse.ArgumentParser(description="EvoDAG")
         self.training_set()
         self.init_params()
@@ -420,6 +438,7 @@ class CommandLineTrain(CommandLine):
     def __init__(self):
         self.Xtest = None
         self.word2id = {}
+        self.label2id = {}
         self.parser = argparse.ArgumentParser(description="EvoDAG")
         self.training_set()
         self.parameters()
@@ -483,6 +502,7 @@ class CommandLinePredict(CommandLine):
     def __init__(self):
         self.Xtest = None
         self.word2id = {}
+        self.label2id = {}
         self.parser = argparse.ArgumentParser(description="EvoDAG")
         self.model()
         self.test_set()
@@ -518,8 +538,9 @@ class CommandLinePredict(CommandLine):
         with gzip.open(model_file, 'r') as fpt:
             m = pickle.load(fpt)
             self.word2id = pickle.load(fpt)
+            self.label2id = pickle.load(fpt)
         self.data.classifier = m.classifier
-        hy = self.id2word(m.predict(self.Xtest))
+        hy = self.id2label(m.predict(self.Xtest))
         with open(self.get_output_file(), 'w') as fpt:
             fpt.write('\n'.join(map(str, hy)))
 
