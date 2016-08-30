@@ -246,6 +246,11 @@ performance on this dataset.
 
 # Install EvoDAG #
 
+* Install using [conda](https://www.continuum.io)  
+```bash   
+conda install -c mgraffg evodag
+```
+
 * Install using pip  
 ```bash   
 pip install EvoDAG
