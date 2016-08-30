@@ -1,5 +1,9 @@
 [![Build Status](https://travis-ci.org/mgraffg/EvoDAG.svg?branch=master)](https://travis-ci.org/mgraffg/EvoDAG)
 
+[![Anaconda-Server Badge](https://anaconda.org/mgraffg/evodag/badges/version.svg)](https://anaconda.org/mgraffg/evodag)
+
+[![Anaconda-Server Badge](https://anaconda.org/mgraffg/evodag/badges/installer/conda.svg)](https://conda.anaconda.org/mgraffg)
+
 [![PyPI version](https://badge.fury.io/py/EvoDAG.svg)](https://badge.fury.io/py/EvoDAG)
 
 [![Coverage Status](https://coveralls.io/repos/github/mgraffg/EvoDAG/badge.svg?branch=master)](https://coveralls.io/github/mgraffg/EvoDAG?branch=master)
@@ -223,21 +227,21 @@ performance on this dataset.
 
 ## Performance of different versions of EvoDAG ##
 
-|dataset| Steady State| S. S. Inputs| Generational|G. Inputs|G. Inputs Random Generation|
-|-----:|----------:|---------:|---------:|-------:|-----------------------:|
-|banana | $12.20 \pm 0.19^*$ | $13.99 \pm 0.54^*$ | **$12.02 \pm 0.18$** | $13.76 \pm 0.42^*$ | $12.15 \pm 0.17^*$|
-|titanic | $30.04 \pm 0.26^*$ | $29.94 \pm 0.19^*$ | $29.86 \pm 0.24^*$ | $29.95 \pm 0.21^*$ | **$29.75 \pm 0.23$**|
-|thyroid | $8.06 \pm 0.83^*$ | $8.89 \pm 0.83^*$ | **$7.49 \pm 0.76$** | $8.98 \pm 0.83^*$ | $8.06 \pm 0.80^*$|
-|diabetis | $24.85 \pm 0.42^*$ | $24.80 \pm 0.44^*$ | $24.62 \pm 0.42^*$ | $24.81 \pm 0.43^*$ | **$24.52 \pm 0.42$**|
-|breast-cancer | $34.67 \pm 1.08^*$ | $35.15 \pm 1.00^*$ | $34.53 \pm 1.08^*$ | $35.00 \pm 1.00^*$ | **$34.38 \pm 1.04$**|
-|flare-solar | $32.88 \pm 0.32^*$ | $32.79 \pm 0.30^*$ | $32.87 \pm 0.31^*$ | $32.79 \pm 0.32^*$ | **$32.73 \pm 0.31$**|
-|heart | $16.58 \pm 0.73^*$ | $16.72 \pm 0.72^*$ | $16.38 \pm 0.71^*$ | $16.62 \pm 0.74^*$ | **$16.32 \pm 0.73$**|
-|ringnorm | $2.56 \pm 0.08^*$ | $3.52 \pm 0.11^*$ | $2.45 \pm 0.09^*$ | $3.52 \pm 0.11^*$ | **$2.45 \pm 0.08$**|
-|twonorm | $2.70 \pm 0.04^*$ | $2.77 \pm 0.04^*$ | $2.66 \pm 0.04^*$ | $2.78 \pm 0.05^*$ | **$2.65 \pm 0.03$**|
-|german | $28.77 \pm 0.53^*$ | $28.49 \pm 0.45^*$ | $28.71 \pm 0.49^*$ | **$28.35 \pm 0.46$** | $28.48 \pm 0.51^*$|
-|image | $3.88 \pm 0.43^*$ | **$3.41 \pm 0.29$** | $4.66 \pm 0.42^*$ | $3.61 \pm 0.32^*$ | $4.83 \pm 0.50^*$|
-|waveform | $10.45 \pm 0.11^*$ | $10.59 \pm 0.10^*$ | $10.37 \pm 0.10^*$ | $10.59 \pm 0.10^*$ | **$10.29 \pm 0.09$**|
-|splice | **$9.33 \pm 0.56$** | $9.37 \pm 0.48^*$ | $10.01 \pm 0.53^*$ | $9.66 \pm 0.51^*$ | $10.07 \pm 0.55^*$|
+|dataset| Steady State| S. S. Inputs| S.S. Inputs Random Generation | Generational|G. Inputs|G. Inputs Random Generation|
+|-----:|----------:|---------:|------------------------:|----------:|-------:|-----------------------:|
+|banana | $12.20 \pm 0.19^*$ | $13.99 \pm 0.54^*$ | $12.22 \pm 0.20^*$ | **$12.02 \pm 0.18$** | $13.76 \pm 0.42^*$ | $12.15 \pm 0.17^*$|
+|titanic | $30.04 \pm 0.26^*$ | $29.94 \pm 0.19^*$ | **$29.71 \pm 0.22$** | $29.86 \pm 0.24^*$ | $29.95 \pm 0.21^*$ | $29.75 \pm 0.23^*$|
+|thyroid | $8.06 \pm 0.83^*$ | $8.89 \pm 0.83^*$ | $7.97 \pm 0.75^*$ | **$7.49 \pm 0.76$** | $8.98 \pm 0.83^*$ | $8.06 \pm 0.80^*$|
+|diabetis | $24.85 \pm 0.42^*$ | $24.80 \pm 0.44^*$ | **$24.43 \pm 0.44$** | $24.62 \pm 0.42^*$ | $24.81 \pm 0.43^*$ | $24.52 \pm 0.42^*$|
+|breast-cancer | $34.67 \pm 1.08^*$ | $35.15 \pm 1.00^*$ | $34.68 \pm 1.02^*$ | $34.53 \pm 1.08^*$ | $35.00 \pm 1.00^*$ | **$34.38 \pm 1.04$**|
+|flare-solar | $32.88 \pm 0.32^*$ | $32.79 \pm 0.30^*$ | $32.84 \pm 0.31^*$ | $32.87 \pm 0.31^*$ | $32.79 \pm 0.32^*$ | **$32.73 \pm 0.31$**|
+|heart | $16.58 \pm 0.73^*$ | $16.72 \pm 0.72^*$ | $16.35 \pm 0.69^*$ | $16.38 \pm 0.71^*$ | $16.62 \pm 0.74^*$ | **$16.32 \pm 0.73$**|
+|ringnorm | $2.56 \pm 0.08^*$ | $3.52 \pm 0.11^*$ | **$2.41 \pm 0.08$** | $2.45 \pm 0.09^*$ | $3.52 \pm 0.11^*$ | $2.45 \pm 0.08^*$|
+|twonorm | $2.70 \pm 0.04^*$ | $2.77 \pm 0.04^*$ | **$2.63 \pm 0.03$** | $2.66 \pm 0.04^*$ | $2.78 \pm 0.05^*$ | $2.65 \pm 0.03^*$|
+|german | $28.77 \pm 0.53^*$ | $28.49 \pm 0.45^*$ | $28.54 \pm 0.49^*$ | $28.71 \pm 0.49^*$ | **$28.35 \pm 0.46$** | $28.48 \pm 0.51^*$|
+|image | $3.88 \pm 0.43^*$ | **$3.41 \pm 0.29$** | $4.09 \pm 0.56^*$ | $4.66 \pm 0.42^*$ | $3.61 \pm 0.32^*$ | $4.83 \pm 0.50^*$|
+|waveform | $10.45 \pm 0.11^*$ | $10.59 \pm 0.10^*$ | $10.34 \pm 0.09^*$ | $10.37 \pm 0.10^*$ | $10.59 \pm 0.10^*$ | **$10.29 \pm 0.09$**|
+|splice | **$9.33 \pm 0.56$** | $9.37 \pm 0.48^*$ | $9.56 \pm 0.43^*$ | $10.01 \pm 0.53^*$ | $9.66 \pm 0.51^*$ | $10.07 \pm 0.55^*$|
 
 
 # Install EvoDAG #

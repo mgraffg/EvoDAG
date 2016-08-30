@@ -1,6 +1,6 @@
 package:
   name: evodag
-  version: "0.2.29"
+  version: "0.2.30"
 
 build:
   number: 0
@@ -35,3 +35,5 @@ test:
 about:
   home: https://github.com/mgraffg/EvoDAG
   summary: Evolving Directed Acyclic Graph (EvoDAG) is a steady-state Genetic Programming system with tournament selection.
+  license: Apache
+  license_file: LICENSE

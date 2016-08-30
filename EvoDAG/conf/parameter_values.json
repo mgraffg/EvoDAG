@@ -13,7 +13,8 @@
     null
   ],
   "random_generations": [
-    0
+      0,
+      1
   ],
   "popsize": [
     500,
@@ -76,7 +77,8 @@
     false
   ],
   "all_inputs": [
-    false
+      true,
+      false
   ],
   "Exp": [
     true,
