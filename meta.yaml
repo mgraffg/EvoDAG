@@ -1,0 +1,12 @@
+package:
+  name: evodag
+  version: 0.2.29
+
+build:
+  number: 1
+
+requirements:
+  run:
+    - python
+about:
+  summary: Evolving Directed Acyclic Graph (EvoDAG) is a steady-state Genetic Programming system with tournament selection.
