@@ -1,12 +1,37 @@
 package:
   name: evodag
-  version: 0.2.29
+  version: "0.2.29"
 
 build:
-  number: 1
+  number: 0
 
 requirements:
+  build:
+    - python
+    - setuptools
+    - numpy
+    - cython
+
   run:
     - python
+
+test:
+  # Python imports
+  imports:
+    - EvoDAG
+
+  commands:
+    # You can put test commands to be run here.  Use this to test that the
+    # entry points work.
+
+    - EvoDAG-params --help
+    - EvoDAG-train --help
+    - EvoDAG-predict --help
+
+  requires:
+    # Put any additional test requirements here.  For example
+    - numpy
+    - cython
 about:
+  home: https://github.com/mgraffg/EvoDAG
   summary: Evolving Directed Acyclic Graph (EvoDAG) is a steady-state Genetic Programming system with tournament selection.
