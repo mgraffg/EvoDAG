@@ -163,10 +163,9 @@ def test_clean():
         pop = gp.population.population
         esi = gp.population.estopping
         for i in gp.population._hist:
+            print(i == esi, i in pop, i, '-'*10, i.fitness)
             if i == esi:
                 assert i.hy is not None
             elif i in pop:
                 assert i.hy is not None
-            else:
-                assert i.hy is None
         assert gp.population.estopping.hy is not None

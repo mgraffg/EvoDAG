@@ -65,3 +65,10 @@ def test_random_parameter_search_getitem():
         assert np.all([x == y for x, y in zip(v, v1)])
 
     
+def test_params():
+    from EvoDAG.utils import RandomParameterSearch
+    rs = RandomParameterSearch(npoints=734)
+    l = np.unique([x['random_generations'] for x in rs])
+    assert len(l) == 2
+    l = np.unique([x['population_class'] for x in rs])
+    assert len(l) == 2

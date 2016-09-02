@@ -135,20 +135,15 @@ class CommandLine(object):
            help='Whether the inputs are in json format',
            default=False)
         pa('--evolution', dest='population_class',
-           help="Type of evolution (SteadyState|Generational|RandomFirstGeneration)",
-           type=str,
-           default='SteadyState')
+           help="Type of evolution (SteadyState|Generational)",
+           type=str)
         pa('--all-inputs', dest='all_inputs',
            help="The initial population has all the inputs available",
-           action="store_true",
-           default=False)
+           action="store_true")
         pa('--time-limit', dest='time_limit',
-           help='Time limit in seconds',
-           type=int)
+           help='Time limit in seconds', type=int)
         pa('--random-generations', dest='random_generations',
-           help='Number of random generations',
-           default=0,
-           type=int)
+           help='Number of random generations', type=int)
 
     def training_set(self):
         cdn = 'File containing the training set on csv.'
@@ -345,7 +340,7 @@ class CommandLine(object):
         test_set = self.read_test_set()
         kw = {}
         for k, v in EvoDAG().get_params().items():
-            if hasattr(self.data, k):
+            if hasattr(self.data, k) and getattr(self.data, k) is not None:
                 kw[k] = getattr(self.data, k)
         self.evolve(kw)
         if test_set:
@@ -561,12 +556,6 @@ class CommandLinePredict(CommandLine):
             hy = "\n".join(map(str, hy))
         with open(self.get_output_file(), 'w') as fpt:
             fpt.write(hy)
-
-
-def main():
-    "Command line main"
-    c = CommandLine()
-    c.parse_args()
 
 
 def params():
