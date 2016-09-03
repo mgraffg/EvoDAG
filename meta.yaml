@@ -1,6 +1,6 @@
 package:
   name: evodag
-  version: "0.2.31"
+  version: "0.2.32"
 
 build:
   number: 0

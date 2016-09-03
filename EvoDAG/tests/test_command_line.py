@@ -36,25 +36,11 @@ def training_set():
     return fname
 
 
-def test_command_line():
-    fname = training_set()
-    sys.argv = ['EvoDAG', '-s', '1', '-e', '3', '-p', '3', fname]
-    c = CommandLine()
-    c.parse_args()
-    assert c.data.training_set == fname
-    os.unlink(fname)
-    os.unlink(c.data.model_file)
-    assert c.evo._early_stopping_rounds == 3
-    assert c.evo._classifier
-    assert c.evo._popsize == 3
-    assert c.evo._seed == 1
-
-
 def test_optimize_parameters():
     import os
     from EvoDAG.command_line import params
     fname = training_set()
-    sys.argv = ['EvoDAG', '--parameters',
+    sys.argv = ['EvoDAG', '-C', '--parameters',
                 'cache.evodag.gz', '-p3', '-e2', '-r2', fname]
     params()
     assert os.path.isfile('cache.evodag.gz')
@@ -66,7 +52,7 @@ def test_cpu_cores():
     import os
     from EvoDAG.command_line import params
     fname = training_set()
-    sys.argv = ['EvoDAG', '-u2', '--parameters',
+    sys.argv = ['EvoDAG', '-C', '-u2', '--parameters',
                 'cache.evodag.gz', '-p3', '-e2', '-r', '2', fname]
     params()
     assert os.path.isfile('cache.evodag.gz')
@@ -85,7 +71,7 @@ def test_word2id():
             l.append(id2word[v])
             fpt.write(','.join(map(str, l)))
             fpt.write('\n')
-    sys.argv = ['EvoDAG', '-Pparams.gz', '-r2', '-e2', '-p3', fname]
+    sys.argv = ['EvoDAG', '-C', '-Pparams.gz', '-r2', '-e2', '-p3', fname]
     params()
     os.unlink(fname)
     os.unlink('params.gz')
@@ -103,7 +89,7 @@ def test_json():
             a['num_terms'] = len(x)
             fpt.write(json.dumps(a) + '\n')
     print("termine con el json")
-    sys.argv = ['EvoDAG', '-Poutput.evodag', '--json',
+    sys.argv = ['EvoDAG', '-C', '-Poutput.evodag', '--json',
                 '-e1', '-p3', '-r2', fname]
     params()
     os.unlink(fname)
@@ -117,7 +103,7 @@ def test_params():
     from EvoDAG.command_line import params
     import json
     fname = training_set()
-    sys.argv = ['EvoDAG', '--parameters',
+    sys.argv = ['EvoDAG', '-C', '--parameters',
                 'cache.evodag.gz', '-p3', '-e2', '-r', '2', fname]
     params()
     os.unlink(fname)
@@ -140,7 +126,7 @@ def test_parameters_values():
     fname = training_set()
     with open('p.conf', 'w') as fpt:
         fpt.write(json.dumps(dict(popsize=['x'])))
-    sys.argv = ['EvoDAG', '-Pcache.evodag.gz', '-p3', '-e2',
+    sys.argv = ['EvoDAG', '-C', '-Pcache.evodag.gz', '-p3', '-e2',
                 '--parameters-values', 'p.conf',
                 '-r', '2', fname]
     try:
@@ -156,7 +142,7 @@ def test_train():
     import os
     from EvoDAG.command_line import params, CommandLineTrain
     fname = training_set()
-    sys.argv = ['EvoDAG', '-Pcache.evodag.gz',
+    sys.argv = ['EvoDAG', '-C', '-Pcache.evodag.gz',
                 '-p3', '-e2', '-r2', fname]
     params()
     sys.argv = ['EvoDAG', '-Pcache.evodag.gz',
@@ -177,7 +163,7 @@ def test_predict():
     import os
     from EvoDAG.command_line import params, train, predict
     fname = training_set()
-    sys.argv = ['EvoDAG', '--parameters',
+    sys.argv = ['EvoDAG', '-C', '--parameters',
                 'cache.evodag.gz', '-p3', '-e2', '-r', '2', fname]
     params()
     sys.argv = ['EvoDAG', '--parameters', 'cache.evodag.gz',
@@ -202,7 +188,7 @@ def test_generational():
     import gzip
     import json
     fname = training_set()
-    sys.argv = ['EvoDAG', '--parameters',
+    sys.argv = ['EvoDAG', '-C', '--parameters',
                 'cache.evodag.gz', '-p3', '-e2',
                 '--evolution', 'Generational',
                 '-r', '2', fname]
@@ -225,7 +211,7 @@ def test_all_inputs():
     import os
     from EvoDAG.command_line import CommandLineParams
     fname = training_set()
-    sys.argv = ['EvoDAG', '--parameters',
+    sys.argv = ['EvoDAG', '-C', '--parameters',
                 'cache.evodag.gz', '-p3', '-e2',
                 '--all-inputs', '-r', '2', fname]
     c = CommandLineParams()
@@ -238,7 +224,7 @@ def test_time_limit():
     from EvoDAG.command_line import params, train
     import json
     fname = training_set()
-    sys.argv = ['EvoDAG', '--parameters',
+    sys.argv = ['EvoDAG', '-C', '--parameters',
                 'cache.evodag', '-p3', '-e2',
                 '--time-limit', '10',
                 '-r', '2', fname]
@@ -270,7 +256,7 @@ def test_word2id2():
             l.append(id2word[v])
             fpt.write(','.join(map(str, l)))
             fpt.write('\n')
-    sys.argv = ['EvoDAG', '--parameters',
+    sys.argv = ['EvoDAG', '-C', '--parameters',
                 'cache.evodag', '-p3', '-e1',
                 '-r', '2', fname]
     c = CommandLineParams()
@@ -285,7 +271,7 @@ def test_decision_function():
     import os
     from EvoDAG.command_line import params, train, predict
     fname = training_set()
-    sys.argv = ['EvoDAG', '--parameters',
+    sys.argv = ['EvoDAG', '-C', '--parameters',
                 'cache.evodag', '-p3', '-e1',
                 '-r', '1', fname]
     params()
@@ -310,7 +296,7 @@ def test_random_generations():
     import json
     from EvoDAG.command_line import params
     fname = training_set()
-    sys.argv = ['EvoDAG', '--parameters',
+    sys.argv = ['EvoDAG', '-C', '--parameters',
                 'cache.evodag', '-p3', '-e2',
                 '--random-generations', '1',
                 '-r', '2', fname]
@@ -326,7 +312,7 @@ def test_predict_cpu():
     import os
     from EvoDAG.command_line import params, train, predict
     fname = training_set()
-    sys.argv = ['EvoDAG', '--parameters',
+    sys.argv = ['EvoDAG', '-C', '--parameters',
                 'cache.evodag', '-p3', '-e1',
                 '-r2', fname]
     params()
@@ -352,7 +338,7 @@ def test_classifier_params():
     import json
     from EvoDAG.command_line import params
     fname = training_set()
-    sys.argv = ['EvoDAG', '--parameters',
+    sys.argv = ['EvoDAG', '-C', '--parameters',
                 'cache.evodag', '-p3', '-e1',
                 '-r', '2', fname]
     params()
@@ -360,4 +346,25 @@ def test_classifier_params():
     with open('cache.evodag') as fpt:
         a = json.loads(fpt.read())[0]
     assert 'classifier' in a
+    assert a['classifier']
     os.unlink('cache.evodag')
+
+
+def test_regressor_params():
+    import os
+    import json
+    from EvoDAG.command_line import params
+    fname = training_set()
+    sys.argv = ['EvoDAG', '-R', '--parameters',
+                'cache.evodag', '-p3', '-e1',
+                '-r', '2', fname]
+    params()
+    os.unlink(fname)
+    with open('cache.evodag') as fpt:
+        a = json.loads(fpt.read())[0]
+    assert 'classifier' in a
+    assert not a['classifier']
+    assert a['popsize'] == 3
+    assert a['early_stopping_rounds'] == 1
+    os.unlink('cache.evodag')
+    

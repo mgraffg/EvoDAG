@@ -61,10 +61,10 @@ search on the parameter space. EvoDAG selects the best configuration found
 on the random search. This can be performed as follows:
 
 ```bash__
-EvoDAG-params -P params.evodag -r 8 -u 4 iris.data
+EvoDAG-params -C -P params.evodag -r 8 -u 4 iris.data
 ```
 
-where `-P` indicates the file name where the parameters sampled are
+where `-C` indicates that the task is classification, `-P` indicates the file name where the parameters sampled are
 stored, `-r` specifies the number of samples, `-u` indicates the number of
 cpu cores, and `iris.data` is the dataset.
 
@@ -181,7 +181,7 @@ decided to keep auto-sklearn without modification, and, instead, it
 is decided to include another table that presents the performance using the median.
 
 
-|dataset| [auto-sklearn](https://github.com/automl/auto-sklearn) | [SVC](http://scikit-learn.org/stable/) | EvoDAG (0.2.31)|
+|dataset| [auto-sklearn](https://github.com/automl/auto-sklearn) | [SVC](http://scikit-learn.org/stable/) | EvoDAG (0.2.32)|
 |------|---------------------------------------------:|------------------------------:|-------:|
 |banana | $28.00 \pm 3.69^*$ | **$11.27 \pm 0.18$** | $12.07 \pm 0.16^*$|
 |titanic | $37.18 \pm 1.64^*$ | $30.27 \pm 0.36^*$ | **$29.66 \pm 0.15$**|
@@ -209,7 +209,7 @@ respectively; whereas, SVM had the best average performance in _image_
 dataset, and on median performance auto-skearn has the best
 performance on this dataset.
 
-|dataset| [auto-sklearn](https://github.com/automl/auto-sklearn) | [SVC](http://scikit-learn.org/stable/) | EvoDAG (0.2.31)|
+|dataset| [auto-sklearn](https://github.com/automl/auto-sklearn) | [SVC](http://scikit-learn.org/stable/) | EvoDAG (0.2.32)|
 |------|---------------------------------------------:|------------------------------:|-------:|
 |banana | $13.39$ | **$11.02$** | $12.05$|
 |titanic | $33.10$ | $29.63$ | **$29.39$**|
@@ -227,7 +227,7 @@ performance on this dataset.
 
 ## Performance of different versions of EvoDAG ##
 
-|dataset| EvoDAG (0.2.31) |Steady State| S. S. Inputs| S.S. Inputs Random Generation | Generational|G. Inputs|G. Inputs Random Generation|
+|dataset| EvoDAG (0.2.32) |Steady State| S. S. Inputs| S.S. Inputs Random Generation | Generational|G. Inputs|G. Inputs Random Generation|
 |-----:|-------------:|---------:|---------:|------------------------:|----------:|-------:|-----------------------:|
 |banana | $12.07 \pm 0.16^*$ | $12.20 \pm 0.19^*$ | $13.99 \pm 0.54^*$ | $12.22 \pm 0.20^*$ | **$12.02 \pm 0.18$** | $13.76 \pm 0.42^*$ | $12.15 \pm 0.17^*$|
 |titanic | **$29.66 \pm 0.15$** | $30.04 \pm 0.26^*$ | $29.94 \pm 0.19^*$ | $29.71 \pm 0.22^*$ | $29.86 \pm 0.24^*$ | $29.95 \pm 0.21^*$ | $29.75 \pm 0.23^*$|
