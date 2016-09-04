@@ -19,7 +19,6 @@ from .model import Ensemble
 from multiprocessing import Pool
 import EvoDAG as evodag
 from EvoDAG import EvoDAG
-import os
 import gzip
 import json
 import gc
@@ -52,21 +51,6 @@ def rs_evodag(args_X_y):
 
 
 class CommandLine(object):
-    def __init__(self):
-        self.Xtest = None
-        self.word2id = {}
-        self.label2id = {}
-        self.parser = argparse.ArgumentParser(description="EvoDAG")
-        self.training_set()
-        self.init_params()
-        self.model_file()
-        self.test_set()
-        self.optimize_parameters()
-        self.cores()
-        self.ensemble()
-        self.output_file()
-        self.version()
-
     def version(self):
         pa = self.parser.add_argument
         pa('--version',
@@ -93,29 +77,11 @@ class CommandLine(object):
                                  default=1,
                                  type=int)
 
-    def optimize_parameters(self):
-        cdn = '''Optimize parameters sampling
-        N points from the parameter space'''
-        self.parser.add_argument('-r', '--optimize-parameters',
-                                 dest='optimize_parameters',
-                                 type=int, help=cdn)
-        cdn = 'File to store the fitness of the configuration explored'
-        self.parser.add_argument('--parameters',
-                                 dest='parameters',
-                                 type=str,
-                                 help=cdn)
-
     def test_set(self):
         cdn = 'File containing the test set on csv.'
         self.parser.add_argument('-t', '--test_set',
                                  default=None, type=str,
                                  help=cdn)
-
-    def model_file(self):
-        pa = self.parser.add_argument
-        pa('-m', '--model-file', type=str, dest='model_file',
-           default=None,
-           help='File name to either store or load the model')
 
     def init_params(self):
         pa = self.parser.add_argument
