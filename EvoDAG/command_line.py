@@ -19,6 +19,7 @@ from .model import Ensemble
 from multiprocessing import Pool
 import EvoDAG as evodag
 from EvoDAG import EvoDAG
+import time
 import gzip
 import json
 import gc
@@ -42,10 +43,12 @@ def rs_evodag(args_X_y):
     args, X, y = args_X_y
     rs = RandomParameterSearch
     fit = []
+    init = time.time()
     for seed in range(3):
         evo = EvoDAG(seed=seed,
                      **rs.process_params(args)).fit(X, y)
         fit.append(evo.model().fitness_vs)
+    args['_time'] = time.time() - init
     gc.collect()
     return fit, args
 

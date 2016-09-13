@@ -368,3 +368,24 @@ def test_regressor_params():
     assert a['early_stopping_rounds'] == 1
     os.unlink('cache.evodag')
     
+
+def test_time():
+    import os
+    import json
+    from EvoDAG.command_line import params
+    fname = training_set()
+    sys.argv = ['EvoDAG', '-R', '--parameters',
+                'cache.evodag', '-p3', '-e1',
+                '-r', '2', fname]
+    params()
+    os.unlink(fname)
+    with open('cache.evodag') as fpt:
+        a = json.loads(fpt.read())[0]
+    assert 'classifier' in a
+    assert not a['classifier']
+    assert a['popsize'] == 3
+    assert a['early_stopping_rounds'] == 1
+    assert a['_time'] > 0.01
+    os.unlink('cache.evodag')
+    
+    
