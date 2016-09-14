@@ -147,28 +147,17 @@ Iris-setosa
 
 # Performance #
 
-The next table presents the average performance with 95%
-confidence intervals in terms of the balance error rate (BER) of
-auto-sklearn, SVM, and EvoDAG on thirteen classification
+The next table presents the average performance in terms of the
+balance error rate (BER) of PSMS, auto-sklearn, SVM, and EvoDAG on thirteen classification
 problems (these benchmarks can be found:
 [matlab](http://theoval.cmp.uea.ac.uk/matlab/benchmarks) and [text](http://ws.ingeotec.mx/~mgraffg/classification)).
   
 
 The best performance among each classification dataset is in
-bold face to facilitate the reading; it was compared against the others in order to know whether
-the difference in performance was statistically significant. The
-superscript $^*$ indicates that the difference between the best
-performance and the one having the superscript is statistically
-significant with a 95% confidence. This statistical test was
-performed using the Wilcoxon signed-rank test
-and the $p$-values were adjusted using 
-the Holm-Bonferroni method in order to consider the multiple
-comparisons performed.
-
-It can be observed from the table that SVM obtained
-the best performance in four of the datasets, and EvoDAG obtained the
-best performance in the rest of the datasets (nine). In all the cases, the
-difference in performance was statistically significant. One
+bold face to facilitate the reading. It can be observed from the table
+that PSMS obtained the best performance on five datasets, SVM
+on one dataset, and EvoDAG obtained the
+best performance in the rest of the datasets (seven). One
 characteristic that caught our attention is the high confidence
 intervals of auto-sklearn, it is one order of magnitude higher than
 the other systems. Analyzing the predictions performed by
@@ -177,71 +166,23 @@ predicts only one class, obtaining, consequently, the worst possible
 performance, i.e., BER equals 50. This behaviour, clearly, can be
 automatically spotted, and, one possible solution could be as simple
 as execute auto-sklearn again on that particular case. Nonetheless, we
-decided to keep auto-sklearn without modification, and, instead, it
-is decided to include another table that presents the performance using the median.
+decided to keep auto-sklearn without modifications.
 
-
-|dataset| [auto-sklearn](https://github.com/automl/auto-sklearn) | [SVC](http://scikit-learn.org/stable/) | EvoDAG (0.2.32)|
-|------|---------------------------------------------:|------------------------------:|-------:|
-|banana | $28.00 \pm 3.69^*$ | **$11.27 \pm 0.18$** | $12.07 \pm 0.16^*$|
-|titanic | $37.18 \pm 1.64^*$ | $30.27 \pm 0.36^*$ | **$29.66 \pm 0.15$**|
-|thyroid | $23.38 \pm 3.99^*$ | **$6.13 \pm 0.76$** | $7.94 \pm 0.84^*$|
-|diabetis | $37.65 \pm 2.01^*$ | $26.65 \pm 0.44^*$ | **$24.54 \pm 0.44$**|
-|breast-cancer | $42.36 \pm 1.38^*$ | $36.25 \pm 1.04^*$ | **$34.25 \pm 1.06$**|
-|flare-solar | $39.05 \pm 1.49^*$ | $33.41 \pm 0.38^*$ | **$32.84 \pm 0.32$**|
-|heart | $27.69 \pm 2.85^*$ | $18.12 \pm 0.63^*$ | **$16.52 \pm 0.69$**|
-|ringnorm | $15.49 \pm 4.24^*$ | **$1.96 \pm 0.10$** | $2.48 \pm 0.10^*$|
-|twonorm | $20.87 \pm 4.49^*$ | $2.90 \pm 0.09^*$ | **$2.67 \pm 0.04$**|
-|german | $39.45 \pm 1.62^*$ | $29.00 \pm 0.50^*$ | **$28.34 \pm 0.50$**|
-|image | $21.29 \pm 10.54^*$ | **$3.32 \pm 0.29$** | $3.98 \pm 0.44^*$|
-|waveform | $22.67 \pm 3.53^*$ | $10.62 \pm 0.21^*$ | **$10.37 \pm 0.10$**|
-|splice | $10.79 \pm 7.43^*$ | $11.23 \pm 0.37^*$ | **$9.91 \pm 0.50$**|
-
-The next table presents the median performance (BER) of
-the different classifiers, it is observed from the table, that
-auto-sklearn obtained the best performance on two datasets, SVM
-obtained the best performance on three datasets, and EvoDAG had the
-best performance in eight datasets. Comparing the average and median
-performance, it can be observed that EvoDAG had the best average
-performance in _titanic_ and _splice_, and on median performance SVM and
-auto-sklearn have the best performance on these dataset
-respectively; whereas, SVM had the best average performance in _image_
-dataset, and on median performance auto-skearn has the best
-performance on this dataset.
-
-|dataset| [auto-sklearn](https://github.com/automl/auto-sklearn) | [SVC](http://scikit-learn.org/stable/) | EvoDAG (0.2.32)|
-|------|---------------------------------------------:|------------------------------:|-------:|
-|banana | $13.39$ | **$11.02$** | $12.05$|
-|titanic | $33.10$ | $29.63$ | **$29.39$**|
-|thyroid | $11.96$ | **$5.95$** | $7.32$|
-|diabetis | $31.17$ | $26.58$ | **$24.42$**|
-|breast-cancer | $41.64$ | $35.38$ | **$34.41$**|
-|flare-solar | $34.90$ | $33.31$ | **$32.71$**|
-|heart | $20.68$ | $18.28$ | **$16.39$**|
-|ringnorm | $2.07$ | **$1.83$** | $2.38$|
-|twonorm | $3.29$ | $2.83$ | **$2.67$**|
-|german | $36.25$ | $28.88$ | **$28.22$**|
-|image | **$3.06$** | $3.41$ | $3.75$|
-|waveform | $11.41$ | $10.45$ | **$10.33$**|
-|splice | **$3.39$** | $11.07$ | $9.72$|
-
-## Performance of different versions of EvoDAG ##
-
-|dataset| EvoDAG (0.2.32) |Steady State| S. S. Inputs| S.S. Inputs Random Generation | Generational|G. Inputs|G. Inputs Random Generation|
-|-----:|-------------:|---------:|---------:|------------------------:|----------:|-------:|-----------------------:|
-|banana | $12.07 \pm 0.16^*$ | $12.20 \pm 0.19^*$ | $13.99 \pm 0.54^*$ | $12.22 \pm 0.20^*$ | **$12.02 \pm 0.18$** | $13.76 \pm 0.42^*$ | $12.15 \pm 0.17^*$|
-|titanic | **$29.66 \pm 0.15$** | $30.04 \pm 0.26^*$ | $29.94 \pm 0.19^*$ | $29.71 \pm 0.22^*$ | $29.86 \pm 0.24^*$ | $29.95 \pm 0.21^*$ | $29.75 \pm 0.23^*$|
-|thyroid | $7.94 \pm 0.84^*$ | $8.06 \pm 0.83^*$ | $8.89 \pm 0.83^*$ | $7.97 \pm 0.75^*$ | **$7.49 \pm 0.76$** | $8.98 \pm 0.83^*$ | $8.06 \pm 0.80^*$|
-|diabetis | $24.54 \pm 0.44^*$ | $24.85 \pm 0.42^*$ | $24.80 \pm 0.44^*$ | **$24.43 \pm 0.44$** | $24.62 \pm 0.42^*$ | $24.81 \pm 0.43^*$ | $24.52 \pm 0.42^*$|
-|breast-cancer | **$34.25 \pm 1.06$** | $34.67 \pm 1.08^*$ | $35.15 \pm 1.00^*$ | $34.68 \pm 1.02^*$ | $34.53 \pm 1.08^*$ | $35.00 \pm 1.00^*$ | $34.38 \pm 1.04^*$|
-|flare-solar | $32.84 \pm 0.32^*$ | $32.88 \pm 0.32^*$ | $32.79 \pm 0.30^*$ | $32.84 \pm 0.31^*$ | $32.87 \pm 0.31^*$ | $32.79 \pm 0.32^*$ | **$32.73 \pm 0.31$**|
-|heart | $16.52 \pm 0.69^*$ | $16.58 \pm 0.73^*$ | $16.72 \pm 0.72^*$ | $16.35 \pm 0.69^*$ | $16.38 \pm 0.71^*$ | $16.62 \pm 0.74^*$ | **$16.32 \pm 0.73$**|
-|ringnorm | $2.48 \pm 0.10^*$ | $2.56 \pm 0.08^*$ | $3.52 \pm 0.11^*$ | **$2.41 \pm 0.08$** | $2.45 \pm 0.09^*$ | $3.52 \pm 0.11^*$ | $2.45 \pm 0.08^*$|
-|twonorm | $2.67 \pm 0.04^*$ | $2.70 \pm 0.04^*$ | $2.77 \pm 0.04^*$ | **$2.63 \pm 0.03$** | $2.66 \pm 0.04^*$ | $2.78 \pm 0.05^*$ | $2.65 \pm 0.03^*$|
-|german | **$28.34 \pm 0.50$** | $28.77 \pm 0.53^*$ | $28.49 \pm 0.45^*$ | $28.54 \pm 0.49^*$ | $28.71 \pm 0.49^*$ | $28.35 \pm 0.46^*$ | $28.48 \pm 0.51^*$|
-|image | $3.98 \pm 0.44^*$ | $3.88 \pm 0.43^*$ | **$3.41 \pm 0.29$** | $4.09 \pm 0.56^*$ | $4.66 \pm 0.42^*$ | $3.61 \pm 0.32^*$ | $4.83 \pm 0.50^*$|
-|waveform | $10.37 \pm 0.10^*$ | $10.45 \pm 0.11^*$ | $10.59 \pm 0.10^*$ | $10.34 \pm 0.09^*$ | $10.37 \pm 0.10^*$ | $10.59 \pm 0.10^*$ | **$10.29 \pm 0.09$**|
-|splice | $9.91 \pm 0.50^*$ | **$9.33 \pm 0.56$** | $9.37 \pm 0.48^*$ | $9.56 \pm 0.43^*$ | $10.01 \pm 0.53^*$ | $9.66 \pm 0.51^*$ | $10.07 \pm 0.55^*$|
+ | Dataset  | [PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)  |  [auto-sklearn](https://github.com/automl/auto-sklearn)  |  [SVC(sklearn)](http://scikit-learn.org/stable/)  |  EvoDAG (0.2.33) | 
+ | ------- | ---------: | ---------------------------------------------: | ------------------------------: | -------: | 
+ | banana          |     **11.08**      |  28.00  |  11.27   |  12.07  | 
+ | titanic          |    **24.18**    |  37.18   |  30.27  |  29.66  | 
+ | thyroid        |      **4.32**      |  23.38  |  6.13  |  7.94  | 
+ | diabetis        |     27.06   |   37.65  |  26.65  |  **24.54** | 
+ | breast-cancer    |    **33.01**    |  42.36  |  36.25  |  34.25 | 
+ | flare-solar     |     34.81     |  39.05 |  33.41  |  **32.84**  | 
+ | heart             |   20.69        |  27.69  |  18.12  |  **16.52** | 
+ | ringnorm       |      7.98      |  15.49  |  **1.96**  |  2.48 | 
+ | twonorm       |       3.09      |  20.87  |  2.90  |  **2.67** | 
+ | german         |      30.10    | 39.45  |  29.00  |  **28.34**  | 
+ | image         |       **2.90** | 21.29  |  3.32  |  3.98 | 
+ | waveform      |       12.80   | 22.67  |  10.62  |  **10.37**  | 
+ | splice       |        14.63  | 10.79  |  11.23  |  **9.91**  | 
 
 
 # Install EvoDAG #
