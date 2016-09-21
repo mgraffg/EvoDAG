@@ -26,20 +26,31 @@ paper can be download from [here](http://ws.ingeotec.mx/~mgraffg/publications/pd
 ## Citing EvoDAG ##
 
 If you like EvoDAG, and it is used in a scientific publication, I would
-appreciate citations to the following paper:
+appreciate citations to the following book chapter:
 
-[Semantic Genetic Programming Operators Based on Projections in the Phenotype Space](http://www.rcs.cic.ipn.mx/rcs/2015_94/Semantic%20Genetic%20Programming%20Operators%20Based%20on%20Projections%20in%20the%20Phenotype%20Space.pdf).
-M Graff, ES Tellez, E Villasenor, S Miranda-Jiménez. Research in Computing Science 94, 73-85
-
+[Semantic Genetic Programming for Sentiment Analysis](http://link.springer.com/chapter/10.1007/978-3-319-44003-3_2)
+Mario Graff, Eric S. Tellez, Hugo Jair Escalante, Sabino
+Miranda-Jiménez. NEO 2015
+Volume 663 of the series Studies in Computational Intelligence pp 43-65.
 ```bibtex
-@article{graff2015semantic,
-  title={Semantic Genetic Programming Operators Based on Projections in the Phenotype Space},
-  author={Graff, Mario and Tellez, Eric Sadit and Villasenor, Elio and Miranda-Jim{\'e}nez, Sabino},
-  journal={Research in Computing Science},
-  volume={94},
-  pages={73--85},
-  year={2015},
-  publisher={National Polytechnic Institute, Mexico}
+@incollection{graff_semantic_2017,
+	series = {Studies in {Computational} {Intelligence}},
+	title = {Semantic {Genetic} {Programming} for {Sentiment} {Analysis}},
+	copyright = {©2017 Springer International Publishing Switzerland},
+	isbn = {9783319440026 9783319440033},
+	url = {http://link.springer.com/chapter/10.1007/978-3-319-44003-3_2},
+	abstract = {Sentiment analysis is one of the most important tasks in text mining. This field has a high impact for government and private companies to support major decision-making policies. Even though Genetic Programming (GP) has been widely used to solve real world problems, GP is seldom used to tackle this trendy problem. This contribution starts rectifying this research gap by proposing a novel GP system, namely, Root Genetic Programming, and extending our previous genetic operators based on projections on the phenotype space. The results show that these systems are able to tackle this problem being competitive with other state-of-the-art classifiers, and, also, give insight to approach large scale problems represented on high dimensional spaces.},
+	language = {en},
+	number = {663},
+	urldate = {2016-09-20},
+	booktitle = {{NEO} 2015},
+	publisher = {Springer International Publishing},
+	author = {Graff, Mario and Tellez, Eric S. and Escalante, Hugo Jair and Miranda-Jiménez, Sabino},
+	editor = {Schütze, Oliver and Trujillo, Leonardo and Legrand, Pierrick and Maldonado, Yazmin},
+	year = {2017},
+	note = {DOI: 10.1007/978-3-319-44003-3\_2},
+	keywords = {Artificial Intelligence (incl. Robotics), Big Data/Analytics, Computational intelligence, Computer Imaging, Vision, Pattern Recognition and Graphics, Genetic programming, optimization, Semantic Crossover, sentiment analysis, Text mining},
+	pages = {43--65}
 }
 ```
 
