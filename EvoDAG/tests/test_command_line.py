@@ -387,5 +387,34 @@ def test_time():
     assert a['early_stopping_rounds'] == 1
     assert a['_time'] > 0.01
     os.unlink('cache.evodag')
-    
-    
+
+
+def test_utils_graphviz():
+    import os
+    from EvoDAG.command_line import params, train, utils
+    fname = training_set()
+    sys.argv = ['EvoDAG', '-C', '--parameters',
+                'cache.evodag', '-p3', '-e1',
+                '-r2', fname]
+    params()
+    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
+                '-n2',
+                '--model', 'model.evodag',
+                '--test', fname, fname]
+    train()
+    sys.argv = ['EvoDAG', '--output', 'output.evodag',
+                '--decision-function',
+                '-u2',
+                '--model', 'model.evodag', fname]
+    sys.argv = ['EvoDAG', '-G', '-oevodag_gv',
+                'model.evodag']
+
+    utils()
+    os.unlink(fname)
+    os.unlink('cache.evodag')
+    os.unlink('model.evodag')
+    for i in range(2):
+        for j in range(3):
+            os.unlink('evodag_gv/evodag-%s-%s.gv' % (i, j))
+    os.rmdir('evodag_gv')
+    default_nargs()

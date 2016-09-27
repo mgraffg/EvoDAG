@@ -97,9 +97,11 @@ class Model(object):
         return self.decision_function(X, **kwargs).tonparray()
 
     def graphviz(self, fpt):
-        fpt.write("digraph RGP {\n")
-        # fpt.write("""edge [dir="none"];\n""")
-        # fpt.write("""edge;\n""")
+        flag = False
+        if isinstance(fpt, str):
+            flag = True
+            fpt = open(fpt, 'w')
+        fpt.write("digraph EvoDAG {\n")
         last = len(self._hist) - 1
         for k, n in enumerate(self._hist):
             if isinstance(n, Function):
@@ -115,11 +117,12 @@ class Model(object):
                     vars = [vars]
                 for j in vars:
                     fpt.write("n{0} -> n{1};\n".format(k, j))
-                    # fpt.write("n{0} -> n{1};\n".format(j, k))
             else:
                 cdn = "n{0} [label=\"X{1}\" fillcolor=red style=filled];\n"
                 fpt.write(cdn.format(k, n._variable))
         fpt.write("}\n")
+        if flag:
+            fpt.close()
 
     @staticmethod
     def convert_features(v):
@@ -195,6 +198,10 @@ class Models(object):
         if self._labels is not None:
             hy = self._labels[hy]
         return hy
+
+    def graphviz(self, skel):
+        for k, m in enumerate(self.models):
+            m.graphviz(skel + '-%s.gv' % k)
 
 
 class Ensemble(object):
@@ -281,3 +288,11 @@ class Ensemble(object):
                 hy = self._labels[hy]
         return hy
 
+    def graphviz(self, directory):
+        "Directory to store the graphviz models"
+        import os
+        if not os.path.isdir(directory):
+            os.mkdir(directory)
+        output = os.path.join(directory, 'evodag-%s')
+        for k, m in enumerate(self.models):
+            m.graphviz(output % k)
