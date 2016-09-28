@@ -88,6 +88,7 @@ setup(
     entry_points={
         'console_scripts': ['EvoDAG-params=EvoDAG.command_line:params',
                             'EvoDAG-train=EvoDAG.command_line:train',
-                            'EvoDAG-predict=EvoDAG.command_line:predict'],
+                            'EvoDAG-predict=EvoDAG.command_line:predict',
+                            'EvoDAG-utils=EvoDAG.command_line:utils'],
     }
 )

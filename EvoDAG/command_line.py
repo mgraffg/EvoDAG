@@ -485,6 +485,52 @@ class CommandLinePredict(CommandLine):
             fpt.write(hy)
 
 
+class CommandLineUtils(CommandLine):
+    def __init__(self):
+        self.Xtest = None
+        self.word2id = {}
+        self.label2id = {}
+        self.parser = argparse.ArgumentParser(description="EvoDAG")
+        self.model()
+        self.graphviz()
+        self.output_file()
+        self.version()
+
+    def graphviz(self):
+        self.parser.add_argument('-G', '--graphviz',
+                                 help='Plot the model using dot language',
+                                 dest='graphviz',
+                                 default=False, action='store_true')
+
+    def output_file(self):
+        self.parser.add_argument('-o', '--output-file',
+                                 help='File / directory to store the result(s)',
+                                 dest='output_file',
+                                 default=None,
+                                 type=str)
+
+    def model(self):
+        cdn = 'File containing the model.'
+        self.parser.add_argument('model_file',
+                                 default=None,
+                                 type=str,
+                                 help=cdn)
+
+    def version(self):
+        pa = self.parser.add_argument
+        pa('--version',
+           action='version', version='EvoDAG %s' % evodag.__version__)
+
+    def main(self):
+        model_file = self.get_model_file()
+        with gzip.open(model_file, 'r') as fpt:
+            m = pickle.load(fpt)
+            self.word2id = pickle.load(fpt)
+            self.label2id = pickle.load(fpt)
+        if self.data.graphviz:
+            m.graphviz(self.data.output_file)
+
+
 def params():
     "EvoDAG-params command line"
     c = CommandLineParams()
@@ -502,3 +548,8 @@ def predict():
     c = CommandLinePredict()
     c.parse_args()
 
+
+def utils():
+    "EvoDAG-utils command line"
+    c = CommandLineUtils()
+    c.parse_args()
