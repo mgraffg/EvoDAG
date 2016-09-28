@@ -18,9 +18,9 @@ from EvoDAG.node import Add
 import numpy as np
 
 
-def create_problem_node(nargs=4):
+def create_problem_node(nargs=4, seed=0):
     from EvoDAG import RootGP
-    gp = RootGP(generations=1, popsize=4)
+    gp = RootGP(generations=1, popsize=4, seed=seed)
     gp.X = X
     gp.Xtest = X
     y = cl.copy()
@@ -259,3 +259,15 @@ def test_node_hash():
     assert Add([3, 21]).signature() in sets
     assert Mul([2, 3]).signature() == Mul([3, 2]).signature()
 
+
+def test_multiple_output():
+    from EvoDAG.node import Variable
+    gp, args = create_problem_node(nargs=4, seed=0)
+    gp2, _ = create_problem_node(nargs=4, seed=1)
+    n1 = Variable(0, ytr=gp._ytr, mask=gp._mask)
+    n1.eval(args)
+    print(n1.weight)
+    n = Variable(0, ytr=[gp._ytr, gp._ytr],
+                 mask=[gp._mask, gp2._mask])
+    n.eval(args)
+    assert n.weight[0] != n.weight[1]

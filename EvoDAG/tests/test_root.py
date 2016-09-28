@@ -317,7 +317,7 @@ def test_random_leaf():
     var = gp.random_leaf()
     assert isinstance(var, Variable)
     print(weight, var.weight)
-    assert_almost_equals(weight, var.weight[0])
+    assert_almost_equals(weight, var.weight)
     np.random.randint = randint
 
 

@@ -93,12 +93,14 @@ class Variable(object):
     def weight(self, v):
         self._weight = v
 
-    def compute_weight(self, r):
+    def compute_weight(self, r, ytr=None, mask=None):
         """Returns the weight (w) using OLS of r * w = gp._ytr """
+        ytr = self._ytr if ytr is None else ytr
+        mask = self._mask if mask is None else mask
         A = np.empty((len(r), len(r)))
-        b = np.array([(f * self._ytr).sum() for f in r])
+        b = np.array([(f * ytr).sum() for f in r])
         for i in range(len(r)):
-            r[i] = r[i] * self._mask
+            r[i] = r[i] * mask
             for j in range(i, len(r)):
                 A[i, j] = (r[i] * r[j]).sum()
                 A[j, i] = A[i, j]
@@ -117,19 +119,38 @@ class Variable(object):
 
     def set_weight(self, r):
         if self.weight is None:
-            w = self.compute_weight([r])
-            if w is None:
-                return False
-            self.weight = w
+            if not isinstance(self._ytr, list):
+                ytr = [self._ytr]
+                mask = [self._mask]
+            else:
+                ytr = self._ytr
+                mask = self._mask
+            W = []
+            for _ytr, _mask in zip(ytr, mask):
+                w = self.compute_weight([r], ytr=_ytr, mask=_mask)
+                if w is None:
+                    return False
+                W.append(w[0])
+            if len(W) == 1:
+                self.weight = W[0]
+            else:
+                self.weight = W
         return True
+
+    def _mul(self, a, w):
+        if not isinstance(w, list):
+            return a * w
+        if not isinstance(a, list):
+            return [a * x for x in w]
+        return [x * y for x, y in zip(a, w)]
 
     def eval(self, X):
         r, hr = self.raw_outputs(X)
         if not self.set_weight(r):
             return False
-        self.hy = r * self.weight
+        self.hy = self._mul(r, self.weight)
         if hr is not None:
-            self.hy_test = hr * self.weight
+            self.hy_test = self._mul(hr, self.weight)
         return True
 
     def isfinite(self):
