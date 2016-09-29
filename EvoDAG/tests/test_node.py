@@ -260,7 +260,7 @@ def test_node_hash():
     assert Mul([2, 3]).signature() == Mul([3, 2]).signature()
 
 
-def test_multiple_output():
+def test_variable_multiple_output():
     from EvoDAG.node import Variable
     gp, args = create_problem_node(nargs=4, seed=0)
     gp2, _ = create_problem_node(nargs=4, seed=1)
@@ -271,3 +271,29 @@ def test_multiple_output():
                  mask=[gp._mask, gp2._mask])
     n.eval(args)
     assert n.weight[0] != n.weight[1]
+
+
+# def test_Add_multiple_output():
+#     from EvoDAG.node import Variable
+#     gp, args = create_problem_node(nargs=4, seed=0)
+#     gp2, _ = create_problem_node(nargs=4, seed=1)
+#     ytr = [gp._ytr, gp._ytr]
+#     mask = [gp._mask, gp2._mask]
+#     vars = [Variable(k, ytr=ytr, mask=mask) for k in range(len(args))]
+#     [x.eval(args) for x in vars]
+#     add = Add(range(len(vars)), ytr=ytr, mask=mask)
+#     assert add.eval(vars)
+
+
+def test_one_multiple_output():
+    from EvoDAG.node import Variable
+    from EvoDAG.node import Fabs, Exp, Sqrt, Sin, Cos, Ln, Sq, Sigmoid
+    gp, args = create_problem_node(nargs=4, seed=0)
+    gp2, _ = create_problem_node(nargs=4, seed=1)
+    ytr = [gp._ytr, gp._ytr]
+    mask = [gp._mask, gp2._mask]
+    vars = [Variable(k, ytr=ytr, mask=mask) for k in range(len(args))]
+    [x.eval(args) for x in vars]
+    for FF in [Fabs, Exp, Sqrt, Sin, Cos, Ln, Sq, Sigmoid]:
+        ff = FF(0, ytr=ytr, mask=mask)
+        ff.eval(vars)

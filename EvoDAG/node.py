@@ -193,15 +193,53 @@ class Function(Variable):
         c = self.symbol + '|' + '|'.join([str(x) for x in vars])
         return c
 
+    def hy2list(self, X):
+        if not isinstance(X.hy, list):
+            hy = [X.hy]
+            hyt = [X.hy_test]
+        else:
+            hy = X.hy
+            hyt = X.hy_test
+        return hy, hyt
+
+    def return_r_hr(self, r, hr):
+        if len(r) == 1:
+            r = r[0]
+        if len(hr) == 0:
+            hr = None
+        elif len(hr) == 1:
+            hr = hr[0]
+        return r, hr
+        
 
 class Function1(Function):
     def set_weight(self, r):
         if self.weight is None:
-            w = self.compute_weight([r])
-            if w is None:
-                return False
-            self.weight = w[0]
+            if not isinstance(self._ytr, list):
+                ytr = [self._ytr]
+                mask = [self._mask]
+                r = [r]
+            else:
+                ytr = self._ytr
+                mask = self._mask
+            W = []
+            for _r, _ytr, _mask in zip(r, ytr, mask):
+                w = self.compute_weight([_r], ytr=_ytr, mask=_mask)
+                if w is None:
+                    return False
+                W.append(w[0])
+            if len(W) == 1:
+                self.weight = W[0]
+            else:
+                self.weight = W
         return True
+
+    def _raw_outputs(self, X, func):
+        X = X[self.variable]
+        hy, hyt = self.hy2list(X)
+        r = [getattr(x, func)() for x in hy]
+        hr = [getattr(x, func)() for x in hyt if x is not None]
+        return self.return_r_hr(r, hr)
 
 
 class Add(Function):
@@ -282,10 +320,7 @@ class Fabs(Function1):
     color = 2
 
     def raw_outputs(self, X):
-        X = X[self.variable]
-        r = X.hy.fabs()
-        hr = X.hy_test.fabs() if X.hy_test is not None else None
-        return r, hr
+        return self._raw_outputs(X, 'fabs')
 
 
 class Exp(Function1):
@@ -294,10 +329,7 @@ class Exp(Function1):
     color = 3
 
     def raw_outputs(self, X):
-        X = X[self.variable]
-        r = X.hy.exp()
-        hr = X.hy_test.exp() if X.hy_test is not None else None
-        return r, hr
+        return self._raw_outputs(X, 'exp')
 
 
 class Sqrt(Function1):
@@ -306,10 +338,7 @@ class Sqrt(Function1):
     color = 4
 
     def raw_outputs(self, X):
-        X = X[self.variable]
-        r = X.hy.sqrt()
-        hr = X.hy_test.sqrt() if X.hy_test is not None else None
-        return r, hr
+        return self._raw_outputs(X, 'sqrt')
 
 
 class Sin(Function1):
@@ -318,10 +347,7 @@ class Sin(Function1):
     color = 5
 
     def raw_outputs(self, X):
-        X = X[self.variable]
-        r = X.hy.sin()
-        hr = X.hy_test.sin() if X.hy_test is not None else None
-        return r, hr
+        return self._raw_outputs(X, 'sin')
 
 
 class Cos(Function1):
@@ -330,10 +356,7 @@ class Cos(Function1):
     color = 5
 
     def raw_outputs(self, X):
-        X = X[self.variable]
-        r = X.hy.cos()
-        hr = X.hy_test.cos() if X.hy_test is not None else None
-        return r, hr
+        return self._raw_outputs(X, 'cos')
 
 
 class Ln(Function1):
@@ -342,10 +365,7 @@ class Ln(Function1):
     color = 6
 
     def raw_outputs(self, X):
-        X = X[self.variable]
-        r = X.hy.ln()
-        hr = X.hy_test.ln() if X.hy_test is not None else None
-        return r, hr
+        return self._raw_outputs(X, 'ln')
 
 
 class Sq(Function1):
@@ -354,10 +374,7 @@ class Sq(Function1):
     color = 4
 
     def raw_outputs(self, X):
-        X = X[self.variable]
-        r = X.hy.sq()
-        hr = X.hy_test.sq() if X.hy_test is not None else None
-        return r, hr
+        return self._raw_outputs(X, 'sq')
 
 
 class Sigmoid(Function1):
@@ -366,10 +383,7 @@ class Sigmoid(Function1):
     color = 6
 
     def raw_outputs(self, X):
-        X = X[self.variable]
-        r = X.hy.sigmoid()
-        hr = X.hy_test.sigmoid() if X.hy_test is not None else None
-        return r, hr
+        return self._raw_outputs(X, 'sigmoid')
 
 
 class If(Function1):
