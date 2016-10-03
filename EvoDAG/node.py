@@ -31,6 +31,9 @@ class Variable(object):
         self._fitness_vs = None
         self._position = 0
         self._height = height
+        self._multiple_output = False
+        if isinstance(ytr, list) and len(ytr) > 1:
+            self._multiple_output = True
 
     @property
     def height(self):
@@ -98,6 +101,7 @@ class Variable(object):
         ytr = self._ytr if ytr is None else ytr
         mask = self._mask if mask is None else mask
         A = np.empty((len(r), len(r)))
+        r = [x for x in r]
         b = np.array([(f * ytr).sum() for f in r])
         for i in range(len(r)):
             r[i] = r[i] * mask
@@ -119,7 +123,7 @@ class Variable(object):
 
     def set_weight(self, r):
         if self.weight is None:
-            if not isinstance(self._ytr, list):
+            if not self._multiple_output:
                 ytr = [self._ytr]
                 mask = [self._mask]
             else:
@@ -131,7 +135,7 @@ class Variable(object):
                 if w is None:
                     return False
                 W.append(w[0])
-            if len(W) == 1:
+            if not self._multiple_output:
                 self.weight = W[0]
             else:
                 self.weight = W
@@ -194,7 +198,7 @@ class Function(Variable):
         return c
 
     def hy2list(self, X):
-        if not isinstance(X.hy, list):
+        if not self._multiple_output:
             hy = [X.hy]
             hyt = [X.hy_test]
         else:
@@ -210,12 +214,12 @@ class Function(Variable):
         elif len(hr) == 1:
             hr = hr[0]
         return r, hr
-        
+
 
 class Function1(Function):
     def set_weight(self, r):
         if self.weight is None:
-            if not isinstance(self._ytr, list):
+            if not self._multiple_output:
                 ytr = [self._ytr]
                 mask = [self._mask]
                 r = [r]
@@ -228,7 +232,7 @@ class Function1(Function):
                 if w is None:
                     return False
                 W.append(w[0])
-            if len(W) == 1:
+            if not self._multiple_output:
                 self.weight = W[0]
             else:
                 self.weight = W
@@ -258,22 +262,60 @@ class Add(Function):
             a = a + x
         return a
 
-    def eval(self, X):
-        X = [X[x] for x in self.variable]
-        if self.weight is None:
-            w = self.compute_weight([x.hy for x in X])
+    def set_weight(self, hy):
+        if self.weight is not None:
+            return True
+        if not self._multiple_output:
+            w = self.compute_weight(hy, ytr=self._ytr, mask=self._mask)
             if w is None:
                 return False
             self.weight = w
-        # r = map(lambda (v, w): v.hy * w, zip(X, self.weight))
-        r = [v.hy * w1 for v, w1 in zip(X, self.weight)]
-        r = self.cumsum(r)
+        else:
+            W = []
+            for _hy, _ytr, _mask in zip(hy, self._ytr, self._mask):
+                w = self.compute_weight(_hy, ytr=_ytr, mask=_mask)
+                if w is None:
+                    return False
+                W.append(w)
+            self.weight = W
+        return True
+
+    def hy2list(self, X):
+        if not self._multiple_output:
+            hy = [x.hy for x in X]
+            if X[0].hy_test is not None:
+                hyt = [x.hy_test for x in X]
+            else:
+                hyt = None
+        else:
+            hy = [list() for x in range(len(self._ytr))]
+            [[hy[k].append(x.hy[k]) for x in X] for k in range(len(self._ytr))]
+            if X[0].hy_test is not None:
+                hyt = [list() for x in range(len(self._ytr))]
+                [[hyt[k].append(x.hy_test[k]) for x in X] for k in range(len(self._ytr))]
+            else:
+                hyt = None
+        return hy, hyt
+
+    def eval(self, X):
+        X = [X[x] for x in self.variable]
+        hy, hyt = self.hy2list(X)
+        if not self.set_weight(hy):
+            return False
+        if self._multiple_output:
+            r = [self.cumsum(self._mul(a, w)) for a, w in zip(hy, self.weight)]
+            if hyt is not None:
+                hr = [self.cumsum(self._mul(a, w)) for a, w in zip(hyt, self.weight)]
+            else:
+                hr = None
+        else:
+            r = self.cumsum([x * w for x, w in zip(hy, self.weight)])
+            if hyt is not None:
+                hr = self.cumsum([x * w for x, w in zip(hyt, self.weight)])
+            else:
+                hr = None
         self.hy = r
-        if X[0].hy_test is not None:
-            # r = map(lambda (v, w): v.hy_test * w, zip(X, self.weight))
-            r = [v.hy_test * w1 for v, w1 in zip(X, self.weight)]
-            r = self.cumsum(r)
-            self.hy_test = r
+        self.hy_test = hr
         return True
 
 
