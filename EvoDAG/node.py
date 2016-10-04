@@ -354,11 +354,17 @@ class Div(Function1):
     color = 1
 
     def raw_outputs(self, X):
-        a, b = X[self.variable[0]], X[self.variable[1]]
-        r = a.hy / b.hy
+        X = [X[x] for x in self.variable]
+        hy, hyt = self.hy2listM(X)
         hr = None
-        if X[0].hy_test is not None:
-            hr = a.hy_test / b.hy_test
+        if self._multiple_output:
+            r = [x[0] / x[1] for x in hy]
+            if hyt is not None:
+                hr = [x[0] / x[1] for x in hyt]
+        else:
+            r = hy[0] / hy[1]
+            if hyt is not None:
+                hr = hyt[0] / hyt[1]
         return r, hr
 
 
