@@ -478,10 +478,16 @@ class Min(Function1):
 
     def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
-        r = self.cummin([x.hy for x in X])
+        hy, hyt = self.hy2listM(X)
         hr = None
-        if X[0].hy_test is not None:
-            hr = self.cummin([x.hy_test for x in X])
+        if self._multiple_output:
+            r = [self.cummin(x) for x in hy]
+            if hyt is not None:
+                hr = [self.cummin(x) for x in hyt]
+        else:
+            r = self.cummin(hy)
+            if hyt is not None:
+                hr = self.cummin(hyt)
         return r, hr
 
 
@@ -503,8 +509,14 @@ class Max(Function1):
 
     def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
-        r = self.cummax([x.hy for x in X])
+        hy, hyt = self.hy2listM(X)
         hr = None
-        if X[0].hy_test is not None:
-            hr = self.cummax([x.hy_test for x in X])
+        if self._multiple_output:
+            r = [self.cummax(x) for x in hy]
+            if hyt is not None:
+                hr = [self.cummax(x) for x in hyt]
+        else:
+            r = self.cummax(hy)
+            if hyt is not None:
+                hr = self.cummax(hyt)
         return r, hr
