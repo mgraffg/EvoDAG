@@ -197,6 +197,23 @@ class Function(Variable):
         c = self.symbol + '|' + '|'.join([str(x) for x in vars])
         return c
 
+    def hy2listM(self, X):
+        if not self._multiple_output:
+            hy = [x.hy for x in X]
+            if X[0].hy_test is not None:
+                hyt = [x.hy_test for x in X]
+            else:
+                hyt = None
+        else:
+            hy = [list() for x in range(len(self._ytr))]
+            [[hy[k].append(x.hy[k]) for x in X] for k in range(len(self._ytr))]
+            if X[0].hy_test is not None:
+                hyt = [list() for x in range(len(self._ytr))]
+                [[hyt[k].append(x.hy_test[k]) for x in X] for k in range(len(self._ytr))]
+            else:
+                hyt = None
+        return hy, hyt
+    
     def hy2list(self, X):
         if not self._multiple_output:
             hy = [X.hy]
@@ -280,26 +297,9 @@ class Add(Function):
             self.weight = W
         return True
 
-    def hy2list(self, X):
-        if not self._multiple_output:
-            hy = [x.hy for x in X]
-            if X[0].hy_test is not None:
-                hyt = [x.hy_test for x in X]
-            else:
-                hyt = None
-        else:
-            hy = [list() for x in range(len(self._ytr))]
-            [[hy[k].append(x.hy[k]) for x in X] for k in range(len(self._ytr))]
-            if X[0].hy_test is not None:
-                hyt = [list() for x in range(len(self._ytr))]
-                [[hyt[k].append(x.hy_test[k]) for x in X] for k in range(len(self._ytr))]
-            else:
-                hyt = None
-        return hy, hyt
-
     def eval(self, X):
         X = [X[x] for x in self.variable]
-        hy, hyt = self.hy2list(X)
+        hy, hyt = self.hy2listM(X)
         if not self.set_weight(hy):
             return False
         if self._multiple_output:
@@ -326,7 +326,7 @@ class Mul(Function1):
     def __init__(self, *args, **kwargs):
         super(Mul, self).__init__(*args, **kwargs)
         self._variable = sorted(self._variable)
-
+        
     @staticmethod
     def cumprod(r):
         a = r[0]
@@ -336,10 +336,16 @@ class Mul(Function1):
 
     def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
-        r = self.cumprod([x.hy for x in X])
+        hy, hyt = self.hy2listM(X)
         hr = None
-        if X[0].hy_test is not None:
-            hr = self.cumprod([x.hy_test for x in X])
+        if self._multiple_output:
+            r = [self.cumprod(x) for x in hy]
+            if hyt is not None:
+                hr = [self.cumprod(x) for x in hyt]
+        else:
+            r = self.cumprod(hy)
+            if hyt is not None:
+                hr = self.cumprod(hyt)
         return r, hr
 
 

@@ -343,3 +343,28 @@ def test_one_multiple_output():
         if hy.isfinite():
             print('*', FF)
             assert hy.SSE(ff2.hy) == 0
+
+
+def test_Mul_multiple_output():
+    from EvoDAG.node import Variable, Mul
+    for flag in [False, True]:
+        gp, args = create_problem_node(nargs=4, seed=0)
+        if flag:
+            for i in args:
+                i.hy_test = None
+        gp2, _ = create_problem_node(nargs=4, seed=1)
+        ytr = [gp._ytr, gp._ytr]
+        mask = [gp._mask, gp2._mask]
+        vars = [Variable(k, ytr=ytr, mask=mask) for k in range(len(args))]
+        [x.eval(args) for x in vars]
+        mul = Mul(range(len(vars)), ytr=ytr, mask=mask)
+        assert mul.eval(vars)
+        gp, args = create_problem_node(nargs=4, seed=0)
+        vars = [Variable(k, ytr=gp._ytr, mask=gp._mask) for k in range(len(args))]
+        [x.eval(args) for x in vars]
+        mul2 = Mul(range(len(vars)), ytr=gp._ytr, mask=gp._mask)
+        assert mul2.eval(vars)
+        assert mul2.hy.SSE(mul.hy[0]) == 0
+        if mul.hy_test is not None:
+            assert mul2.hy_test.SSE(mul.hy_test[0]) == 0
+            
