@@ -172,10 +172,17 @@ class CommandLine(object):
         import json
         X = None
         y = []
-        with open(fname, 'r') as fpt:
-            l = fpt.readlines()
+        if fname.endswith('.gz'):
+            with gzip.open(fname, 'rb') as fpt:
+                l = fpt.readlines()
+        else:
+            with open(fname, 'r') as fpt:
+                l = fpt.readlines()
         for row, d in enumerate(l):
-            a = json.loads(d)
+            try:
+                a = json.loads(str(d, encoding='utf-8'))
+            except TypeError:
+                a = json.loads(d)
             if X is None:
                 X = [list() for i in range(self._num_terms(a))]
             for k, v in a.items():
