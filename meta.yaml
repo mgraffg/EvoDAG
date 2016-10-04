@@ -32,6 +32,7 @@ test:
     # Put any additional test requirements here.  For example
     - numpy
     - cython
+
 about:
   home: https://github.com/mgraffg/EvoDAG
   summary: Evolving Directed Acyclic Graph (EvoDAG) is a steady-state Genetic Programming system with tournament selection.

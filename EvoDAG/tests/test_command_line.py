@@ -418,3 +418,28 @@ def test_utils_graphviz():
             os.unlink('evodag_gv/evodag-%s-%s.gv' % (i, j))
     os.rmdir('evodag_gv')
     default_nargs()
+
+
+def test_json_gzip():
+    from EvoDAG.command_line import params
+    import gzip
+    import tempfile
+    import json
+    fname = tempfile.mktemp() + '.gz'
+    with gzip.open(fname, 'wb') as fpt:
+        for x, y in zip(X, cl):
+            a = {k: v for k, v in enumerate(x)}
+            a['klass'] = int(y)
+            a['num_terms'] = len(x)
+            try:
+                fpt.write(bytes(json.dumps(a) + '\n', encoding='utf-8'))
+            except TypeError:
+                fpt.write(json.dumps(a) + '\n')
+    print("termine con el json")
+    sys.argv = ['EvoDAG', '-C', '-Poutput.evodag', '--json',
+                '-e1', '-p3', '-r2', fname]
+    params()
+    os.unlink(fname)
+    print(open('output.evodag').read())
+    os.unlink('output.evodag')
+    
