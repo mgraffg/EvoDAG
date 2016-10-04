@@ -447,11 +447,16 @@ class If(Function1):
 
     def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
-        a, b, c = X
-        r = a.hy.if_func(b.hy, c.hy)
+        hy, hyt = self.hy2listM(X)
         hr = None
-        if a.hy_test is not None:
-            hr = a.hy_test.if_func(b.hy_test, c.hy_test)
+        if self._multiple_output:
+            r = [x[0].if_func(x[1], x[2]) for x in hy]
+            if hyt is not None:
+                hr = [x[0].if_func(x[1], x[2]) for x in hyt]
+        else:
+            r = hy[0].if_func(hy[1], hy[2])
+            if hyt is not None:
+                hr = hyt[0].if_func(hyt[1], hyt[2])
         return r, hr
 
 

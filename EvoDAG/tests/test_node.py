@@ -345,9 +345,9 @@ def test_one_multiple_output():
             assert hy.SSE(ff2.hy) == 0
 
 
-def test_Mul_multiple_output():
-    from EvoDAG.node import Variable, Mul, Div
-    for ff in [Mul, Div]:
+def test_functions_w_multiple_output():
+    from EvoDAG.node import Variable, Mul, Div, If
+    for ff in [Mul, Div, If]:
         for flag in [False, True]:
             gp, args = create_problem_node(nargs=4, seed=0)
             if flag:
