@@ -1078,3 +1078,17 @@ def test_multiple_outputs():
     gp.y = y
     gp.X = X
     gp.create_population()
+    assert len(gp.y) == 3
+
+
+def test_multiple_outputs2():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=100,
+                time_limit=0.9,
+                multiple_outputs=True,
+                seed=0,
+                popsize=10000).fit(X, y, test_set=X)
+    assert gp
