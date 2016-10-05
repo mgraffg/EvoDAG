@@ -519,7 +519,9 @@ class EvoDAG(object):
         "Evolutive process"
         self._init_time = time.time()
         self.X = X
-        if self.nclasses(y) > 2:
+        if self._classifier and self._multiple_outputs:
+            pass
+        elif self.nclasses(y) > 2:
             self._multiclass = True
             return self.multiclass(X, y, test_set=test_set)
         self.y = y

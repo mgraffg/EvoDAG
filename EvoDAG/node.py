@@ -32,8 +32,10 @@ class Variable(object):
         self._position = 0
         self._height = height
         self._multiple_outputs = False
+        self._n_outputs = 1
         if isinstance(ytr, list) and len(ytr) > 1:
             self._multiple_outputs = True
+            self._n_outputs = len(ytr)
 
     @property
     def height(self):
@@ -49,6 +51,8 @@ class Variable(object):
         ins.height = self.height
         ins._fitness = self._fitness
         ins._fitness_vs = self._fitness_vs
+        ins._multiple_outputs = self._multiple_outputs
+        ins._n_outputs = self._n_outputs
         return ins
 
     @property
@@ -212,11 +216,12 @@ class Function(Variable):
             else:
                 hyt = None
         else:
-            hy = [list() for x in range(len(self._ytr))]
-            [[hy[k].append(x.hy[k]) for x in X] for k in range(len(self._ytr))]
+            hy = [list() for x in range(self._n_outputs)]
+            [[hy[k].append(x.hy[k]) for x in X] for k in range(self._n_outputs)]
             if X[0].hy_test is not None:
-                hyt = [list() for x in range(len(self._ytr))]
-                [[hyt[k].append(x.hy_test[k]) for x in X] for k in range(len(self._ytr))]
+                hyt = [list() for x in range(self._n_outputs)]
+                [[hyt[k].append(x.hy_test[k]) for x in X]
+                 for k in range(self._n_outputs)]
             else:
                 hyt = None
         return hy, hyt

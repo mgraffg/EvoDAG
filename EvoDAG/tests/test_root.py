@@ -1083,6 +1083,7 @@ def test_multiple_outputs():
 
 def test_multiple_outputs2():
     from EvoDAG import EvoDAG
+    from EvoDAG.model import Model
     y = cl.copy()
     gp = EvoDAG(generations=np.inf,
                 tournament_size=2,
@@ -1091,4 +1092,5 @@ def test_multiple_outputs2():
                 multiple_outputs=True,
                 seed=0,
                 popsize=10000).fit(X, y, test_set=X)
-    assert gp
+    m = gp.model()
+    assert isinstance(m, Model)

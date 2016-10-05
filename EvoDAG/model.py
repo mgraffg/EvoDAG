@@ -46,6 +46,10 @@ class Model(object):
         self._labels = labels
 
     @property
+    def multiple_outputs(self):
+        return self._hist[0]._multiple_outputs
+
+    @property
     def classifier(self):
         "whether this is classification or regression task"
         return self._classifier
@@ -78,7 +82,10 @@ class Model(object):
             else:
                 node.eval(X)
         if self._classifier:
-            r = node.hy.boundaries()
+            if self.multiple_outputs:
+                r = [x.boundaries() for x in node.hy]
+            else:
+                r = node.hy.boundaries()
         else:
             r = node.hy
         for i in hist[:-1]:
@@ -222,6 +229,10 @@ class Ensemble(object):
     def models(self):
         "List containing the models that compose the ensemble"
         return self._models
+
+    @property
+    def multiple_outputs(self):
+        return self.models[0].multiple_outputs
 
     @property
     def classifier(self):
