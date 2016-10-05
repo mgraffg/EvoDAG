@@ -31,9 +31,9 @@ class Variable(object):
         self._fitness_vs = None
         self._position = 0
         self._height = height
-        self._multiple_output = False
+        self._multiple_outputs = False
         if isinstance(ytr, list) and len(ytr) > 1:
-            self._multiple_output = True
+            self._multiple_outputs = True
 
     @property
     def height(self):
@@ -123,7 +123,7 @@ class Variable(object):
 
     def set_weight(self, r):
         if self.weight is None:
-            if not self._multiple_output:
+            if not self._multiple_outputs:
                 ytr = [self._ytr]
                 mask = [self._mask]
             else:
@@ -135,7 +135,7 @@ class Variable(object):
                 if w is None:
                     return False
                 W.append(w[0])
-            if not self._multiple_output:
+            if not self._multiple_outputs:
                 self.weight = W[0]
             else:
                 self.weight = W
@@ -159,6 +159,13 @@ class Variable(object):
 
     def isfinite(self):
         "Test whether the predicted values are finite"
+        if self._multiple_outputs:
+            if self.hy_test is not None:
+                r = [(hy.isfinite() and (hyt is None or hyt.isfinite()))
+                     for hy, hyt in zip(self.hy, self.hy_test)]
+            else:
+                r = [hy.isfinite() for hy in self.hy]
+            return np.all(r)
         return self.hy.isfinite() and (self.hy_test is None or
                                        self.hy_test.isfinite())
 
@@ -198,7 +205,7 @@ class Function(Variable):
         return c
 
     def hy2listM(self, X):
-        if not self._multiple_output:
+        if not self._multiple_outputs:
             hy = [x.hy for x in X]
             if X[0].hy_test is not None:
                 hyt = [x.hy_test for x in X]
@@ -215,7 +222,7 @@ class Function(Variable):
         return hy, hyt
     
     def hy2list(self, X):
-        if not self._multiple_output:
+        if not self._multiple_outputs:
             hy = [X.hy]
             hyt = [X.hy_test]
         else:
@@ -226,7 +233,9 @@ class Function(Variable):
     def return_r_hr(self, r, hr):
         if len(r) == 1:
             r = r[0]
-        if len(hr) == 0:
+        if hr is None:
+            pass
+        elif len(hr) == 0:
             hr = None
         elif len(hr) == 1:
             hr = hr[0]
@@ -236,7 +245,7 @@ class Function(Variable):
 class Function1(Function):
     def set_weight(self, r):
         if self.weight is None:
-            if not self._multiple_output:
+            if not self._multiple_outputs:
                 ytr = [self._ytr]
                 mask = [self._mask]
                 r = [r]
@@ -249,7 +258,7 @@ class Function1(Function):
                 if w is None:
                     return False
                 W.append(w[0])
-            if not self._multiple_output:
+            if not self._multiple_outputs:
                 self.weight = W[0]
             else:
                 self.weight = W
@@ -259,7 +268,9 @@ class Function1(Function):
         X = X[self.variable]
         hy, hyt = self.hy2list(X)
         r = [getattr(x, func)() for x in hy]
-        hr = [getattr(x, func)() for x in hyt if x is not None]
+        hr = None
+        if hyt is not None:
+            hr = [getattr(x, func)() for x in hyt if x is not None]
         return self.return_r_hr(r, hr)
 
 
@@ -282,7 +293,7 @@ class Add(Function):
     def set_weight(self, hy):
         if self.weight is not None:
             return True
-        if not self._multiple_output:
+        if not self._multiple_outputs:
             w = self.compute_weight(hy, ytr=self._ytr, mask=self._mask)
             if w is None:
                 return False
@@ -302,7 +313,7 @@ class Add(Function):
         hy, hyt = self.hy2listM(X)
         if not self.set_weight(hy):
             return False
-        if self._multiple_output:
+        if self._multiple_outputs:
             r = [self.cumsum(self._mul(a, w)) for a, w in zip(hy, self.weight)]
             if hyt is not None:
                 hr = [self.cumsum(self._mul(a, w)) for a, w in zip(hyt, self.weight)]
@@ -338,7 +349,7 @@ class Mul(Function1):
         X = [X[x] for x in self.variable]
         hy, hyt = self.hy2listM(X)
         hr = None
-        if self._multiple_output:
+        if self._multiple_outputs:
             r = [self.cumprod(x) for x in hy]
             if hyt is not None:
                 hr = [self.cumprod(x) for x in hyt]
@@ -357,7 +368,7 @@ class Div(Function1):
         X = [X[x] for x in self.variable]
         hy, hyt = self.hy2listM(X)
         hr = None
-        if self._multiple_output:
+        if self._multiple_outputs:
             r = [x[0] / x[1] for x in hy]
             if hyt is not None:
                 hr = [x[0] / x[1] for x in hyt]
@@ -449,7 +460,7 @@ class If(Function1):
         X = [X[x] for x in self.variable]
         hy, hyt = self.hy2listM(X)
         hr = None
-        if self._multiple_output:
+        if self._multiple_outputs:
             r = [x[0].if_func(x[1], x[2]) for x in hy]
             if hyt is not None:
                 hr = [x[0].if_func(x[1], x[2]) for x in hyt]
@@ -480,7 +491,7 @@ class Min(Function1):
         X = [X[x] for x in self.variable]
         hy, hyt = self.hy2listM(X)
         hr = None
-        if self._multiple_output:
+        if self._multiple_outputs:
             r = [self.cummin(x) for x in hy]
             if hyt is not None:
                 hr = [self.cummin(x) for x in hyt]
@@ -511,7 +522,7 @@ class Max(Function1):
         X = [X[x] for x in self.variable]
         hy, hyt = self.hy2listM(X)
         hr = None
-        if self._multiple_output:
+        if self._multiple_outputs:
             r = [self.cummax(x) for x in hy]
             if hyt is not None:
                 hr = [self.cummax(x) for x in hyt]

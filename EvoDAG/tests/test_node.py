@@ -278,6 +278,19 @@ def test_variable_multiple_output():
     assert n.weight[0] != n.weight[1]
 
 
+def test_variable_multiple_output_isfinite():
+    from EvoDAG.node import Variable
+    gp, args = create_problem_node(nargs=4, seed=0)
+    gp2, _ = create_problem_node(nargs=4, seed=1)
+    n1 = Variable(0, ytr=gp._ytr, mask=gp._mask)
+    n1.eval(args)
+    print(n1.weight)
+    n = Variable(0, ytr=[gp._ytr, gp._ytr],
+                 mask=[gp._mask, gp2._mask])
+    n.eval(args)
+    n.isfinite()
+
+
 def test_Add_multiple_output():
     from EvoDAG.node import Variable
     gp, args = create_problem_node(nargs=4, seed=0)
@@ -321,28 +334,32 @@ def test_Add_multiple_output2():
 def test_one_multiple_output():
     from EvoDAG.node import Variable
     from EvoDAG.node import Fabs, Exp, Sqrt, Sin, Cos, Ln, Sq, Sigmoid
-    gp, args = create_problem_node(nargs=4, seed=0)
-    gp2, _ = create_problem_node(nargs=4, seed=1)
-    ytr = [gp._ytr, gp._ytr]
-    mask = [gp._mask, gp2._mask]
-    vars = [Variable(k, ytr=ytr, mask=mask) for k in range(len(args))]
-    [x.eval(args) for x in vars]
-    vars2 = [Variable(k, ytr=gp._ytr, mask=gp._mask) for k in range(len(args))]
-    [x.eval(args) for x in vars2]
-    for FF in [Fabs, Exp, Sqrt, Sin, Cos, Ln, Sq, Sigmoid]:
-        ff = FF(0, ytr=ytr, mask=mask)
-        ff.eval(vars)
-        ff2 = FF(0, ytr=gp._ytr, mask=gp._mask)
-        ff2.eval(vars2)
-        print(ff.hy)
-        if ff.hy is None:
-            continue
-        assert isinstance(ff.weight, list) and len(ff.weight) == 2
-        assert isinstance(ff2.weight, float)
-        hy = ff.hy[0]
-        if hy.isfinite():
-            print('*', FF)
-            assert hy.SSE(ff2.hy) == 0
+    for flag in [False, True]:
+        gp, args = create_problem_node(nargs=4, seed=0)
+        if flag:
+            for i in args:
+                i.hy_test = None
+        gp2, _ = create_problem_node(nargs=4, seed=1)
+        ytr = [gp._ytr, gp._ytr]
+        mask = [gp._mask, gp2._mask]
+        vars = [Variable(k, ytr=ytr, mask=mask) for k in range(len(args))]
+        [x.eval(args) for x in vars]
+        vars2 = [Variable(k, ytr=gp._ytr, mask=gp._mask) for k in range(len(args))]
+        [x.eval(args) for x in vars2]
+        for FF in [Fabs, Exp, Sqrt, Sin, Cos, Ln, Sq, Sigmoid]:
+            ff = FF(0, ytr=ytr, mask=mask)
+            ff.eval(vars)
+            ff2 = FF(0, ytr=gp._ytr, mask=gp._mask)
+            ff2.eval(vars2)
+            print(ff.hy)
+            if ff.hy is None:
+                continue
+            assert isinstance(ff.weight, list) and len(ff.weight) == 2
+            assert isinstance(ff2.weight, float)
+            hy = ff.hy[0]
+            if hy.isfinite():
+                print('*', FF)
+                assert hy.SSE(ff2.hy) == 0
 
 
 def test_functions_w_multiple_output():

@@ -1048,4 +1048,33 @@ def test_time_limit():
     assert gp._time_limit == 0.9
     for x in gp._multiclass_instances:
         assert x._time_limit == 0.3
-    
+
+
+def test_transform_to_mo():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=100,
+                time_limit=0.9,
+                multiple_outputs=True,
+                seed=0,
+                popsize=10000)
+    k = np.unique(y)
+    y = gp.transform_to_mo(y)
+    assert k.shape[0] == y.shape[1]
+
+
+def test_multiple_outputs():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=100,
+                time_limit=0.9,
+                multiple_outputs=True,
+                seed=0,
+                popsize=10000)
+    gp.y = y
+    gp.X = X
+    gp.create_population()
