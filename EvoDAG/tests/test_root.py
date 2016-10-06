@@ -317,7 +317,7 @@ def test_random_leaf():
     var = gp.random_leaf()
     assert isinstance(var, Variable)
     print(weight, var.weight)
-    assert_almost_equals(weight, var.weight[0])
+    assert_almost_equals(weight, var.weight)
     np.random.randint = randint
 
 
@@ -1048,4 +1048,50 @@ def test_time_limit():
     assert gp._time_limit == 0.9
     for x in gp._multiclass_instances:
         assert x._time_limit == 0.3
-    
+
+
+def test_transform_to_mo():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=100,
+                time_limit=0.9,
+                multiple_outputs=True,
+                seed=0,
+                popsize=10000)
+    k = np.unique(y)
+    y = gp.transform_to_mo(y)
+    assert k.shape[0] == y.shape[1]
+
+
+def test_multiple_outputs():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=100,
+                time_limit=0.9,
+                multiple_outputs=True,
+                seed=0,
+                popsize=10000)
+    gp.y = y
+    gp.X = X
+    gp.create_population()
+    assert len(gp.y) == 3
+
+
+def test_multiple_outputs2():
+    from EvoDAG import EvoDAG
+    from EvoDAG.model import Model
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=100,
+                time_limit=0.9,
+                multiple_outputs=True,
+                seed=0,
+                popsize=10000).fit(X, y, test_set=X)
+    m = gp.model()
+    assert isinstance(m, Model)
+    assert len(gp.y) == 3

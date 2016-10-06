@@ -193,3 +193,57 @@ def test_models_fitness_vs():
     evo = EvoDAG(popsize=10, early_stopping_rounds=2).fit(X, cl)
     l_fs = [x.fitness_vs for x in evo.model().models]
     assert evo.model().fitness_vs == np.median(l_fs)
+
+
+def test_multiple_outputs_decision_function():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                multiple_outputs=True,
+                early_stopping_rounds=-1,
+                seed=0,
+                popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
+    m = gp.model()
+    assert m.multiple_outputs
+    hy = m.decision_function(X)
+    assert len(hy) == 3
+    for i in hy:
+        assert i.isfinite()
+
+
+def test_multiple_outputs_predict():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                multiple_outputs=True,
+                early_stopping_rounds=-1,
+                seed=0,
+                popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
+    m = gp.model()
+    assert m.multiple_outputs
+    hy = m.predict(X)
+    u = np.unique(y)
+    for i in np.unique(hy):
+        assert i in u
+
+
+def test_multiple_outputs_ensemble():
+    from EvoDAG import EvoDAG
+    from EvoDAG.model import Ensemble
+    y = cl.copy()
+    gp = [EvoDAG(generations=np.inf,
+                 tournament_size=2,
+                 multiple_outputs=True,
+                 early_stopping_rounds=-1,
+                 seed=x,
+                 popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
+          for x in range(2)]
+    ens = Ensemble([x.model() for x in gp])
+    assert ens.multiple_outputs
+    hy = ens.predict(X)
+    u = np.unique(y)
+    for i in np.unique(hy):
+        assert i in u
+    

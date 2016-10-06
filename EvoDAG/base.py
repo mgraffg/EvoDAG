@@ -42,6 +42,7 @@ class EvoDAG(object):
                  classifier=True,
                  labels=None, all_inputs=False,
                  random_generations=0,
+                 multiple_outputs=False,
                  **kwargs):
         self._generations = generations
         self._popsize = popsize
@@ -63,7 +64,6 @@ class EvoDAG(object):
         self._random_generations = random_generations
         if not inspect.isclass(population_class):
             pop = importlib.import_module('EvoDAG.population')
-            # print(pop, population_class)
             population_class = getattr(pop, population_class)
         self._population_class = population_class
         np.random.seed(self._seed)
@@ -74,6 +74,7 @@ class EvoDAG(object):
         if self._generations == np.inf and tr_fraction == 1:
             raise RuntimeError("Infinite evolution, set generations\
             or tr_fraction < 1 ")
+        self._multiple_outputs = multiple_outputs
         self._extras = kwargs
 
     def get_params(self):
@@ -195,11 +196,43 @@ class EvoDAG(object):
             gp.fit(X, y, test_set=test_set)
         return self
 
+    def transform_to_mo(self, v):
+        klass = np.unique(v)
+        y = np.empty((v.shape[0], klass.shape[0]))
+        y.fill(-1)
+        for i, k in enumerate(klass):
+            mask = k == v
+            y[mask, i] = 1
+        return y
+        
+    def multiple_outputs_y(self, v):
+        v = v.tonparray()
+        v = self.transform_to_mo(v)
+        mask = []
+        mask_vs = []
+        ytr = []
+        y = []
+        for _v in v.T:
+            _v = SparseArray.fromlist(_v)
+            self.set_classifier_mask(_v)
+            mask.append(self._mask)
+            ytr.append(_v * self._mask)
+            y.append(_v)
+            self._y = _v
+            self.mask_vs()
+            mask_vs.append(self._mask_vs)
+        self._ytr = ytr
+        self._y = y
+        self._mask = mask
+        self._mask_vs = mask_vs
+
     @y.setter
     def y(self, v):
         if isinstance(v, np.ndarray):
             v = SparseArray.fromlist(v)
-        if self._classifier:
+        if self._classifier and self._multiple_outputs:
+            return self.multiple_outputs_y(v)
+        elif self._classifier:
             if self._labels is not None and\
                (self._labels[0] != -1 or self._labels[1] != 1):
                 v = v.tonparray()
@@ -232,7 +265,12 @@ class EvoDAG(object):
     def fitness(self, v):
         "Fitness function in the training set"
         if self._classifier:
-            v.fitness = -self._ytr.SSE(v.hy * self._mask)
+            if self._multiple_outputs:
+                f = [-ytr.SSE(hy * mask) for ytr, hy, mask in
+                     zip(self._ytr, v.hy, self._mask)]
+                v.fitness = np.mean(f)
+            else:
+                v.fitness = -self._ytr.SSE(v.hy * self._mask)
         else:
             v.fitness = -self._ytr.SAE(v.hy * self._mask)
 
@@ -263,8 +301,13 @@ class EvoDAG(object):
         """Fitness function in the validation set
         In classification it uses BER and RSE in regression"""
         if self._classifier:
-            v.fitness_vs = -((self.y - v.hy.sign()).sign().fabs() *
-                             self._mask_vs).sum()
+            if self._multiple_outputs:
+                f = [-((y - hy.sign()).sign().fabs() * mask_vs).sum() for
+                     y, hy, mask_vs in zip(self.y, v.hy, self._mask_vs)]
+                v.fitness_vs = np.mean(f)
+            else:
+                v.fitness_vs = -((self.y - v.hy.sign()).sign().fabs() *
+                                 self._mask_vs).sum()
         else:
             m = (self._mask - 1).fabs()
             x = self.y * m
@@ -475,7 +518,9 @@ class EvoDAG(object):
         "Evolutive process"
         self._init_time = time.time()
         self.X = X
-        if self.nclasses(y) > 2:
+        if self._classifier and self._multiple_outputs:
+            pass
+        elif self.nclasses(y) > 2:
             self._multiclass = True
             return self.multiclass(X, y, test_set=test_set)
         self.y = y

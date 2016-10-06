@@ -46,6 +46,10 @@ class Model(object):
         self._labels = labels
 
     @property
+    def multiple_outputs(self):
+        return self._hist[0]._multiple_outputs
+
+    @property
     def classifier(self):
         "whether this is classification or regression task"
         return self._classifier
@@ -78,7 +82,10 @@ class Model(object):
             else:
                 node.eval(X)
         if self._classifier:
-            r = node.hy.boundaries()
+            if self.multiple_outputs:
+                r = [x.boundaries() for x in node.hy]
+            else:
+                r = node.hy.boundaries()
         else:
             r = node.hy
         for i in hist[:-1]:
@@ -89,10 +96,17 @@ class Model(object):
 
     def predict(self, X, **kwargs):
         if self._classifier:
-            hy = self.decision_function(X, **kwargs).sign()
-            if self._labels is not None:
-                hy = (hy + 1).sign()
-                hy = self._labels[hy.tonparray().astype(np.int)]
+            if self.multiple_outputs:
+                hy = self.decision_function(X, **kwargs)
+                hy = np.array([x.tonparray() for x in hy])
+                hy = hy.argmax(axis=0)
+                if self._labels is not None:
+                    hy = self._labels[hy]
+            else:
+                hy = self.decision_function(X, **kwargs).sign()
+                if self._labels is not None:
+                    hy = (hy + 1).sign()
+                    hy = self._labels[hy.tonparray().astype(np.int)]
             return hy
         return self.decision_function(X, **kwargs).tonparray()
 
@@ -222,6 +236,10 @@ class Ensemble(object):
     def models(self):
         "List containing the models that compose the ensemble"
         return self._models
+
+    @property
+    def multiple_outputs(self):
+        return self.models[0].multiple_outputs
 
     @property
     def classifier(self):

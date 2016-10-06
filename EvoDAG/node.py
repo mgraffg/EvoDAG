@@ -31,6 +31,11 @@ class Variable(object):
         self._fitness_vs = None
         self._position = 0
         self._height = height
+        self._multiple_outputs = False
+        self._n_outputs = 1
+        if isinstance(ytr, list) and len(ytr) > 1:
+            self._multiple_outputs = True
+            self._n_outputs = len(ytr)
 
     @property
     def height(self):
@@ -46,6 +51,8 @@ class Variable(object):
         ins.height = self.height
         ins._fitness = self._fitness
         ins._fitness_vs = self._fitness_vs
+        ins._multiple_outputs = self._multiple_outputs
+        ins._n_outputs = self._n_outputs
         return ins
 
     @property
@@ -93,12 +100,15 @@ class Variable(object):
     def weight(self, v):
         self._weight = v
 
-    def compute_weight(self, r):
+    def compute_weight(self, r, ytr=None, mask=None):
         """Returns the weight (w) using OLS of r * w = gp._ytr """
+        ytr = self._ytr if ytr is None else ytr
+        mask = self._mask if mask is None else mask
         A = np.empty((len(r), len(r)))
-        b = np.array([(f * self._ytr).sum() for f in r])
+        r = [x for x in r]
+        b = np.array([(f * ytr).sum() for f in r])
         for i in range(len(r)):
-            r[i] = r[i] * self._mask
+            r[i] = r[i] * mask
             for j in range(i, len(r)):
                 A[i, j] = (r[i] * r[j]).sum()
                 A[j, i] = A[i, j]
@@ -117,23 +127,49 @@ class Variable(object):
 
     def set_weight(self, r):
         if self.weight is None:
-            w = self.compute_weight([r])
-            if w is None:
-                return False
-            self.weight = w
+            if not self._multiple_outputs:
+                ytr = [self._ytr]
+                mask = [self._mask]
+            else:
+                ytr = self._ytr
+                mask = self._mask
+            W = []
+            for _ytr, _mask in zip(ytr, mask):
+                w = self.compute_weight([r], ytr=_ytr, mask=_mask)
+                if w is None:
+                    return False
+                W.append(w[0])
+            if not self._multiple_outputs:
+                self.weight = W[0]
+            else:
+                self.weight = W
         return True
+
+    def _mul(self, a, w):
+        if not isinstance(w, list):
+            return a * w
+        if not isinstance(a, list):
+            return [a * x for x in w]
+        return [x * y for x, y in zip(a, w)]
 
     def eval(self, X):
         r, hr = self.raw_outputs(X)
         if not self.set_weight(r):
             return False
-        self.hy = r * self.weight
+        self.hy = self._mul(r, self.weight)
         if hr is not None:
-            self.hy_test = hr * self.weight
+            self.hy_test = self._mul(hr, self.weight)
         return True
 
     def isfinite(self):
         "Test whether the predicted values are finite"
+        if self._multiple_outputs:
+            if self.hy_test is not None:
+                r = [(hy.isfinite() and (hyt is None or hyt.isfinite()))
+                     for hy, hyt in zip(self.hy, self.hy_test)]
+            else:
+                r = [hy.isfinite() for hy in self.hy]
+            return np.all(r)
         return self.hy.isfinite() and (self.hy_test is None or
                                        self.hy_test.isfinite())
 
@@ -172,15 +208,75 @@ class Function(Variable):
         c = self.symbol + '|' + '|'.join([str(x) for x in vars])
         return c
 
+    def hy2listM(self, X):
+        if not self._multiple_outputs:
+            hy = [x.hy for x in X]
+            if X[0].hy_test is not None:
+                hyt = [x.hy_test for x in X]
+            else:
+                hyt = None
+        else:
+            hy = [list() for x in range(self._n_outputs)]
+            [[hy[k].append(x.hy[k]) for x in X] for k in range(self._n_outputs)]
+            if X[0].hy_test is not None:
+                hyt = [list() for x in range(self._n_outputs)]
+                [[hyt[k].append(x.hy_test[k]) for x in X]
+                 for k in range(self._n_outputs)]
+            else:
+                hyt = None
+        return hy, hyt
+    
+    def hy2list(self, X):
+        if not self._multiple_outputs:
+            hy = [X.hy]
+            hyt = [X.hy_test]
+        else:
+            hy = X.hy
+            hyt = X.hy_test
+        return hy, hyt
+
+    def return_r_hr(self, r, hr):
+        if len(r) == 1:
+            r = r[0]
+        if hr is None:
+            pass
+        elif len(hr) == 0:
+            hr = None
+        elif len(hr) == 1:
+            hr = hr[0]
+        return r, hr
+
 
 class Function1(Function):
     def set_weight(self, r):
         if self.weight is None:
-            w = self.compute_weight([r])
-            if w is None:
-                return False
-            self.weight = w[0]
+            if not self._multiple_outputs:
+                ytr = [self._ytr]
+                mask = [self._mask]
+                r = [r]
+            else:
+                ytr = self._ytr
+                mask = self._mask
+            W = []
+            for _r, _ytr, _mask in zip(r, ytr, mask):
+                w = self.compute_weight([_r], ytr=_ytr, mask=_mask)
+                if w is None:
+                    return False
+                W.append(w[0])
+            if not self._multiple_outputs:
+                self.weight = W[0]
+            else:
+                self.weight = W
         return True
+
+    def _raw_outputs(self, X, func):
+        X = X[self.variable]
+        hy, hyt = self.hy2list(X)
+        r = [getattr(x, func)() for x in hy]
+        hr = None
+        if hyt is not None:
+            hr = [getattr(x, func)() for x in hyt if x is not None]
+        return self.return_r_hr(r, hr)
 
 
 class Add(Function):
@@ -199,22 +295,43 @@ class Add(Function):
             a = a + x
         return a
 
-    def eval(self, X):
-        X = [X[x] for x in self.variable]
-        if self.weight is None:
-            w = self.compute_weight([x.hy for x in X])
+    def set_weight(self, hy):
+        if self.weight is not None:
+            return True
+        if not self._multiple_outputs:
+            w = self.compute_weight(hy, ytr=self._ytr, mask=self._mask)
             if w is None:
                 return False
             self.weight = w
-        # r = map(lambda (v, w): v.hy * w, zip(X, self.weight))
-        r = [v.hy * w1 for v, w1 in zip(X, self.weight)]
-        r = self.cumsum(r)
+        else:
+            W = []
+            for _hy, _ytr, _mask in zip(hy, self._ytr, self._mask):
+                w = self.compute_weight(_hy, ytr=_ytr, mask=_mask)
+                if w is None:
+                    return False
+                W.append(w)
+            self.weight = W
+        return True
+
+    def eval(self, X):
+        X = [X[x] for x in self.variable]
+        hy, hyt = self.hy2listM(X)
+        if not self.set_weight(hy):
+            return False
+        if self._multiple_outputs:
+            r = [self.cumsum(self._mul(a, w)) for a, w in zip(hy, self.weight)]
+            if hyt is not None:
+                hr = [self.cumsum(self._mul(a, w)) for a, w in zip(hyt, self.weight)]
+            else:
+                hr = None
+        else:
+            r = self.cumsum([x * w for x, w in zip(hy, self.weight)])
+            if hyt is not None:
+                hr = self.cumsum([x * w for x, w in zip(hyt, self.weight)])
+            else:
+                hr = None
         self.hy = r
-        if X[0].hy_test is not None:
-            # r = map(lambda (v, w): v.hy_test * w, zip(X, self.weight))
-            r = [v.hy_test * w1 for v, w1 in zip(X, self.weight)]
-            r = self.cumsum(r)
-            self.hy_test = r
+        self.hy_test = hr
         return True
 
 
@@ -225,7 +342,7 @@ class Mul(Function1):
     def __init__(self, *args, **kwargs):
         super(Mul, self).__init__(*args, **kwargs)
         self._variable = sorted(self._variable)
-
+        
     @staticmethod
     def cumprod(r):
         a = r[0]
@@ -235,10 +352,16 @@ class Mul(Function1):
 
     def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
-        r = self.cumprod([x.hy for x in X])
+        hy, hyt = self.hy2listM(X)
         hr = None
-        if X[0].hy_test is not None:
-            hr = self.cumprod([x.hy_test for x in X])
+        if self._multiple_outputs:
+            r = [self.cumprod(x) for x in hy]
+            if hyt is not None:
+                hr = [self.cumprod(x) for x in hyt]
+        else:
+            r = self.cumprod(hy)
+            if hyt is not None:
+                hr = self.cumprod(hyt)
         return r, hr
 
 
@@ -247,11 +370,17 @@ class Div(Function1):
     color = 1
 
     def raw_outputs(self, X):
-        a, b = X[self.variable[0]], X[self.variable[1]]
-        r = a.hy / b.hy
+        X = [X[x] for x in self.variable]
+        hy, hyt = self.hy2listM(X)
         hr = None
-        if X[0].hy_test is not None:
-            hr = a.hy_test / b.hy_test
+        if self._multiple_outputs:
+            r = [x[0] / x[1] for x in hy]
+            if hyt is not None:
+                hr = [x[0] / x[1] for x in hyt]
+        else:
+            r = hy[0] / hy[1]
+            if hyt is not None:
+                hr = hyt[0] / hyt[1]
         return r, hr
 
 
@@ -261,10 +390,7 @@ class Fabs(Function1):
     color = 2
 
     def raw_outputs(self, X):
-        X = X[self.variable]
-        r = X.hy.fabs()
-        hr = X.hy_test.fabs() if X.hy_test is not None else None
-        return r, hr
+        return self._raw_outputs(X, 'fabs')
 
 
 class Exp(Function1):
@@ -273,10 +399,7 @@ class Exp(Function1):
     color = 3
 
     def raw_outputs(self, X):
-        X = X[self.variable]
-        r = X.hy.exp()
-        hr = X.hy_test.exp() if X.hy_test is not None else None
-        return r, hr
+        return self._raw_outputs(X, 'exp')
 
 
 class Sqrt(Function1):
@@ -285,10 +408,7 @@ class Sqrt(Function1):
     color = 4
 
     def raw_outputs(self, X):
-        X = X[self.variable]
-        r = X.hy.sqrt()
-        hr = X.hy_test.sqrt() if X.hy_test is not None else None
-        return r, hr
+        return self._raw_outputs(X, 'sqrt')
 
 
 class Sin(Function1):
@@ -297,10 +417,7 @@ class Sin(Function1):
     color = 5
 
     def raw_outputs(self, X):
-        X = X[self.variable]
-        r = X.hy.sin()
-        hr = X.hy_test.sin() if X.hy_test is not None else None
-        return r, hr
+        return self._raw_outputs(X, 'sin')
 
 
 class Cos(Function1):
@@ -309,10 +426,7 @@ class Cos(Function1):
     color = 5
 
     def raw_outputs(self, X):
-        X = X[self.variable]
-        r = X.hy.cos()
-        hr = X.hy_test.cos() if X.hy_test is not None else None
-        return r, hr
+        return self._raw_outputs(X, 'cos')
 
 
 class Ln(Function1):
@@ -321,10 +435,7 @@ class Ln(Function1):
     color = 6
 
     def raw_outputs(self, X):
-        X = X[self.variable]
-        r = X.hy.ln()
-        hr = X.hy_test.ln() if X.hy_test is not None else None
-        return r, hr
+        return self._raw_outputs(X, 'ln')
 
 
 class Sq(Function1):
@@ -333,10 +444,7 @@ class Sq(Function1):
     color = 4
 
     def raw_outputs(self, X):
-        X = X[self.variable]
-        r = X.hy.sq()
-        hr = X.hy_test.sq() if X.hy_test is not None else None
-        return r, hr
+        return self._raw_outputs(X, 'sq')
 
 
 class Sigmoid(Function1):
@@ -345,10 +453,7 @@ class Sigmoid(Function1):
     color = 6
 
     def raw_outputs(self, X):
-        X = X[self.variable]
-        r = X.hy.sigmoid()
-        hr = X.hy_test.sigmoid() if X.hy_test is not None else None
-        return r, hr
+        return self._raw_outputs(X, 'sigmoid')
 
 
 class If(Function1):
@@ -358,11 +463,16 @@ class If(Function1):
 
     def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
-        a, b, c = X
-        r = a.hy.if_func(b.hy, c.hy)
+        hy, hyt = self.hy2listM(X)
         hr = None
-        if a.hy_test is not None:
-            hr = a.hy_test.if_func(b.hy_test, c.hy_test)
+        if self._multiple_outputs:
+            r = [x[0].if_func(x[1], x[2]) for x in hy]
+            if hyt is not None:
+                hr = [x[0].if_func(x[1], x[2]) for x in hyt]
+        else:
+            r = hy[0].if_func(hy[1], hy[2])
+            if hyt is not None:
+                hr = hyt[0].if_func(hyt[1], hyt[2])
         return r, hr
 
 
@@ -384,10 +494,16 @@ class Min(Function1):
 
     def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
-        r = self.cummin([x.hy for x in X])
+        hy, hyt = self.hy2listM(X)
         hr = None
-        if X[0].hy_test is not None:
-            hr = self.cummin([x.hy_test for x in X])
+        if self._multiple_outputs:
+            r = [self.cummin(x) for x in hy]
+            if hyt is not None:
+                hr = [self.cummin(x) for x in hyt]
+        else:
+            r = self.cummin(hy)
+            if hyt is not None:
+                hr = self.cummin(hyt)
         return r, hr
 
 
@@ -409,8 +525,14 @@ class Max(Function1):
 
     def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
-        r = self.cummax([x.hy for x in X])
+        hy, hyt = self.hy2listM(X)
         hr = None
-        if X[0].hy_test is not None:
-            hr = self.cummax([x.hy_test for x in X])
+        if self._multiple_outputs:
+            r = [self.cummax(x) for x in hy]
+            if hyt is not None:
+                hr = [self.cummax(x) for x in hyt]
+        else:
+            r = self.cummax(hy)
+            if hyt is not None:
+                hr = self.cummax(hyt)
         return r, hr

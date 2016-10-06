@@ -27,15 +27,16 @@ def test_indindividual_decision_function():
     vars = Model.convert_features(X)
     for x in vars:
         x._eval_ts = x._eval_tr.copy()
-    vars = [Variable(k, weight=1) for k in range(len(vars))]
+    vars = [Variable(k, weight=np.ones(1)) for k in range(len(vars))]
     for i in range(len(vars)):
         ind = Individual([vars[i]])
         ind.decision_function(X)
         hy = ind._ind[0].hy.tonparray()
         [assert_almost_equals(a, b) for a, b in zip(X[:, i], hy)]
-    ind = Individual([Sin(0, weight=1),
+    ind = Individual([Sin(0, weight=np.ones(1)),
                       Add(range(2), np.ones(2)), vars[0], vars[-1]])
     ind.decision_function(X)
+    print(ind._ind[0].hy, ind._ind[1].hy)
     hy = ind._ind[0].hy.tonparray()
     y = np.sin(X[:, 0] + X[:, -1])
     [assert_almost_equals(a, b) for a, b in zip(y, hy)]
