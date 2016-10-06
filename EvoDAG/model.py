@@ -96,10 +96,17 @@ class Model(object):
 
     def predict(self, X, **kwargs):
         if self._classifier:
-            hy = self.decision_function(X, **kwargs).sign()
-            if self._labels is not None:
-                hy = (hy + 1).sign()
-                hy = self._labels[hy.tonparray().astype(np.int)]
+            if self.multiple_outputs:
+                hy = self.decision_function(X, **kwargs)
+                hy = np.array([x.tonparray() for x in hy])
+                hy = hy.argmax(axis=0)
+                if self._labels is not None:
+                    hy = self._labels[hy]
+            else:
+                hy = self.decision_function(X, **kwargs).sign()
+                if self._labels is not None:
+                    hy = (hy + 1).sign()
+                    hy = self._labels[hy.tonparray().astype(np.int)]
             return hy
         return self.decision_function(X, **kwargs).tonparray()
 

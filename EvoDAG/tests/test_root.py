@@ -1094,3 +1094,4 @@ def test_multiple_outputs2():
                 popsize=10000).fit(X, y, test_set=X)
     m = gp.model()
     assert isinstance(m, Model)
+    assert len(gp.y) == 3
