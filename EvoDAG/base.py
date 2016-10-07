@@ -197,7 +197,7 @@ class EvoDAG(object):
         return self
 
     def transform_to_mo(self, v):
-        klass = np.unique(v)
+        klass = self._labels
         y = np.empty((v.shape[0], klass.shape[0]))
         y.fill(-1)
         for i, k in enumerate(klass):
@@ -518,9 +518,10 @@ class EvoDAG(object):
         "Evolutive process"
         self._init_time = time.time()
         self.X = X
+        nclasses = self.nclasses(y)
         if self._classifier and self._multiple_outputs:
             pass
-        elif self.nclasses(y) > 2:
+        elif nclasses > 2:
             self._multiclass = True
             return self.multiclass(X, y, test_set=test_set)
         self.y = y
