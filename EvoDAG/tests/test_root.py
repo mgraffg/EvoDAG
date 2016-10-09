@@ -1060,6 +1060,7 @@ def test_transform_to_mo():
                 multiple_outputs=True,
                 seed=0,
                 popsize=10000)
+    gp.nclasses(y)
     k = np.unique(y)
     y = gp.transform_to_mo(y)
     assert k.shape[0] == y.shape[1]
@@ -1075,6 +1076,7 @@ def test_multiple_outputs():
                 multiple_outputs=True,
                 seed=0,
                 popsize=10000)
+    gp.nclasses(y)
     gp.y = y
     gp.X = X
     gp.create_population()

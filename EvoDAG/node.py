@@ -313,6 +313,10 @@ class Add(Function):
             self.weight = W
         return True
 
+    @staticmethod
+    def _mul(a, b):
+        return [_a * _b for _a, _b in zip(a, b)]
+
     def eval(self, X):
         X = [X[x] for x in self.variable]
         hy, hyt = self.hy2listM(X)
