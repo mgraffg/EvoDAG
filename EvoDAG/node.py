@@ -195,6 +195,7 @@ class Variable(object):
 class Function(Variable):
     nargs = 2
     color = 1
+    unique_args = False
 
     def tostore(self):
         ins = super(Function, self).tostore()
@@ -283,6 +284,8 @@ class Add(Function):
     nargs = 5
     symbol = '+'
     color = 1
+    unique_args = True
+    min_nargs = 2
 
     def __init__(self, *args, **kwargs):
         super(Add, self).__init__(*args, **kwargs)
@@ -484,6 +487,8 @@ class Min(Function1):
     nargs = 2
     symbol = 'min'
     color = 8
+    unique_args = True
+    min_nargs = 2
     
     def __init__(self, *args, **kwargs):
         super(Min, self).__init__(*args, **kwargs)
@@ -515,6 +520,8 @@ class Max(Function1):
     nargs = 2
     symbol = 'max'
     color = 8
+    unique_args = True
+    min_nargs = 2
 
     def __init__(self, *args, **kwargs):
         super(Max, self).__init__(*args, **kwargs)
