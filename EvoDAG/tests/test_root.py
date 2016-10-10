@@ -665,7 +665,8 @@ def test_trace():
     gp.population.replace(a)
     print(a.position, a.variable, a._weight, gp.population.hist[0].variable)
     s = gp.trace(a)
-    assert len(s) == 4
+    print(len(s), s)
+    assert a._weight.shape[0] + 1 == len(s)
 
 
 def test_class_values():
@@ -1097,3 +1098,28 @@ def test_multiple_outputs2():
     m = gp.model()
     assert isinstance(m, Model)
     assert len(gp.y) == 3
+
+
+def test_add_repeated_args():
+    from EvoDAG import EvoDAG
+    from EvoDAG.node import Add, Min, Max
+    y = cl.copy()
+    for ff in [Add, Min, Max]:
+        ff.nargs = 30
+        gp = EvoDAG(generations=np.inf,
+                    tournament_size=2,
+                    early_stopping_rounds=100,
+                    time_limit=0.9,
+                    multiple_outputs=True,
+                    all_inputs=True,
+                    function_set=[ff],
+                    seed=0,
+                    popsize=10000)
+        gp.X = X
+        gp.nclasses(y)
+        gp.y = y
+        gp.create_population()
+        node = gp.random_offspring()
+        print(node, node._variable, X.shape)
+        assert len(node._variable) <= X.shape[1]
+        ff.nargs = 2

@@ -379,6 +379,32 @@ class EvoDAG(object):
             return self.unfeasible_offspring()
         return f
 
+    def get_unique_args(self, func):
+        args = []
+        for j in range(func.nargs):
+            k = self.population.tournament()
+            for _ in range(self._number_tries_unique_args):
+                if k not in args:
+                    args.append(k)
+                    break
+        if len(args) < func.min_nargs:
+            return None
+        return args
+
+    def get_args(self, func):
+        args = []
+        if func.unique_args:
+            return self.get_unique_args(func)
+        for j in range(func.nargs):
+            k = self.population.tournament()
+            for _ in range(self._number_tries_unique_args):
+                if k not in args:
+                    break
+                else:
+                    k = self.population.tournament()
+            args.append(k)
+        return args
+
     def random_offspring(self):
         "Returns an offspring with the associated weight(s)"
         for i in range(self._number_tries_feasible_ind):
@@ -386,15 +412,10 @@ class EvoDAG(object):
             func = self.function_set
             func = func[np.random.randint(len(func))]
             # self._logger.debug('Func %s' % func)
-            args = []
-            for j in range(func.nargs):
-                k = self.population.tournament()
-                for _ in range(self._number_tries_unique_args):
-                    if k not in args:
-                        break
-                    else:
-                        k = self.population.tournament()
-                args.append(k)
+            args = self.get_args(func)
+            if args is None:
+                continue
+            # print(args)
             # self._logger.debug('Args %s' % args)
             args = [self.population.population[x].position for x in args]
             f = self._random_offspring(func, args)

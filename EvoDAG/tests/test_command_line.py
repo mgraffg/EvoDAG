@@ -14,7 +14,6 @@
 
 import sys
 import os
-from EvoDAG.command_line import CommandLine
 from test_root import X, cl
 
 
