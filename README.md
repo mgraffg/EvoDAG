@@ -180,22 +180,21 @@ as execute auto-sklearn again on that particular case. Nonetheless, we
 decided to keep auto-sklearn without modifications.
 
 
-|Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.2.33)|   
-| ----- | ---------------------------------------------: | --------------------------------------------: | -----------------------------------: | -----------: |  
-|banana          |     **11.08**      |  28.00  |  11.27   |  12.07  |  
-|titanic          |    **24.18**    |  37.18   |  30.27  |  29.66  |  
-|thyroid        |      **4.32**      |  23.38  |  6.13  |  7.94  |    
-|diabetis        |     27.06   |   37.65  |  26.65  |  **24.54** |   
-|breast-cancer    |    **33.01**    |  42.36  |  36.25  |  34.25 |   
-|flare-solar     |     34.81     |  39.05 |  33.41  |  **32.84**  |  
-|heart             |   20.69        |  27.69  |  18.12  |  **16.52** |  
-|ringnorm       |      7.98      |  15.49  |  **1.96**  |  2.48 |   
-|twonorm       |       3.09      |  20.87  |  2.90  |  **2.67** |   
-|german         |      30.10    | 39.45  |  29.00  |  **28.34**  |   
-|image         |       **2.90** | 21.29  |  3.32  |  3.98 |   
-|waveform      |       12.80   | 22.67  |  10.62  |  **10.37**  |   
-|splice       |        14.63  | 10.79  |  11.23  |  **9.91**  |   
-
+|Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.3.4)|EvoDAG --multiple-outputs (0.3.4)|   
+| ----- | ---------------------------------------------: | --------------------------------------------: | -----------------------------------: | -----------: |-----------: |  
+|banana          |     **11.08**      |  28.00  |  11.27   | 12.08 | 11.77|
+|titanic          |    **24.18**    |  37.18   |  30.27  |  30.05 | 29.62|
+|thyroid        |      **4.32**      |  23.38  |  6.13  |  8.58 | 7.05|
+|diabetis        |     27.06   |   37.65  |  26.65  |  24.75 | **24.64**|
+|breast-cancer    |    **33.01**    |  42.36  |  36.25  |  34.49 | 34.28|
+|flare-solar     |     34.81     |  39.05 |  33.41  |  32.89 | **32.82**|
+|heart             |   20.69        |  27.69  |  18.12  |  **16.58** | 16.69|
+|ringnorm       |      7.98      |  15.49  |  **1.96**  |  2.48 | 2.32|
+|twonorm       |       3.09      |  20.87  |  2.90  |  2.68 | **2.62**|
+|german         |      30.10    | 39.45  |  29.00  | 28.84 | **28.78**|
+|image         |       **2.90** | 21.29  |  3.32  | 4.19 | 3.54|
+|waveform      |       12.80   | 22.67  |  10.62  |  10.40 | **10.10**|
+|splice       |        14.63  | 10.79  |  11.23  |  10.05 | **9.95**|
 
 
 # Install EvoDAG #
