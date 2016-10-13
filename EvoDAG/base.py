@@ -206,8 +206,12 @@ class EvoDAG(object):
         return y
         
     def multiple_outputs_y(self, v):
-        v = v.tonparray()
-        v = self.transform_to_mo(v)
+        if isinstance(v, list):
+            assert len(v) == self._labels.shape[0]
+            v = np.array([x.tonparray() for x in v]).T
+        else:
+            v = v.tonparray()
+            v = self.transform_to_mo(v)
         mask = []
         mask_vs = []
         ytr = []
@@ -520,6 +524,9 @@ class EvoDAG(object):
         "Number of classes of v, also sets the labes"
         if not self._classifier:
             return 0
+        if isinstance(v, list):
+            self._labels = np.arange(len(v))
+            return
         if not isinstance(v, np.ndarray):
             v = v.tonparray()
         self._labels = np.unique(v)

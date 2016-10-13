@@ -467,3 +467,52 @@ def test_multiple_outputs():
     d = json.loads(open('output.evodag').read())
     assert d[0]['multiple_outputs']
     os.unlink('output.evodag')
+
+
+def mo_training_set():
+    import tempfile
+    import numpy as np
+    klass = np.unique(cl)
+    y = np.empty((cl.shape[0], klass.shape[0]))
+    y.fill(-1)
+    for i, k in enumerate(klass):
+        mask = k == cl
+        y[mask, i] = 1
+    fname = tempfile.mktemp()
+    with open(fname, 'w') as fpt:
+        for x, v in zip(X, y):
+            l = x.tolist()
+            l += v.tolist()
+            fpt.write(','.join(map(str, l)))
+            fpt.write('\n')
+    return fname
+
+
+def test_number_multiple_outpus_classification():
+    import os
+    from EvoDAG.command_line import params, train, predict
+    fname = mo_training_set()
+    sys.argv = ['EvoDAG', '--output-dim=3',
+                '--multiple-outputs',
+                '-C', '--parameters',
+                'cache.evodag', '-p3', '-e1',
+                '-r2', fname]
+    params()
+    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
+                '-n2', '--output-dim=3',
+                '--model', 'model.evodag',
+                '--test', fname, fname]
+    train()
+    sys.argv = ['EvoDAG', '--output', 'output.evodag',
+                '--decision-function',
+                '--model', 'model.evodag', fname]
+    predict()
+    os.unlink(fname)
+    os.unlink('cache.evodag')
+    os.unlink('model.evodag')
+    l = open('output.evodag').readline()
+    os.unlink('output.evodag')
+    default_nargs()
+    assert len(l.split(',')) == 3
+
+    

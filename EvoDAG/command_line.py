@@ -209,11 +209,19 @@ class CommandLine(object):
             d = self.read_data(self.data.training_set)
             X = []
             y = []
-            for x in d:
-                X.append([self.convert(i) for i in x[:-1]])
-                y.append(self.convert_label(x[-1]))
-            self.X = np.array(X)
-            self.y = np.array(y)
+            if self.data.output_dim > 1:
+                dim = self.data.output_dim
+                for x in d:
+                    X.append([self.convert(i) for i in x[:-dim]])
+                    y.append(x[-dim:])
+                self.X = np.array(X)
+                self.y = [SparseArray.fromlist([float(x[i]) for x in y]) for i in range(dim)]
+            else:
+                for x in d:
+                    X.append([self.convert(i) for i in x[:-1]])
+                    y.append(self.convert_label(x[-1]))
+                self.X = np.array(X)
+                self.y = np.array(y)
             return True
         else:
             X, y = self.read_data_json(self.data.training_set)
@@ -317,6 +325,11 @@ class CommandLineParams(CommandLine):
                                  default=False,
                                  action="store_true",
                                  help="Evolve a model with multiple outputs")
+        self.parser.add_argument('--output-dim',
+                                 dest='output_dim',
+                                 default=1,
+                                 type=int,
+                                 help="Output Dimension (default 1) use with multiple-outputs flag")
 
     def version(self):
         pa = self.parser.add_argument
@@ -393,6 +406,11 @@ class CommandLineTrain(CommandLine):
                                  dest='parameters',
                                  type=str,
                                  help=cdn)
+        self.parser.add_argument('--output-dim',
+                                 dest='output_dim',
+                                 default=1,
+                                 type=int,
+                                 help="Output Dimension (default 1) use with multiple-outputs flag")
 
     def model(self):
         cdn = 'File to store EvoDAG model'
