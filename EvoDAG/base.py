@@ -387,6 +387,8 @@ class EvoDAG(object):
                 if k not in args:
                     args.append(k)
                     break
+                else:
+                    k = self.population.tournament()
         if len(args) < func.min_nargs:
             return None
         return args
