@@ -245,33 +245,35 @@ class Ensemble(object):
     def classifier(self):
         return self._classifier
 
+    def _decision_function_raw(self, X, cpu_cores=1):
+        if cpu_cores == 1:
+            r = [m.decision_function(X) for m in self._models]
+        else:
+            p = Pool(cpu_cores)
+            args = [(m, X) for m in self._models]
+            r = [x for x in tqdm(p.imap_unordered(decision_function,
+                                                  args),
+                                 total=len(args))]
+            p.close()
+        return r
+
     def decision_function(self, X, cpu_cores=1):
         if self.classifier:
             return self.decision_function_cl(X, cpu_cores=cpu_cores)
-        if cpu_cores == 1:
-            r = [m.decision_function(X) for m in self._models]
+        r = self._decision_function_raw(X, cpu_cores=cpu_cores)
+        if isinstance(r[0], SparseArray):
+            r = np.array([x.tonparray() for x in r if x.isfinite()])
+            sp = SparseArray.fromlist
+            r = sp(np.median(r, axis=0))
         else:
-            p = Pool(cpu_cores)
-            args = [(m, X) for m in self._models]
-            r = [x for x in tqdm(p.imap_unordered(decision_function,
-                                                  args),
-                                 total=len(args))]
-            p.close()
-        r = np.array([x.tonparray() for x in r if x.isfinite()])
-        sp = SparseArray.fromlist
-        r = sp(np.median(r, axis=0))
+            r = np.array([[y.tonparray() for y in x] for x in r])
+            sp = SparseArray.fromlist
+            r = np.median(r, axis=0)
+            r = [sp(x) for x in r]
         return r
 
     def decision_function_cl(self, X, cpu_cores=1):
-        if cpu_cores == 1:
-            r = [m.decision_function(X) for m in self._models]
-        else:
-            p = Pool(cpu_cores)
-            args = [(m, X) for m in self._models]
-            r = [x for x in tqdm(p.imap_unordered(decision_function,
-                                                  args),
-                                 total=len(args))]
-            p.close()
+        r = self._decision_function_raw(X, cpu_cores=cpu_cores)
         res = r[0]
         if isinstance(res, SparseArray):
             res = res.boundaries()

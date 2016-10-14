@@ -515,4 +515,32 @@ def test_number_multiple_outpus_classification():
     default_nargs()
     assert len(l.split(',')) == 3
 
+
+def test_number_multiple_outpus_regression():
+    import os
+    from EvoDAG.command_line import params, train, predict
+    fname = mo_training_set()
+    sys.argv = ['EvoDAG', '--output-dim=3',
+                '--multiple-outputs',
+                '-R', '--parameters',
+                'cache.evodag', '-p3', '-e1',
+                '-r2', fname]
+    params()
+    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
+                '-n2', '--output-dim=3',
+                '--model', 'model.evodag',
+                '--test', fname, fname]
+    train()
+    sys.argv = ['EvoDAG', '--output', 'output.evodag',
+                '--decision-function',
+                '--model', 'model.evodag', fname]
+    predict()
+    os.unlink(fname)
+    os.unlink('cache.evodag')
+    os.unlink('model.evodag')
+    l = open('output.evodag').readline()
+    os.unlink('output.evodag')
+    default_nargs()
+    assert len(l.split(',')) == 3
+    
     

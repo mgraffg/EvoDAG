@@ -204,8 +204,8 @@ class EvoDAG(object):
             mask = k == v
             y[mask, i] = 1
         return y
-        
-    def multiple_outputs_y(self, v):
+
+    def multiple_outputs_cl(self, v):
         if isinstance(v, list):
             assert len(v) == self._labels.shape[0]
             v = np.array([x.tonparray() for x in v]).T
@@ -230,12 +230,38 @@ class EvoDAG(object):
         self._mask = mask
         self._mask_vs = mask_vs
 
+    def multiple_outputs_regression(self, v):
+        assert isinstance(v, list)
+        v = np.array([x.tonparray() for x in v]).T
+        mask = []
+        ytr = []
+        y = []
+        for _v in v.T:
+            _v = SparseArray.fromlist(_v)
+            for _ in range(self._number_tries_feasible_ind):
+                self.set_regression_mask(_v)
+                flag = self.test_regression_mask(_v)
+                if flag:
+                    break
+            if not flag:
+                msg = "Unsuitable validation set (RSE: average equals zero)"
+                raise RuntimeError(msg)
+            mask.append(self._mask)
+            ytr.append(_v * self._mask)
+            y.append(_v)
+            self._y = _v
+        self._ytr = ytr
+        self._y = y
+        self._mask = mask
+
     @y.setter
     def y(self, v):
         if isinstance(v, np.ndarray):
             v = SparseArray.fromlist(v)
         if self._classifier and self._multiple_outputs:
-            return self.multiple_outputs_y(v)
+            return self.multiple_outputs_cl(v)
+        elif self._multiple_outputs:
+            return self.multiple_outputs_regression(v)
         elif self._classifier:
             if self._labels is not None and\
                (self._labels[0] != -1 or self._labels[1] != 1):
@@ -276,7 +302,12 @@ class EvoDAG(object):
             else:
                 v.fitness = -self._ytr.SSE(v.hy * self._mask)
         else:
-            v.fitness = -self._ytr.SAE(v.hy * self._mask)
+            if self._multiple_outputs:
+                f = [-ytr.SAE(hy * mask) for ytr, hy, mask in
+                     zip(self._ytr, v.hy, self._mask)]
+                v.fitness = np.mean(f)
+            else:
+                v.fitness = -self._ytr.SAE(v.hy * self._mask)
 
     def mask_vs(self):
         """Procedure to perform, in classification,
@@ -313,12 +344,22 @@ class EvoDAG(object):
                 v.fitness_vs = -((self.y - v.hy.sign()).sign().fabs() *
                                  self._mask_vs).sum()
         else:
-            m = (self._mask - 1).fabs()
-            x = self.y * m
-            y = v.hy * m
-            a = (x - y).sq().sum()
-            b = (x - x.sum() / x.size()).sq().sum()
-            v.fitness_vs = -a / b
+            mask = self._mask
+            y = self.y
+            hy = v.hy
+            if not isinstance(mask, list):
+                mask = [mask]
+                y = [y]
+                hy = [hy]
+            fit = []
+            for _mask, _y, _hy in zip(mask, y, hy):
+                m = (_mask - 1).fabs()
+                x = _y * m
+                y = _hy * m
+                a = (x - y).sq().sum()
+                b = (x - x.sum() / x.size()).sq().sum()
+                fit.append(-a / b)
+            v.fitness_vs = np.mean(fit)
 
     def es_extra_test(self, v):
         """This function is called from population before setting
