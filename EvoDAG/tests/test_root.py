@@ -761,7 +761,7 @@ def test_labels():
                 tournament_size=2,
                 early_stopping_rounds=-1,
                 seed=0,
-                popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
+                popsize=100).fit(X[:-10], y[:-10], test_set=X[-10:])
     m = gp.model()
     hy = m.predict(X=X[:-10])
     print(np.unique(hy))

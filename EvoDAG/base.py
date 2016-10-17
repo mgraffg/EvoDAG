@@ -521,18 +521,10 @@ class EvoDAG(object):
                 self._init_popsize = self.population.popsize
                 break
             else:
-                func = self.function_set
-                func = func[np.random.randint(len(func))]
-                psize = len(self.population.population)
-                args = np.arange(psize)
-                np.random.shuffle(args)
-                args = args[:func.nargs].tolist()
-                for j in range(len(args), func.nargs):
-                    args.append(np.random.randint(psize))
-                args = [self.population.population[x].position for x in args]
-                v = self._random_offspring(func, args)
-                if v is None:
-                    continue
+                gen = self.population.generation
+                self.population.generation = 0
+                v = self.random_offspring()
+                self.population.generation = gen
             self.add(v)
 
     def stopping_criteria(self):
