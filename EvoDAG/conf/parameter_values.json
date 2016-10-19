@@ -12,6 +12,9 @@
     "multiple_outputs": [
 	false
     ],
+    "classifier": [
+	true
+    ],    
   "time_limit": [
     null
   ],
