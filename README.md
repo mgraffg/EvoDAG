@@ -179,7 +179,7 @@ automatically spotted, and, one possible solution could be as simple
 as execute auto-sklearn again on that particular case. Nonetheless, we
 decided to keep auto-sklearn without modifications.
 
-|Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.3.6)|EvoDAG --multiple-outputs (0.3.4)|   
+|Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.3.8)|EvoDAG --multiple-outputs (0.3.4)|   
 | ----- | ---------------------------------------------: | --------------------------------------------: | -----------------------------------: | -----------: |-----------: |  
 |banana          |     **11.08**      |  28.00  |11.27 | 11.98 | 11.77|  
 |titanic          |    **24.18**    |  37.18   |  30.27  |  30.02 | 29.62|
@@ -189,10 +189,10 @@ decided to keep auto-sklearn without modifications.
 |flare-solar     |     34.81     |  39.05 |  33.41  |  **32.74** | 32.82|
 |heart             |   20.69        |  27.69  |  18.12  |  **16.44** | 16.69|
 |ringnorm       |      7.98      |  15.49  |  **1.96**  |  2.46 | 2.32|
-|twonorm       |       3.09      |  20.87  |  2.90  |  2.68 | **2.62**|
+|twonorm       |       3.09      |  20.87  |  2.90  |  2.67 | **2.62**|
 |german         |      30.10    | 39.45  |  29.00  | **28.57** | 28.78|
 |image         |       **2.90** | 21.29  |  3.32  | 4.20 | 3.54|
-|waveform      |       12.80   | 22.67  |  10.62  |  10.37 | **10.10**|
+|waveform      |       12.80   | 22.67  |  10.62  |  10.36 | **10.10**|
 |splice       |        14.63  | 10.79  |  11.23  |  **10.01** | **9.95** |
 
 
