@@ -1,11 +1,7 @@
 [![Build Status](https://travis-ci.org/mgraffg/EvoDAG.svg?branch=master)](https://travis-ci.org/mgraffg/EvoDAG)
-
 [![Anaconda-Server Badge](https://anaconda.org/mgraffg/evodag/badges/version.svg)](https://anaconda.org/mgraffg/evodag)
-
 [![Anaconda-Server Badge](https://anaconda.org/mgraffg/evodag/badges/installer/conda.svg)](https://conda.anaconda.org/mgraffg)
-
 [![PyPI version](https://badge.fury.io/py/EvoDAG.svg)](https://badge.fury.io/py/EvoDAG)
-
 [![Coverage Status](https://coveralls.io/repos/github/mgraffg/EvoDAG/badge.svg?branch=master)](https://coveralls.io/github/mgraffg/EvoDAG?branch=master)
 
 # EvoDAG #
@@ -193,7 +189,7 @@ decided to keep auto-sklearn without modifications.
 |german         |      30.10    | 39.45  |  29.00  | **28.57** | 28.78|
 |image         |       **2.90** | 21.29  |  3.32  | 4.20 | 3.54|
 |waveform      |       12.80   | 22.67  |  10.62  |  10.36 | **10.10**|
-|splice       |        14.63  | 10.79  |  11.23  |  **10.01** | **9.95** |
+|splice       |        14.63  | 10.79  |  11.23  |  10.01 | **9.95** |
 
 
 # Install EvoDAG #
