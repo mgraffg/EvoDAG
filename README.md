@@ -175,21 +175,21 @@ automatically spotted, and, one possible solution could be as simple
 as execute auto-sklearn again on that particular case. Nonetheless, we
 decided to keep auto-sklearn without modifications.
 
-|Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.3.8)|EvoDAG --multiple-outputs (0.3.4)|   
+|Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.3.9)|EvoDAG --multiple-outputs (0.3.9)|   
 | ----- | ---------------------------------------------: | --------------------------------------------: | -----------------------------------: | -----------: |-----------: |  
-|banana          |     **11.08**      |  28.00  |11.27 | 11.98 | 11.77|  
-|titanic          |    **24.18**    |  37.18   |  30.27  |  30.02 | 29.62|
-|thyroid        |      **4.32**      |  23.38  |  6.13  |  8.24  | 7.05|
-|diabetis        |     27.06   |   37.65  |  26.65  |  25.00 | **24.64**|
-|breast-cancer    |    **33.01**    |  42.36  |  36.25  |  34.49 | 34.28|
-|flare-solar     |     34.81     |  39.05 |  33.41  |  **32.74** | 32.82|
-|heart             |   20.69        |  27.69  |  18.12  |  **16.44** | 16.69|
-|ringnorm       |      7.98      |  15.49  |  **1.96**  |  2.46 | 2.32|
-|twonorm       |       3.09      |  20.87  |  2.90  |  2.67 | **2.62**|
-|german         |      30.10    | 39.45  |  29.00  | **28.57** | 28.78|
-|image         |       **2.90** | 21.29  |  3.32  | 4.20 | 3.54|
+|banana          |     **11.08**      |  28.00  |11.27 | 11.98 | 11.68|  
+|titanic          |    **24.18**    |  37.18   |  30.27  |  30.02 | 29.80|
+|thyroid        |      **4.32**      |  23.38  |  6.13  |  8.24  | 6.85|
+|diabetis        |     27.06   |   37.65  |  26.65  |  25.00 | **24.86**|
+|breast-cancer    |    **33.01**    |  42.36  |  36.25  |  34.49 | 34.31|
+|flare-solar     |     34.81     |  39.05 |  33.41  |  **32.74** | 32.94|
+|heart             |   20.69        |  27.69  |  18.12  |  16.44 | **16.38**|
+|ringnorm       |      7.98      |  15.49  |  **1.96**  |  2.46 | 2.31|
+|twonorm       |       3.09      |  20.87  |  2.90  |  2.67 | **2.65**|
+|german         |      30.10    | 39.45  |  29.00  | 28.57 | **28.52**|
+|image         |       **2.90** | 21.29  |  3.32  | 4.20 | 3.63|
 |waveform      |       12.80   | 22.67  |  10.62  |  10.36 | **10.10**|
-|splice       |        14.63  | 10.79  |  11.23  |  10.01 | **9.95** |
+|splice       |        14.63  | 10.79  |  11.23  |  10.01 | **9.77** |
 
 
 # Install EvoDAG #
