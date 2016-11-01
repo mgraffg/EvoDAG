@@ -45,9 +45,12 @@ def rs_evodag(args_X_y):
     fit = []
     init = time.time()
     for seed in range(3):
-        evo = EvoDAG(seed=seed,
-                     **rs.process_params(args)).fit(X, y)
-        fit.append(evo.model().fitness_vs)
+        try:
+            evo = EvoDAG(seed=seed,
+                         **rs.process_params(args)).fit(X, y)
+            fit.append(evo.model().fitness_vs)
+        except RuntimeError:
+            fit.append(-np.inf)
     args['_time'] = time.time() - init
     gc.collect()
     return fit, args
