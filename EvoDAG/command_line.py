@@ -369,15 +369,16 @@ class CommandLineParams(CommandLine):
         res = [x[1] for x in res]
         [x.update(kw) for x in res]
         res.sort(key=lambda x: np.median(x['fitness']), reverse=True)
+        res = json.dumps(res, sort_keys=True, indent=2)
         if parameters.endswith('.gz'):
             with gzip.open(parameters, 'wb') as fpt:
                 try:
-                    fpt.write(bytes(json.dumps(res, sort_keys=True), encoding='utf-8'))
+                    fpt.write(bytes(res, encoding='utf-8'))
                 except TypeError:
-                    fpt.write(json.dumps(res, sort_keys=True))
+                    fpt.write(res)
         else:
             with open(parameters, 'w') as fpt:
-                fpt.write(json.dumps(res, sort_keys=True))
+                fpt.write(res)
 
     def main(self):
         self.read_training_set()

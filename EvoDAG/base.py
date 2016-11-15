@@ -44,6 +44,7 @@ class EvoDAG(object):
                  random_generations=0,
                  multiple_outputs=False,
                  **kwargs):
+        generations = np.inf if generations is None else generations
         self._generations = generations
         self._popsize = popsize
         self._classifier = classifier
