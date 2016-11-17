@@ -17,7 +17,7 @@ from cpython cimport array
 cimport numpy as npc
 cimport cython
 cimport libc.math as math
-
+# use Py_ssize_t instead of int to index
 
 cdef class SparseArray:
     cdef int _nele

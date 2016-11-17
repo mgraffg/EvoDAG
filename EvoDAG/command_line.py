@@ -16,6 +16,7 @@ import numpy as np
 from .utils import RandomParameterSearch, PARAMS
 from .sparse_array import SparseArray
 from .model import Ensemble
+import collections
 from multiprocessing import Pool
 import EvoDAG as evodag
 from EvoDAG import EvoDAG
@@ -527,6 +528,7 @@ class CommandLineUtils(CommandLine):
         self.parser = argparse.ArgumentParser(description="EvoDAG")
         self.model()
         self.graphviz()
+        self.params_stats()
         self.output_file()
         self.version()
 
@@ -536,6 +538,12 @@ class CommandLineUtils(CommandLine):
                                  dest='graphviz',
                                  default=False, action='store_true')
 
+    def params_stats(self):
+        self.parser.add_argument('-P', '--params-stats',
+                                 help='Parameters statistics',
+                                 dest='params_stats',
+                                 default=False, action='store_true')
+        
     def output_file(self):
         self.parser.add_argument('-o', '--output-file',
                                  help='File / directory to store the result(s)',
@@ -544,7 +552,7 @@ class CommandLineUtils(CommandLine):
                                  type=str)
 
     def model(self):
-        cdn = 'File containing the model.'
+        cdn = 'File containing the model/params.'
         self.parser.add_argument('model_file',
                                  default=None,
                                  type=str,
@@ -555,14 +563,37 @@ class CommandLineUtils(CommandLine):
         pa('--version',
            action='version', version='EvoDAG %s' % evodag.__version__)
 
+    def read_params(self, parameters):
+        if parameters.endswith('.gz'):
+            with gzip.open(parameters, 'rb') as fpt:
+                try:
+                    res = fpt.read()
+                    return json.loads(str(res, encoding='utf-8'))
+                except TypeError:
+                    return json.loads(res)
+        else:
+            with open(parameters, 'r') as fpt:
+                return json.loads(fpt.read())
+        
     def main(self):
         model_file = self.get_model_file()
-        with gzip.open(model_file, 'r') as fpt:
-            m = pickle.load(fpt)
-            self.word2id = pickle.load(fpt)
-            self.label2id = pickle.load(fpt)
         if self.data.graphviz:
+            with gzip.open(model_file, 'r') as fpt:
+                m = pickle.load(fpt)
+                self.word2id = pickle.load(fpt)
+                self.label2id = pickle.load(fpt)
             m.graphviz(self.data.output_file)
+        elif self.data.params_stats:
+            params = {k: collections.Counter() for k in PARAMS.keys()}
+            stats = self.read_params(model_file)
+            for l in stats:
+                for k, v in l.items():
+                    if k not in params:
+                        continue
+                    params[k][v] += 1
+            with open(self.data.output_file, 'w') as fpt:
+                fpt.write(json.dumps({k: v.most_common()[0] for k, v
+                                      in params.items()}, sort_keys=True, indent=2))
 
 
 def params():

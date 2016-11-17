@@ -544,3 +544,19 @@ def test_number_multiple_outpus_regression():
     assert len(l.split(',')) == 3
     
     
+def test_utils_params_stats():
+    from EvoDAG.command_line import params, utils
+    fname = mo_training_set()
+    sys.argv = ['EvoDAG', '--output-dim=3',
+                '--multiple-outputs',
+                '-R', '--parameters',
+                'cache.evodag', '-p3', '-e1',
+                '-r3', fname]
+    params()
+    sys.argv = ['EvoDAG', '-P', '-o', fname, 'cache.evodag']
+    utils()
+    with open(fname) as fpt:
+        print(fpt.read())
+    os.unlink(fname)
+    os.unlink('cache.evodag')
+    default_nargs()
