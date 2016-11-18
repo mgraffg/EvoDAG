@@ -542,8 +542,8 @@ def test_number_multiple_outpus_regression():
     os.unlink('output.evodag')
     default_nargs()
     assert len(l.split(',')) == 3
-    
-    
+
+
 def test_utils_params_stats():
     from EvoDAG.command_line import params, utils
     fname = mo_training_set()
@@ -560,3 +560,18 @@ def test_utils_params_stats():
     os.unlink(fname)
     os.unlink('cache.evodag')
     default_nargs()
+
+
+def test_params_diff():
+    from EvoDAG.command_line import params
+    import json
+    fname = mo_training_set()
+    sys.argv = ['EvoDAG', '--output-dim=3',
+                '--multiple-outputs',
+                '-R', '--parameters',
+                'cache.evodag', '-p3', '-e1',
+                '-r3', fname]
+    params()
+    with open('cache.evodag') as fpt:
+        a = json.loads(fpt.read())[0]
+    assert 'Diff' in a

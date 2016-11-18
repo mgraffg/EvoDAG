@@ -18,7 +18,7 @@ import logging
 from .sparse_array import SparseArray
 from .node import Variable
 from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Ln
-from .node import Sq, Sigmoid, If, Min, Max
+from .node import Sq, Sigmoid, If, Min, Max, Diff
 from .model import Model, Models
 from .population import SteadyState
 import time
@@ -33,7 +33,7 @@ class EvoDAG(object):
                  early_stopping_rounds=-1,
                  function_set=[Add, Mul, Div, Fabs,
                                Exp, Sqrt, Sin, Cos, Ln,
-                               Sq, Sigmoid, If, Min, Max],
+                               Sq, Sigmoid, If, Min, Max, Diff],
                  tr_fraction=0.8,
                  population_class=SteadyState,
                  number_tries_feasible_ind=30,

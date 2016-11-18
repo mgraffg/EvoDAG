@@ -506,3 +506,16 @@ def test_boundaries():
     assert suno[1] == 1
     print((suno[2]))
     assert suno[2] == 0.23
+
+
+def test_sparse_array_diff():
+    np.random.seed(0)
+    uno = create_numpy_array(nvalues=10)
+    dos = create_numpy_array(nvalues=10)
+    uno[10] = 12
+    dos[10] = 12
+    res = (uno != dos).astype(np.float)
+    suno = SparseArray.fromlist(uno)
+    sdos = SparseArray.fromlist(dos)
+    sres = suno.diff(sdos)
+    assert sres.SSE(SparseArray.fromlist(res)) == 0
