@@ -574,8 +574,19 @@ class CommandLineUtils(CommandLine):
         else:
             with open(parameters, 'r') as fpt:
                 return json.loads(fpt.read())
-        
+
     def main(self):
+        def most_common(K, a):
+            l = a.most_common()
+            if len(l):
+                if len(PARAMS[K]) <= 2:
+                    return l[0]
+                else:
+                    num = np.sum([x * y for x, y in a.items()])
+                    den = float(np.sum([y for y in a.values()]))
+                    return num / den
+            return ""
+        
         model_file = self.get_model_file()
         if self.data.graphviz:
             with gzip.open(model_file, 'r') as fpt:
@@ -592,7 +603,7 @@ class CommandLineUtils(CommandLine):
                         continue
                     params[k][v] += 1
             with open(self.data.output_file, 'w') as fpt:
-                fpt.write(json.dumps({k: v.most_common()[0] for k, v
+                fpt.write(json.dumps({k: most_common(k, v) for k, v
                                       in params.items()}, sort_keys=True, indent=2))
 
 
