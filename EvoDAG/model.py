@@ -245,6 +245,12 @@ class Ensemble(object):
     def classifier(self):
         return self._classifier
 
+    @property
+    def fitness_vs(self):
+        "Median Fitness in the validation set"
+        l = [x.fitness_vs for x in self.models]
+        return np.median(l)
+
     def _decision_function_raw(self, X, cpu_cores=1):
         if cpu_cores == 1:
             r = [m.decision_function(X) for m in self._models]
@@ -256,6 +262,15 @@ class Ensemble(object):
                                  total=len(args))]
             p.close()
         return r
+
+    def raw_outputs(self, X, cpu_cores=1):
+        r = self._decision_function_raw(X, cpu_cores=cpu_cores)
+        if isinstance(r[0], SparseArray):
+            r = np.array([x.tonparray() for x in r if x.isfinite()])
+            return r
+        else:
+            r = np.array([[y.tonparray() for y in x] for x in r])
+            return r
 
     def decision_function(self, X, cpu_cores=1):
         if self.classifier:

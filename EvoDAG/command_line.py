@@ -468,6 +468,7 @@ class CommandLinePredict(CommandLine):
         self.model()
         self.test_set()
         self.output_file()
+        self.raw_outputs()
         self.cores()
         self.version()
 
@@ -475,6 +476,14 @@ class CommandLinePredict(CommandLine):
         cdn = 'File containing the test set on csv.'
         self.parser.add_argument('test_set',
                                  default=None,
+                                 help=cdn)
+
+    def raw_outputs(self):
+        cdn = 'Raw decision function.'
+        self.parser.add_argument('--raw-outputs',
+                                 default=False,
+                                 dest='raw_outputs',
+                                 action='store_true',
                                  help=cdn)
 
     def model(self):
@@ -505,7 +514,13 @@ class CommandLinePredict(CommandLine):
             self.label2id = pickle.load(fpt)
         self.read_test_set()
         self.data.classifier = m.classifier
-        if self.data.decision_function:
+        if self.data.raw_outputs:
+            hy = m.raw_outputs(self.Xtest,
+                               cpu_cores=self.data.cpu_cores)
+            if hy.ndim == 3:
+                hy.shape = (hy.shape[1] * hy.shape[0], hy.shape[-1])
+            hy = "\n".join([",".join([str(i) for i in x]) for x in hy.T])
+        elif self.data.decision_function:
             hy = m.decision_function(self.Xtest, cpu_cores=self.data.cpu_cores)
             if isinstance(hy, SparseArray):
                 hy = hy.tonparray()
@@ -530,7 +545,14 @@ class CommandLineUtils(CommandLine):
         self.graphviz()
         self.params_stats()
         self.output_file()
+        self.fitness()
         self.version()
+
+    def fitness(self):
+        self.parser.add_argument('--fitness',
+                                 help='Fitness in the validation set',
+                                 dest='fitness',
+                                 default=False, action='store_true')
 
     def graphviz(self):
         self.parser.add_argument('-G', '--graphviz',
@@ -586,7 +608,7 @@ class CommandLineUtils(CommandLine):
                     den = float(np.sum([y for y in a.values()]))
                     return num / den
             return ""
-        
+
         model_file = self.get_model_file()
         if self.data.graphviz:
             with gzip.open(model_file, 'r') as fpt:
@@ -605,6 +627,12 @@ class CommandLineUtils(CommandLine):
             with open(self.data.output_file, 'w') as fpt:
                 fpt.write(json.dumps({k: most_common(k, v) for k, v
                                       in params.items()}, sort_keys=True, indent=2))
+        elif self.data.fitness:
+            with gzip.open(model_file, 'r') as fpt:
+                m = pickle.load(fpt)
+                self.word2id = pickle.load(fpt)
+                self.label2id = pickle.load(fpt)
+            print("Median fitness: %0.4f" % (m.fitness_vs * -1))
 
 
 def params():

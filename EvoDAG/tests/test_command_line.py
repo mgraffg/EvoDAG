@@ -488,7 +488,7 @@ def mo_training_set():
     return fname
 
 
-def test_number_multiple_outpus_classification():
+def test_number_multiple_outputs_classification():
     import os
     from EvoDAG.command_line import params, train, predict
     fname = mo_training_set()
@@ -516,7 +516,7 @@ def test_number_multiple_outpus_classification():
     assert len(l.split(',')) == 3
 
 
-def test_number_multiple_outpus_regression():
+def test_number_multiple_outputs_regression():
     import os
     from EvoDAG.command_line import params, train, predict
     fname = mo_training_set()
@@ -575,3 +575,82 @@ def test_params_diff():
     with open('cache.evodag') as fpt:
         a = json.loads(fpt.read())[0]
     assert 'Diff' in a
+
+
+def test_model_fitness_vs():
+    import os
+    from EvoDAG.command_line import params, train, utils
+    fname = mo_training_set()
+    sys.argv = ['EvoDAG', '--output-dim=3',
+                '--multiple-outputs',
+                '-R', '--parameters',
+                'cache.evodag', '-p3', '-e1',
+                '-r2', fname]
+    params()
+    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
+                '-n2', '--output-dim=3',
+                '--model', 'model.evodag',
+                '--test', fname, fname]
+    train()
+    sys.argv = ['EvoDAG', '--fitness', 'model.evodag']
+    utils()
+    os.unlink('cache.evodag')
+    os.unlink('model.evodag')
+    default_nargs()
+
+
+def test_raw_outputs_regression():
+    import os
+    from EvoDAG.command_line import params, train, predict
+    fname = mo_training_set()
+    sys.argv = ['EvoDAG', '--output-dim=3',
+                '--multiple-outputs',
+                '-R', '--parameters',
+                'cache.evodag', '-p3', '-e1',
+                '-r2', fname]
+    params()
+    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
+                '-n2', '--output-dim=3',
+                '--model', 'model.evodag',
+                '--test', fname, fname]
+    train()
+    sys.argv = ['EvoDAG', '--output', 'output.evodag',
+                '--raw-outputs',
+                '--model', 'model.evodag', fname]
+    predict()
+    os.unlink(fname)
+    os.unlink('cache.evodag')
+    os.unlink('model.evodag')
+    l = open('output.evodag').readline()
+    os.unlink('output.evodag')
+    default_nargs()
+    print(len(l.split(',')))
+    assert len(l.split(',')) == 6
+
+
+def test_raw_outputs_classification():
+    import os
+    from EvoDAG.command_line import params, train, predict
+    fname = mo_training_set()
+    sys.argv = ['EvoDAG', '--output-dim=3',
+                '--multiple-outputs',
+                '-C', '--parameters',
+                'cache.evodag', '-p3', '-e1',
+                '-r2', fname]
+    params()
+    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
+                '-n2', '--output-dim=3',
+                '--model', 'model.evodag',
+                '--test', fname, fname]
+    train()
+    sys.argv = ['EvoDAG', '--output', 'output.evodag',
+                '--raw-outputs',
+                '--model', 'model.evodag', fname]
+    predict()
+    os.unlink(fname)
+    os.unlink('cache.evodag')
+    os.unlink('model.evodag')
+    l = open('output.evodag').readline()
+    os.unlink('output.evodag')
+    default_nargs()
+    assert len(l.split(',')) == 6
