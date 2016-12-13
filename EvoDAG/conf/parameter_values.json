@@ -9,9 +9,15 @@
     25,
     30
   ],
+  "generations": [
+    null
+  ],
     "multiple_outputs": [
 	false
     ],
+    "classifier": [
+	true
+    ],    
   "time_limit": [
     null
   ],
@@ -25,6 +31,9 @@
     2000,
     3000
   ],
+  "Diff": [
+    false
+  ],    
   "If": [
     true,
     false

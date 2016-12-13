@@ -239,18 +239,31 @@ def test_node_max():
     assert n.hy.SSE(r) == 0
     assert n.hy_test.SSE(r) == 0
     assert n.weight == coef
-    
+
+
+def test_node_diff():
+    from EvoDAG.node import Diff
+    gp, args = create_problem_node(nargs=2)
+    r = args[0].hy.diff(args[1].hy)
+    n = Diff(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
+    coef = n.compute_weight([r])
+    assert n.eval(args)
+    r = r * coef
+    assert n.hy.SSE(r) == 0
+    assert n.hy_test.SSE(r) == 0
+    assert n.weight == coef
+
 
 def test_node_symbol():
     from EvoDAG.node import Add, Mul, Div, Fabs,\
         Exp, Sqrt, Sin, Cos, Ln,\
-        Sq, Sigmoid, If, Min, Max
+        Sq, Sigmoid, If, Min, Max, Diff
     for f, s in zip([Add, Mul, Div, Fabs,
                      Exp, Sqrt, Sin, Cos, Ln,
-                     Sq, Sigmoid, If, Min, Max],
+                     Sq, Sigmoid, If, Min, Max, Diff],
                     ['+', '*', '/', 'fabs', 'exp',
                      'sqrt', 'sin', 'cos', 'ln',
-                     'sq', 's', 'if', 'min', 'max']):
+                     'sq', 's', 'if', 'min', 'max', 'diff']):
         assert f.symbol == s
 
 
@@ -363,8 +376,8 @@ def test_one_multiple_output():
 
 
 def test_functions_w_multiple_output():
-    from EvoDAG.node import Variable, Mul, Div, If, Min, Max
-    for ff in [Mul, Div, If, Min, Max]:
+    from EvoDAG.node import Variable, Mul, Div, If, Min, Max, Diff
+    for ff in [Mul, Div, If, Min, Max, Diff]:
         for flag in [False, True]:
             gp, args = create_problem_node(nargs=4, seed=0)
             if flag:

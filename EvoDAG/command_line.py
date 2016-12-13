@@ -16,6 +16,7 @@ import numpy as np
 from .utils import RandomParameterSearch, PARAMS
 from .sparse_array import SparseArray
 from .model import Ensemble
+import collections
 from multiprocessing import Pool
 import EvoDAG as evodag
 from EvoDAG import EvoDAG
@@ -45,9 +46,12 @@ def rs_evodag(args_X_y):
     fit = []
     init = time.time()
     for seed in range(3):
-        evo = EvoDAG(seed=seed,
-                     **rs.process_params(args)).fit(X, y)
-        fit.append(evo.model().fitness_vs)
+        try:
+            evo = EvoDAG(seed=seed,
+                         **rs.process_params(args)).fit(X, y)
+            fit.append(evo.model().fitness_vs)
+        except RuntimeError:
+            fit.append(-np.inf)
     args['_time'] = time.time() - init
     gc.collect()
     return fit, args
@@ -209,11 +213,19 @@ class CommandLine(object):
             d = self.read_data(self.data.training_set)
             X = []
             y = []
-            for x in d:
-                X.append([self.convert(i) for i in x[:-1]])
-                y.append(self.convert_label(x[-1]))
-            self.X = np.array(X)
-            self.y = np.array(y)
+            if self.data.output_dim > 1:
+                dim = self.data.output_dim
+                for x in d:
+                    X.append([self.convert(i) for i in x[:-dim]])
+                    y.append(x[-dim:])
+                self.X = np.array(X)
+                self.y = [SparseArray.fromlist([float(x[i]) for x in y]) for i in range(dim)]
+            else:
+                for x in d:
+                    X.append([self.convert(i) for i in x[:-1]])
+                    y.append(self.convert_label(x[-1]))
+                self.X = np.array(X)
+                self.y = np.array(y)
             return True
         else:
             X, y = self.read_data_json(self.data.training_set)
@@ -317,6 +329,11 @@ class CommandLineParams(CommandLine):
                                  default=False,
                                  action="store_true",
                                  help="Evolve a model with multiple outputs")
+        self.parser.add_argument('--output-dim',
+                                 dest='output_dim',
+                                 default=1,
+                                 type=int,
+                                 help="Output Dimension (default 1) use with multiple-outputs flag")
 
     def version(self):
         pa = self.parser.add_argument
@@ -353,15 +370,16 @@ class CommandLineParams(CommandLine):
         res = [x[1] for x in res]
         [x.update(kw) for x in res]
         res.sort(key=lambda x: np.median(x['fitness']), reverse=True)
+        res = json.dumps(res, sort_keys=True, indent=2)
         if parameters.endswith('.gz'):
             with gzip.open(parameters, 'wb') as fpt:
                 try:
-                    fpt.write(bytes(json.dumps(res, sort_keys=True), encoding='utf-8'))
+                    fpt.write(bytes(res, encoding='utf-8'))
                 except TypeError:
-                    fpt.write(json.dumps(res, sort_keys=True))
+                    fpt.write(res)
         else:
             with open(parameters, 'w') as fpt:
-                fpt.write(json.dumps(res, sort_keys=True))
+                fpt.write(res)
 
     def main(self):
         self.read_training_set()
@@ -393,6 +411,11 @@ class CommandLineTrain(CommandLine):
                                  dest='parameters',
                                  type=str,
                                  help=cdn)
+        self.parser.add_argument('--output-dim',
+                                 dest='output_dim',
+                                 default=1,
+                                 type=int,
+                                 help="Output Dimension (default 1) use with multiple-outputs flag")
 
     def model(self):
         cdn = 'File to store EvoDAG model'
@@ -445,6 +468,7 @@ class CommandLinePredict(CommandLine):
         self.model()
         self.test_set()
         self.output_file()
+        self.raw_outputs()
         self.cores()
         self.version()
 
@@ -452,6 +476,14 @@ class CommandLinePredict(CommandLine):
         cdn = 'File containing the test set on csv.'
         self.parser.add_argument('test_set',
                                  default=None,
+                                 help=cdn)
+
+    def raw_outputs(self):
+        cdn = 'Raw decision function.'
+        self.parser.add_argument('--raw-outputs',
+                                 default=False,
+                                 dest='raw_outputs',
+                                 action='store_true',
                                  help=cdn)
 
     def model(self):
@@ -482,7 +514,13 @@ class CommandLinePredict(CommandLine):
             self.label2id = pickle.load(fpt)
         self.read_test_set()
         self.data.classifier = m.classifier
-        if self.data.decision_function:
+        if self.data.raw_outputs:
+            hy = m.raw_outputs(self.Xtest,
+                               cpu_cores=self.data.cpu_cores)
+            if hy.ndim == 3:
+                hy.shape = (hy.shape[1] * hy.shape[0], hy.shape[-1])
+            hy = "\n".join([",".join([str(i) for i in x]) for x in hy.T])
+        elif self.data.decision_function:
             hy = m.decision_function(self.Xtest, cpu_cores=self.data.cpu_cores)
             if isinstance(hy, SparseArray):
                 hy = hy.tonparray()
@@ -505,8 +543,16 @@ class CommandLineUtils(CommandLine):
         self.parser = argparse.ArgumentParser(description="EvoDAG")
         self.model()
         self.graphviz()
+        self.params_stats()
         self.output_file()
+        self.fitness()
         self.version()
+
+    def fitness(self):
+        self.parser.add_argument('--fitness',
+                                 help='Fitness in the validation set',
+                                 dest='fitness',
+                                 default=False, action='store_true')
 
     def graphviz(self):
         self.parser.add_argument('-G', '--graphviz',
@@ -514,6 +560,12 @@ class CommandLineUtils(CommandLine):
                                  dest='graphviz',
                                  default=False, action='store_true')
 
+    def params_stats(self):
+        self.parser.add_argument('-P', '--params-stats',
+                                 help='Parameters statistics',
+                                 dest='params_stats',
+                                 default=False, action='store_true')
+        
     def output_file(self):
         self.parser.add_argument('-o', '--output-file',
                                  help='File / directory to store the result(s)',
@@ -522,7 +574,7 @@ class CommandLineUtils(CommandLine):
                                  type=str)
 
     def model(self):
-        cdn = 'File containing the model.'
+        cdn = 'File containing the model/params.'
         self.parser.add_argument('model_file',
                                  default=None,
                                  type=str,
@@ -533,14 +585,54 @@ class CommandLineUtils(CommandLine):
         pa('--version',
            action='version', version='EvoDAG %s' % evodag.__version__)
 
+    def read_params(self, parameters):
+        if parameters.endswith('.gz'):
+            with gzip.open(parameters, 'rb') as fpt:
+                try:
+                    res = fpt.read()
+                    return json.loads(str(res, encoding='utf-8'))
+                except TypeError:
+                    return json.loads(res)
+        else:
+            with open(parameters, 'r') as fpt:
+                return json.loads(fpt.read())
+
     def main(self):
+        def most_common(K, a):
+            l = a.most_common()
+            if len(l):
+                if len(PARAMS[K]) <= 2:
+                    return l[0]
+                else:
+                    num = np.sum([x * y for x, y in a.items()])
+                    den = float(np.sum([y for y in a.values()]))
+                    return num / den
+            return ""
+
         model_file = self.get_model_file()
-        with gzip.open(model_file, 'r') as fpt:
-            m = pickle.load(fpt)
-            self.word2id = pickle.load(fpt)
-            self.label2id = pickle.load(fpt)
         if self.data.graphviz:
+            with gzip.open(model_file, 'r') as fpt:
+                m = pickle.load(fpt)
+                self.word2id = pickle.load(fpt)
+                self.label2id = pickle.load(fpt)
             m.graphviz(self.data.output_file)
+        elif self.data.params_stats:
+            params = {k: collections.Counter() for k in PARAMS.keys()}
+            stats = self.read_params(model_file)
+            for l in stats:
+                for k, v in l.items():
+                    if k not in params:
+                        continue
+                    params[k][v] += 1
+            with open(self.data.output_file, 'w') as fpt:
+                fpt.write(json.dumps({k: most_common(k, v) for k, v
+                                      in params.items()}, sort_keys=True, indent=2))
+        elif self.data.fitness:
+            with gzip.open(model_file, 'r') as fpt:
+                m = pickle.load(fpt)
+                self.word2id = pickle.load(fpt)
+                self.label2id = pickle.load(fpt)
+            print("Median fitness: %0.4f" % (m.fitness_vs * -1))
 
 
 def params():

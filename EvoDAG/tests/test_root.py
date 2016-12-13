@@ -761,7 +761,7 @@ def test_labels():
                 tournament_size=2,
                 early_stopping_rounds=-1,
                 seed=0,
-                popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
+                popsize=100).fit(X[:-10], y[:-10], test_set=X[-10:])
     m = gp.model()
     hy = m.predict(X=X[:-10])
     print(np.unique(hy))
@@ -1123,3 +1123,67 @@ def test_add_repeated_args():
         print(node, node._variable, X.shape)
         assert len(node._variable) <= X.shape[1]
         ff.nargs = 2
+
+
+def test_classification_mo():
+    from EvoDAG import EvoDAG
+    from EvoDAG.sparse_array import SparseArray
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=10,
+                time_limit=0.9,
+                multiple_outputs=True,
+                all_inputs=True,
+                seed=0,
+                popsize=10000)
+    gp.X = X
+    gp.nclasses(y)
+    y = gp.transform_to_mo(y)
+    gp.y = [SparseArray.fromlist(x) for x in y.T]
+    assert isinstance(gp._mask, list)
+    gp.create_population()
+
+
+def test_classification_mo2():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=10,
+                time_limit=0.9,
+                multiple_outputs=True,
+                all_inputs=True,
+                seed=0,
+                popsize=10000)
+    gp.X = X
+    gp.nclasses(y)
+    y = gp.transform_to_mo(y)
+    y = [SparseArray.fromlist(x) for x in y.T]
+    gp = EvoDAG(generations=np.inf, tournament_size=2,
+                early_stopping_rounds=10, time_limit=0.9,
+                multiple_outputs=True, all_inputs=True, seed=0,
+                popsize=10000).fit(X, y)
+    m = gp.model()
+    assert len(m.decision_function(X)) == 3
+
+
+def test_regression_mo():
+    from EvoDAG import EvoDAG
+    from EvoDAG.sparse_array import SparseArray
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf, tournament_size=2,
+                early_stopping_rounds=10, time_limit=0.9,
+                multiple_outputs=True, all_inputs=True, seed=0,
+                popsize=10000)
+    gp.X = X
+    gp.nclasses(y)
+    y = [SparseArray.fromlist(x) for x in gp.transform_to_mo(y).T]
+    gp = EvoDAG(generations=np.inf, tournament_size=2, classifier=False,
+                early_stopping_rounds=10, time_limit=0.9,
+                multiple_outputs=True, all_inputs=True, seed=0,
+                popsize=10000)
+    gp.X = X
+    gp.y = y
+    assert isinstance(gp._mask, list)
+    gp.create_population()

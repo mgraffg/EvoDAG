@@ -31,7 +31,9 @@ def test_process_params():
     params = evo.get_params()
     for k, v in args.items():
         if k in params:
-            print(v, params[k])
+            if k == 'generations':
+                v = np.inf
+            print(k, v, params[k])
             if hasattr(params[k], '__name__'):
                 assert v == params[k].__name__
             else:

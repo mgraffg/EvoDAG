@@ -18,7 +18,7 @@ import logging
 from .sparse_array import SparseArray
 from .node import Variable
 from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Ln
-from .node import Sq, Sigmoid, If, Min, Max
+from .node import Sq, Sigmoid, If, Min, Max, Diff
 from .model import Model, Models
 from .population import SteadyState
 import time
@@ -33,7 +33,7 @@ class EvoDAG(object):
                  early_stopping_rounds=-1,
                  function_set=[Add, Mul, Div, Fabs,
                                Exp, Sqrt, Sin, Cos, Ln,
-                               Sq, Sigmoid, If, Min, Max],
+                               Sq, Sigmoid, If, Min, Max, Diff],
                  tr_fraction=0.8,
                  population_class=SteadyState,
                  number_tries_feasible_ind=30,
@@ -44,6 +44,7 @@ class EvoDAG(object):
                  random_generations=0,
                  multiple_outputs=False,
                  **kwargs):
+        generations = np.inf if generations is None else generations
         self._generations = generations
         self._popsize = popsize
         self._classifier = classifier
@@ -204,10 +205,14 @@ class EvoDAG(object):
             mask = k == v
             y[mask, i] = 1
         return y
-        
-    def multiple_outputs_y(self, v):
-        v = v.tonparray()
-        v = self.transform_to_mo(v)
+
+    def multiple_outputs_cl(self, v):
+        if isinstance(v, list):
+            assert len(v) == self._labels.shape[0]
+            v = np.array([x.tonparray() for x in v]).T
+        else:
+            v = v.tonparray()
+            v = self.transform_to_mo(v)
         mask = []
         mask_vs = []
         ytr = []
@@ -226,12 +231,38 @@ class EvoDAG(object):
         self._mask = mask
         self._mask_vs = mask_vs
 
+    def multiple_outputs_regression(self, v):
+        assert isinstance(v, list)
+        v = np.array([x.tonparray() for x in v]).T
+        mask = []
+        ytr = []
+        y = []
+        for _v in v.T:
+            _v = SparseArray.fromlist(_v)
+            for _ in range(self._number_tries_feasible_ind):
+                self.set_regression_mask(_v)
+                flag = self.test_regression_mask(_v)
+                if flag:
+                    break
+            if not flag:
+                msg = "Unsuitable validation set (RSE: average equals zero)"
+                raise RuntimeError(msg)
+            mask.append(self._mask)
+            ytr.append(_v * self._mask)
+            y.append(_v)
+            self._y = _v
+        self._ytr = ytr
+        self._y = y
+        self._mask = mask
+
     @y.setter
     def y(self, v):
         if isinstance(v, np.ndarray):
             v = SparseArray.fromlist(v)
         if self._classifier and self._multiple_outputs:
-            return self.multiple_outputs_y(v)
+            return self.multiple_outputs_cl(v)
+        elif self._multiple_outputs:
+            return self.multiple_outputs_regression(v)
         elif self._classifier:
             if self._labels is not None and\
                (self._labels[0] != -1 or self._labels[1] != 1):
@@ -272,7 +303,12 @@ class EvoDAG(object):
             else:
                 v.fitness = -self._ytr.SSE(v.hy * self._mask)
         else:
-            v.fitness = -self._ytr.SAE(v.hy * self._mask)
+            if self._multiple_outputs:
+                f = [-ytr.SAE(hy * mask) for ytr, hy, mask in
+                     zip(self._ytr, v.hy, self._mask)]
+                v.fitness = np.mean(f)
+            else:
+                v.fitness = -self._ytr.SAE(v.hy * self._mask)
 
     def mask_vs(self):
         """Procedure to perform, in classification,
@@ -309,12 +345,22 @@ class EvoDAG(object):
                 v.fitness_vs = -((self.y - v.hy.sign()).sign().fabs() *
                                  self._mask_vs).sum()
         else:
-            m = (self._mask - 1).fabs()
-            x = self.y * m
-            y = v.hy * m
-            a = (x - y).sq().sum()
-            b = (x - x.sum() / x.size()).sq().sum()
-            v.fitness_vs = -a / b
+            mask = self._mask
+            y = self.y
+            hy = v.hy
+            if not isinstance(mask, list):
+                mask = [mask]
+                y = [y]
+                hy = [hy]
+            fit = []
+            for _mask, _y, _hy in zip(mask, y, hy):
+                m = (_mask - 1).fabs()
+                x = _y * m
+                y = _hy * m
+                a = (x - y).sq().sum()
+                b = (x - x.sum() / x.size()).sq().sum()
+                fit.append(-a / b)
+            v.fitness_vs = np.mean(fit)
 
     def es_extra_test(self, v):
         """This function is called from population before setting
@@ -387,6 +433,8 @@ class EvoDAG(object):
                 if k not in args:
                     args.append(k)
                     break
+                else:
+                    k = self.population.tournament()
         if len(args) < func.min_nargs:
             return None
         return args
@@ -474,18 +522,10 @@ class EvoDAG(object):
                 self._init_popsize = self.population.popsize
                 break
             else:
-                func = self.function_set
-                func = func[np.random.randint(len(func))]
-                psize = len(self.population.population)
-                args = np.arange(psize)
-                np.random.shuffle(args)
-                args = args[:func.nargs].tolist()
-                for j in range(len(args), func.nargs):
-                    args.append(np.random.randint(psize))
-                args = [self.population.population[x].position for x in args]
-                v = self._random_offspring(func, args)
-                if v is None:
-                    continue
+                gen = self.population.generation
+                self.population.generation = 0
+                v = self.random_offspring()
+                self.population.generation = gen
             self.add(v)
 
     def stopping_criteria(self):
@@ -518,6 +558,9 @@ class EvoDAG(object):
         "Number of classes of v, also sets the labes"
         if not self._classifier:
             return 0
+        if isinstance(v, list):
+            self._labels = np.arange(len(v))
+            return
         if not isinstance(v, np.ndarray):
             v = v.tonparray()
         self._labels = np.unique(v)
