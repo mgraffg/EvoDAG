@@ -191,30 +191,6 @@ def test_node_sq():
     assert n.hy_test.SSE(r) == 0
 
 
-def test_node_sigmoid():
-    from EvoDAG.node import Sigmoid
-    gp, args = create_problem_node(nargs=1)
-    r = args[0].hy.sigmoid()
-    n = Sigmoid(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
-    coef = n.compute_weight([r])[0]
-    assert n.eval(args)
-    r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
-
-
-def test_node_if():
-    from EvoDAG.node import If
-    gp, args = create_problem_node(nargs=3)
-    r = args[0].hy.if_func(args[1].hy, args[2].hy)
-    n = If(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
-    coef = n.compute_weight([r])[0]
-    assert n.eval(args)
-    r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
-
-
 def test_node_min():
     from EvoDAG.node import Min
     gp, args = create_problem_node(nargs=3)
@@ -241,29 +217,16 @@ def test_node_max():
     assert n.weight == coef
 
 
-def test_node_diff():
-    from EvoDAG.node import Diff
-    gp, args = create_problem_node(nargs=2)
-    r = args[0].hy.diff(args[1].hy)
-    n = Diff(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
-    coef = n.compute_weight([r])
-    assert n.eval(args)
-    r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
-    assert n.weight == coef
-
-
 def test_node_symbol():
     from EvoDAG.node import Add, Mul, Div, Fabs,\
         Exp, Sqrt, Sin, Cos, Ln,\
-        Sq, Sigmoid, If, Min, Max, Diff
+        Sq, Min, Max
     for f, s in zip([Add, Mul, Div, Fabs,
                      Exp, Sqrt, Sin, Cos, Ln,
-                     Sq, Sigmoid, If, Min, Max, Diff],
+                     Sq, Min, Max],
                     ['+', '*', '/', 'fabs', 'exp',
                      'sqrt', 'sin', 'cos', 'ln',
-                     'sq', 's', 'if', 'min', 'max', 'diff']):
+                     'sq', 'min', 'max']):
         assert f.symbol == s
 
 
@@ -346,7 +309,7 @@ def test_Add_multiple_output2():
 
 def test_one_multiple_output():
     from EvoDAG.node import Variable
-    from EvoDAG.node import Fabs, Exp, Sqrt, Sin, Cos, Ln, Sq, Sigmoid
+    from EvoDAG.node import Fabs, Exp, Sqrt, Sin, Cos, Ln, Sq
     for flag in [False, True]:
         gp, args = create_problem_node(nargs=4, seed=0)
         if flag:
@@ -359,7 +322,7 @@ def test_one_multiple_output():
         [x.eval(args) for x in vars]
         vars2 = [Variable(k, ytr=gp._ytr, mask=gp._mask) for k in range(len(args))]
         [x.eval(args) for x in vars2]
-        for FF in [Fabs, Exp, Sqrt, Sin, Cos, Ln, Sq, Sigmoid]:
+        for FF in [Fabs, Exp, Sqrt, Sin, Cos, Ln, Sq]:
             ff = FF(0, ytr=ytr, mask=mask)
             ff.eval(vars)
             ff2 = FF(0, ytr=gp._ytr, mask=gp._mask)
@@ -376,8 +339,8 @@ def test_one_multiple_output():
 
 
 def test_functions_w_multiple_output():
-    from EvoDAG.node import Variable, Mul, Div, If, Min, Max, Diff
-    for ff in [Mul, Div, If, Min, Max, Diff]:
+    from EvoDAG.node import Variable, Mul, Div, Min, Max
+    for ff in [Mul, Div, Min, Max]:
         for flag in [False, True]:
             gp, args = create_problem_node(nargs=4, seed=0)
             if flag:

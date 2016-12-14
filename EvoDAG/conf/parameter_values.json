@@ -31,13 +31,6 @@
     2000,
     3000
   ],
-  "Diff": [
-    false
-  ],    
-  "If": [
-    true,
-    false
-  ],
   "Sq": [
     true,
     false
@@ -62,10 +55,6 @@
     20,
     25,
     30
-  ],
-  "Sigmoid": [
-    true,
-    false
   ],
   "Add": [
     2,

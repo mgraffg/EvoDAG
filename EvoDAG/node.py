@@ -454,35 +454,6 @@ class Sq(Function1):
         return self._raw_outputs(X, 'sq')
 
 
-class Sigmoid(Function1):
-    nargs = 1
-    symbol = 's'
-    color = 6
-
-    def raw_outputs(self, X):
-        return self._raw_outputs(X, 'sigmoid')
-
-
-class If(Function1):
-    nargs = 3
-    symbol = 'if'
-    color = 7
-
-    def raw_outputs(self, X):
-        X = [X[x] for x in self.variable]
-        hy, hyt = self.hy2listM(X)
-        hr = None
-        if self._multiple_outputs:
-            r = [x[0].if_func(x[1], x[2]) for x in hy]
-            if hyt is not None:
-                hr = [x[0].if_func(x[1], x[2]) for x in hyt]
-        else:
-            r = hy[0].if_func(hy[1], hy[2])
-            if hyt is not None:
-                hr = hyt[0].if_func(hyt[1], hyt[2])
-        return r, hr
-
-
 class Min(Function1):
     nargs = 2
     symbol = 'min'
@@ -546,30 +517,4 @@ class Max(Function1):
             r = self.cummax(hy)
             if hyt is not None:
                 hr = self.cummax(hyt)
-        return r, hr
-
-
-class Diff(Function1):
-    nargs = 2
-    symbol = 'diff'
-    color = 8
-    unique_args = True
-    min_nargs = 2
-
-    def __init__(self, *args, **kwargs):
-        super(Diff, self).__init__(*args, **kwargs)
-        self._variable = sorted(self._variable)
-
-    def raw_outputs(self, X):
-        X = [X[x] for x in self.variable]
-        hy, hyt = self.hy2listM(X)
-        hr = None
-        if self._multiple_outputs:
-            r = [x[0].diff(x[1]) for x in hy]
-            if hyt is not None:
-                hr = [x[0].diff(x[1]) for x in hyt]
-        else:
-            r = hy[0].diff(hy[1])
-            if hyt is not None:
-                hr = hyt[0].diff(hyt[1])
         return r, hr

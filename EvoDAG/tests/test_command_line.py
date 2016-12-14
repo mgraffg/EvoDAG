@@ -384,7 +384,8 @@ def test_time():
     assert not a['classifier']
     assert a['popsize'] == 3
     assert a['early_stopping_rounds'] == 1
-    assert a['_time'] > 0.01
+    print(a['_time'])
+    assert a['_time'] > 0.001
     os.unlink('cache.evodag')
 
 
@@ -560,21 +561,6 @@ def test_utils_params_stats():
     os.unlink(fname)
     os.unlink('cache.evodag')
     default_nargs()
-
-
-def test_params_diff():
-    from EvoDAG.command_line import params
-    import json
-    fname = mo_training_set()
-    sys.argv = ['EvoDAG', '--output-dim=3',
-                '--multiple-outputs',
-                '-R', '--parameters',
-                'cache.evodag', '-p3', '-e1',
-                '-r3', fname]
-    params()
-    with open('cache.evodag') as fpt:
-        a = json.loads(fpt.read())[0]
-    assert 'Diff' in a
 
 
 def test_model_fitness_vs():
