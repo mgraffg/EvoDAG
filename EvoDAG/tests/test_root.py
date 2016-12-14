@@ -20,7 +20,7 @@ try:
 except ImportError:
     from unittest.mock import MagicMock
 from EvoDAG.node import Variable
-from EvoDAG.sparse_array import SparseArray
+from SparseArray import SparseArray
 
 
 cl = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -185,8 +185,11 @@ X = np.array([[5.1, 3.5, 1.4, 0.2],
               [5.9,  3. ,  5.1,  1.8]])
 
 
+def tonparray(a):
+    return np.array(a.full_array())
+
+
 def test_features():
-    from EvoDAG.sparse_array import SparseArray
     from EvoDAG import RootGP
     gp = RootGP(generations=1)
     gp.X = X
@@ -312,7 +315,7 @@ def test_random_leaf():
     randint = np.random.randint
     mock = MagicMock(return_value=0)
     np.random.randint = mock
-    mask = gp._mask.tonparray().astype(np.bool)
+    mask = tonparray(gp._mask).astype(np.bool)
     weight = np.linalg.lstsq(X[mask, 0][:, np.newaxis], y[mask])[0][0]
     var = gp.random_leaf()
     assert isinstance(var, Variable)
@@ -397,7 +400,7 @@ def test_mask_vs():
     y[mask] = 1
     y[~mask] = -1
     gp.y = y
-    m = ~ gp._mask.tonparray().astype(np.bool)
+    m = ~ tonparray(gp._mask).astype(np.bool)
     f = np.zeros(gp._mask.size())
     f[y == -1] = 0.5 / (y[m] == -1).sum()
     f[y == 1] = 0.5 / (y[m] == 1).sum()
@@ -417,14 +420,14 @@ def test_BER():
     y[mask] = 1
     y[~mask] = -1
     gp.y = y
-    m = ~ gp._mask.tonparray().astype(np.bool)
+    m = ~ tonparray(gp._mask).astype(np.bool)
     v = gp.random_leaf()
     v1 = gp.random_leaf()
     v1 = gp.random_leaf()
     a = Add([0, 1], ytr=gp._ytr, mask=gp._mask)
     a.eval([v, v1])
     hy = a.hy.sign()
-    b = BER(y[m], hy.tonparray()[m])
+    b = BER(y[m], tonparray(hy)[m])
     gp.fitness_vs(a)
     print(b, a.fitness_vs * 100)
     assert_almost_equals(b, -a.fitness_vs * 100)
@@ -522,7 +525,6 @@ def test_replace_individual():
 
 def test_X_sparse():
     from EvoDAG import RootGP
-    from EvoDAG.sparse_array import SparseArray
     gp = RootGP(generations=1,
                 tournament_size=2,
                 popsize=10)
@@ -793,7 +795,6 @@ def test_height():
 
 def test_regression():
     from EvoDAG import RootGP
-    from EvoDAG.sparse_array import SparseArray
     x = np.linspace(-1, 1, 100)
     y = 4.3*x**2 + 3.2 * x - 3.2
     gp = RootGP(classifier=False,
@@ -828,7 +829,6 @@ def test_unique():
 
 def test_RSE():
     from EvoDAG import RootGP
-    from EvoDAG.sparse_array import SparseArray
     from EvoDAG.utils import RSE as rse
     x = np.linspace(-1, 1, 100)
     y = 4.3*x**2 + 3.2 * x - 3.2
@@ -850,7 +850,6 @@ def test_RSE():
 
 def test_RSE_avg_zero():
     from EvoDAG import EvoDAG
-    from EvoDAG.sparse_array import SparseArray
 
     class EvoDAG2(EvoDAG):
         def __init__(self, **kw):
@@ -904,7 +903,6 @@ def test_population_as_parameter():
 
 def test_es_extra_test():
     from EvoDAG import RootGP
-    from EvoDAG.sparse_array import SparseArray
     x = np.linspace(-1, 1, 100)
     y = 4.3*x**2 + 3.2 * x - 3.2
     es_extra_test = RootGP.es_extra_test
@@ -1127,7 +1125,6 @@ def test_add_repeated_args():
 
 def test_classification_mo():
     from EvoDAG import EvoDAG
-    from EvoDAG.sparse_array import SparseArray
     y = cl.copy()
     gp = EvoDAG(generations=np.inf,
                 tournament_size=2,
@@ -1170,7 +1167,6 @@ def test_classification_mo2():
 
 def test_regression_mo():
     from EvoDAG import EvoDAG
-    from EvoDAG.sparse_array import SparseArray
     y = cl.copy()
     gp = EvoDAG(generations=np.inf, tournament_size=2,
                 early_stopping_rounds=10, time_limit=0.9,

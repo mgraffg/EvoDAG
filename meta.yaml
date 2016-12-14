@@ -1,6 +1,6 @@
 package:
   name: evodag
-  version: "0.3.14"
+  version: "0.4.1"
 
 build:
   number: 0
@@ -10,7 +10,6 @@ requirements:
     - python
     - setuptools
     - numpy
-    - cython
 
   run:
     - python
@@ -31,7 +30,6 @@ test:
   requires:
     # Put any additional test requirements here.  For example
     - numpy
-    - cython
 
 about:
   home: https://github.com/mgraffg/EvoDAG

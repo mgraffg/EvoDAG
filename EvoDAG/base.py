@@ -15,9 +15,9 @@
 
 import numpy as np
 import logging
-from .sparse_array import SparseArray
+from SparseArray import SparseArray
 from .node import Variable
-from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Ln
+from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Log1p
 from .node import Sq, Min, Max
 from .model import Model, Models
 from .population import SteadyState
@@ -26,13 +26,17 @@ import importlib
 import inspect
 
 
+def tonparray(a):
+    return np.array(a.full_array())
+
+
 class EvoDAG(object):
     def __init__(self, generations=np.inf, popsize=10000,
                  seed=0,
                  tournament_size=2,
                  early_stopping_rounds=-1,
                  function_set=[Add, Mul, Div, Fabs,
-                               Exp, Sqrt, Sin, Cos, Ln,
+                               Exp, Sqrt, Sin, Cos, Log1p,
                                Sq, Min, Max],
                  tr_fraction=0.8,
                  population_class=SteadyState,
@@ -148,10 +152,10 @@ class EvoDAG(object):
 
     def set_classifier_mask(self, v):
         """Computes the mask used to create the training and validation set"""
-        v = v.tonparray()
+        v = tonparray(v)
         a = np.unique(v)
         if a[0] != -1 or a[1] != 1:
-            raise RuntimeError("The labels must be -1 and 1")
+            raise RuntimeError("The labels must be -1 and 1 (%s)" % a)
         mask = np.zeros_like(v)
         cnt = min([(v == x).sum() for x in a]) * self._tr_fraction
         cnt = int(round(cnt))
@@ -172,15 +176,15 @@ class EvoDAG(object):
 
     def test_regression_mask(self, v):
         """Test whether the average prediction is different than zero"""
-        m = (self._mask - 1).fabs()
+        m = (self._mask + -1.0).fabs()
         x = v * m
-        b = (x - x.sum() / x.size()).sq().sum()
+        b = (x + -x.sum() / x.size()).sq().sum()
         return b != 0
 
     def multiclass(self, X, v, test_set=None):
         "Performing One vs All multiclass classification"
         if not isinstance(v, np.ndarray):
-            v = v.tonparray()
+            v = tonparray(v)
         mask = None
         for i in self._labels:
             _ = np.zeros_like(v, dtype=np.bool)
@@ -209,9 +213,9 @@ class EvoDAG(object):
     def multiple_outputs_cl(self, v):
         if isinstance(v, list):
             assert len(v) == self._labels.shape[0]
-            v = np.array([x.tonparray() for x in v]).T
+            v = np.array([tonparray(x) for x in v]).T
         else:
-            v = v.tonparray()
+            v = tonparray(v)
             v = self.transform_to_mo(v)
         mask = []
         mask_vs = []
@@ -233,7 +237,7 @@ class EvoDAG(object):
 
     def multiple_outputs_regression(self, v):
         assert isinstance(v, list)
-        v = np.array([x.tonparray() for x in v]).T
+        v = np.array([tonparray(x) for x in v]).T
         mask = []
         ytr = []
         y = []
@@ -266,7 +270,7 @@ class EvoDAG(object):
         elif self._classifier:
             if self._labels is not None and\
                (self._labels[0] != -1 or self._labels[1] != 1):
-                v = v.tonparray()
+                v = tonparray(v)
                 mask = np.ones_like(v, dtype=np.bool)
                 mask[v == self._labels[0]] = False
                 v[mask] = 1
@@ -317,9 +321,9 @@ class EvoDAG(object):
             return
         if self._tr_fraction == 1:
             return
-        m = ~ self._mask.tonparray().astype(np.bool)
-        f = np.zeros(self._mask.size())
-        y = self.y.tonparray()
+        m = ~ tonparray(self._mask).astype(np.bool)
+        f = np.zeros(len(self._mask))
+        y = tonparray(self.y)
         den = (y[m] == -1).sum()
         if den:
             f[y == -1] = 0.5 / den
@@ -562,7 +566,7 @@ class EvoDAG(object):
             self._labels = np.arange(len(v))
             return
         if not isinstance(v, np.ndarray):
-            v = v.tonparray()
+            v = tonparray(v)
         self._labels = np.unique(v)
         return self._labels.shape[0]
 

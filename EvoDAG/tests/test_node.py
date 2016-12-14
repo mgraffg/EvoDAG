@@ -15,6 +15,7 @@
 
 from test_root import X, cl
 from EvoDAG.node import Add
+from EvoDAG.base import tonparray
 import numpy as np
 
 
@@ -68,16 +69,16 @@ def test_node_tostore():
 def test_node_add():
     gp, args = create_problem_node()
     n = Add(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
-    D = np.array([i.hy.tonparray() for i in args]).T
+    D = np.array([tonparray(i.hy) for i in args]).T
     coef = n.compute_weight([x.hy for x in args])
     assert n.eval(args)
     # a = map(lambda (a, b): a.hy * b, zip(args, coef))
     a = [_a.hy * b for _a, b in zip(args, coef)]
     r = n.cumsum(a)
     print((D * coef).sum(axis=1)[:4], "*")
-    print(n.hy.tonparray()[:4])
-    print(r.tonparray()[:4])
-    print(gp._mask.tonparray()[:4])
+    print(tonparray(n.hy)[:4])
+    print(tonparray(r)[:4])
+    print(tonparray(gp._mask)[:4])
     assert n.hy.SSE(r) == 0
     assert n.hy_test.SSE(r) == 0
 
@@ -168,10 +169,10 @@ def test_node_cos():
 
 
 def test_node_ln():
-    from EvoDAG.node import Ln
+    from EvoDAG.node import Log1p
     gp, args = create_problem_node(nargs=1)
-    r = args[0].hy.ln()
-    n = Ln(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
+    r = args[0].hy.log1p()
+    n = Log1p(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     coef = n.compute_weight([r])[0]
     assert n.eval(args)
     r = r * coef
@@ -219,13 +220,13 @@ def test_node_max():
 
 def test_node_symbol():
     from EvoDAG.node import Add, Mul, Div, Fabs,\
-        Exp, Sqrt, Sin, Cos, Ln,\
+        Exp, Sqrt, Sin, Cos, Log1p,\
         Sq, Min, Max
     for f, s in zip([Add, Mul, Div, Fabs,
-                     Exp, Sqrt, Sin, Cos, Ln,
+                     Exp, Sqrt, Sin, Cos, Log1p,
                      Sq, Min, Max],
                     ['+', '*', '/', 'fabs', 'exp',
-                     'sqrt', 'sin', 'cos', 'ln',
+                     'sqrt', 'sin', 'cos', 'log1p',
                      'sq', 'min', 'max']):
         assert f.symbol == s
 
@@ -309,7 +310,7 @@ def test_Add_multiple_output2():
 
 def test_one_multiple_output():
     from EvoDAG.node import Variable
-    from EvoDAG.node import Fabs, Exp, Sqrt, Sin, Cos, Ln, Sq
+    from EvoDAG.node import Fabs, Exp, Sqrt, Sin, Cos, Log1p, Sq
     for flag in [False, True]:
         gp, args = create_problem_node(nargs=4, seed=0)
         if flag:
@@ -322,7 +323,7 @@ def test_one_multiple_output():
         [x.eval(args) for x in vars]
         vars2 = [Variable(k, ytr=gp._ytr, mask=gp._mask) for k in range(len(args))]
         [x.eval(args) for x in vars2]
-        for FF in [Fabs, Exp, Sqrt, Sin, Cos, Ln, Sq]:
+        for FF in [Fabs, Exp, Sqrt, Sin, Cos, Log1p, Sq]:
             ff = FF(0, ytr=ytr, mask=mask)
             ff.eval(vars)
             ff2 = FF(0, ytr=gp._ytr, mask=gp._mask)

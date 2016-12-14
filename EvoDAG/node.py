@@ -436,13 +436,13 @@ class Cos(Function1):
         return self._raw_outputs(X, 'cos')
 
 
-class Ln(Function1):
+class Log1p(Function1):
     nargs = 1
-    symbol = 'ln'
+    symbol = 'log1p'
     color = 6
 
     def raw_outputs(self, X):
-        return self._raw_outputs(X, 'ln')
+        return self._raw_outputs(X, 'log1p')
 
 
 class Sq(Function1):

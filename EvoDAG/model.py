@@ -14,7 +14,7 @@
 
 
 import numpy as np
-from .sparse_array import SparseArray
+from SparseArray import SparseArray
 from .node import Variable, Function
 from multiprocessing import Pool
 import gc

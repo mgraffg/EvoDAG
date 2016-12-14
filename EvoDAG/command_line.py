@@ -14,12 +14,13 @@
 import argparse
 import numpy as np
 from .utils import RandomParameterSearch, PARAMS
-from .sparse_array import SparseArray
+from SparseArray import SparseArray
 from .model import Ensemble
 import collections
 from multiprocessing import Pool
 import EvoDAG as evodag
 from EvoDAG import EvoDAG
+from .base import tonparray
 import time
 import gzip
 import json
@@ -197,9 +198,7 @@ class CommandLine(object):
                     if k == 'klass' or k == 'y':
                         y.append(self.convert_label(v))
         num_rows = len(l)
-        X = [SparseArray.init_index_data([i[0] for i in x],
-                                         [i[1] for i in x],
-                                         num_rows) for x in X]
+        X = [SparseArray.index_data(x, num_rows) for x in X]
         if len(y) == 0:
             y = None
         else:
@@ -523,10 +522,10 @@ class CommandLinePredict(CommandLine):
         elif self.data.decision_function:
             hy = m.decision_function(self.Xtest, cpu_cores=self.data.cpu_cores)
             if isinstance(hy, SparseArray):
-                hy = hy.tonparray()
+                hy = tonparray(hy)
                 hy = "\n".join(map(str, hy))
             else:
-                hy = np.array([x.tonparray() for x in hy]).T
+                hy = np.array([tonparray(x) for x in hy]).T
                 hy = "\n".join([",".join([str(i) for i in x]) for x in hy])
         else:
             hy = self.id2label(m.predict(self.Xtest, cpu_cores=self.data.cpu_cores))

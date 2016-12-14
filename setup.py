@@ -11,41 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import numpy
 from setuptools import setup
-from setuptools import Extension
-from Cython.Distutils import build_ext
-from distutils import sysconfig
-from distutils.command.clean import clean
-import os
 from os.path import join
-
-
-class Clean(clean):
-    def run(self):
-        clean.run(self)
-        if self.all:
-            for dir, dirs, files in os.walk('EvoDAG'):
-                abspath = os.path.abspath(dir)
-                for f in files:
-                    ext = f.split('.')[-1]
-                    if ext in ['c', 'so']:
-                        os.unlink(os.path.join(abspath, f))
-
-
-# -mno-fused-madd
-
-lst = ['CFLAGS', 'CONFIG_ARGS', 'LIBTOOL', 'PY_CFLAGS']
-for k, v in zip(lst, sysconfig.get_config_vars(*lst)):
-    if v is None:
-        continue
-    v = v.replace('-mno-fused-madd', '')
-    os.environ[k] = v
-ext_modules = [Extension("EvoDAG.sparse_array",
-                         [join("EvoDAG", "sparse_array.pxd"),
-                          join("EvoDAG", "sparse_array.pyx")],
-                         # libraries=["m"],
-                         include_dirs=[numpy.get_include()])]
 
 with open('README.rst') as fpt:
     long_desc = fpt.read()
@@ -77,14 +44,11 @@ setup(
     url='https://github.com/mgraffg/EvoDAG',
     author="Mario Graff",
     author_email="mgraffg@ieee.org",
-    cmdclass={"build_ext": build_ext, "clean": Clean},
-    ext_modules=ext_modules,
     packages=['EvoDAG', 'EvoDAG/tests'],
     include_package_data=True,
     zip_safe=False,
-    package_data={'': ['*.pxd'],
-                  'EvoDAG/conf': ['parameter_values.json']},
-    install_requires=['cython >= 0.19.2', 'numpy >= 1.6.2'],
+    package_data={'EvoDAG/conf': ['parameter_values.json']},
+    install_requires=['numpy >= 1.6.2'],
     entry_points={
         'console_scripts': ['EvoDAG-params=EvoDAG.command_line:params',
                             'EvoDAG-train=EvoDAG.command_line:train',
