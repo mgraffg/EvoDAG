@@ -18,6 +18,10 @@ import json
 import os
 
 
+def tonparray(a):
+    return np.array(a.full_array())
+
+
 def BER(y, yh):
     u = np.unique(y)
     b = 0

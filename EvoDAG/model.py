@@ -16,6 +16,7 @@
 import numpy as np
 from SparseArray import SparseArray
 from .node import Variable, Function
+from .utils import tonparray
 from multiprocessing import Pool
 import gc
 try:
@@ -98,7 +99,7 @@ class Model(object):
         if self._classifier:
             if self.multiple_outputs:
                 hy = self.decision_function(X, **kwargs)
-                hy = np.array([x.tonparray() for x in hy])
+                hy = np.array([tonparray(x) for x in hy])
                 hy = hy.argmax(axis=0)
                 if self._labels is not None:
                     hy = self._labels[hy]
@@ -106,9 +107,9 @@ class Model(object):
                 hy = self.decision_function(X, **kwargs).sign()
                 if self._labels is not None:
                     hy = (hy + 1).sign()
-                    hy = self._labels[hy.tonparray().astype(np.int)]
+                    hy = self._labels[tonparray(hy).astype(np.int)]
             return hy
-        return self.decision_function(X, **kwargs).tonparray()
+        return tonparray(self.decision_function(X, **kwargs))
 
     def graphviz(self, fpt):
         flag = False
@@ -207,7 +208,7 @@ class Models(object):
 
     def predict(self, X, **kwargs):
         d = self.decision_function(X, **kwargs)
-        d = np.array([x.tonparray() for x in d])
+        d = np.array([tonparray(x) for x in d])
         hy = d.argmax(axis=0)
         if self._labels is not None:
             hy = self._labels[hy]
@@ -266,10 +267,10 @@ class Ensemble(object):
     def raw_outputs(self, X, cpu_cores=1):
         r = self._decision_function_raw(X, cpu_cores=cpu_cores)
         if isinstance(r[0], SparseArray):
-            r = np.array([x.tonparray() for x in r if x.isfinite()])
+            r = np.array([tonparray(x) for x in r if x.isfinite()])
             return r
         else:
-            r = np.array([[y.tonparray() for y in x] for x in r])
+            r = np.array([[tonparray(y) for y in x] for x in r])
             return r
 
     def decision_function(self, X, cpu_cores=1):
@@ -277,11 +278,11 @@ class Ensemble(object):
             return self.decision_function_cl(X, cpu_cores=cpu_cores)
         r = self._decision_function_raw(X, cpu_cores=cpu_cores)
         if isinstance(r[0], SparseArray):
-            r = np.array([x.tonparray() for x in r if x.isfinite()])
+            r = np.array([tonparray(x) for x in r if x.isfinite()])
             sp = SparseArray.fromlist
             r = sp(np.median(r, axis=0))
         else:
-            r = np.array([[y.tonparray() for y in x] for x in r])
+            r = np.array([[tonparray(y) for y in x] for x in r])
             sp = SparseArray.fromlist
             r = np.median(r, axis=0)
             r = [sp(x) for x in r]
@@ -307,7 +308,7 @@ class Ensemble(object):
     def predict(self, X, cpu_cores=1):
         if self.classifier:
             return self.predict_cl(X, cpu_cores=cpu_cores)
-        return self.decision_function(X, cpu_cores=cpu_cores).tonparray()
+        return tonparray(self.decision_function(X, cpu_cores=cpu_cores))
 
     def predict_cl(self, X, cpu_cores=1):
         hy = self.decision_function(X, cpu_cores=cpu_cores)
@@ -315,9 +316,9 @@ class Ensemble(object):
             hy = hy.sign()
             if self._labels is not None:
                 hy = (hy + 1).sign()
-                hy = self._labels[hy.tonparray().astype(np.int)]
+                hy = self._labels[tonparray(hy).astype(np.int)]
         else:
-            d = np.array([x.tonparray() for x in hy])
+            d = np.array([tonparray(x) for x in hy])
             hy = d.argmax(axis=0)
             if self._labels is not None:
                 hy = self._labels[hy]

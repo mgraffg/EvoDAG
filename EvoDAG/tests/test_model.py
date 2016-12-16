@@ -15,7 +15,7 @@
 
 from test_root import cl
 from test_root import X
-from EvoDAG.sparse_array import SparseArray
+from SparseArray import SparseArray
 import numpy as np
 
 
@@ -111,7 +111,6 @@ def test_ensemble_model():
 
 def test_regression():
     from EvoDAG import RootGP
-    from EvoDAG.sparse_array import SparseArray
     from EvoDAG.model import Ensemble
     x = np.linspace(-1, 1, 100)
     y = 4.3*x**2 + 3.2 * x - 3.2

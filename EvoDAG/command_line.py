@@ -20,7 +20,7 @@ import collections
 from multiprocessing import Pool
 import EvoDAG as evodag
 from EvoDAG import EvoDAG
-from .base import tonparray
+from .utils import tonparray
 import time
 import gzip
 import json

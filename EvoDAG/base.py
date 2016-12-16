@@ -21,13 +21,10 @@ from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Log1p
 from .node import Sq, Min, Max
 from .model import Model, Models
 from .population import SteadyState
+from .utils import tonparray
 import time
 import importlib
 import inspect
-
-
-def tonparray(a):
-    return np.array(a.full_array())
 
 
 class EvoDAG(object):
@@ -358,11 +355,11 @@ class EvoDAG(object):
                 hy = [hy]
             fit = []
             for _mask, _y, _hy in zip(mask, y, hy):
-                m = (_mask - 1).fabs()
+                m = (_mask + -1).fabs()
                 x = _y * m
                 y = _hy * m
                 a = (x - y).sq().sum()
-                b = (x - x.sum() / x.size()).sq().sum()
+                b = (x + -x.sum() / x.size()).sq().sum()
                 fit.append(-a / b)
             v.fitness_vs = np.mean(fit)
 
