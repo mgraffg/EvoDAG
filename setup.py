@@ -48,7 +48,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     package_data={'EvoDAG/conf': ['parameter_values.json']},
-    install_requires=['numpy >= 1.6.2'],
+    install_requires=['numpy >= 1.6.2', 'SparseArray >= 0.8.1'],
     entry_points={
         'console_scripts': ['EvoDAG-params=EvoDAG.command_line:params',
                             'EvoDAG-train=EvoDAG.command_line:train',
