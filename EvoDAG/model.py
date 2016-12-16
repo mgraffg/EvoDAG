@@ -300,10 +300,11 @@ class Ensemble(object):
                 res = res + x.boundaries()
             else:
                 res = [x + y.boundaries() for (x, y) in zip(res, x)]
+        inv_len = float(1 / len(r))
         if isinstance(res, SparseArray):
-            return res / len(r)
+            return res * inv_len
         else:
-            return [x / len(r) for x in res]
+            return [inv_len * x for x in res]
 
     def predict(self, X, cpu_cores=1):
         if self.classifier:

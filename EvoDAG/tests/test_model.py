@@ -75,7 +75,7 @@ def test_ensemble():
     ens = Ensemble([gp.model() for gp in gps])
     res = [gp.decision_function() for gp in gps]
     res = [Add.cumsum([x[j] for x in res]) for j in range(3)]
-    res = [x / 3. for x in res]
+    res = [x * (1 / 3.) for x in res]
     r2 = ens.decision_function(None)
     for a, b in zip(res, r2):
         assert a.SSE(b) == 0
@@ -102,7 +102,7 @@ def test_ensemble_model():
            for seed in range(3)]
     ens = Ensemble([gp.model() for gp in gps])
     res = [gp.decision_function() for gp in gps]
-    res = Add.cumsum(res) / 3
+    res = Add.cumsum(res) * (1 / 3.)
     r2 = ens.decision_function(None)
     assert res.SSE(r2) == 0
     a = SparseArray.fromlist(ens.predict(None))
