@@ -78,6 +78,7 @@ def test_ensemble():
     res = [x * (1 / 3.) for x in res]
     r2 = ens.decision_function(None)
     for a, b in zip(res, r2):
+        print(a.SSE(b), a.data, b.data, b.full_array())
         assert a.SSE(b) == 0
     r2 = ens.predict(None)
     # print(np.unique(r2), np.unique(y))
