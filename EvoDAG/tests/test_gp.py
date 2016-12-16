@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from test_root import cl, X
+from test_root import X
 from EvoDAG.utils import tonparray
 from EvoDAG.model import Model
 from EvoDAG.node import Variable, Add, Mul, Sin
