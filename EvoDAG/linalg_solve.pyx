@@ -23,28 +23,24 @@ from libc cimport math
 cpdef compute_weight(list r, SparseArray ytr, mask):
     """Returns the weight (w) using OLS of r * w = gp._ytr """
     cdef Py_ssize_t i, j, size=len(r)
-    cdef SparseArray f, ri, rj
+    cdef SparseArray ri, rj
     cdef np.ndarray[np.double_t, ndim=2] A = np.empty((size, size), dtype=np.double)
     cdef np.ndarray[np.double_t, ndim=1] b = np.empty(size, dtype=np.double)
     cdef double tmp
-    # np.array([(f * ytr).sum() for f in r], dtype=np.double)
-    # r = [x for x in r]
     for i in range(size):
-        # r[i] = r[i] * mask
         ri = r[i]
-        tmp = ytr.mul(ri).sum()
+        tmp = ytr.dot(ri)
         if not math.isfinite(tmp):
             return None
         b[i] = tmp 
         ri = ri * mask
         for j in range(i, size):
             rj = r[j]
-            rj = ri.mul(rj)
-            tmp = rj.sum()
+            tmp = ri.dot(rj)
             if not math.isfinite(tmp):
                 return None
             A[i, j] = tmp
-            A[j, i] = A[i, j]
+            A[j, i] = tmp
     try:
         coef = np.linalg.solve(A, b)
     except np.linalg.LinAlgError:
