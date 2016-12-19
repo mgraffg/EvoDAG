@@ -14,6 +14,7 @@
 
 
 import numpy as np
+from .linalg_solve import compute_weight
 
 
 class Variable(object):
@@ -104,6 +105,7 @@ class Variable(object):
         """Returns the weight (w) using OLS of r * w = gp._ytr """
         ytr = self._ytr if ytr is None else ytr
         mask = self._mask if mask is None else mask
+        return compute_weight(r, ytr, mask)
         A = np.empty((len(r), len(r)))
         r = [x for x in r]
         b = np.array([(f * ytr).sum() for f in r])

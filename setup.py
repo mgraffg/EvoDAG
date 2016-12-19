@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from setuptools import setup
+from Cython.Build import cythonize
+from setuptools import Extension
 from os.path import join
+import numpy as np
 
 with open('README.rst') as fpt:
     long_desc = fpt.read()
@@ -25,6 +28,9 @@ for k in range(len(lst)):
 with open(join("EvoDAG", "__init__.py"), "w") as fpt:
     fpt.write("".join(lst))
 
+extension = [Extension('EvoDAG.linalg_solve', ["EvoDAG/linalg_solve.pyx"],
+                       include_dirs=[np.get_include()])]
+    
 setup(
     name="EvoDAG",
     description="""Evolving Directed Acyclic Graph""",
@@ -47,8 +53,14 @@ setup(
     packages=['EvoDAG', 'EvoDAG/tests'],
     include_package_data=True,
     zip_safe=False,
+    ext_modules=cythonize(extension,
+                          compiler_directives={'profile': False,
+                                               'nonecheck': False,
+                                               'boundscheck': False}),
+    
     package_data={'EvoDAG/conf': ['parameter_values.json']},
-    install_requires=['numpy >= 1.6.2', 'SparseArray >= 0.8.1'],
+    install_requires=['numpy >= 1.6.2', 'SparseArray >= 0.8.1',
+                      'cython >= 0.19.2'],
     entry_points={
         'console_scripts': ['EvoDAG-params=EvoDAG.command_line:params',
                             'EvoDAG-train=EvoDAG.command_line:train',
