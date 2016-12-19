@@ -16,24 +16,35 @@
 import numpy as np
 cimport numpy as np
 from SparseArray.sparse_array cimport SparseArray
+from libc cimport math
+
 
 
 cpdef compute_weight(list r, SparseArray ytr, mask):
     """Returns the weight (w) using OLS of r * w = gp._ytr """
     cdef Py_ssize_t i, j, size=len(r)
     cdef SparseArray f, ri, rj
-    cdef np.ndarray[np.double_t, ndim=2] A = np.empty((len(r), len(r)), dtype=np.double)
-    cdef np.ndarray[np.double_t, ndim=1] b = np.array([(f * ytr).sum() for f in r], dtype=np.double)
-    r = [x for x in r]
+    cdef np.ndarray[np.double_t, ndim=2] A = np.empty((size, size), dtype=np.double)
+    cdef np.ndarray[np.double_t, ndim=1] b = np.empty(size, dtype=np.double)
+    cdef double tmp
+    # np.array([(f * ytr).sum() for f in r], dtype=np.double)
+    # r = [x for x in r]
     for i in range(size):
-        r[i] = r[i] * mask
+        # r[i] = r[i] * mask
         ri = r[i]
+        tmp = ytr.mul(ri).sum()
+        if not math.isfinite(tmp):
+            return None
+        b[i] = tmp 
+        ri = ri * mask
         for j in range(i, size):
             rj = r[j]
-            A[i, j] = (ri.mul(rj)).sum()
+            rj = ri.mul(rj)
+            tmp = rj.sum()
+            if not math.isfinite(tmp):
+                return None
+            A[i, j] = tmp
             A[j, i] = A[i, j]
-    if not np.isfinite(A).all() or not np.isfinite(b).all():
-        return None
     try:
         coef = np.linalg.solve(A, b)
     except np.linalg.LinAlgError:
