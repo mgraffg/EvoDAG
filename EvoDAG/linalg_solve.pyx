@@ -17,32 +17,81 @@ import numpy as np
 cimport numpy as np
 from SparseArray.sparse_array cimport SparseArray
 from libc cimport math
+from cpython cimport array
 
 
+cdef void swap(list m, Py_ssize_t i):
+    cdef double max, comp
+    cdef Py_ssize_t pos=i, size=len(m)
+    cdef array.array data
+    data = m[i]
+    max = math.fabs(data.data.as_doubles[i])
+    for j in range(i+1, size):
+        data = m[j]
+        comp = math.fabs(data.data.as_doubles[i])
+        if comp > max:
+            max = comp
+            pos = j
+    if pos == i:
+        return
+    data = m[i]
+    m[i] = m[pos]
+    m[pos] = data
+    
 
+cdef bint gauss_jordan(list m):
+    cdef Py_ssize_t i, j, k, size=len(m)
+    cdef array.array data, below
+    cdef double c, tmp
+    for i in range(size):
+        swap(m, i)
+        data = m[i]
+        if math.fabs(data.data.as_doubles[i]) < 1e-7:
+            return True
+        for j in range(i+1, size):
+            below = m[j]
+            c = below[i] / data.data.as_doubles[i]
+            for k in range(i, size+1):
+                below.data.as_doubles[k] -= data.data.as_doubles[k] * c
+    for i in range(size-1, -1, -1):
+        data = m[i]
+        c = data.data.as_doubles[i]
+        for j in range(0, i):
+            below = m[j]
+            for k in range(size, i-1, -1):
+                below.data.as_doubles[k] -= data.data.as_doubles[k] *\
+                                            below.data.as_doubles[i] / c
+        data.data.as_doubles[i] /= c
+        tmp = data.data.as_doubles[size] / c
+        if not math.isfinite(tmp):
+            return True
+        data.data.as_doubles[size] = tmp
+    return False
+
+        
 cpdef compute_weight(list r, SparseArray ytr, mask):
     """Returns the weight (w) using OLS of r * w = gp._ytr """
     cdef Py_ssize_t i, j, size=len(r)
     cdef SparseArray ri, rj
-    cdef np.ndarray[np.double_t, ndim=2] A = np.empty((size, size), dtype=np.double)
-    cdef np.ndarray[np.double_t, ndim=1] b = np.empty(size, dtype=np.double)
+    cdef array.array data = array.array('d'), other
+    cdef list X = [array.clone(data, size+1, False) for i in range(size)]
     cdef double tmp
     for i in range(size):
+        data = X[i]
         ri = r[i]
         tmp = ytr.dot(ri)
         if not math.isfinite(tmp):
             return None
-        b[i] = tmp 
+        data.data.as_doubles[size] = tmp 
         ri = ri * mask
         for j in range(i, size):
             rj = r[j]
             tmp = ri.dot(rj)
             if not math.isfinite(tmp):
                 return None
-            A[i, j] = tmp
-            A[j, i] = tmp
-    try:
-        coef = np.linalg.solve(A, b)
-    except np.linalg.LinAlgError:
+            data.data.as_doubles[j] = tmp
+            other = X[j]
+            other.data.as_doubles[i] = tmp
+    if gauss_jordan(X):
         return None
-    return coef
+    return np.array([x[size] for x in X])

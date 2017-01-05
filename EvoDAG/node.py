@@ -106,21 +106,6 @@ class Variable(object):
         ytr = self._ytr if ytr is None else ytr
         mask = self._mask if mask is None else mask
         return compute_weight(r, ytr, mask)
-        A = np.empty((len(r), len(r)))
-        r = [x for x in r]
-        b = np.array([(f * ytr).sum() for f in r])
-        for i in range(len(r)):
-            r[i] = r[i] * mask
-            for j in range(i, len(r)):
-                A[i, j] = (r[i] * r[j]).sum()
-                A[j, i] = A[i, j]
-        if not np.isfinite(A).all() or not np.isfinite(b).all():
-            return None
-        try:
-            coef = np.linalg.solve(A, b)
-        except np.linalg.LinAlgError:
-            return None
-        return coef
 
     def raw_outputs(self, X):
         r = X[self.variable].hy

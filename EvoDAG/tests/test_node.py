@@ -16,12 +16,14 @@
 from test_root import X, cl
 from EvoDAG.node import Add
 from EvoDAG.base import tonparray
+from SparseArray import SparseArray
 import numpy as np
+from nose.tools import assert_almost_equals
 
 
 def create_problem_node(nargs=4, seed=0):
     from EvoDAG import RootGP
-    gp = RootGP(generations=1, popsize=4, seed=seed)
+    gp = RootGP(generations=1, popsize=nargs, seed=seed)
     gp.X = X
     gp.Xtest = X
     y = cl.copy()
@@ -64,6 +66,16 @@ def test_node_tostore():
     assert n1.position == n.position
     assert np.all(n1.weight == n.weight)
     assert n1.hy is None
+
+
+def test_compute_weight():
+    gp, args = create_problem_node()
+    mask = SparseArray.fromlist(np.ones(len(gp._mask)))
+    n = Add(list(range(len(args))), ytr=gp._ytr, mask=mask)
+    D = np.array([tonparray(i.hy) for i in args]).T
+    coef = n.compute_weight([x.hy for x in args])
+    r = np.linalg.lstsq(D, tonparray(gp._ytr))[0]
+    [assert_almost_equals(a, b) for a, b in zip(coef, r)]
 
 
 def test_node_add():
