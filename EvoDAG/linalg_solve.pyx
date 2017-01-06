@@ -17,6 +17,7 @@ import numpy as np
 cimport numpy as np
 from SparseArray.sparse_array cimport SparseArray
 from libc cimport math
+from libc.float cimport DBL_EPSILON
 from cpython cimport array
 
 
@@ -46,7 +47,7 @@ cdef bint gauss_jordan(list m):
     for i in range(size):
         swap(m, i)
         data = m[i]
-        if math.fabs(data.data.as_doubles[i]) < 1e-7:
+        if math.fabs(data.data.as_doubles[i]) < DBL_EPSILON:
             return True
         for j in range(i+1, size):
             below = m[j]
