@@ -21,6 +21,18 @@ from libc.float cimport DBL_EPSILON
 from cpython cimport array
 
 
+cdef bint iszero(double x):
+    if x >= DBL_EPSILON or x <= -DBL_EPSILON:
+        return False
+    return True
+
+
+cdef double zero_round(double value):
+    if iszero(value):
+        return 0.0
+    return value
+
+        
 cdef void swap(list m, Py_ssize_t i):
     cdef double max, comp
     cdef Py_ssize_t pos=i, size=len(m)
@@ -47,26 +59,31 @@ cdef bint gauss_jordan(list m):
     for i in range(size):
         swap(m, i)
         data = m[i]
-        if math.fabs(data.data.as_doubles[i]) < DBL_EPSILON:
+        if iszero(data.data.as_doubles[i]):
             return True
         for j in range(i+1, size):
             below = m[j]
             c = below[i] / data.data.as_doubles[i]
             for k in range(i, size+1):
-                below.data.as_doubles[k] -= data.data.as_doubles[k] * c
+                tmp = below.data.as_doubles[k] - data.data.as_doubles[k] * c
+                below.data.as_doubles[k] = zero_round(tmp)
     for i in range(size-1, -1, -1):
         data = m[i]
         c = data.data.as_doubles[i]
+        if iszero(c):
+            return True
         for j in range(0, i):
             below = m[j]
             for k in range(size, i-1, -1):
-                below.data.as_doubles[k] -= data.data.as_doubles[k] *\
-                                            below.data.as_doubles[i] / c
-        data.data.as_doubles[i] /= c
+                tmp = below.data.as_doubles[k] - data.data.as_doubles[k] *\
+                      below.data.as_doubles[i] / c
+                below.data.as_doubles[k] = zero_round(tmp)
+        tmp = data.data.as_doubles[i] / c
+        data.data.as_doubles[i] = zero_round(tmp)
         tmp = data.data.as_doubles[size] / c
         if not math.isfinite(tmp):
             return True
-        data.data.as_doubles[size] = tmp
+        data.data.as_doubles[size] = zero_round(tmp)
     return False
 
         

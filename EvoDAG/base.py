@@ -22,6 +22,7 @@ from .node import Sq, Min, Max
 from .model import Model, Models
 from .population import SteadyState
 from .utils import tonparray
+from .cython_utils import fitness_SSE, fitness_SAE
 import time
 import importlib
 import inspect
@@ -298,16 +299,12 @@ class EvoDAG(object):
         "Fitness function in the training set"
         if self._classifier:
             if self._multiple_outputs:
-                f = [-ytr.SSE(hy * mask) for ytr, hy, mask in
-                     zip(self._ytr, v.hy, self._mask)]
-                v.fitness = np.mean(f)
+                v.fitness = fitness_SSE(self._ytr, v.hy, self._mask)
             else:
                 v.fitness = -self._ytr.SSE(v.hy * self._mask)
         else:
             if self._multiple_outputs:
-                f = [-ytr.SAE(hy * mask) for ytr, hy, mask in
-                     zip(self._ytr, v.hy, self._mask)]
-                v.fitness = np.mean(f)
+                v.fitness = fitness_SAE(self._ytr, v.hy, self._mask)
             else:
                 v.fitness = -self._ytr.SAE(v.hy * self._mask)
 

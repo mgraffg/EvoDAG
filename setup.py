@@ -29,6 +29,8 @@ with open(join("EvoDAG", "__init__.py"), "w") as fpt:
     fpt.write("".join(lst))
 
 extension = [Extension('EvoDAG.linalg_solve', ["EvoDAG/linalg_solve.pyx"],
+                       include_dirs=[np.get_include()]),
+             Extension('EvoDAG.cython_utils', ["EvoDAG/cython_utils.pyx"],
                        include_dirs=[np.get_include()])]
     
 setup(

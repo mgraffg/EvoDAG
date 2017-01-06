@@ -142,17 +142,17 @@ class Variable(object):
     def eval(self, X):
         r, hr = self.raw_outputs(X)
         if isinstance(r, list):
-            r = [x.finite() for x in r]
+            r = [x.finite(inplace=True) for x in r]
         else:
-            r = r.finite()
+            r = r.finite(inplace=True)
         if not self.set_weight(r):
             return False
         self.hy = self._mul(r, self.weight)
         if hr is not None:
             if isinstance(hr, list):
-                hr = [x.finite() for x in hr]
+                hr = [x.finite(inplace=True) for x in hr]
             else:
-                hr = hr.finite()
+                hr = hr.finite(inplace=True)
             self.hy_test = self._mul(hr, self.weight)
         return True
 

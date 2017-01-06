@@ -36,6 +36,7 @@ class SteadyState(object):
         self._labels = labels
         self._logger = logging.getLogger('EvoDAG.Population')
         self._previous_estopping = False
+        self._current_popsize = 0
         self._popsize = popsize
         self._inds_replace = 0
         self.generation = 1
@@ -143,6 +144,7 @@ class SteadyState(object):
     def add(self, v):
         "Add an individual to the population"
         self.population.append(v)
+        self._current_popsize += 1
         v.position = len(self._hist)
         self._hist.append(v)
         self.bsf = v
@@ -174,12 +176,17 @@ class SteadyState(object):
 
     @property
     def popsize(self):
-        return len(self.population)
+        return self._current_popsize
 
     @property
     def population(self):
         "List containing the population"
         return self._p
+
+    @population.setter
+    def population(self, a):
+        self._current_popsize = len(a)
+        self._p = a
 
     def random_selection(self, negative=False):
         return np.random.randint(self.popsize)
@@ -217,7 +224,7 @@ class Generational(SteadyState):
         self._inner.append(v)
         if len(self._inner) == self._popsize:
             [self.clean(x) for x in self.population]
-            self._p = self._inner
+            self.population = self._inner
             self._inner = []
             self.generation += 1
             gc.collect()
