@@ -55,35 +55,45 @@ cdef void swap(list m, Py_ssize_t i):
 cdef bint gauss_jordan(list m):
     cdef Py_ssize_t i, j, k, size=len(m)
     cdef array.array data, below
-    cdef double c, tmp
+    cdef double c, tmp, c_den
+    cdef double *data_values, *below_values
     for i in range(size):
         swap(m, i)
         data = m[i]
-        if iszero(data.data.as_doubles[i]):
+        data_values = data.data.as_doubles
+        c_den = data_values[i]
+        if iszero(c_den):
             return True
         for j in range(i+1, size):
             below = m[j]
-            c = below[i] / data.data.as_doubles[i]
+            below_values = below.data.as_doubles
+            c = below_values[i] / c_den
             for k in range(i, size+1):
-                tmp = below.data.as_doubles[k] - data.data.as_doubles[k] * c
-                below.data.as_doubles[k] = zero_round(tmp)
+                tmp = below_values[k] - data_values[k] * c
+                below_values[k] = tmp
     for i in range(size-1, -1, -1):
         data = m[i]
-        c = data.data.as_doubles[i]
+        data_values = data.data.as_doubles
+        c = data_values[i]
         if iszero(c):
             return True
         for j in range(0, i):
             below = m[j]
-            for k in range(size, i-1, -1):
-                tmp = below.data.as_doubles[k] - data.data.as_doubles[k] *\
-                      below.data.as_doubles[i] / c
-                below.data.as_doubles[k] = zero_round(tmp)
-        tmp = data.data.as_doubles[i] / c
-        data.data.as_doubles[i] = zero_round(tmp)
-        tmp = data.data.as_doubles[size] / c
+            below_values = below.data.as_doubles
+            k = size
+            tmp = below_values[k] - data_values[k] *\
+                  below_values[i] / c
+            below_values[k] = zero_round(tmp)
+            # for k in range(size, i-1, -1):
+            #     tmp = below_values[k] - data_values[k] *\
+            #           below_values[i] / c
+            #     below_values[k] = zero_round(tmp)
+        # tmp = data_values[i] / c
+        # data_values[i] = zero_round(tmp)
+        tmp = data_values[size] / c
         if not math.isfinite(tmp):
             return True
-        data.data.as_doubles[size] = zero_round(tmp)
+        data_values[size] = zero_round(tmp)
     return False
 
         
