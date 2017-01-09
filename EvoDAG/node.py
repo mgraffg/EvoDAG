@@ -15,6 +15,7 @@
 
 import numpy as np
 from .linalg_solve import compute_weight
+from SparseArray import SparseArray
 
 
 class Variable(object):
@@ -291,10 +292,7 @@ class Add(Function):
 
     @staticmethod
     def cumsum(r):
-        a = r[0]
-        for x in r[1:]:
-            a = a + x
-        return a
+        return SparseArray.cumsum(r)
 
     def set_weight(self, hy):
         if self.weight is not None:
@@ -545,10 +543,7 @@ class Min(Function1):
 
     @staticmethod
     def cummin(r):
-        a = r[0]
-        for x in r[1:]:
-            a = a.min(x)
-        return a
+        return SparseArray.cummin(r)
 
     def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
@@ -578,10 +573,7 @@ class Max(Function1):
 
     @staticmethod
     def cummax(r):
-        a = r[0]
-        for x in r[1:]:
-            a = a.max(x)
-        return a
+        return SparseArray.cummax(r)
 
     def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
