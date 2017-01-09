@@ -274,6 +274,9 @@ class Function1(Function):
             hr = [getattr(x, func)() for x in hyt if x is not None]
         return self.return_r_hr(r, hr)
 
+    def raw_outputs(self, X):
+        return self._raw_outputs(X, self.symbol)
+
 
 class Add(Function):
     nargs = 5
@@ -386,67 +389,147 @@ class Div(Function1):
         return r, hr
 
 
-class Fabs(Function1):
-    nargs = 1
-    symbol = 'fabs'
-    color = 2
+class Atan2(Function1):
+    symbol = 'atan2'
+    color = 1
 
     def raw_outputs(self, X):
-        return self._raw_outputs(X, 'fabs')
+        X = [X[x] for x in self.variable]
+        hy, hyt = self.hy2listM(X)
+        hr = None
+        if self._multiple_outputs:
+            r = [x[0].atan2(x[1]) for x in hy]
+            if hyt is not None:
+                hr = [x[0].atan2(x[1]) for x in hyt]
+        else:
+            r = hy[0].atan2(hy[1])
+            if hyt is not None:
+                hr = hyt[0].atan2(hyt[1])
+        return r, hr
 
 
-class Exp(Function1):
-    nargs = 1
-    symbol = 'exp'
-    color = 3
+class Hypot(Function1):
+    symbol = 'hypot'
+    color = 1
 
     def raw_outputs(self, X):
-        return self._raw_outputs(X, 'exp')
+        X = [X[x] for x in self.variable]
+        hy, hyt = self.hy2listM(X)
+        hr = None
+        if self._multiple_outputs:
+            r = [x[0].hypot(x[1]) for x in hy]
+            if hyt is not None:
+                hr = [x[0].hypot(x[1]) for x in hyt]
+        else:
+            r = hy[0].hypot(hy[1])
+            if hyt is not None:
+                hr = hyt[0].hypot(hyt[1])
+        return r, hr
 
 
-class Sqrt(Function1):
+class OneArg(Function1):
     nargs = 1
-    symbol = 'sqrt'
-    color = 4
-
-    def raw_outputs(self, X):
-        return self._raw_outputs(X, 'sqrt')
-
-
-class Sin(Function1):
-    nargs = 1
-    symbol = 'sin'
     color = 5
 
-    def raw_outputs(self, X):
-        return self._raw_outputs(X, 'sin')
+
+class Acos(OneArg):
+    symbol = 'acos'
 
 
-class Cos(Function1):
-    nargs = 1
+class Asin(OneArg):
+    symbol = 'asin'
+
+
+class Atan(OneArg):
+    symbol = 'atan'
+
+
+class Cos(OneArg):
     symbol = 'cos'
-    color = 5
-
-    def raw_outputs(self, X):
-        return self._raw_outputs(X, 'cos')
 
 
-class Log1p(Function1):
-    nargs = 1
+class Sin(OneArg):
+    symbol = 'sin'
+
+
+class Tan(OneArg):
+    symbol = 'tan'
+
+
+class Cosh(OneArg):
+    symbol = 'cosh'
+
+
+class Sinh(OneArg):
+    symbol = 'sinh'
+
+
+class Tanh(OneArg):
+    symbol = 'tanh'
+
+
+class Acosh(OneArg):
+    symbol = 'acosh'
+
+
+class Asinh(OneArg):
+    symbol = 'asinh'
+
+
+class Atanh(OneArg):
+    symbol = 'atanh'
+
+
+class Exp(OneArg):
+    symbol = 'exp'
+
+
+class Expm1(OneArg):
+    symbol = 'expm1'
+
+
+class Log(OneArg):
+    symbol = 'log'
+
+
+class Log2(OneArg):
+    symbol = 'log2'
+
+
+class Log10(OneArg):
+    symbol = 'log10'
+
+
+class Log1p(OneArg):
     symbol = 'log1p'
-    color = 6
-
-    def raw_outputs(self, X):
-        return self._raw_outputs(X, 'log1p')
 
 
-class Sq(Function1):
-    nargs = 1
+class Lgamma(OneArg):
+    symbol = 'lgamma'
+
+
+class Sqrt(OneArg):
+    symbol = 'sqrt'
+
+
+class Sq(OneArg):
     symbol = 'sq'
-    color = 4
 
-    def raw_outputs(self, X):
-        return self._raw_outputs(X, 'sq')
+
+class Sign(OneArg):
+    symbol = 'sign'
+
+
+class Fabs(OneArg):
+    symbol = 'fabs'
+
+
+class Ceil(OneArg):
+    symbol = 'ceil'
+
+
+class Floor(OneArg):
+    symbol = 'floor'
 
 
 class Min(Function1):
@@ -455,7 +538,7 @@ class Min(Function1):
     color = 8
     unique_args = True
     min_nargs = 2
-    
+
     def __init__(self, *args, **kwargs):
         super(Min, self).__init__(*args, **kwargs)
         self._variable = sorted(self._variable)

@@ -323,6 +323,10 @@ def test_Add_multiple_output2():
 def test_one_multiple_output():
     from EvoDAG.node import Variable
     from EvoDAG.node import Fabs, Exp, Sqrt, Sin, Cos, Log1p, Sq
+    from EvoDAG.node import Acos, Asin, Atan, Tan, Cosh, Sinh, Tanh
+    from EvoDAG.node import Acosh, Asinh, Atanh, Expm1, Log, Log2, Log10, Lgamma
+    from EvoDAG.node import Sign, Ceil, Floor
+
     for flag in [False, True]:
         gp, args = create_problem_node(nargs=4, seed=0)
         if flag:
@@ -335,7 +339,10 @@ def test_one_multiple_output():
         [x.eval(args) for x in vars]
         vars2 = [Variable(k, ytr=gp._ytr, mask=gp._mask) for k in range(len(args))]
         [x.eval(args) for x in vars2]
-        for FF in [Fabs, Exp, Sqrt, Sin, Cos, Log1p, Sq]:
+        for FF in [Fabs, Exp, Sqrt, Sin, Cos, Log1p, Sq,
+                   Acos, Asin, Atan, Tan, Cosh, Sinh, Tanh,
+                   Acosh, Asinh, Atanh, Expm1, Log, Log2, Log10, Lgamma,
+                   Sign, Ceil, Floor]:
             ff = FF(0, ytr=ytr, mask=mask)
             ff.eval(vars)
             ff2 = FF(0, ytr=gp._ytr, mask=gp._mask)
@@ -352,8 +359,8 @@ def test_one_multiple_output():
 
 
 def test_functions_w_multiple_output():
-    from EvoDAG.node import Variable, Mul, Div, Min, Max
-    for ff in [Mul, Div, Min, Max]:
+    from EvoDAG.node import Variable, Mul, Div, Min, Max, Atan2, Hypot
+    for ff in [Mul, Div, Min, Max, Atan2, Hypot]:
         for flag in [False, True]:
             gp, args = create_problem_node(nargs=4, seed=0)
             if flag:

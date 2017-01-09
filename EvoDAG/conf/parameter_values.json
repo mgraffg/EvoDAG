@@ -65,6 +65,73 @@
     25,
     30
   ],
+  "Atan2": [
+    0,
+    2
+  ],
+  "Hypot": [
+    0,
+    2
+  ],
+  "Acos": [
+    true,
+    false
+  ],
+  "Asin": [
+    true,
+    false
+  ],
+  "Atan": [
+    true,
+    false
+  ],
+  "Tan": [
+    true,
+    false
+  ],
+  "Cosh": [
+    false
+  ],
+  "Sinh": [
+    false
+  ],
+  "Tanh": [
+    false
+  ],
+  "Acosh": [
+    false
+  ],
+  "Asinh": [
+    false
+  ],
+  "Atanh": [
+    false
+  ],
+  "Expm1": [
+    true,
+    false
+  ],
+  "Log": [
+    false
+  ],
+  "Log2": [
+    false
+  ],
+  "Log10": [
+    false
+  ],
+  "Lgamma": [
+    false
+  ],
+  "Sign": [
+    false
+  ],
+  "Ceil": [
+    false
+  ],
+  "Floor": [
+    false
+  ],
   "Fabs": [
     true,
     false
@@ -82,7 +149,6 @@
       false
   ],
   "Exp": [
-    true,
     false
   ],
   "unique_individuals": [
