@@ -222,7 +222,7 @@ class Function(Variable):
             else:
                 hyt = None
         return hy, hyt
-    
+
     def hy2list(self, X):
         if not self._multiple_outputs:
             hy = [X.hy]
@@ -285,6 +285,7 @@ class Add(Function):
     color = 1
     unique_args = True
     min_nargs = 2
+    density_safe = True
 
     def __init__(self, *args, **kwargs):
         super(Add, self).__init__(*args, **kwargs)
@@ -341,17 +342,15 @@ class Add(Function):
 class Mul(Function1):
     symbol = '*'
     color = 1
+    density_safe = False
 
     def __init__(self, *args, **kwargs):
         super(Mul, self).__init__(*args, **kwargs)
         self._variable = sorted(self._variable)
-        
+
     @staticmethod
     def cumprod(r):
-        a = r[0]
-        for x in r[1:]:
-            a = a * x
-        return a
+        return SparseArray.cummul(r)
 
     def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
@@ -371,6 +370,7 @@ class Mul(Function1):
 class Div(Function1):
     symbol = '/'
     color = 1
+    density_safe = False
 
     def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
@@ -390,6 +390,7 @@ class Div(Function1):
 class Atan2(Function1):
     symbol = 'atan2'
     color = 1
+    density_safe = False
 
     def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
@@ -409,6 +410,7 @@ class Atan2(Function1):
 class Hypot(Function1):
     symbol = 'hypot'
     color = 1
+    density_safe = True
 
     def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
@@ -432,102 +434,127 @@ class OneArg(Function1):
 
 class Acos(OneArg):
     symbol = 'acos'
+    density_safe = False
 
 
 class Asin(OneArg):
     symbol = 'asin'
+    density_safe = True
 
 
 class Atan(OneArg):
     symbol = 'atan'
+    density_safe = True
 
 
 class Cos(OneArg):
     symbol = 'cos'
+    density_safe = False
 
 
 class Sin(OneArg):
     symbol = 'sin'
+    density_safe = True
 
 
 class Tan(OneArg):
     symbol = 'tan'
+    density_safe = True
 
 
 class Cosh(OneArg):
     symbol = 'cosh'
+    density_safe = False
 
 
 class Sinh(OneArg):
     symbol = 'sinh'
+    density_safe = True
 
 
 class Tanh(OneArg):
     symbol = 'tanh'
+    density_safe = True
 
 
 class Acosh(OneArg):
     symbol = 'acosh'
+    density_safe = False
 
 
 class Asinh(OneArg):
     symbol = 'asinh'
+    density_safe = True
 
 
 class Atanh(OneArg):
     symbol = 'atanh'
+    density_safe = True
 
 
 class Exp(OneArg):
     symbol = 'exp'
+    density_safe = False
 
 
 class Expm1(OneArg):
     symbol = 'expm1'
+    density_safe = True
 
 
 class Log(OneArg):
     symbol = 'log'
+    density_safe = False
 
 
 class Log2(OneArg):
     symbol = 'log2'
+    density_safe = False
 
 
 class Log10(OneArg):
     symbol = 'log10'
+    density_safe = False
 
 
 class Log1p(OneArg):
     symbol = 'log1p'
+    density_safe = True
 
 
 class Lgamma(OneArg):
     symbol = 'lgamma'
+    density_safe = False
 
 
 class Sqrt(OneArg):
     symbol = 'sqrt'
+    density_safe = True
 
 
 class Sq(OneArg):
     symbol = 'sq'
+    density_safe = True
 
 
 class Sign(OneArg):
     symbol = 'sign'
+    density_safe = True
 
 
 class Fabs(OneArg):
     symbol = 'fabs'
+    density_safe = True
 
 
 class Ceil(OneArg):
     symbol = 'ceil'
+    density_safe = True
 
 
 class Floor(OneArg):
     symbol = 'floor'
+    density_safe = True
 
 
 class Min(Function1):
@@ -536,6 +563,7 @@ class Min(Function1):
     color = 8
     unique_args = True
     min_nargs = 2
+    density_safe = True
 
     def __init__(self, *args, **kwargs):
         super(Min, self).__init__(*args, **kwargs)
@@ -566,6 +594,7 @@ class Max(Function1):
     color = 8
     unique_args = True
     min_nargs = 2
+    density_safe = True
 
     def __init__(self, *args, **kwargs):
         super(Max, self).__init__(*args, **kwargs)

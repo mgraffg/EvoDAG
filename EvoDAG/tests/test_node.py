@@ -382,3 +382,8 @@ def test_functions_w_multiple_output():
             if mul.hy_test is not None:
                 assert mul2.hy_test.SSE(mul.hy_test[0]) == 0
             
+
+def test_density_safe():
+    gp, args = create_problem_node(nargs=4, seed=0)
+    for i in gp._function_set:
+        assert i.density_safe or not i.density_safe
