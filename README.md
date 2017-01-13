@@ -68,11 +68,15 @@ search on the parameter space. EvoDAG selects the best configuration found
 on the random search. This can be performed as follows:
 
 ```bash__
-EvoDAG-params -C -P params.evodag -r 8 -u 4 iris.data
+EvoDAG-params -C -P params.evodag -r 734 -u 4 --multiple-outputs iris.data
 ```
 
-where `-C` indicates that the task is classification, `-P` indicates the file name where the parameters sampled are
-stored, `-r` specifies the number of samples, `-u` indicates the number of
+where `-C` indicates that the task is classification, `--multiple-outputs` 
+evolves as many outputs as classes, 
+`-P` indicates the file name where the parameters sampled are
+stored, `-r` specifies the number of samples 
+(all the experiments presented here sampled 734 points which 
+corresponded, in early versions, the 0.1% of the search space), `-u` indicates the number of
 cpu cores, and `iris.data` is the dataset.
 
 `params.evodag` looks like:
