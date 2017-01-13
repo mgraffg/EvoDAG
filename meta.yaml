@@ -5,8 +5,7 @@ about:
 
 package:
   name: evodag
-  version: "0.4.6.1"
-  depends: ["numpy>=1.6.2", "cython>=0.19.2", "sparsearray>=0.8.9"]
+  version: "0.4.6.2"
 
 build:
   number: 0
