@@ -122,7 +122,7 @@ one would like to create an ensemble of 10 classifiers on
 `iris.data`. The following command performs this action: 
 
 ```bash   
-EvoDAG-train -P params.evodag -m model.evodag -n 10 -u 4 iris.data 
+EvoDAG-train -P params.evodag -m model.evodag -n 100 -u 4 iris.data 
 ```
 
 where `-m` specifies the file name used to store the model, `-n` is
