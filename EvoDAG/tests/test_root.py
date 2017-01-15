@@ -1183,3 +1183,4 @@ def test_regression_mo():
     gp.y = y
     assert isinstance(gp._mask, list)
     gp.create_population()
+    

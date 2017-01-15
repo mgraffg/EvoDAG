@@ -640,3 +640,10 @@ def test_raw_outputs_classification():
     os.unlink('output.evodag')
     default_nargs()
     assert len(l.split(',')) == 6
+
+
+def test_nan():
+    import numpy as np
+    from EvoDAG.command_line import CommandLineParams
+    c = CommandLineParams()
+    assert np.isfinite(c.convert_label('NaN'))

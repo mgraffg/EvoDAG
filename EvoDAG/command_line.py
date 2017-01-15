@@ -147,11 +147,15 @@ class CommandLine(object):
 
     def convert_label(self, x):
         try:
-            return float(x)
+            x = float(x)
+            if np.isfinite(x):
+                return x
+            x = str(x)
         except ValueError:
-            if x not in self.label2id:
-                self.label2id[x] = len(self.label2id)
-            return self.label2id[x]
+            pass
+        if x not in self.label2id:
+            self.label2id[x] = len(self.label2id)
+        return self.label2id[x]
 
     def read_data(self, fname):
         with open(fname, 'r') as fpt:

@@ -68,11 +68,15 @@ search on the parameter space. EvoDAG selects the best configuration found
 on the random search. This can be performed as follows:
 
 ```bash__
-EvoDAG-params -C -P params.evodag -r 8 -u 4 iris.data
+EvoDAG-params -C -P params.evodag -r 734 -u 4 --multiple-outputs iris.data
 ```
 
-where `-C` indicates that the task is classification, `-P` indicates the file name where the parameters sampled are
-stored, `-r` specifies the number of samples, `-u` indicates the number of
+where `-C` indicates that the task is classification, `--multiple-outputs` 
+evolves as many outputs as classes, 
+`-P` indicates the file name where the parameters sampled are
+stored, `-r` specifies the number of samples 
+(all the experiments presented here sampled 734 points which 
+corresponded, in early versions, the 0.1% of the search space), `-u` indicates the number of
 cpu cores, and `iris.data` is the dataset.
 
 `params.evodag` looks like:
@@ -118,7 +122,7 @@ one would like to create an ensemble of 10 classifiers on
 `iris.data`. The following command performs this action: 
 
 ```bash   
-EvoDAG-train -P params.evodag -m model.evodag -n 10 -u 4 iris.data 
+EvoDAG-train -P params.evodag -m model.evodag -n 100 -u 4 iris.data 
 ```
 
 where `-m` specifies the file name used to store the model, `-n` is
@@ -175,21 +179,21 @@ automatically spotted, and, one possible solution could be as simple
 as execute auto-sklearn again on that particular case. Nonetheless, we
 decided to keep auto-sklearn without modifications.
 
-|Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.3.9)|EvoDAG --multiple-outputs (0.4.6)|   
+|Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.4.6)|EvoDAG --multiple-outputs (0.4.6)|   
 | ----- | ---------------------------------------------: | --------------------------------------------: | -----------------------------------: | -----------: |-----------: |  
-|banana          |     **11.08**      |  28.00  |11.27 | 11.98 | 11.74|  
-|titanic          |    **24.18**    |  37.18   |  30.27  |  30.02 | 29.69|
-|thyroid        |      **4.32**      |  23.38  |  6.13  |  8.24  | 6.55|
-|diabetis        |     27.06   |   37.65  |  26.65  |  25.00 | **24.43**|
-|breast-cancer    |    **33.01**    |  42.36  |  36.25  |  34.49 | 34.06|
-|flare-solar     |     34.81     |  39.05 |  33.41  |  **32.74** | 32.88|
-|heart             |   20.69        |  27.69  |  18.12  |  16.44 | **16.41**|
-|ringnorm       |      7.98      |  15.49  |  **1.96**  |  2.46 | 2.13|
-|twonorm       |       3.09      |  20.87  |  2.90  |  2.67 | **2.65**|
-|german         |      30.10    | 39.45  |  29.00  | **28.57** | 28.66|
-|image         |       **2.90** | 21.29  |  3.32  | 4.20 | 3.81|
-|waveform      |       12.80   | 22.67  |  10.62  |  10.36 | **10.10**|
-|splice       |        14.63  | 10.79  |  11.23  |  10.01 | **9.57** |
+|banana          |     **11.08**      |  28.00  |11.27 | 12.02 | 11.74|  
+|titanic          |    **24.18**    |  37.18   |  30.27  |  29.93 | 29.69|
+|thyroid        |      **4.32**      |  23.38  |  6.13  |  7.01  | 6.55|
+|diabetis        |     27.06   |   37.65  |  26.65  |  **24.27** | 24.43|
+|breast-cancer    |    **33.01**    |  42.36  |  36.25  |  34.45 | 34.06|
+|flare-solar     |     34.81     |  39.05 |  33.41  |  32.99 | **32.88** |
+|heart             |   20.69        |  27.69  |  18.12  |  16.66 | **16.41**|
+|ringnorm       |      7.98      |  15.49  |  **1.96**  |  2.41 | 2.13|
+|twonorm       |       3.09      |  20.87  |  2.90  |  2.64 | **2.61**|
+|german         |      30.10    | 39.45  |  29.00  | **28.45** | 28.66|
+|image         |       **2.90** | 21.29  |  3.32  | 3.93 | 3.81|
+|waveform      |       12.80   | 22.67  |  10.62  |  10.14 | **10.06**|
+|splice       |        14.63  | 10.79  |  11.23  |  9.75 | **9.57** |
 
 
 # Install EvoDAG #

@@ -61,8 +61,7 @@ setup(
                                                'boundscheck': False}),
     
     package_data={'EvoDAG/conf': ['parameter_values.json']},
-    install_requires=['numpy >= 1.6.2', 'SparseArray >= 0.8.1',
-                      'cython >= 0.19.2'],
+    install_requires=['numpy', 'SparseArray'],
     entry_points={
         'console_scripts': ['EvoDAG-params=EvoDAG.command_line:params',
                             'EvoDAG-train=EvoDAG.command_line:train',
