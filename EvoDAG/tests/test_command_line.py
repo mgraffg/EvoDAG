@@ -45,6 +45,7 @@ def test_optimize_parameters():
     assert os.path.isfile('cache.evodag.gz')
     os.unlink('cache.evodag.gz')
     os.unlink(fname)
+    default_nargs()
 
 
 def test_cpu_cores():
@@ -57,6 +58,7 @@ def test_cpu_cores():
     assert os.path.isfile('cache.evodag.gz')
     os.unlink('cache.evodag.gz')
     os.unlink(fname)
+    default_nargs()
 
 
 def test_word2id():
@@ -74,6 +76,7 @@ def test_word2id():
     params()
     os.unlink(fname)
     os.unlink('params.gz')
+    default_nargs()
 
 
 def test_json():
@@ -94,6 +97,7 @@ def test_json():
     os.unlink(fname)
     print(open('output.evodag').read())
     os.unlink('output.evodag')
+    default_nargs()
 
 
 def test_params():
@@ -116,6 +120,7 @@ def test_params():
     os.unlink('cache.evodag.gz')
     assert len(a) == len([x for x in a if 'fitness' in x])
     print(a)
+    default_nargs()
 
 
 def test_parameters_values():
@@ -135,6 +140,7 @@ def test_parameters_values():
         pass
     os.unlink('p.conf')
     os.unlink(fname)
+    default_nargs()
 
 
 def test_train():
@@ -204,6 +210,7 @@ def test_generational():
     assert a['population_class'] == 'Generational'
     os.unlink('cache.evodag.gz')
     print(a)
+    default_nargs()
 
 
 def test_all_inputs():
@@ -216,6 +223,7 @@ def test_all_inputs():
     c = CommandLineParams()
     c.parse_args()
     os.unlink('cache.evodag.gz')
+    default_nargs()
 
 
 def test_time_limit():
@@ -264,6 +272,7 @@ def test_word2id2():
     assert len(c.word2id) == 0
     os.unlink('cache.evodag')
     os.unlink(fname)
+    default_nargs()
 
 
 def test_decision_function():
@@ -305,6 +314,7 @@ def test_random_generations():
         a = json.loads(fpt.read())[0]
     assert 'random_generations' in a
     os.unlink('cache.evodag')
+    default_nargs()
 
 
 def test_predict_cpu():
@@ -347,6 +357,7 @@ def test_classifier_params():
     assert 'classifier' in a
     assert a['classifier']
     os.unlink('cache.evodag')
+    default_nargs()
 
 
 def test_regressor_params():
@@ -366,6 +377,7 @@ def test_regressor_params():
     assert a['popsize'] == 3
     assert a['early_stopping_rounds'] == 1
     os.unlink('cache.evodag')
+    default_nargs()
     
 
 def test_time():
@@ -387,6 +399,7 @@ def test_time():
     print(a['_time'])
     assert a['_time'] > 0.001
     os.unlink('cache.evodag')
+    default_nargs()
 
 
 def test_utils_graphviz():
@@ -442,6 +455,7 @@ def test_json_gzip():
     os.unlink(fname)
     print(open('output.evodag').read())
     os.unlink('output.evodag')
+    default_nargs()
 
 
 def test_multiple_outputs():
@@ -468,6 +482,7 @@ def test_multiple_outputs():
     d = json.loads(open('output.evodag').read())
     assert d[0]['multiple_outputs']
     os.unlink('output.evodag')
+    default_nargs()
 
 
 def mo_training_set():
@@ -647,3 +662,4 @@ def test_nan():
     from EvoDAG.command_line import CommandLineParams
     c = CommandLineParams()
     assert np.isfinite(c.convert_label('NaN'))
+    default_nargs()

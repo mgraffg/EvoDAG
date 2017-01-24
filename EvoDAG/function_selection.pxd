@@ -1,4 +1,4 @@
-# Copyright 2015 Mario Graff Guerrero
+# Copyright 2017 Mario Graff Guerrero
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,14 @@
 # limitations under the License.
 
 
-from .base import EvoDAG, RGP, RootGP
-__all__ = ["EvoDAG", "RGP", "RootGP"]
-__version__ = '0.5.1'
+from cpython cimport array
+cimport cython
+
+cdef class FunctionSelection:
+    cdef public array.array fitness
+    cdef public array.array times
+    cdef public unsigned int nfunctions
+    cdef public unsigned int tournament_size
+    cpdef int random_function(self) except -1
+    cpdef double avg_fitness(self, Py_ssize_t k)
+    cpdef int tournament(self) except -1

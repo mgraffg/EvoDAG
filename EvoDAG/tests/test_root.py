@@ -247,16 +247,16 @@ def test_best_so_far():
     y[mask] = 1
     y[~mask] = -1
     gp.y = y
-    randint = np.random.randint
-    mock = MagicMock()
-    mock.side_effect = list(range(gp.popsize))
-    np.random.randint = mock
+    # randint = np.random.randint
+    # mock = MagicMock()
+    # mock.side_effect = list(range(gp.popsize))
+    # np.random.randint = mock
     gp.create_population()
     p = gp.population.population
     index = np.argsort([x.fitness for x in p])[-1]
     print(p[index].fitness, gp.population.bsf.fitness)
     assert gp.population.bsf == p[index]
-    np.random.randint = randint
+    # np.random.randint = randint
 
 
 def test_early_stopping():
@@ -492,14 +492,9 @@ def test_random_offspring():
     y[~mask] = -1
     gp.y = y
     gp.create_population()
-    randint = np.random.randint
-    mock = MagicMock(return_value=0)
-    np.random.randint = mock
     a = gp.random_offspring()
-    np.random.randint.assert_called_with(len(gp.function_set))
     assert isinstance(a, Add)
     assert np.isfinite(a.fitness)
-    np.random.randint = randint
 
 
 def test_replace_individual():
@@ -958,7 +953,7 @@ def test_replace_population_previous_estopping():
     gp.create_population()
     gp.unfeasible_offspring()
     es = gp.population.estopping
-    for i in range(10):
+    for i in range(20):
         n = gp.random_offspring()
         if n.fitness_vs > es.fitness_vs:
             break
@@ -984,11 +979,12 @@ def test_add():
     gp.create_population()
     gp.unfeasible_offspring()
     es = gp.population.estopping
-    for i in range(10):
+    for i in range(20):
         n = gp.random_offspring()
         if n.fitness_vs > es.fitness_vs:
             break
     gp.add(n)
+    print(gp._unfeasible_counter)
     assert gp._unfeasible_counter == 0
 
 
@@ -1165,22 +1161,26 @@ def test_classification_mo2():
     assert len(m.decision_function(X)) == 3
 
 
-def test_regression_mo():
+def test_function_selection():
     from EvoDAG import EvoDAG
+    from EvoDAG.node import Add, Min, Max
     y = cl.copy()
-    gp = EvoDAG(generations=np.inf, tournament_size=2,
-                early_stopping_rounds=10, time_limit=0.9,
-                multiple_outputs=True, all_inputs=True, seed=0,
-                popsize=10000)
-    gp.X = X
-    gp.nclasses(y)
-    y = [SparseArray.fromlist(x) for x in gp.transform_to_mo(y).T]
-    gp = EvoDAG(generations=np.inf, tournament_size=2, classifier=False,
-                early_stopping_rounds=10, time_limit=0.9,
-                multiple_outputs=True, all_inputs=True, seed=0,
-                popsize=10000)
-    gp.X = X
-    gp.y = y
-    assert isinstance(gp._mask, list)
-    gp.create_population()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                function_set=[Add, Min, Max],
+                early_stopping_rounds=100,
+                time_limit=0.9,
+                multiple_outputs=True,
+                seed=0,
+                popsize=100).fit(X, y, test_set=X)
+    assert gp._function_selection
+    for i in range(gp._function_selection.nfunctions):
+        print(gp._function_selection.avg_fitness(i),
+              gp._function_selection.times[i],
+              gp._function_set[i],
+              gp._function_set[i].nargs)
+        assert gp._function_selection.avg_fitness(i) != 0
+    # k = np.argsort(gp._function_selection.fitness)[::-1]
+    # print([gp._function_set[x] for x in k])
+    # assert False
     

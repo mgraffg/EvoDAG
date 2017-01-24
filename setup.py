@@ -30,6 +30,8 @@ with open(join("EvoDAG", "__init__.py"), "w") as fpt:
 
 extension = [Extension('EvoDAG.linalg_solve', ["EvoDAG/linalg_solve.pyx"],
                        include_dirs=[np.get_include()]),
+             Extension('EvoDAG.function_selection', ["EvoDAG/function_selection.pyx"],
+                       include_dirs=[np.get_include()]),
              Extension('EvoDAG.cython_utils', ["EvoDAG/cython_utils.pyx"],
                        include_dirs=[np.get_include()])]
     
@@ -60,7 +62,7 @@ setup(
                                                'nonecheck': False,
                                                'boundscheck': False}),
     
-    package_data={'EvoDAG/conf': ['parameter_values.json']},
+    package_data={'EvoDAG/conf': ['parameter_values.json'], '': ['*.pxd']},
     install_requires=['numpy', 'SparseArray'],
     entry_points={
         'console_scripts': ['EvoDAG-params=EvoDAG.command_line:params',

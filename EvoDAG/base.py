@@ -26,6 +26,7 @@ from .model import Model, Models
 from .population import SteadyState
 from .utils import tonparray
 from .cython_utils import fitness_SSE, fitness_SAE
+from .function_selection import FunctionSelection
 import time
 import importlib
 import inspect
@@ -69,6 +70,9 @@ class EvoDAG(object):
         self._labels = labels
         self._multiclass = False
         self._function_set = function_set
+        self._function_selection = FunctionSelection(nfunctions=len(self._function_set),
+                                                     seed=seed,
+                                                     tournament_size=tournament_size)
         self._time_limit = time_limit
         self._init_time = time.time()
         self._random_generations = random_generations
@@ -460,10 +464,13 @@ class EvoDAG(object):
 
     def random_offspring(self):
         "Returns an offspring with the associated weight(s)"
+        function_set = self.function_set
+        function_selection = self._function_selection
         for i in range(self._number_tries_feasible_ind):
             # self._logger.debug('Init random offspring %s' % i)
-            func = self.function_set
-            func = func[np.random.randint(len(func))]
+            # func_index = np.random.randint(len(func))
+            func_index = function_selection.tournament()
+            func = function_set[func_index]
             # self._logger.debug('Func %s' % func)
             args = self.get_args(func)
             if args is None:
@@ -475,6 +482,7 @@ class EvoDAG(object):
             if f is None:
                 # self._logger.debug('Random offspring %s is None' % i)
                 continue
+            function_selection[func_index] = f.fitness
             return f
         raise RuntimeError("Could not find a suitable random offpsring")
 
