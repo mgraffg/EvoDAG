@@ -57,3 +57,10 @@ def test_tournament():
     for i in range(10):
         print(b.avg_fitness(i), -3.2)
         assert_almost_equals(b.avg_fitness(i), -3.2)
+
+
+def test_number_args():
+    for s in range(10):
+        a = FunctionSelection(seed=s, nfunctions=2, nargs=[1, 2])
+        index = a.tournament()
+        assert index == 1

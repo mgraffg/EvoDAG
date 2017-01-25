@@ -19,6 +19,7 @@ cimport cython
 cdef class FunctionSelection:
     cdef public array.array fitness
     cdef public array.array times
+    cdef public array.array nargs
     cdef public unsigned int nfunctions
     cdef public unsigned int tournament_size
     cpdef int random_function(self) except -1

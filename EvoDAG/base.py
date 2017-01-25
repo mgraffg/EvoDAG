@@ -72,7 +72,9 @@ class EvoDAG(object):
         self._function_set = function_set
         self._function_selection = FunctionSelection(nfunctions=len(self._function_set),
                                                      seed=seed,
-                                                     tournament_size=tournament_size)
+                                                     tournament_size=tournament_size,
+                                                     nargs=map(lambda x: x.nargs,
+                                                               function_set))
         self._time_limit = time_limit
         self._init_time = time.time()
         self._random_generations = random_generations

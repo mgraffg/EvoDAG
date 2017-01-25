@@ -16,9 +16,14 @@ from cpython cimport array
 
 
 cdef class FunctionSelection:
-    def __cinit__(self, nfunctions=0, seed=0, tournament_size=2):
+    def __cinit__(self, nfunctions=0, seed=0, tournament_size=2, nargs=None):
+        cdef unsigned int k
         self.fitness = array.clone(array.array('d'), nfunctions, zero=True)
         self.times = array.clone(array.array('I'), nfunctions, zero=True)
+        self.nargs = array.clone(array.array('I'), nfunctions, zero=True)
+        if nargs is not None:
+            for i, k in enumerate(nargs):
+                self.nargs[i] = k
         self.nfunctions = nfunctions
         self.tournament_size = tournament_size
         random.seed(seed)
@@ -39,6 +44,7 @@ cdef class FunctionSelection:
     cpdef int tournament(self) except -1:
         cdef int best, comp
         cdef double best_fit, comp_fit
+        cdef unsigned int *nargs = self.nargs.data.as_uints
         if self.nfunctions == 1:
             return 0
         best = self.random_function()
@@ -51,4 +57,7 @@ cdef class FunctionSelection:
             if comp_fit > best_fit:
                 best_fit = comp_fit
                 best = comp
+            elif comp_fit == best_fit and nargs[comp] > nargs[best]:
+                best_fit = comp_fit
+                best = comp                
         return best
