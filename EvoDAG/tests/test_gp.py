@@ -14,6 +14,7 @@
 
 
 from test_root import X
+from test_command_line import default_nargs
 from EvoDAG.utils import tonparray
 from EvoDAG.model import Model
 from EvoDAG.node import Variable, Add, Mul, Sin
@@ -50,7 +51,8 @@ def test_indindividual_decision_function():
     # assert v.hy.SSE(v.hy_test) == 0
     hy = tonparray(ind._ind[0].hy)
     [assert_almost_equals(a, b) for a, b in zip(hy, y)]
-    
+    default_nargs()
+
 
 def test_gp_population_full():
     Add.nargs = 2
@@ -83,6 +85,7 @@ def test_gp_population_full():
     print(X.shape, ind.individual)
     hy = ind.decision_function(X)
     assert hy.isfinite()
+    default_nargs()
 
 
 def test_gp_population_grow():
@@ -124,6 +127,7 @@ def test_gp_population_grow():
     print(X.shape, ind.individual)
     hy = ind.decision_function(X)
     assert hy.isfinite()
+    default_nargs()
 
 
 def test_gp_create_population():
@@ -132,7 +136,9 @@ def test_gp_create_population():
     from EvoDAG.gp import Population
     from EvoDAG import EvoDAG
     fs = EvoDAG()._function_set
+    print([(x, x.nargs) for x in fs])
     pop = Population(fs, nterminals=X.shape[1])
     inds = pop.create_population(X=X)
     for i in inds:
         assert i[0].hy.isfinite()
+    default_nargs()

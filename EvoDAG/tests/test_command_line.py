@@ -18,9 +18,19 @@ from test_root import X, cl
 
 
 def default_nargs():
-    from EvoDAG.node import Add, Mul, Max, Min
-    for f in [Add, Mul, Max, Min]:
+    from EvoDAG.node import Add, Mul, Div, Min, Max, Atan2, Hypot
+    from EvoDAG.node import Fabs, Exp, Sqrt, Sin, Cos, Log1p,\
+        Sq, Acos, Asin, Atan,\
+        Tan, Cosh, Sinh, Tanh, Acosh, Asinh, Atanh,\
+        Expm1, Log, Log2, Log10, Lgamma, Sign, Ceil, Floor
+    for f in [Add, Mul, Div, Min, Max, Atan2, Hypot]:
         f.nargs = 2
+    for f in [Fabs, Exp, Sqrt, Sin, Cos, Log1p,
+              Sq, Acos, Asin, Atan,
+              Tan, Cosh, Sinh, Tanh, Acosh, Asinh, Atanh,
+              Expm1, Log, Log2, Log10, Lgamma, Sign,
+              Ceil, Floor]:
+        f.nargs = 1
 
 
 def training_set():

@@ -480,8 +480,9 @@ def test_tournament_negative():
 
 def test_random_offspring():
     from EvoDAG import RootGP
-    from EvoDAG.node import Add
+    from EvoDAG.node import Add, Sin
     gp = RootGP(generations=1,
+                function_set=[Add, Sin],
                 seed=1,
                 tournament_size=2,
                 popsize=10)
@@ -493,7 +494,7 @@ def test_random_offspring():
     gp.y = y
     gp.create_population()
     a = gp.random_offspring()
-    assert isinstance(a, Add)
+    assert isinstance(a, Add) or isinstance(a, Sin)
     assert np.isfinite(a.fitness)
 
 
