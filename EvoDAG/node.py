@@ -617,3 +617,43 @@ class Max(Function1):
             if hyt is not None:
                 hr = self.cummax(hyt)
         return r, hr
+
+
+class Argmax(Function1):
+    nargs = 2
+    symbol = 'argmax'
+    color = 8
+    unique_args = True
+    min_nargs = 2
+    density_safe = True
+
+    @staticmethod
+    def argop(r):
+        return SparseArray.argmax(r)
+
+    def raw_outputs(self, X):
+        X = [X[x] for x in self.variable]
+        hy, hyt = self.hy2listM(X)
+        hr = None
+        if self._multiple_outputs:
+            r = [self.argop(x) for x in hy]
+            if hyt is not None:
+                hr = [self.argop(x) for x in hyt]
+        else:
+            r = self.argop(hy)
+            if hyt is not None:
+                hr = self.argop(hyt)
+        return r, hr
+
+
+class Argmin(Argmax):
+    nargs = 2
+    symbol = 'argmin'
+    color = 8
+    unique_args = True
+    min_nargs = 2
+    density_safe = True
+
+    @staticmethod
+    def argop(r):
+        return SparseArray.argmin(r)

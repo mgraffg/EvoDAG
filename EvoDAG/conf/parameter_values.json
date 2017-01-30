@@ -169,6 +169,26 @@
     25,
     30
   ],
+  "Argmax": [
+    0,
+    2,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30
+  ],
+  "Argmin": [
+    0,
+    2,
+    5,
+    10,
+    15,
+    20,
+    25,
+    30
+  ],    
   "population_class": [
     "SteadyState",
     "Generational"

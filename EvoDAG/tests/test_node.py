@@ -360,7 +360,8 @@ def test_one_multiple_output():
 
 def test_functions_w_multiple_output():
     from EvoDAG.node import Variable, Mul, Div, Min, Max, Atan2, Hypot
-    for ff in [Mul, Div, Min, Max, Atan2, Hypot]:
+    from EvoDAG.node import Argmax, Argmin
+    for ff in [Mul, Div, Min, Max, Atan2, Hypot, Argmax, Argmin]:
         for flag in [False, True]:
             gp, args = create_problem_node(nargs=4, seed=0)
             if flag:

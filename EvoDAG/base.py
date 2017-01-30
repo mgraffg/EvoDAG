@@ -18,7 +18,7 @@ import logging
 from SparseArray import SparseArray
 from .node import Variable
 from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Log1p
-from .node import Sq, Min, Max
+from .node import Sq, Min, Max, Argmin, Argmax
 from .node import Atan2, Hypot, Acos, Asin, Atan, Tan, Cosh, Sinh
 from .node import Tanh, Acosh, Asinh, Atanh, Expm1, Log, Log2, Log10
 from .node import Lgamma, Sign, Ceil, Floor
@@ -38,7 +38,8 @@ class EvoDAG(object):
                  early_stopping_rounds=-1,
                  function_set=[Add, Mul, Div, Fabs,
                                Exp, Sqrt, Sin, Cos, Log1p,
-                               Sq, Min, Max, Atan2, Hypot, Acos, Asin, Atan,
+                               Sq, Min, Max, Argmin, Argmax,
+                               Atan2, Hypot, Acos, Asin, Atan,
                                Tan, Cosh, Sinh, Tanh, Acosh, Asinh, Atanh,
                                Expm1, Log, Log2, Log10, Lgamma, Sign,
                                Ceil, Floor],
