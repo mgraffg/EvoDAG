@@ -1184,4 +1184,44 @@ def test_function_selection():
     # k = np.argsort(gp._function_selection.fitness)[::-1]
     # print([gp._function_set[x] for x in k])
     # assert False
-    
+
+
+def test_multiple_outputs_mask():
+    from EvoDAG import EvoDAG
+    from EvoDAG.node import Add, Min, Max
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                function_set=[Add, Min, Max],
+                early_stopping_rounds=100,
+                time_limit=0.9,
+                multiple_outputs=True,
+                seed=0,
+                popsize=100)
+    gp.X = X[:-1]
+    gp.nclasses(y[:-1])
+    gp.y = y[:-1]
+    assert gp._mask_vs.sum() == 27
+
+
+def test_multiple_outputs_BER_vs():
+    from EvoDAG import EvoDAG
+    from EvoDAG.node import Add, Min, Max
+    from EvoDAG.utils import BER
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                function_set=[Add, Min, Max],
+                early_stopping_rounds=100,
+                time_limit=0.9,
+                multiple_outputs=True,
+                seed=0,
+                popsize=100)
+    gp.X = X[:-1]
+    gp.nclasses(y[:-1])
+    gp.y = y[:-1]
+    gp.create_population()
+    a = gp.random_offspring()
+    hy = np.array(SparseArray.argmax(a.hy).full_array())
+    mask = np.array(gp._mask_vs.full_array()).astype(np.bool)
+    assert_almost_equals(a.fitness_vs * 100, BER(y[:-1][mask], hy[mask]))

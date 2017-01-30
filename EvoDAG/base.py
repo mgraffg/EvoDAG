@@ -155,7 +155,7 @@ class EvoDAG(object):
         """Dependent variable"""
         return self._y
 
-    def set_classifier_mask(self, v):
+    def set_classifier_mask(self, v, base_mask=True):
         """Computes the mask used to create the training and validation set"""
         v = tonparray(v)
         a = np.unique(v)
@@ -165,7 +165,7 @@ class EvoDAG(object):
         cnt = min([(v == x).sum() for x in a]) * self._tr_fraction
         cnt = int(round(cnt))
         for i in a:
-            index = np.where(v == i)[0]
+            index = np.where((v == i) & base_mask)[0]
             np.random.shuffle(index)
             mask[index[:cnt]] = True
         self._mask = SparseArray.fromlist(mask)
@@ -215,6 +215,19 @@ class EvoDAG(object):
             y[mask, i] = 1
         return y
 
+    def mask_BER(self, k):
+        k = k.argmax(axis=1)
+        self._y_vs = SparseArray.fromlist(k)
+        klass = np.unique(k)
+        cnt = np.min([(k == x).sum() for x in klass]) * (1 - self._tr_fraction)
+        cnt = int(np.floor(cnt))
+        mask = np.ones_like(k, dtype=np.bool)
+        for i in klass:
+            index = np.where(k == i)[0]
+            np.random.shuffle(index)
+            mask[index[:cnt]] = False
+        return mask
+
     def multiple_outputs_cl(self, v):
         if isinstance(v, list):
             assert len(v) == self._labels.shape[0]
@@ -222,23 +235,21 @@ class EvoDAG(object):
         else:
             v = tonparray(v)
             v = self.transform_to_mo(v)
+        base_mask = self.mask_BER(v)
         mask = []
-        mask_vs = []
         ytr = []
         y = []
         for _v in v.T:
             _v = SparseArray.fromlist(_v)
-            self.set_classifier_mask(_v)
+            self.set_classifier_mask(_v, base_mask)
             mask.append(self._mask)
             ytr.append(_v * self._mask)
             y.append(_v)
             self._y = _v
-            self.mask_vs()
-            mask_vs.append(self._mask_vs)
         self._ytr = ytr
         self._y = y
         self._mask = mask
-        self._mask_vs = mask_vs
+        self._mask_vs = SparseArray.fromlist(~base_mask)
 
     def multiple_outputs_regression(self, v):
         assert isinstance(v, list)
@@ -343,9 +354,11 @@ class EvoDAG(object):
         In classification it uses BER and RSE in regression"""
         if self._classifier:
             if self._multiple_outputs:
-                f = [-((y - hy.sign()).sign().fabs() * mask_vs).sum() for
-                     y, hy, mask_vs in zip(self.y, v.hy, self._mask_vs)]
-                v.fitness_vs = np.mean(f)
+                hy = SparseArray.argmax(v.hy)
+                v.fitness_vs = ((self._y_vs - hy) * self._mask_vs).sign().fabs().sum() / self._mask_vs.sum()
+                # f = [-((y - hy.sign()).sign().fabs() * mask_vs).sum() for
+                #      y, hy, mask_vs in zip(self.y, v.hy, self._mask_vs)]
+                # v.fitness_vs = np.mean(f)
             else:
                 v.fitness_vs = -((self.y - v.hy.sign()).sign().fabs() *
                                  self._mask_vs).sum()
