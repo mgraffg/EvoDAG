@@ -355,7 +355,7 @@ class EvoDAG(object):
         if self._classifier:
             if self._multiple_outputs:
                 hy = SparseArray.argmax(v.hy)
-                v.fitness_vs = ((self._y_vs - hy) * self._mask_vs).sign().fabs().sum() / self._mask_vs.sum()
+                v.fitness_vs = -((self._y_vs - hy) * self._mask_vs).sign().fabs().sum() / self._mask_vs.sum()
                 # f = [-((y - hy.sign()).sign().fabs() * mask_vs).sum() for
                 #      y, hy, mask_vs in zip(self.y, v.hy, self._mask_vs)]
                 # v.fitness_vs = np.mean(f)

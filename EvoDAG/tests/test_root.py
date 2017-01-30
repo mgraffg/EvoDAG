@@ -1224,4 +1224,4 @@ def test_multiple_outputs_BER_vs():
     a = gp.random_offspring()
     hy = np.array(SparseArray.argmax(a.hy).full_array())
     mask = np.array(gp._mask_vs.full_array()).astype(np.bool)
-    assert_almost_equals(a.fitness_vs * 100, BER(y[:-1][mask], hy[mask]))
+    assert_almost_equals(-a.fitness_vs * 100, BER(y[:-1][mask], hy[mask]))
