@@ -34,26 +34,19 @@ import inspect
 
 class EvoDAG(object):
     def __init__(self, generations=np.inf, popsize=10000,
-                 seed=0,
-                 tournament_size=2,
+                 seed=0, tournament_size=2,
                  early_stopping_rounds=-1,
                  function_set=[Add, Mul, Div, Fabs,
                                Exp, Sqrt, Sin, Cos, Log1p,
-                               Sq, Min, Max,
-                               Atan2, Hypot, Acos, Asin, Atan,
+                               Sq, Min, Max, Atan2, Hypot, Acos, Asin, Atan,
                                Tan, Cosh, Sinh, Tanh, Acosh, Asinh, Atanh,
                                Expm1, Log, Log2, Log10, Lgamma, Sign,
                                Ceil, Floor],
-                 tr_fraction=0.8,
-                 population_class=SteadyState,
-                 number_tries_feasible_ind=30,
-                 time_limit=None,
-                 unique_individuals=True,
-                 classifier=True,
-                 labels=None, all_inputs=False,
-                 random_generations=0,
-                 multiple_outputs=False,
-                 **kwargs):
+                 tr_fraction=0.8, population_class=SteadyState,
+                 number_tries_feasible_ind=30, time_limit=None,
+                 unique_individuals=True, classifier=True,
+                 labels=None, all_inputs=False, random_generations=0,
+                 multiple_outputs=False, **kwargs):
         generations = np.inf if generations is None else generations
         self._generations = generations
         self._popsize = popsize
