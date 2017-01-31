@@ -14,13 +14,17 @@
 
 
 from SparseArray.sparse_array cimport SparseArray
+from cpython.list cimport PyList_GET_SIZE, PyList_GET_ITEM
 
 
-cpdef double fitness_SSE(list _ytr, list _hy, list _mask):
+cpdef double fitness_SSE(list _ytr, list _hy, SparseArray _mask):
     cdef SparseArray ytr, hy, mask
     cdef double res = 0
-    for ytr, hy, mask in zip(_ytr, _hy, _mask):
-        res += -ytr.SSE(hy.mul(mask))
+    cdef Py_ssize_t i
+    for i in range(PyList_GET_SIZE(_ytr)):
+        ytr = <SparseArray> PyList_GET_ITEM(_ytr, i)
+        hy = <SparseArray> PyList_GET_ITEM(_hy, i)
+        res += -ytr.SSE(hy.mul(_mask))
     return res / len(_ytr)
 
 

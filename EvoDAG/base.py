@@ -250,6 +250,7 @@ class EvoDAG(object):
         self._y = y
         self._mask = mask
         self._mask_vs = SparseArray.fromlist(~base_mask)
+        self._mask_ts = SparseArray.fromlist(base_mask)
 
     def multiple_outputs_regression(self, v):
         assert isinstance(v, list)
@@ -317,7 +318,7 @@ class EvoDAG(object):
         "Fitness function in the training set"
         if self._classifier:
             if self._multiple_outputs:
-                v.fitness = fitness_SSE(self._ytr, v.hy, self._mask)
+                v.fitness = fitness_SSE(self._ytr, v.hy, self._mask_ts)
             else:
                 v.fitness = -self._ytr.SSE(v.hy * self._mask)
         else:
