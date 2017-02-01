@@ -1174,16 +1174,9 @@ def test_function_selection():
                 multiple_outputs=True,
                 seed=0,
                 popsize=100).fit(X, y, test_set=X)
-    assert gp._function_selection
-    for i in range(gp._function_selection.nfunctions):
-        print(gp._function_selection.avg_fitness(i),
-              gp._function_selection.times[i],
-              gp._function_set[i],
-              gp._function_set[i].nargs)
-        assert gp._function_selection.avg_fitness(i) != 0
-    # k = np.argsort(gp._function_selection.fitness)[::-1]
-    # print([gp._function_set[x] for x in k])
-    # assert False
+    assert gp._function_selection_ins
+    for i in range(gp._function_selection_ins.nfunctions):
+        assert gp._function_selection_ins.avg_fitness(i) != 0
 
 
 def test_multiple_outputs_mask():

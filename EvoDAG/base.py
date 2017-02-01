@@ -25,7 +25,7 @@ from .node import Lgamma, Sign, Ceil, Floor
 from .model import Model, Models
 from .population import SteadyState
 from .utils import tonparray
-from .cython_utils import fitness_SSE, fitness_SAE
+from .cython_utils import fitness_SAE
 from .function_selection import FunctionSelection
 import time
 import importlib
@@ -47,7 +47,7 @@ class EvoDAG(object):
                  number_tries_feasible_ind=30, time_limit=None,
                  unique_individuals=True, classifier=True,
                  labels=None, all_inputs=False, random_generations=0,
-                 multiple_outputs=False, **kwargs):
+                 multiple_outputs=False, function_selection=True, **kwargs):
         generations = np.inf if generations is None else generations
         self._generations = generations
         self._popsize = popsize
@@ -64,11 +64,12 @@ class EvoDAG(object):
         self._labels = labels
         self._multiclass = False
         self._function_set = function_set
-        self._function_selection = FunctionSelection(nfunctions=len(self._function_set),
-                                                     seed=seed,
-                                                     tournament_size=tournament_size,
-                                                     nargs=map(lambda x: x.nargs,
-                                                               function_set))
+        self._function_selection = function_selection
+        self._function_selection_ins = FunctionSelection(nfunctions=len(self._function_set),
+                                                         seed=seed,
+                                                         tournament_size=tournament_size,
+                                                         nargs=map(lambda x: x.nargs,
+                                                                   function_set))
         self._time_limit = time_limit
         self._init_time = time.time()
         self._random_generations = random_generations
@@ -481,11 +482,14 @@ class EvoDAG(object):
     def random_offspring(self):
         "Returns an offspring with the associated weight(s)"
         function_set = self.function_set
-        function_selection = self._function_selection
+        function_selection = self._function_selection_ins
         for i in range(self._number_tries_feasible_ind):
             # self._logger.debug('Init random offspring %s' % i)
             # func_index = np.random.randint(len(func))
-            func_index = function_selection.tournament()
+            if self._function_selection:
+                func_index = function_selection.tournament()
+            else:
+                func_index = function_selection.random_function()
             func = function_set[func_index]
             # self._logger.debug('Func %s' % func)
             args = self.get_args(func)
