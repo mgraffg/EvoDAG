@@ -1225,3 +1225,28 @@ def test_multiple_outputs_BER_vs():
     hy = np.array(SparseArray.argmax(a.hy).full_array())
     mask = np.array(gp._mask_vs.full_array()).astype(np.bool)
     assert_almost_equals(-a.fitness_vs * 100, BER(y[:-1][mask], hy[mask]))
+
+
+def test_multiple_outputs_BER_ts():
+    from EvoDAG import EvoDAG
+    from EvoDAG.node import Add, Min, Max
+    from EvoDAG.utils import BER
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                function_set=[Add, Min, Max],
+                early_stopping_rounds=100,
+                time_limit=0.9,
+                multiple_outputs=True,
+                seed=0,
+                popsize=100)
+    gp.X = X[:-1]
+    gp.nclasses(y[:-1])
+    gp.y = y[:-1]
+    gp.create_population()
+    a = gp.random_offspring()
+    hys = SparseArray.argmax(a.hy)
+    hy = np.array(hys.full_array())
+    print(((hys - gp._y_klass).sign().fabs() * gp._mask_ts).sum())
+    mask = np.array(gp._mask_ts.full_array()).astype(np.bool)
+    assert_almost_equals(-a.fitness * 100, BER(y[:-1][mask], hy[mask]))

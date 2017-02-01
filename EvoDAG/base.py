@@ -217,15 +217,21 @@ class EvoDAG(object):
 
     def mask_BER(self, k):
         k = k.argmax(axis=1)
-        self._y_vs = SparseArray.fromlist(k)
+        self._y_klass = SparseArray.fromlist(k)
         klass = np.unique(k)
         cnt = np.min([(k == x).sum() for x in klass]) * (1 - self._tr_fraction)
         cnt = int(np.floor(cnt))
+        if cnt == 0:
+            cnt = 1
         mask = np.ones_like(k, dtype=np.bool)
+        mask_ts = np.zeros(k.shape[0])
         for i in klass:
             index = np.where(k == i)[0]
             np.random.shuffle(index)
             mask[index[:cnt]] = False
+            mask_ts[index[cnt:]] = 1.0 / (1.0 * index[cnt:].shape[0] * klass.shape[0])
+        self._mask_vs = SparseArray.fromlist(~mask)
+        self._mask_ts = SparseArray.fromlist(mask_ts)
         return mask
 
     def multiple_outputs_cl(self, v):
@@ -249,8 +255,6 @@ class EvoDAG(object):
         self._ytr = ytr
         self._y = y
         self._mask = mask
-        self._mask_vs = SparseArray.fromlist(~base_mask)
-        self._mask_ts = SparseArray.fromlist(base_mask)
 
     def multiple_outputs_regression(self, v):
         assert isinstance(v, list)
@@ -318,7 +322,9 @@ class EvoDAG(object):
         "Fitness function in the training set"
         if self._classifier:
             if self._multiple_outputs:
-                v.fitness = fitness_SSE(self._ytr, v.hy, self._mask_ts)
+                # v.fitness = fitness_SSE(self._ytr, v.hy, self._mask_ts)
+                hy = SparseArray.argmax(v.hy)
+                v.fitness = -((self._y_klass - hy).sign().fabs() * self._mask_ts).sum()
             else:
                 v.fitness = -self._ytr.SSE(v.hy * self._mask)
         else:
@@ -356,7 +362,7 @@ class EvoDAG(object):
         if self._classifier:
             if self._multiple_outputs:
                 hy = SparseArray.argmax(v.hy)
-                v.fitness_vs = -((self._y_vs - hy) * self._mask_vs).sign().fabs().sum() / self._mask_vs.sum()
+                v.fitness_vs = -((self._y_klass - hy) * self._mask_vs).sign().fabs().sum() / self._mask_vs.sum()
                 # f = [-((y - hy.sign()).sign().fabs() * mask_vs).sum() for
                 #      y, hy, mask_vs in zip(self.y, v.hy, self._mask_vs)]
                 # v.fitness_vs = np.mean(f)
