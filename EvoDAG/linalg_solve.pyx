@@ -19,6 +19,7 @@ from SparseArray.sparse_array cimport SparseArray
 from libc cimport math
 from libc.float cimport DBL_EPSILON
 from cpython cimport array
+from cpython.list cimport PyList_GET_SIZE, PyList_GET_ITEM, PyList_SET_ITEM
 
 
 cdef bint iszero(double x):
@@ -35,61 +36,65 @@ cdef double zero_round(double value):
         
 cdef void swap(list m, Py_ssize_t i):
     cdef double max, comp
-    cdef Py_ssize_t pos=i, size=len(m)
-    cdef array.array data
-    data = m[i]
+    cdef Py_ssize_t pos=i, size=PyList_GET_SIZE(m)
+    cdef array.array data, tmp
+    # data = m[i]
+    data = <array.array> PyList_GET_ITEM(m, i)
     max = math.fabs(data.data.as_doubles[i])
     for j in range(i+1, size):
-        data = m[j]
+        # data = m[j]
+        data = <array.array> PyList_GET_ITEM(m, j)
         comp = math.fabs(data.data.as_doubles[i])
         if comp > max:
             max = comp
             pos = j
     if pos == i:
         return
-    data = m[i]
-    m[i] = m[pos]
-    m[pos] = data
+    # data = m[i]
+    data = <array.array> PyList_GET_ITEM(m, i)
+    # m[i] = m[pos]
+    tmp = <array.array> PyList_GET_ITEM(m, pos)
+    PyList_SET_ITEM(m, i, tmp)
+    # m[pos] = data
+    PyList_SET_ITEM(m, pos, data)
     
 
 cdef bint gauss_jordan(list m):
-    cdef Py_ssize_t i, j, k, size=len(m)
+    cdef Py_ssize_t i, j, k, size=PyList_GET_SIZE(m)
     cdef array.array data, below
     cdef double c, tmp, c_den
     cdef double *data_values, *below_values
     for i in range(size):
         swap(m, i)
-        data = m[i]
+        # data = m[i]
+        data = <array.array> PyList_GET_ITEM(m, i)
         data_values = data.data.as_doubles
         c_den = data_values[i]
         if iszero(c_den):
             return True
         for j in range(i+1, size):
-            below = m[j]
+            # below = m[j]
+            below = <array.array> PyList_GET_ITEM(m, j)
             below_values = below.data.as_doubles
             c = below_values[i] / c_den
             for k in range(i, size+1):
                 tmp = below_values[k] - data_values[k] * c
                 below_values[k] = tmp
     for i in range(size-1, -1, -1):
-        data = m[i]
+        # data = m[i]
+        data = <array.array> PyList_GET_ITEM(m, i)
         data_values = data.data.as_doubles
         c = data_values[i]
         if iszero(c):
             return True
         for j in range(0, i):
-            below = m[j]
+            # below = m[j]
+            below = <array.array> PyList_GET_ITEM(m, j)
             below_values = below.data.as_doubles
             k = size
             tmp = below_values[k] - data_values[k] *\
                   below_values[i] / c
             below_values[k] = zero_round(tmp)
-            # for k in range(size, i-1, -1):
-            #     tmp = below_values[k] - data_values[k] *\
-            #           below_values[i] / c
-            #     below_values[k] = zero_round(tmp)
-        # tmp = data_values[i] / c
-        # data_values[i] = zero_round(tmp)
         tmp = data_values[size] / c
         if not math.isfinite(tmp):
             return True
