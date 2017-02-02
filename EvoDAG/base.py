@@ -453,18 +453,22 @@ class EvoDAG(object):
         return f
 
     def get_unique_args(self, func):
-        args = []
+        args = {}
+        res = []
+        p_tournament = self.population.tournament
+        n_tries = self._number_tries_unique_args
         for j in range(func.nargs):
-            k = self.population.tournament()
-            for _ in range(self._number_tries_unique_args):
+            k = p_tournament()
+            for _ in range(n_tries):
                 if k not in args:
-                    args.append(k)
+                    args[k] = 1
+                    res.append(k)
                     break
                 else:
-                    k = self.population.tournament()
-        if len(args) < func.min_nargs:
+                    k = p_tournament()
+        if len(res) < func.min_nargs:
             return None
-        return args
+        return res
 
     def get_args(self, func):
         args = []
