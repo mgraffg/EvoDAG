@@ -191,15 +191,29 @@ class SteadyState(object):
     def random_selection(self, negative=False):
         return np.random.randint(self.popsize)
 
+    def random(self):
+        res = []
+        done = {}
+        randint = np.random.randint
+        popsize = self.popsize
+        for _ in range(self._tournament_size):
+            k = randint(popsize)
+            while k in done:
+                k = randint(popsize)
+            done[k] = 1
+            res.append(k)
+        return res
+
     def tournament(self, negative=False):
         """Tournament selection and when negative is True it performs negative
         tournament selection"""
         if self.generation <= self._random_generations:
             return self.random_selection(negative=negative)
-        if self._index is None or self._index.shape[0] != self.popsize:
-            self._index = np.arange(self.popsize)
-        np.random.shuffle(self._index)
-        vars = self._index[:self._tournament_size]
+        # if self._index is None or self._index.shape[0] != self.popsize:
+        #     self._index = np.arange(self.popsize)
+        # np.random.shuffle(self._index)
+        # vars = self._index[:self._tournament_size]
+        vars = self.random()
         fit = [self.population[x].fitness for x in vars]
         if negative:
             index = np.argsort(fit)[0]
