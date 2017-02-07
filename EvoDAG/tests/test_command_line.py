@@ -225,14 +225,18 @@ def test_generational():
 
 def test_all_inputs():
     import os
+    import json
     from EvoDAG.command_line import CommandLineParams
     fname = training_set()
     sys.argv = ['EvoDAG', '-C', '--parameters',
-                'cache.evodag.gz', '-p3', '-e2',
-                '--all-inputs', '-r', '2', fname]
+                'cache.evodag', '-p3', '-e2',
+                '-r', '2', fname]
     c = CommandLineParams()
     c.parse_args()
-    os.unlink('cache.evodag.gz')
+    with open('cache.evodag') as fpt:
+        a = json.loads(fpt.read())[0]
+    assert 'all_inputs' in a
+    os.unlink('cache.evodag')
     default_nargs()
 
 

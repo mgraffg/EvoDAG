@@ -39,17 +39,15 @@ def test_pickle_model():
 
 
 def test_model_hist():
-    from EvoDAG import RootGP
+    from EvoDAG import EvoDAG
     from EvoDAG.base import Model
     y = cl.copy()
-    mask = y == 0
-    y[mask] = 1
-    y[~mask] = -1
-    gp = RootGP(generations=np.inf,
+    gp = EvoDAG(generations=np.inf,
+                multiple_outputs=True,
                 tournament_size=2,
                 early_stopping_rounds=-1,
                 seed=1,
-                popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
+                popsize=20).fit(X[:-10], y[:-10], test_set=X[-10:])
     hist = gp.population.hist
     trace = gp.trace(gp.population.estopping)
     a = hist[trace[-1]].variable

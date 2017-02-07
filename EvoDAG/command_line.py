@@ -116,9 +116,9 @@ class CommandLine(object):
         pa('--evolution', dest='population_class',
            help="Type of evolution (SteadyState|Generational)",
            type=str)
-        pa('--all-inputs', dest='all_inputs',
-           help="The initial population has all the available inputs ",
-           action="store_true")
+        # pa('--all-inputs', dest='all_inputs',
+        #    help="The initial population has all the available inputs ",
+        #    action="store_true")
         pa('--time-limit', dest='time_limit',
            help='Time limit in seconds', type=int)
         pa('--random-generations', dest='random_generations',
