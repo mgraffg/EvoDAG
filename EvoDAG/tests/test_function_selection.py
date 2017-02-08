@@ -64,3 +64,19 @@ def test_number_args():
         a = FunctionSelection(seed=s, nfunctions=2, nargs=[1, 2])
         index = a.tournament()
         assert index == 1
+
+
+def test_density():
+    a = FunctionSelection(seed=0, nfunctions=3, nargs=[1, 2, 2], density_safe=[1, 2])
+    assert a.min_density == 0 and a.density == 1.0
+    a.min_density = 0.9
+    a.density = 0.7
+    for i in range(10):
+        index = a.tournament()
+        assert index == 1 or index == 2
+    a = FunctionSelection(seed=0, nfunctions=2, nargs=[1, 2], density_safe=[1])
+    assert a.min_density == 0 and a.density == 1.0
+    a.min_density = 0.9
+    a.density = 0.7
+    index = a.tournament()
+    assert index == 1

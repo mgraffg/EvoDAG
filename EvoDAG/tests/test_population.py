@@ -169,3 +169,28 @@ def test_clean():
             elif i in pop:
                 assert i.hy is not None
         assert gp.population.estopping.hy is not None
+
+
+def test_density():
+    from EvoDAG import EvoDAG
+    Xc = X.copy()
+    Xc[0, 0] = 0
+    Xc[1, 1] = 0
+    y = cl.copy()
+    y[y != 1] = -1
+    for pc in ['Generational', 'SteadyState']:
+        gp = EvoDAG(population_class=pc,
+                    popsize=5)
+        gp.X = Xc
+        gp.y = y
+        gp.create_population()
+        d = sum([x.hy.density for x in gp.population.population]) / gp.popsize
+        print(d, gp.population.density, 'pop')
+        assert gp.population.density == d
+        for _ in range(3):
+            a = gp.random_offspring()
+            print(a.hy.density)
+            gp.replace(a)
+            d = sum([x.hy.density for x in gp.population.population]) / gp.popsize
+            print(d, gp.population.density, 'replace')
+            assert gp.population.density == d

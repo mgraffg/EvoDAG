@@ -47,7 +47,7 @@ class EvoDAG(object):
                  number_tries_feasible_ind=30, time_limit=None,
                  unique_individuals=True, classifier=True,
                  labels=None, all_inputs=False, random_generations=0,
-                 multiple_outputs=False, function_selection=True, **kwargs):
+                 min_density=0.8, multiple_outputs=False, function_selection=True, **kwargs):
         generations = np.inf if generations is None else generations
         self._generations = generations
         self._popsize = popsize
@@ -65,11 +65,15 @@ class EvoDAG(object):
         self._multiclass = False
         self._function_set = function_set
         self._function_selection = function_selection
+        density_safe = [k for k, v in enumerate(function_set) if v.density_safe]
         self._function_selection_ins = FunctionSelection(nfunctions=len(self._function_set),
                                                          seed=seed,
                                                          tournament_size=tournament_size,
                                                          nargs=map(lambda x: x.nargs,
-                                                                   function_set))
+                                                                   function_set),
+                                                         density_safe=density_safe)
+        self._min_density = min_density
+        self._function_selection_ins.min_density = self._min_density
         self._time_limit = time_limit
         self._init_time = time.time()
         self._random_generations = random_generations
@@ -488,24 +492,19 @@ class EvoDAG(object):
         "Returns an offspring with the associated weight(s)"
         function_set = self.function_set
         function_selection = self._function_selection_ins
+        function_selection.density = self.population.density
         for i in range(self._number_tries_feasible_ind):
-            # self._logger.debug('Init random offspring %s' % i)
-            # func_index = np.random.randint(len(func))
             if self._function_selection:
                 func_index = function_selection.tournament()
             else:
                 func_index = function_selection.random_function()
             func = function_set[func_index]
-            # self._logger.debug('Func %s' % func)
             args = self.get_args(func)
             if args is None:
                 continue
-            # print(args)
-            # self._logger.debug('Args %s' % args)
             args = [self.population.population[x].position for x in args]
             f = self._random_offspring(func, args)
             if f is None:
-                # self._logger.debug('Random offspring %s is None' % i)
                 continue
             function_selection[func_index] = f.fitness
             return f

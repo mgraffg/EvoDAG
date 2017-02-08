@@ -20,8 +20,13 @@ cdef class FunctionSelection:
     cdef public array.array fitness
     cdef public array.array times
     cdef public array.array nargs
+    cdef public array.array density_safe
     cdef public unsigned int nfunctions
+    cdef public unsigned int density_safe_size
     cdef public unsigned int tournament_size
+    cdef public float density
+    cdef public float min_density
     cpdef int random_function(self) except -1
     cpdef double avg_fitness(self, Py_ssize_t k)
     cpdef int tournament(self) except -1
+    cpdef bint comparison(self, int best, int comp)

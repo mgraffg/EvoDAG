@@ -41,6 +41,17 @@ class SteadyState(object):
         self._inds_replace = 0
         self.generation = 1
         self._random_generations = random_generations
+        self._density = 0.0
+
+    @property
+    def density(self):
+        return self._density / self.popsize
+
+    def get_density(self, v):
+        try:
+            return v.hy.density
+        except AttributeError:
+            return sum([x.density for x in v.hy]) / len(v.hy)
 
     @property
     def previous_estopping(self):
@@ -149,8 +160,10 @@ class SteadyState(object):
         self._hist.append(v)
         self.bsf = v
         self.estopping = v
+        self._density += self.get_density(v)
 
     def clean(self, v):
+        self._density -= self.get_density(v)
         if self.estopping is not None and v == self.estopping:
             return
         v.y = None
@@ -169,6 +182,7 @@ class SteadyState(object):
         self.bsf = v
         self.estopping = v
         self._inds_replace += 1
+        self._density += self.get_density(v)
         if self._inds_replace == self._popsize:
             self._inds_replace = 0
             self.generation += 1
@@ -209,10 +223,6 @@ class SteadyState(object):
         tournament selection"""
         if self.generation <= self._random_generations:
             return self.random_selection(negative=negative)
-        # if self._index is None or self._index.shape[0] != self.popsize:
-        #     self._index = np.arange(self.popsize)
-        # np.random.shuffle(self._index)
-        # vars = self._index[:self._tournament_size]
         vars = self.random()
         fit = [self.population[x].fitness for x in vars]
         if negative:

@@ -16,7 +16,8 @@ from cpython cimport array
 
 
 cdef class FunctionSelection:
-    def __cinit__(self, nfunctions=0, seed=0, tournament_size=2, nargs=None):
+    def __cinit__(self, nfunctions=0, seed=0, tournament_size=2,
+                  nargs=None, density_safe=None):
         cdef unsigned int k
         self.fitness = array.clone(array.array('d'), nfunctions, zero=True)
         self.times = array.clone(array.array('I'), nfunctions, zero=True)
@@ -24,8 +25,15 @@ cdef class FunctionSelection:
         if nargs is not None:
             for i, k in enumerate(nargs):
                 self.nargs[i] = k
+        if density_safe is not None:
+            self.density_safe_size = len(density_safe)
+            self.density_safe = array.clone(array.array('I'), self.density_safe_size, zero=False)
+            for k, d in enumerate(density_safe):
+                self.density_safe[k] = d
         self.nfunctions = nfunctions
         self.tournament_size = tournament_size
+        self.min_density = 0.0
+        self.density = 1.0
         random.seed(seed)
 
     def __setitem__(self, k, v):
@@ -33,6 +41,10 @@ cdef class FunctionSelection:
         self.times[k] += 1
 
     cpdef int random_function(self) except -1:
+        cdef int value
+        if self.density < self.min_density and self.density_safe_size > 0:
+            value = random.randrange(0, self.density_safe_size)
+            return self.density_safe[value]
         return random.randrange(0, self.nfunctions)
 
     cpdef double avg_fitness(self, Py_ssize_t x):
@@ -40,6 +52,13 @@ cdef class FunctionSelection:
         if _times == 0:
             return 0.0
         return self.fitness[x] / _times
+
+    cpdef bint comparison(self, int best, int comp):
+        if best == comp:
+            if self.density < self.min_density and self.density_safe_size == 1:
+                return False
+            return True
+        return False
 
     cpdef int tournament(self) except -1:
         cdef int best, comp
@@ -51,7 +70,7 @@ cdef class FunctionSelection:
         best_fit = self.avg_fitness(best)
         for i in range(1, self.tournament_size):
             comp = self.random_function()
-            while comp == best:
+            while self.comparison(best, comp):
                 comp = self.random_function()
             comp_fit = self.avg_fitness(comp)
             if comp_fit > best_fit:
