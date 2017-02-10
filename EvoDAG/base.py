@@ -327,7 +327,6 @@ class EvoDAG(object):
         "Fitness function in the training set"
         if self._classifier:
             if self._multiple_outputs:
-                # v.fitness = fitness_SSE(self._ytr, v.hy, self._mask_ts)
                 hy = SparseArray.argmax(v.hy)
                 v._error = (self._y_klass - hy).sign().fabs()
                 v.fitness = -(v._error * self._mask_ts).sum()
@@ -367,11 +366,7 @@ class EvoDAG(object):
         In classification it uses BER and RSE in regression"""
         if self._classifier:
             if self._multiple_outputs:
-                # hy = SparseArray.argmax(v.hy)
                 v.fitness_vs = -(v._error * self._mask_vs).sum() / self._mask_vs.sum()
-                # f = [-((y - hy.sign()).sign().fabs() * mask_vs).sum() for
-                #      y, hy, mask_vs in zip(self.y, v.hy, self._mask_vs)]
-                # v.fitness_vs = np.mean(f)
             else:
                 v.fitness_vs = -((self.y - v.hy.sign()).sign().fabs() *
                                  self._mask_vs).sum()
@@ -524,16 +519,25 @@ class EvoDAG(object):
                                          popsize=self._popsize,
                                          random_generations=self._random_generations)
 
+    def del_error(self, v):
+        try:
+            delattr(v, '_error')
+        except AttributeError:
+            pass
+
     def set_fitness(self, v):
         """Set the fitness to a new node.
         Returns false in case fitness is not finite"""
         self.fitness(v)
         if not np.isfinite(v.fitness):
+            self.del_error(v)
             return False
         if self._tr_fraction < 1:
             self.fitness_vs(v)
             if not np.isfinite(v.fitness_vs):
+                self.del_error(v)
                 return False
+        self.del_error(v)
         return True
 
     @property
