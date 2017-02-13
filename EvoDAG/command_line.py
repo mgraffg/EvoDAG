@@ -549,7 +549,14 @@ class CommandLineUtils(CommandLine):
         self.params_stats()
         self.output_file()
         self.fitness()
+        self.size()
         self.version()
+
+    def size(self):
+        self.parser.add_argument('--size',
+                                 help='Model size',
+                                 dest='size',
+                                 default=False, action='store_true')
 
     def fitness(self):
         self.parser.add_argument('--fitness',
@@ -636,6 +643,12 @@ class CommandLineUtils(CommandLine):
                 self.word2id = pickle.load(fpt)
                 self.label2id = pickle.load(fpt)
             print("Median fitness: %0.4f" % (m.fitness_vs * -1))
+        elif self.data.size:
+            with gzip.open(model_file, 'r') as fpt:
+                m = pickle.load(fpt)
+                self.word2id = pickle.load(fpt)
+                self.label2id = pickle.load(fpt)
+            print("Size: %s" % m.size)
 
 
 def params():

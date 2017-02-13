@@ -18,7 +18,7 @@ import logging
 from SparseArray import SparseArray
 from .node import Variable
 from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Log1p
-from .node import Sq, Min, Max, Argmin, Argmax
+from .node import Sq, Min, Max
 from .node import Atan2, Hypot, Acos, Asin, Atan, Tan, Cosh, Sinh
 from .node import Tanh, Acosh, Asinh, Atanh, Expm1, Log, Log2, Log10
 from .node import Lgamma, Sign, Ceil, Floor
