@@ -38,17 +38,17 @@ class EvoDAG(object):
                  early_stopping_rounds=-1,
                  function_set=[Add, Mul, Div, Fabs,
                                Exp, Sqrt, Sin, Cos, Log1p,
-                               Sq, Min, Max, Argmin, Argmax,
-                               Atan2, Hypot, Acos, Asin, Atan,
+                               Sq, Min, Max, Atan2, Hypot, Acos, Asin, Atan,
                                Tan, Cosh, Sinh, Tanh, Acosh, Asinh, Atanh,
                                Expm1, Log, Log2, Log10, Lgamma, Sign,
                                Ceil, Floor],
                  tr_fraction=0.8, population_class=SteadyState,
                  number_tries_feasible_ind=30, time_limit=None,
                  unique_individuals=True, classifier=True,
-                 labels=None, all_inputs=False, random_generations=0,
+                 labels=None, all_inputs=False, random_generations=0, fitness_function='BER',
                  min_density=0.8, multiple_outputs=False, function_selection=True, **kwargs):
         generations = np.inf if generations is None else generations
+        self._fitness_function = fitness_function
         self._generations = generations
         self._popsize = popsize
         self._classifier = classifier
@@ -220,7 +220,7 @@ class EvoDAG(object):
             y[mask, i] = 1
         return y
 
-    def mask_BER(self, k):
+    def mask_fitness_BER(self, k):
         k = k.argmax(axis=1)
         self._y_klass = SparseArray.fromlist(k)
         klass = np.unique(k)
@@ -239,6 +239,27 @@ class EvoDAG(object):
         self._mask_ts = SparseArray.fromlist(mask_ts)
         return mask
 
+    def mask_fitness_function(self, k):
+        if self._fitness_function == 'BER':
+            return self.mask_fitness_BER(k)
+        elif self._fitness_function == 'ER':
+            k = k.argmax(axis=1)
+            self._y_klass = SparseArray.fromlist(k)
+            cnt = k.shape[0] * (1 - self._tr_fraction)
+            cnt = int(np.floor(cnt))
+            if cnt == 0:
+                cnt = 1
+            mask = np.ones_like(k, dtype=np.bool)
+            mask_ts = np.zeros(k.shape[0])
+            index = np.arange(k.shape[0])
+            np.random.shuffle(index)
+            mask[index[:cnt]] = False
+            mask_ts[index[cnt:]] = 1.0
+            self._mask_vs = SparseArray.fromlist(~mask)
+            self._mask_ts = SparseArray.fromlist(mask_ts / mask_ts.sum())
+            return mask
+        raise RuntimeError('Unknown fitness function %s' % self._fitness_function)
+
     def multiple_outputs_cl(self, v):
         if isinstance(v, list):
             assert len(v) == self._labels.shape[0]
@@ -246,7 +267,7 @@ class EvoDAG(object):
         else:
             v = tonparray(v)
             v = self.transform_to_mo(v)
-        base_mask = self.mask_BER(v)
+        base_mask = self.mask_fitness_function(v)
         mask = []
         ytr = []
         y = []

@@ -563,7 +563,7 @@ class Min(Function1):
     color = 8
     unique_args = True
     min_nargs = 2
-    density_safe = True
+    density_safe = False
 
     def __init__(self, *args, **kwargs):
         super(Min, self).__init__(*args, **kwargs)
