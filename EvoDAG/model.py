@@ -59,10 +59,14 @@ class Model(object):
     def fitness_vs(self):
         "Fitness in the validation set"
         return self._hist[-1].fitness_vs
-    
+
     @property
     def size(self):
         return len(self._hist)
+
+    @property
+    def height(self):
+        return self._hist[-1].height
 
     def transform(self, v):
         if not isinstance(v, Function):
@@ -261,6 +265,11 @@ class Ensemble(object):
         l = [x.size for x in self.models]
         return np.median(l)
 
+    @property
+    def height(self):
+        l = [x.height for x in self.models]
+        return np.median(l)
+    
     def _decision_function_raw(self, X, cpu_cores=1):
         if cpu_cores == 1:
             r = [m.decision_function(X) for m in self._models]

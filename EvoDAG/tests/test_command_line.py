@@ -699,4 +699,25 @@ def test_model_size():
     os.unlink('cache.evodag')
     os.unlink('model.evodag')
     default_nargs()
-    
+
+
+def test_model_height():
+    import os
+    from EvoDAG.command_line import params, train, utils
+    fname = mo_training_set()
+    sys.argv = ['EvoDAG', '--output-dim=3',
+                '--multiple-outputs',
+                '-R', '--parameters',
+                'cache.evodag', '-p3', '-e1',
+                '-r2', fname]
+    params()
+    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
+                '-n2', '--output-dim=3',
+                '--model', 'model.evodag',
+                '--test', fname, fname]
+    train()
+    sys.argv = ['EvoDAG', '--height', 'model.evodag']
+    utils()
+    os.unlink('cache.evodag')
+    os.unlink('model.evodag')
+    default_nargs()

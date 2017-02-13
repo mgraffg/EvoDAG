@@ -550,8 +550,15 @@ class CommandLineUtils(CommandLine):
         self.output_file()
         self.fitness()
         self.size()
+        self.height()
         self.version()
 
+    def height(self):
+        self.parser.add_argument('--height',
+                                 help='Model height',
+                                 dest='height',
+                                 default=False, action='store_true')
+        
     def size(self):
         self.parser.add_argument('--size',
                                  help='Model size',
@@ -649,6 +656,12 @@ class CommandLineUtils(CommandLine):
                 self.word2id = pickle.load(fpt)
                 self.label2id = pickle.load(fpt)
             print("Size: %s" % m.size)
+        elif self.data.height:
+            with gzip.open(model_file, 'r') as fpt:
+                m = pickle.load(fpt)
+                self.word2id = pickle.load(fpt)
+                self.label2id = pickle.load(fpt)
+            print("Height: %s" % m.height)
 
 
 def params():
