@@ -324,11 +324,6 @@ class CommandLineParams(CommandLine):
                                  dest='parameters_values',
                                  type=str,
                                  help=cdn)
-        # self.parser.add_argument('--multiple-outputs',
-        #                          dest='multiple_outputs',
-        #                          default=False,
-        #                          action="store_true",
-        #                          help="Evolve a model with multiple outputs")
         self.parser.add_argument('--output-dim',
                                  dest='output_dim',
                                  default=1,
