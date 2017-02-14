@@ -75,7 +75,7 @@ class CommandLine(object):
         self.parser.add_argument('-n', '--ensemble-size',
                                  help='Ensemble size',
                                  dest='ensemble_size',
-                                 default=1,
+                                 default=30,
                                  type=int)
 
     def cores(self):
@@ -113,13 +113,13 @@ class CommandLine(object):
            action="store_true",
            help='Whether the inputs are in json format',
            default=False)
-        pa('--evolution', dest='population_class',
-           help="Type of evolution (SteadyState|Generational)",
-           type=str)
+        # pa('--evolution', dest='population_class',
+        #    help="Type of evolution (SteadyState|Generational)",
+        #    type=str)
         pa('--time-limit', dest='time_limit',
            help='Time limit in seconds', type=int)
-        pa('--random-generations', dest='random_generations',
-           help='Number of random generations', type=int)
+        # pa('--random-generations', dest='random_generations',
+        #    help='Number of random generations', type=int)
 
     def training_set(self):
         cdn = 'File containing the training set on csv.'

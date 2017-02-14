@@ -203,11 +203,20 @@ def test_generational():
     import gzip
     import json
     fname = training_set()
+
+    class C(CommandLineParams):
+        def parse_args(self):
+            self.data = self.parser.parse_args()
+            self.data.population_class = 'Generational'
+            if hasattr(self.data, 'regressor') and self.data.regressor:
+                self.data.classifier = False
+            self.main()
+
     sys.argv = ['EvoDAG', '-C', '--parameters',
                 'cache.evodag.gz', '-p3', '-e2',
-                '--evolution', 'Generational',
+                # '--evolution', 'Generational',
                 '-r', '2', fname]
-    c = CommandLineParams()
+    c = C()
     c.parse_args()
     with gzip.open('cache.evodag.gz') as fpt:
         data = fpt.read()
@@ -320,7 +329,7 @@ def test_random_generations():
     fname = training_set()
     sys.argv = ['EvoDAG', '-C', '--parameters',
                 'cache.evodag', '-p3', '-e2',
-                '--random-generations', '1',
+                # '--random-generations', '1',
                 '-r', '2', fname]
     params()
     os.unlink(fname)
