@@ -441,8 +441,7 @@ def test_utils_graphviz():
     os.unlink('cache.evodag')
     os.unlink('model.evodag')
     for i in range(2):
-        for j in range(3):
-            os.unlink('evodag_gv/evodag-%s-%s.gv' % (i, j))
+        os.unlink('evodag_gv/evodag-%s' % i)
     os.rmdir('evodag_gv')
     default_nargs()
 
@@ -489,7 +488,6 @@ def test_multiple_outputs():
                 fpt.write(json.dumps(a) + '\n')
     print("termine con el json")
     sys.argv = ['EvoDAG', '-C', '-Poutput.evodag', '--json',
-                '--multiple-outputs',
                 '-e1', '-p3', '-r2', fname]
     params()
     os.unlink(fname)
@@ -523,7 +521,6 @@ def test_number_multiple_outputs_classification():
     from EvoDAG.command_line import params, train, predict
     fname = mo_training_set()
     sys.argv = ['EvoDAG', '--output-dim=3',
-                '--multiple-outputs',
                 '-C', '--parameters',
                 'cache.evodag', '-p3', '-e1',
                 '-r2', fname]
@@ -551,7 +548,6 @@ def test_number_multiple_outputs_regression():
     from EvoDAG.command_line import params, train, predict
     fname = mo_training_set()
     sys.argv = ['EvoDAG', '--output-dim=3',
-                '--multiple-outputs',
                 '-R', '--parameters',
                 'cache.evodag', '-p3', '-e1',
                 '-r2', fname]
@@ -578,7 +574,6 @@ def test_utils_params_stats():
     from EvoDAG.command_line import params, utils
     fname = mo_training_set()
     sys.argv = ['EvoDAG', '--output-dim=3',
-                '--multiple-outputs',
                 '-R', '--parameters',
                 'cache.evodag', '-p3', '-e1',
                 '-r3', fname]
@@ -597,7 +592,6 @@ def test_model_fitness_vs():
     from EvoDAG.command_line import params, train, utils
     fname = mo_training_set()
     sys.argv = ['EvoDAG', '--output-dim=3',
-                '--multiple-outputs',
                 '-R', '--parameters',
                 'cache.evodag', '-p3', '-e1',
                 '-r2', fname]
@@ -619,7 +613,6 @@ def test_raw_outputs_regression():
     from EvoDAG.command_line import params, train, predict
     fname = mo_training_set()
     sys.argv = ['EvoDAG', '--output-dim=3',
-                '--multiple-outputs',
                 '-R', '--parameters',
                 'cache.evodag', '-p3', '-e1',
                 '-r2', fname]
@@ -648,7 +641,6 @@ def test_raw_outputs_classification():
     from EvoDAG.command_line import params, train, predict
     fname = mo_training_set()
     sys.argv = ['EvoDAG', '--output-dim=3',
-                '--multiple-outputs',
                 '-C', '--parameters',
                 'cache.evodag', '-p3', '-e1',
                 '-r2', fname]
@@ -684,7 +676,6 @@ def test_model_size():
     from EvoDAG.command_line import params, train, utils
     fname = mo_training_set()
     sys.argv = ['EvoDAG', '--output-dim=3',
-                '--multiple-outputs',
                 '-R', '--parameters',
                 'cache.evodag', '-p3', '-e1',
                 '-r2', fname]
@@ -706,7 +697,6 @@ def test_model_height():
     from EvoDAG.command_line import params, train, utils
     fname = mo_training_set()
     sys.argv = ['EvoDAG', '--output-dim=3',
-                '--multiple-outputs',
                 '-R', '--parameters',
                 'cache.evodag', '-p3', '-e1',
                 '-r2', fname]

@@ -116,9 +116,6 @@ class CommandLine(object):
         pa('--evolution', dest='population_class',
            help="Type of evolution (SteadyState|Generational)",
            type=str)
-        # pa('--all-inputs', dest='all_inputs',
-        #    help="The initial population has all the available inputs ",
-        #    action="store_true")
         pa('--time-limit', dest='time_limit',
            help='Time limit in seconds', type=int)
         pa('--random-generations', dest='random_generations',
@@ -327,11 +324,11 @@ class CommandLineParams(CommandLine):
                                  dest='parameters_values',
                                  type=str,
                                  help=cdn)
-        self.parser.add_argument('--multiple-outputs',
-                                 dest='multiple_outputs',
-                                 default=False,
-                                 action="store_true",
-                                 help="Evolve a model with multiple outputs")
+        # self.parser.add_argument('--multiple-outputs',
+        #                          dest='multiple_outputs',
+        #                          default=False,
+        #                          action="store_true",
+        #                          help="Evolve a model with multiple outputs")
         self.parser.add_argument('--output-dim',
                                  dest='output_dim',
                                  default=1,
@@ -387,6 +384,10 @@ class CommandLineParams(CommandLine):
     def main(self):
         self.read_training_set()
         kw = {}
+        if self.data.classifier:
+            self.data.multiple_outputs = True
+        elif self.data.output_dim > 1:
+            self.data.multiple_outputs = True
         for k, v in EvoDAG().get_params().items():
             if hasattr(self.data, k) and getattr(self.data, k) is not None:
                 kw[k] = getattr(self.data, k)
