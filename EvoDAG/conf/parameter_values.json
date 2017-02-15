@@ -1,192 +1,193 @@
 {
-    "Mul": [
-	0,
-	2,
-	5,
-	10,
-	20,
-	30,
-	40
-    ],
-    "generations": [
-	null
-    ],
-    "function_selection": [
-	true,
-	false
-    ],    
-    "multiple_outputs": [
-	false
-    ],
-    "classifier": [
-	true
-    ],    
-    "time_limit": [
-	null
-    ],
-    "fitness_function": [
-	"BER"
-    ],
-    "random_generations": [
-	0,
-	1
-    ],
-    "min_density": [
-	0.8
-    ],    
-    "popsize": [
-	500,
-	1000,
-	2000,
-	3000
-    ],
-    "Sq": [
-	true,
-	false
-    ],
-    "early_stopping_rounds": [
-	125,
-	250,
-	500,
-	1000,
-	2000
-    ],
-    "Sqrt": [
-	true,
-	false
-    ],
-    "Max": [
-	0,
-	2,
-	5,
-	10,
-	20,
-	30,
-	40
-    ],
-    "Add": [
-	2,
-	5,
-	10,
-	20,
-	30,
-	40
-    ],
-    "Atan2": [
-	0,
-	2
-    ],
-    "Hypot": [
-	0,
-	2
-    ],
     "Acos": [
-	true,
-	false
-    ],
-    "Asin": [
-	true,
-	false
-    ],
-    "Atan": [
-	true,
-	false
-    ],
-    "Tan": [
-	true,
-	false
-    ],
-    "Cosh": [
-	false
-    ],
-    "Sinh": [
-	false
-    ],
-    "Tanh": [
-	false
+        true,
+        false
     ],
     "Acosh": [
-	false
+        false
     ],
-    "Asinh": [
-	false
-    ],
-    "Atanh": [
-	false
-    ],
-    "Expm1": [
-	true,
-	false
-    ],
-    "Log": [
-	false
-    ],
-    "Log2": [
-	false
-    ],
-    "Log10": [
-	false
-    ],
-    "Lgamma": [
-	false
-    ],
-    "Sign": [
-	false
-    ],
-    "Ceil": [
-	false
-    ],
-    "Floor": [
-	false
-    ],
-    "Fabs": [
-	true,
-	false
-    ],
-    "Div": [
-	true,
-	false
-    ],
-    "Sin": [
-	true,
-	false
-    ],
-    "all_inputs": [
-	true,
-	false
-    ],
-    "Exp": [
-	false
-    ],
-    "unique_individuals": [
-	true,
-	false
-    ],
-    "Log1p": [
-	true,
-	false
-    ],
-    "Min": [
-	0,
-	2,
-	5,
-	10,
-	20,
-	30,
-	40
+    "Add": [
+        2,
+        5,
+        10,
+        20,
+        30,
+        40
     ],
     "Argmax": [
-	0
+        0
     ],
     "Argmin": [
-	0
-    ],    
-    "population_class": [
-	"SteadyState",
-	"Generational"
+        0
+    ],
+    "Asin": [
+        true,
+        false
+    ],
+    "Asinh": [
+        false
+    ],
+    "Atan": [
+        true,
+        false
+    ],
+    "Atan2": [
+        0,
+        2
+    ],
+    "Atanh": [
+        false
+    ],
+    "Ceil": [
+        false
     ],
     "Cos": [
-	true,
-	false
+        true,
+        false
+    ],
+    "Cosh": [
+        false
+    ],
+    "Div": [
+        true,
+        false
+    ],
+    "Exp": [
+        false
+    ],
+    "Expm1": [
+        true,
+        false
+    ],
+    "Fabs": [
+        true,
+        false
+    ],
+    "Floor": [
+        false
+    ],
+    "Hypot": [
+        0,
+        2
+    ],
+    "Lgamma": [
+        false
+    ],
+    "Log": [
+        false
+    ],
+    "Log10": [
+        false
+    ],
+    "Log1p": [
+        true,
+        false
+    ],
+    "Log2": [
+        false
+    ],
+    "Max": [
+        0,
+        2,
+        5,
+        10,
+        20,
+        30,
+        40
+    ],
+    "Min": [
+        0,
+        2,
+        5,
+        10,
+        20,
+        30,
+        40
+    ],
+    "Mul": [
+        0,
+        2,
+        5,
+        10,
+        20,
+        30,
+        40
+    ],
+    "Sign": [
+        false
+    ],
+    "Sin": [
+        true,
+        false
+    ],
+    "Sinh": [
+        false
+    ],
+    "Sq": [
+        true,
+        false
+    ],
+    "Sqrt": [
+        true,
+        false
+    ],
+    "Tan": [
+        true,
+        false
+    ],
+    "Tanh": [
+        false
+    ],
+    "all_inputs": [
+        true,
+        false
+    ],
+    "classifier": [
+        true
+    ],
+    "early_stopping_rounds": [
+        125,
+        250,
+        500,
+        1000,
+        2000,
+	3000
+    ],
+    "fitness_function": [
+        "BER"
+    ],
+    "function_selection": [
+        true,
+        false
+    ],
+    "generations": [
+        null
+    ],
+    "min_density": [
+        0.8
+    ],
+    "multiple_outputs": [
+        false
+    ],
+    "popsize": [
+        500,
+        1000,
+        2000,
+        3000
+    ],
+    "population_class": [
+        "SteadyState",
+        "Generational"
+    ],
+    "random_generations": [
+        0,
+        1
+    ],
+    "time_limit": [
+        null
+    ],
+    "unique_individuals": [
+        true,
+        false
     ]
 }

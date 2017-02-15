@@ -64,15 +64,31 @@ class RandomParameterSearch(object):
             res[k] = v[residual]
         return res
 
+    def constraints(self, k):
+        try:
+            if k['population_class'] == 'Generational' and\
+               k['early_stopping_rounds'] < k['popsize']:
+                return False
+        except KeyError:
+            return True
+        return True
+
     def __iter__(self):
         np.random.seed(self._seed)
         m = {}
-        for i in range(self._npoints):
-            k = np.random.randint(len(self))
+        _len = len(self)
+        npoints = self._npoints if _len > self._npoints else _len
+        while npoints:
+            k = np.random.randint(_len)
+            if len(m) == _len:
+                return
             while k in m:
-                k = np.random.randint(len(self))
+                k = np.random.randint(_len)
             m[k] = 1
-            yield self[k]
+            p = self[k]
+            if self.constraints(p):
+                npoints -= 1
+                yield p
 
     @staticmethod
     def process_params(a):

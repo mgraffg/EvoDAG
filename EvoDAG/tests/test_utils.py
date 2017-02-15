@@ -74,3 +74,24 @@ def test_params():
     assert len(l) == 2
     l = np.unique([x['population_class'] for x in rs])
     assert len(l) == 2
+
+
+def test_iter_params():
+    from EvoDAG.utils import RandomParameterSearch
+    params = dict(popsize=[100, 1000],
+                  population_class=['SteadyState'],
+                  early_stopping_rounds=[50, 1000])
+    rs = RandomParameterSearch(params=params, npoints=5)
+    args = [x for x in rs]
+    assert len(args) == 4
+
+
+def test_constraints():
+    from EvoDAG.utils import RandomParameterSearch
+    params = dict(popsize=[100, 1000],
+                  population_class=['Generational',
+                                    'SteadyState'],
+                  early_stopping_rounds=[50, 1000])
+    rs = RandomParameterSearch(params=params, npoints=32)
+    args = [x for x in rs if x['population_class'] == 'Generational']
+    assert len(args) == 2

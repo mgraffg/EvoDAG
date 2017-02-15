@@ -213,8 +213,7 @@ def test_generational():
             self.main()
 
     sys.argv = ['EvoDAG', '-C', '--parameters',
-                'cache.evodag.gz', '-p3', '-e2',
-                # '--evolution', 'Generational',
+                'cache.evodag.gz', '-p3', '-e3',
                 '-r', '2', fname]
     c = C()
     c.parse_args()
