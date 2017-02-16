@@ -68,11 +68,10 @@ search on the parameter space. EvoDAG selects the best configuration found
 on the random search. This can be performed as follows:
 
 ```bash__
-EvoDAG-params -C -P params.evodag -r 734 -u 4 --multiple-outputs iris.data
+EvoDAG-params -C -P params.evodag -r 734 -u 4 iris.data
 ```
 
-where `-C` indicates that the task is classification, `--multiple-outputs` 
-evolves as many outputs as classes, 
+where `-C` indicates that the task is classification, 
 `-P` indicates the file name where the parameters sampled are
 stored, `-r` specifies the number of samples 
 (all the experiments presented here sampled 734 points which 
