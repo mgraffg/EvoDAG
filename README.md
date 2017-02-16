@@ -15,14 +15,35 @@ _et al._ and the implementation performed by
 [Leonardo Vanneschi](https://scholar.google.com.mx/citations?user=uR5K07QAAAAJ&hl=en&oi=ao)
 _et al_.
 
-Currently, it is under review (submitted to
-[ROPEC 2016](http://ropec.org)) a paper that describes EvoDAG. The
-paper can be download from [here](http://ws.ingeotec.mx/~mgraffg/publications/pdf/ropec2016.pdf).
+EvoDAG is described in the following conference paper
+[EvoDAG: A semantic Genetic Programming Python library](http://ieeexplore.ieee.org/document/7830633/)
+Mario Graff, Eric S. Tellez, Sabino Miranda-Jiménez, Hugo Jair Escalante.
+2016 IEEE International Autumn Meeting on Power, Electronics and Computing (ROPEC)
+pp 1-6. A pre-print version can be download from [here](http://ws.ingeotec.mx/~mgraffg/publications/pdf/ropec2016.pdf).
 
 ## Citing EvoDAG ##
 
 If you like EvoDAG, and it is used in a scientific publication, I would
-appreciate citations to the following book chapter:
+appreciate citations to either the conference paper or the book chapter:
+
+[EvoDAG: A semantic Genetic Programming Python library](http://ieeexplore.ieee.org/document/7830633/)
+Mario Graff, Eric S. Tellez, Sabino Miranda-Jiménez, Hugo Jair Escalante.
+2016 IEEE International Autumn Meeting on Power, Electronics and Computing (ROPEC)
+pp 1-6.
+```bibtex
+@inproceedings{graff_evodag:_2016,
+	title = {{EvoDAG}: {A} semantic {Genetic} {Programming} {Python} library},
+	shorttitle = {{EvoDAG}},
+	doi = {10.1109/ROPEC.2016.7830633},
+	abstract = {Genetic Programming (GP) is an evolutionary algorithm that has received a lot of attention lately due to its success in solving hard real-world problems. Lately, there has been considerable interest in GP's community to develop semantic genetic operators, i.e., operators that work on the phenotype. In this contribution, we describe EvoDAG (Evolving Directed Acyclic Graph) which is a Python library that implements a steady-state semantic Genetic Programming with tournament selection using an extension of our previous crossover operators based on orthogonal projections in the phenotype space. To show the effectiveness of EvoDAG, it is compared against state-of-the-art classifiers on different benchmark problems, experimental results indicate that EvoDAG is very competitive.},
+	booktitle = {2016 {IEEE} {International} {Autumn} {Meeting} on {Power}, {Electronics} and {Computing} ({ROPEC})},
+	author = {Graff, M. and Tellez, E. S. and Miranda-Jiménez, S. and Escalante, H. J.},
+	month = nov,
+	year = {2016},
+	keywords = {directed graphs, Electronic mail, EvoDAG, evolving directed acyclic graph, Genetic algorithms, GP community, Libraries, semantic genetic operators, semantic genetic programming Python library, Semantics, Sociology, Statistics, Steady-state, steady-state semantic genetic programming, Training},
+	pages = {1--6}
+}
+```
 
 [Semantic Genetic Programming for Sentiment Analysis](http://link.springer.com/chapter/10.1007/978-3-319-44003-3_2)
 Mario Graff, Eric S. Tellez, Hugo Jair Escalante, Sabino
