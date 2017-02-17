@@ -127,7 +127,10 @@ class Model(object):
         fpt.write("digraph EvoDAG {\n")
         last = len(self._hist) - 1
         height = self._hist[-1].height
-        b, m = np.linalg.solve([[0, height-1], [1, 1]], [9, 1])
+        try:
+            b, m = np.linalg.solve([[0, height-1], [1, 1]], [9, 1])
+        except np.linalg.linalg.LinAlgError:
+            b, m = 0, 1
         done = {}
         for k, n in enumerate(self._hist):
             if isinstance(n, Function):
