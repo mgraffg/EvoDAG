@@ -547,14 +547,21 @@ class CommandLineUtils(CommandLine):
         self.fitness()
         self.size()
         self.height()
+        self.remove_terminals()
         self.version()
+
+    def remove_terminals(self):
+        self.parser.add_argument('--remove-terminals',
+                                 help='Do not display terminals',
+                                 dest='remove_terminals',
+                                 default=False, action='store_true')
 
     def height(self):
         self.parser.add_argument('--height',
                                  help='Model height',
                                  dest='height',
                                  default=False, action='store_true')
-        
+
     def size(self):
         self.parser.add_argument('--size',
                                  help='Model size',
@@ -628,7 +635,11 @@ class CommandLineUtils(CommandLine):
                 m = pickle.load(fpt)
                 self.word2id = pickle.load(fpt)
                 self.label2id = pickle.load(fpt)
-            m.graphviz(self.data.output_file)
+            remove_terminals = self.data.remove_terminals
+            if remove_terminals:
+                m.graphviz(self.data.output_file, terminals=False)
+            else:
+                m.graphviz(self.data.output_file)
         elif self.data.params_stats:
             params = {k: collections.Counter() for k in PARAMS.keys()}
             stats = self.read_params(model_file)

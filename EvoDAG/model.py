@@ -119,19 +119,24 @@ class Model(object):
             return hy
         return tonparray(self.decision_function(X, **kwargs))
 
-    def graphviz(self, fpt):
+    def graphviz(self, fpt, terminals=True):
         flag = False
         if isinstance(fpt, str):
             flag = True
             fpt = open(fpt, 'w')
         fpt.write("digraph EvoDAG {\n")
         last = len(self._hist) - 1
+        height = self._hist[-1].height
+        b, m = np.linalg.solve([[0, height-1], [1, 1]], [9, 1])
+        done = {}
         for k, n in enumerate(self._hist):
             if isinstance(n, Function):
+                done[k] = 1
                 name = n.__class__.__name__
-                extra = "colorscheme=blues9 style=filled color={0}".format(1)
+                color = int(np.round(n.height * m + b))
+                extra = "colorscheme=blues9 style=filled color={0}".format(color)
                 if k == last:
-                    extra = "fillcolor=blue style=filled"
+                    extra = "fillcolor=green style=filled"
                 fpt.write("n{0} [label=\"{1}\" {2}];\n".format(k,
                                                                name,
                                                                extra))
@@ -139,10 +144,12 @@ class Model(object):
                 if not isinstance(vars, list):
                     vars = [vars]
                 for j in vars:
-                    fpt.write("n{0} -> n{1};\n".format(k, j))
-            else:
+                    if j in done:
+                        fpt.write("n{0} -> n{1};\n".format(k, j))
+            elif terminals:
                 cdn = "n{0} [label=\"X{1}\" fillcolor=red style=filled];\n"
                 fpt.write(cdn.format(k, n._variable))
+                done[k] = 1
         fpt.write("}\n")
         if flag:
             fpt.close()
@@ -222,9 +229,9 @@ class Models(object):
             hy = self._labels[hy]
         return hy
 
-    def graphviz(self, skel):
+    def graphviz(self, skel, **kwargs):
         for k, m in enumerate(self.models):
-            m.graphviz(skel + '-%s.gv' % k)
+            m.graphviz(skel + '-%s.gv' % k, **kwargs)
 
 
 class Ensemble(object):
@@ -343,11 +350,11 @@ class Ensemble(object):
                 hy = self._labels[hy]
         return hy
 
-    def graphviz(self, directory):
+    def graphviz(self, directory, **kwargs):
         "Directory to store the graphviz models"
         import os
         if not os.path.isdir(directory):
             os.mkdir(directory)
         output = os.path.join(directory, 'evodag-%s')
         for k, m in enumerate(self.models):
-            m.graphviz(output % k)
+            m.graphviz(output % k, **kwargs)
