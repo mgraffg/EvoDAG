@@ -1014,16 +1014,16 @@ def test_unfeasible_counter_fit():
     assert len(gp.population.hist) <= 3
 
 
-def test_one_instance():
-    from EvoDAG import RGP
+def test_two_instances():
+    from EvoDAG import EvoDAG
     y = cl.copy()
-    y[:-1] = -1
-    y[-1:] = 1
-    gp = RGP(generations=np.inf,
-             tournament_size=2,
-             early_stopping_rounds=-1,
-             seed=0,
-             popsize=10).fit(X, y, test_set=X)
+    y[:-2] = -1
+    y[-2:] = 1
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=-1,
+                seed=0,
+                popsize=10).fit(X, y, test_set=X)
     assert gp
 
 
@@ -1188,6 +1188,7 @@ def test_multiple_outputs_mask():
                 function_set=[Add, Min, Max],
                 early_stopping_rounds=100,
                 time_limit=0.9,
+                tr_fraction=0.8,
                 multiple_outputs=True,
                 seed=0,
                 popsize=100)
