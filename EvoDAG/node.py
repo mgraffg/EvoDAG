@@ -190,7 +190,6 @@ class Variable(object):
 
 class Function(Variable):
     nargs = 2
-    color = 1
     unique_args = False
 
     def tostore(self):
@@ -282,7 +281,6 @@ class Function1(Function):
 class Add(Function):
     nargs = 5
     symbol = '+'
-    color = 1
     unique_args = True
     min_nargs = 2
     density_safe = True
@@ -341,7 +339,6 @@ class Add(Function):
 
 class Mul(Function1):
     symbol = '*'
-    color = 1
     density_safe = False
 
     def __init__(self, *args, **kwargs):
@@ -369,7 +366,6 @@ class Mul(Function1):
 
 class Div(Function1):
     symbol = '/'
-    color = 1
     density_safe = False
 
     def raw_outputs(self, X):
@@ -389,7 +385,6 @@ class Div(Function1):
 
 class Atan2(Function1):
     symbol = 'atan2'
-    color = 1
     density_safe = False
 
     def raw_outputs(self, X):
@@ -409,7 +404,6 @@ class Atan2(Function1):
 
 class Hypot(Function1):
     symbol = 'hypot'
-    color = 1
     density_safe = True
 
     def raw_outputs(self, X):
@@ -429,7 +423,6 @@ class Hypot(Function1):
 
 class OneArg(Function1):
     nargs = 1
-    color = 5
 
 
 class Acos(OneArg):
@@ -560,7 +553,6 @@ class Floor(OneArg):
 class Min(Function1):
     nargs = 2
     symbol = 'min'
-    color = 8
     unique_args = True
     min_nargs = 2
     density_safe = False
@@ -591,7 +583,6 @@ class Min(Function1):
 class Max(Function1):
     nargs = 2
     symbol = 'max'
-    color = 8
     unique_args = True
     min_nargs = 2
     density_safe = True
@@ -622,7 +613,6 @@ class Max(Function1):
 class Argmax(Function1):
     nargs = 2
     symbol = 'argmax'
-    color = 8
     unique_args = True
     min_nargs = 2
     density_safe = True
@@ -649,7 +639,6 @@ class Argmax(Function1):
 class Argmin(Argmax):
     nargs = 2
     symbol = 'argmin'
-    color = 8
     unique_args = True
     min_nargs = 2
     density_safe = True

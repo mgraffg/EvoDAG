@@ -129,7 +129,7 @@ class Model(object):
         for k, n in enumerate(self._hist):
             if isinstance(n, Function):
                 name = n.__class__.__name__
-                extra = "colorscheme=blues9 style=filled color={0}".format(n.color)
+                extra = "colorscheme=blues9 style=filled color={0}".format(1)
                 if k == last:
                     extra = "fillcolor=blue style=filled"
                 fpt.write("n{0} [label=\"{1}\" {2}];\n".format(k,
