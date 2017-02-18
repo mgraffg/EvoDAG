@@ -224,11 +224,12 @@ class SteadyState(object):
         if self.generation <= self._random_generations:
             return self.random_selection(negative=negative)
         vars = self.random()
-        fit = [self.population[x].fitness for x in vars]
+        fit = [(k, self.population[x].fitness) for k, x in enumerate(vars)]
         if negative:
-            index = np.argsort(fit)[0]
+            fit = min(fit, key=lambda x: x[1])
         else:
-            index = np.argsort(fit)[-1]
+            fit = max(fit, key=lambda x: x[1])
+        index = fit[0]
         return vars[index]
 
 
