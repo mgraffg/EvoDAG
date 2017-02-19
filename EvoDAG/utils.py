@@ -42,12 +42,31 @@ with open(params_fname, 'r') as fpt:
 class RandomParameterSearch(object):
     def __init__(self, params=PARAMS,
                  npoints=1468,
+                 training_size=5000,
                  seed=0):
         self._params = sorted(params.items())
         self._params.reverse()
         self._len = None
         self._npoints = npoints
         self._seed = seed
+        self._training_size = training_size
+        self.fix_early_popsize()
+
+    def fix_early_popsize(self):
+        try:
+            popsize = [x for x in self._params if x[0] == 'popsize'][0]
+            popsize_min = min(popsize[1])
+            if popsize_min > self._training_size:
+                popsize[1].append(self._training_size)
+        except IndexError:
+            pass
+        try:
+            early = [x for x in self._params if x[0] == 'early_stopping_rounds'][0]
+            early_min = min(early[1])
+            if early_min > self._training_size:
+                early[1].append(self._training_size)
+        except IndexError:
+            pass
 
     def __len__(self):
         if self._len is None:
@@ -68,6 +87,8 @@ class RandomParameterSearch(object):
         try:
             if k['population_class'] == 'Generational' and\
                k['early_stopping_rounds'] < k['popsize']:
+                return False
+            if k['early_stopping_rounds'] > self._training_size:
                 return False
         except KeyError:
             return True

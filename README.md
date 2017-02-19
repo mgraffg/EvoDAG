@@ -199,13 +199,13 @@ automatically spotted, and, one possible solution could be as simple
 as execute auto-sklearn again on that particular case. Nonetheless, we
 decided to keep auto-sklearn without modifications.
 
-|Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.6.9)|
+|Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.6.10)|
 | ----- | ---------------------------------------------: | --------------------------------------------: | -----------------------------------: | -----------: |
-|banana          |     **11.08**      |  28.00  |11.27 | 11.82 | 
+|banana          |     **11.08**      |  28.00  |11.27 | 12.03 | 
 |titanic          |    **24.18**    |  37.18   |  30.27  |  NA |
 |thyroid        |      **4.32**      |  23.38  |  6.13  |  NA  | 
-|diabetis        |     27.06   |   37.65  |  26.65  |  NA |
-|breast-cancer    |    **33.01**    |  42.36  |  36.25  |  NA | 
+|diabetis        |     27.06   |   37.65  |  26.65  |  **25.14** |
+|breast-cancer    |    **33.01**    |  42.36  |  36.25  |  34.48 | 
 |flare-solar     |     34.81     |  39.05 |  33.41  |  NA | 
 |heart             |   20.69        |  27.69  |  18.12  |  NA |
 |ringnorm       |      7.98      |  15.49  |  **1.96**  |  NA |

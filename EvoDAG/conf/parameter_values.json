@@ -146,12 +146,10 @@
         true
     ],
     "early_stopping_rounds": [
-        125,
-        250,
         500,
         1000,
         2000,
-	3000
+	4000
     ],
     "fitness_function": [
         "BER"
@@ -170,10 +168,12 @@
         false
     ],
     "popsize": [
+	100,
+	200,
         500,
         1000,
         2000,
-        3000
+        4000
     ],
     "population_class": [
         "SteadyState",

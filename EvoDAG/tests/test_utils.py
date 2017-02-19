@@ -95,3 +95,15 @@ def test_constraints():
     rs = RandomParameterSearch(params=params, npoints=32)
     args = [x for x in rs if x['population_class'] == 'Generational']
     assert len(args) == 2
+
+
+def test_constraints2():
+    from EvoDAG.utils import RandomParameterSearch
+    params = dict(popsize=[100, 1000],
+                  population_class=['Generational',
+                                    'SteadyState'],
+                  early_stopping_rounds=[100, 1000])
+    rs = RandomParameterSearch(params=params, npoints=32, training_size=70)
+    args = [x for x in rs if x['population_class'] == 'Generational']
+    assert len(args) == 1
+    
