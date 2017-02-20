@@ -47,13 +47,18 @@ def test_model_hist():
                 tournament_size=2,
                 early_stopping_rounds=-1,
                 seed=1,
-                popsize=20).fit(X[:-10], y[:-10], test_set=X[-10:])
+                popsize=30).fit(X[:-10], y[:-10], test_set=X[-10:])
     hist = gp.population.hist
     trace = gp.trace(gp.population.estopping)
     a = hist[trace[-1]].variable
+    if not isinstance(a, list):
+        a = [a]
     m = Model(trace, hist)
-    print((m._map, a, m._hist[-1].variable))
-    for v1, v2 in zip(a, m._hist[-1].variable):
+    b = m._hist[-1].variable
+    if not isinstance(b, list):
+        b = [b]
+    print((m._map, a, b))
+    for v1, v2 in zip(a, b):
         assert m._map[v1] == v2
 
 
