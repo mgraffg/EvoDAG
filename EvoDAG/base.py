@@ -350,7 +350,7 @@ class EvoDAG(object):
             if self._multiple_outputs:
                 hy = SparseArray.argmax(v.hy)
                 v._error = (self._y_klass - hy).sign().fabs()
-                v.fitness = -(v._error * self._mask_ts).sum()
+                v.fitness = - v._error.dot(self._mask_ts)
             else:
                 v.fitness = -self._ytr.SSE(v.hy * self._mask)
         else:
@@ -387,7 +387,7 @@ class EvoDAG(object):
         In classification it uses BER and RSE in regression"""
         if self._classifier:
             if self._multiple_outputs:
-                v.fitness_vs = -(v._error * self._mask_vs).sum() / self._mask_vs.sum()
+                v.fitness_vs = - v._error.dot(self._mask_vs) / self._mask_vs.sum()
             else:
                 v.fitness_vs = -((self.y - v.hy.sign()).sign().fabs() *
                                  self._mask_vs).sum()
