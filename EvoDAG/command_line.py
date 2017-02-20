@@ -349,8 +349,13 @@ class CommandLineParams(CommandLine):
         if parameters is None:
             parameters = self.data.training_set + '.EvoDAGparams'
         npoints = self.data.optimize_parameters
+        if isinstance(self.X, list):
+            training_size = self.X[0].size()
+        else:
+            training_size = self.X.shape[0]
         rs = RandomParameterSearch(params=params,
                                    seed=self.data.seed,
+                                   training_size=training_size,
                                    npoints=npoints)
         if self.data.cpu_cores == 1:
             res = [rs_evodag((args, self.X, self.y))

@@ -42,7 +42,7 @@ class EvoDAG(object):
                                Tan, Cosh, Sinh, Tanh, Acosh, Asinh, Atanh,
                                Expm1, Log, Log2, Log10, Lgamma, Sign,
                                Ceil, Floor],
-                 tr_fraction=0.375, population_class=SteadyState,
+                 tr_fraction=0.5, population_class=SteadyState,
                  number_tries_feasible_ind=30, time_limit=None,
                  unique_individuals=True, classifier=True,
                  labels=None, all_inputs=False, random_generations=0, fitness_function='BER',

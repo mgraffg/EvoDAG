@@ -186,6 +186,12 @@
     "time_limit": [
         null
     ],
+    "tournament_size": [
+	2
+    ],
+    "tr_fraction": [
+	0.5
+    ],
     "unique_individuals": [
         true,
         false

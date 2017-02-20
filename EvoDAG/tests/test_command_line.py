@@ -750,4 +750,3 @@ def test_utils_graphviz_terminals():
         os.unlink('evodag_gv/evodag-%s' % i)
     os.rmdir('evodag_gv')
     default_nargs()
-    
