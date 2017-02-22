@@ -204,7 +204,7 @@ decided to keep auto-sklearn without modifications.
 |banana          |     **11.08**      |  28.00  |11.27 | 11.95 | 
 |titanic          |    **24.18**    |  37.18   |  30.27  |  working |
 |thyroid        |      **4.32**      |  23.38  |  6.13  |  working  | 
-|diabetis        |     27.06   |   37.65  |  26.65  |  working |
+|diabetis        |     27.06   |   37.65  |  26.65  |  **25.04** |
 |breast-cancer    |    **33.01**    |  42.36  |  36.25  |  34.08 | 
 |flare-solar     |     34.81     |  39.05 |  33.41  |  working | 
 |heart             |   20.69        |  27.69  |  18.12  |  working |
