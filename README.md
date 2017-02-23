@@ -202,7 +202,7 @@ decided to keep auto-sklearn without modifications.
 |Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.6.11)|
 | ----- | ---------------------------------------------: | --------------------------------------------: | -----------------------------------: | -----------: |
 |banana          |     **11.08**      |  28.00  |11.27 | 11.95 | 
-|titanic          |    **24.18**    |  37.18   |  30.27  |  working |
+|titanic          |    **24.18**    |  37.18   |  30.27  |  29.69 |
 |thyroid        |      **4.32**      |  23.38  |  6.13  |  6.91  | 
 |diabetis        |     27.06   |   37.65  |  26.65  |  **25.04** |
 |breast-cancer    |    **33.01**    |  42.36  |  36.25  |  34.08 | 
