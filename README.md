@@ -211,7 +211,7 @@ decided to keep auto-sklearn without modifications.
 |ringnorm       |      7.98      |  15.49  |  **1.96**  |  working |
 |twonorm       |       3.09      |  20.87  |  2.90  |  working | 
 |german         |      30.10    | 39.45  |  29.00  | **28.63** | 
-|image         |       **2.90** | 21.29  |  3.32  | working | 
+|image         |       **2.90** | 21.29  |  3.32  | **3.72** | 
 |waveform      |       12.80   | 22.67  |  10.62  |  working |
 |splice       |        14.63  | 10.79  |  11.23  |  working | 
 
