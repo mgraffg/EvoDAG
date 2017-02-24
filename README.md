@@ -187,10 +187,10 @@ problems (these benchmarks can be found:
 The best performance among each classification dataset is in
 bold face to facilitate the reading. It can be observed from the table
 that PSMS obtained the best performance on five datasets, SVM
-on one dataset, and EvoDAG obtained the
-best performance in the rest of the datasets (seven). One
+on two dataset, and EvoDAG obtained the
+best performance in the rest of the datasets (six). One
 characteristic that caught our attention is the high confidence
-intervals of auto-sklearn, it is one order of magnitude higher than
+intervals of auto-sklearn (not shown here), it is one order of magnitude higher than
 the other systems. Analyzing the predictions performed by
 auto-sklearn, it is found that in some of the trails the algorithm
 predicts only one class, obtaining, consequently, the worst possible
@@ -209,10 +209,10 @@ decided to keep auto-sklearn without modifications.
 |flare-solar     |     34.81     |  39.05 |  33.41  |  **32.95** | 
 |heart             |   20.69        |  27.69  |  18.12  |  **16.41** |
 |ringnorm       |      7.98      |  15.49  |  **1.96**  |  2.34 |
-|twonorm       |       3.09      |  20.87  |  2.90  |  working | 
+|twonorm       |       3.09      |  20.87  |  2.90  |  **2.60** | 
 |german         |      30.10    | 39.45  |  29.00  | **28.63** | 
 |image         |       **2.90** | 21.29  |  3.32  | 3.72 | 
-|waveform      |       12.80   | 22.67  |  10.62  |  working |
+|waveform      |       12.80   | 22.67  |  **10.62**  |  10.74 |
 |splice       |        14.63  | 10.79  |  11.23  |  **9.76** | 
 
 
