@@ -201,11 +201,11 @@ decided to keep auto-sklearn without modifications.
 
 |Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.6.11)|
 | ----- | ---------------------------------------------: | --------------------------------------------: | -----------------------------------: | -----------: |
-|banana          |     **11.08**      |  28.00  |11.27 | 11.95 | 
+|banana          |     **11.08**      |  28.00  |11.27 | 12.07 | 
 |titanic          |    **24.18**    |  37.18   |  30.27  |  29.69 |
 |thyroid        |      **4.32**      |  23.38  |  6.13  |  6.91  | 
 |diabetis        |     27.06   |   37.65  |  26.65  |  **25.04** |
-|breast-cancer    |    **33.01**    |  42.36  |  36.25  |  34.08 | 
+|breast-cancer    |    **33.01**    |  42.36  |  36.25  |  34.43 | 
 |flare-solar     |     34.81     |  39.05 |  33.41  |  **32.95** | 
 |heart             |   20.69        |  27.69  |  18.12  |  **16.41** |
 |ringnorm       |      7.98      |  15.49  |  **1.96**  |  2.34 |
