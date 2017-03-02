@@ -211,7 +211,7 @@ decided to keep auto-sklearn without modifications.
 |ringnorm       |      7.98      |  15.49  |  **1.96**  |  2.34 |
 |twonorm       |       3.09      |  20.87  |  2.90  |  **2.60** | 
 |german         |      30.10    | 39.45  |  29.00  | **28.57** | 
-|image         |       **2.90** | 21.29  |  3.32  | 3.72 | 
+|image         |       **2.90** | 21.29  |  3.32  | 3.55 | 
 |waveform      |       12.80   | 22.67  |  **10.62**  |  10.74 |
 |splice       |        14.63  | 10.79  |  11.23  |  **9.76** | 
 
@@ -222,6 +222,7 @@ decided to keep auto-sklearn without modifications.
 ```bash   
 conda install -c mgraffg evodag
 ```
+Currently, EvoDAG is available for Python 2.7, 3.3, 3.4, 3.5, and 3.6 for linux-64 and osx-64
 
 * Install using pip  
 ```bash   
