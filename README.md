@@ -212,7 +212,7 @@ decided to keep auto-sklearn without modifications.
 |twonorm       |       3.09      |  20.87  |  2.90  |  **2.61** | 
 |german         |      30.10    | 39.45  |  29.00  | **28.57** | 
 |image         |       **2.90** | 21.29  |  3.32  | 3.55 | 
-|waveform      |       12.80   | 22.67  |  **10.62**  |  10.74 |
+|waveform      |       12.80   | 22.67  |  **10.62**  |  10.99 |
 |splice       |        14.63  | 10.79  |  11.23  |  **9.89** | 
 
 
