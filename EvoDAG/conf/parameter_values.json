@@ -150,6 +150,9 @@
     "fitness_function": [
         "BER"
     ],
+    "fs_tournament_size": [
+	2
+    ],
     "function_selection": [
         true,
         false

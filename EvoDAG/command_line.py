@@ -17,6 +17,7 @@ from .utils import RandomParameterSearch, PARAMS
 from SparseArray import SparseArray
 from .model import Ensemble
 import collections
+import os
 from multiprocessing import Pool
 import EvoDAG as evodag
 from EvoDAG import EvoDAG
@@ -178,6 +179,9 @@ class CommandLine(object):
         import json
         X = None
         y = []
+        dependent = os.getenv('KLASS')
+        if dependent is None:
+            dependent = 'klass'
         if fname.endswith('.gz'):
             with gzip.open(fname, 'rb') as fpt:
                 l = fpt.readlines()
@@ -196,7 +200,7 @@ class CommandLine(object):
                     k = int(k)
                     X[k].append((row, self.convert(v)))
                 except ValueError:
-                    if k == 'klass' or k == 'y':
+                    if k == dependent:
                         y.append(self.convert_label(v))
         num_rows = len(l)
         X = [SparseArray.index_data(x, num_rows) for x in X]

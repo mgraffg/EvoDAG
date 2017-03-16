@@ -46,7 +46,8 @@ class EvoDAG(object):
                  number_tries_feasible_ind=30, time_limit=None,
                  unique_individuals=True, classifier=True,
                  labels=None, all_inputs=False, random_generations=0, fitness_function='BER',
-                 min_density=0.8, multiple_outputs=False, function_selection=True, **kwargs):
+                 min_density=0.8, multiple_outputs=False, function_selection=True,
+                 fs_tournament_size=2, **kwargs):
         generations = np.inf if generations is None else generations
         self._fitness_function = fitness_function
         self._generations = generations
@@ -65,10 +66,11 @@ class EvoDAG(object):
         self._multiclass = False
         self._function_set = function_set
         self._function_selection = function_selection
+        self._fs_tournament_size = fs_tournament_size
         density_safe = [k for k, v in enumerate(function_set) if v.density_safe]
         self._function_selection_ins = FunctionSelection(nfunctions=len(self._function_set),
                                                          seed=seed,
-                                                         tournament_size=tournament_size,
+                                                         tournament_size=self._fs_tournament_size,
                                                          nargs=map(lambda x: x.nargs,
                                                                    function_set),
                                                          density_safe=density_safe)
