@@ -557,7 +557,14 @@ class CommandLineUtils(CommandLine):
         self.size()
         self.height()
         self.remove_terminals()
+        self.used_inputs_number()
         self.version()
+
+    def used_inputs_number(self):
+        self.parser.add_argument('--used-inputs-number',
+                                 help='Number of inputs used',
+                                 dest='used_inputs_number',
+                                 default=False, action='store_true')
 
     def remove_terminals(self):
         self.parser.add_argument('--remove-terminals',
@@ -594,7 +601,7 @@ class CommandLineUtils(CommandLine):
                                  help='Parameters statistics',
                                  dest='params_stats',
                                  default=False, action='store_true')
-        
+
     def output_file(self):
         self.parser.add_argument('-o', '--output-file',
                                  help='File / directory to store the result(s)',
@@ -678,6 +685,13 @@ class CommandLineUtils(CommandLine):
                 self.word2id = pickle.load(fpt)
                 self.label2id = pickle.load(fpt)
             print("Height: %s" % m.height)
+        elif self.data.used_inputs_number:
+            with gzip.open(model_file, 'r') as fpt:
+                m = pickle.load(fpt)
+                self.word2id = pickle.load(fpt)
+                self.label2id = pickle.load(fpt)
+            inputs = m.inputs()
+            print("Used inputs number", len(inputs))
 
 
 def params():
