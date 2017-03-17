@@ -798,4 +798,3 @@ def test_model_used_inputs_number():
     os.unlink('cache.evodag')
     os.unlink('model.evodag')
     default_nargs()
-    assert False
