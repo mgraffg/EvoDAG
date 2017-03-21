@@ -260,17 +260,24 @@ class CommandLine(object):
             self.evo = EvoDAG(**kw).fit(self.X, self.y, test_set=self.Xtest)
             self.model = self.evo.model()
         else:
-            seed = self.data.seed
+            min_size = self.data.min_size
             esize = self.data.ensemble_size
-            args = [(x, kw, self.X, self.y, self.Xtest)
-                    for x in range(seed, seed+esize)]
-            if self.data.cpu_cores == 1:
-                evo = [init_evodag(x) for x in tqdm(args, total=len(args))]
-            else:
-                p = Pool(self.data.cpu_cores, maxtasksperchild=1)
-                evo = [x for x in tqdm(p.imap_unordered(init_evodag, args),
-                                       total=len(args))]
-                p.close()
+            init = self.data.seed
+            end = init + esize
+            evo = []
+            while len(evo) < esize:
+                args = [(x, kw, self.X, self.y, self.Xtest)
+                        for x in range(init, end)]
+                if self.data.cpu_cores == 1:
+                    _ = [init_evodag(x) for x in tqdm(args, total=len(args))]
+                else:
+                    p = Pool(self.data.cpu_cores, maxtasksperchild=1)
+                    _ = [x for x in tqdm(p.imap_unordered(init_evodag, args),
+                                         total=len(args))]
+                    p.close()
+                [evo.append(x) for x in _ if x.size >= min_size]
+                init = end
+                end = init + (esize - len(evo))
             self.model = Ensemble(evo)
         model_file = self.get_model_file()
         with gzip.open(model_file, 'w') as fpt:
@@ -436,6 +443,8 @@ class CommandLineTrain(CommandLine):
            action="store_true",
            help='Whether the inputs are in json format',
            default=False)
+        pa('--min-size', dest='min_size',
+           type=int, default=1, help='Model min-size')
 
     def version(self):
         pa = self.parser.add_argument
