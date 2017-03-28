@@ -62,6 +62,9 @@
         true,
         false
     ],
+    "finite": [
+        false
+    ],
     "Floor": [
         false
     ],

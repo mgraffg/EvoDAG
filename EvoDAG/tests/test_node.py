@@ -388,3 +388,37 @@ def test_density_safe():
     gp, args = create_problem_node(nargs=4, seed=0)
     for i in gp._function_set:
         assert i.density_safe or not i.density_safe
+
+
+def test_functions_finite():
+    from EvoDAG.node import Variable, Mul, Div, Min, Max, Atan2, Hypot
+    from EvoDAG.node import Argmax, Argmin
+    for ff in [Mul, Div, Min, Max, Atan2, Hypot, Argmax, Argmin]:
+        for flag in [False, True]:
+            gp, args = create_problem_node(nargs=4, seed=0)
+            for v in args:
+                _ = [x for x in v._eval_tr.full_array()]
+                _[0] = float('inf')
+                _[1] = float('inf')
+                _[3] = 0
+                _[4] = 0
+                v._eval_tr = SparseArray.fromlist(_)
+            if flag:
+                for i in args:
+                    i.hy_test = None
+            gp2, _ = create_problem_node(nargs=4, seed=1)
+            ytr = [gp._ytr, gp._ytr]
+            mask = [gp._mask, gp2._mask]
+            vars = [Variable(k, ytr=ytr, mask=mask, finite=flag)
+                    for k in range(len(args))]
+            for x in vars:
+                assert x.eval(args) == flag
+            if not flag:
+                continue
+            mul = ff(range(len(vars)), ytr=ytr, mask=mask, finite=False)
+            _ = mul.eval(vars)
+            if isinstance(mul, Div):
+                assert not _
+                mul = ff(range(len(vars)), ytr=ytr, mask=mask, finite=True)
+                _ = mul.eval(vars)
+                assert _

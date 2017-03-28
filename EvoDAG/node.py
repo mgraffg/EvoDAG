@@ -19,8 +19,8 @@ from SparseArray import SparseArray
 
 
 class Variable(object):
-    def __init__(self, variable, weight=None, ytr=None, mask=None,
-                 height=0):
+    def __init__(self, variable, weight=None, ytr=None,
+                 mask=None, height=0, finite=False):
         if isinstance(variable, list):
             variable = variable if len(variable) > 1 else variable[0]
         self._variable = variable
@@ -35,6 +35,7 @@ class Variable(object):
         self._height = height
         self._multiple_outputs = False
         self._n_outputs = 1
+        self._finite = finite
         if isinstance(ytr, list) and len(ytr) > 1:
             self._multiple_outputs = True
             self._n_outputs = len(ytr)
@@ -143,17 +144,25 @@ class Variable(object):
     def eval(self, X):
         r, hr = self.raw_outputs(X)
         if isinstance(r, list):
-            r = [x.finite(inplace=True) for x in r]
+            if self._finite:
+                r = [x.finite(inplace=True) for x in r]
+            else:
+                r = [x for x in r]
         else:
-            r = r.finite(inplace=True)
+            if self._finite:
+                r = r.finite(inplace=True)
         if not self.set_weight(r):
             return False
         self.hy = self._mul(r, self.weight)
         if hr is not None:
             if isinstance(hr, list):
-                hr = [x.finite(inplace=True) for x in hr]
+                if self._finite:
+                    hr = [x.finite(inplace=True) for x in hr]
+                else:
+                    hr = [x for x in hr]
             else:
-                hr = hr.finite(inplace=True)
+                if self._finite:
+                    hr = hr.finite(inplace=True)
             self.hy_test = self._mul(hr, self.weight)
         return True
 

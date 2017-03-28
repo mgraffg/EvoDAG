@@ -47,8 +47,9 @@ class EvoDAG(object):
                  unique_individuals=True, classifier=True,
                  labels=None, all_inputs=False, random_generations=0, fitness_function='BER',
                  min_density=0.8, multiple_outputs=False, function_selection=True,
-                 fs_tournament_size=2, **kwargs):
+                 fs_tournament_size=2, finite=True, **kwargs):
         generations = np.inf if generations is None else generations
+        self._finite = finite
         self._fitness_function = fitness_function
         self._generations = generations
         self._popsize = popsize
@@ -430,7 +431,8 @@ class EvoDAG(object):
         self._nvar = v
 
     def _random_leaf(self, var):
-        v = Variable(var, ytr=self._ytr, mask=self._mask)
+        v = Variable(var, ytr=self._ytr,
+                     finite=self._finite, mask=self._mask)
         if not v.eval(self.X):
             return None
         if not v.isfinite():
@@ -458,7 +460,8 @@ class EvoDAG(object):
         return None
 
     def _random_offspring(self, func, args):
-        f = func(args, ytr=self._ytr, mask=self._mask)
+        f = func(args, ytr=self._ytr,
+                 finite=self._finite, mask=self._mask)
         if self._unique_individuals:
             sig = f.signature()
             if self.unique_individual(sig):
