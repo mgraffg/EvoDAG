@@ -422,3 +422,9 @@ def test_functions_finite():
                 mul = ff(range(len(vars)), ytr=ytr, mask=mask, finite=True)
                 _ = mul.eval(vars)
                 assert _
+
+
+def test_classification_regression_klass():
+    from EvoDAG.node import Variable
+    assert Variable.classification
+    assert Variable.regression

@@ -825,4 +825,3 @@ def test_model_min_size():
             assert x.size >= 6
     os.unlink('model.evodag')
     default_nargs()
-    

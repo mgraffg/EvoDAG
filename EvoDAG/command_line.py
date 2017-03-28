@@ -346,6 +346,22 @@ class CommandLineParams(CommandLine):
         pa('--version',
            action='version', version='EvoDAG %s' % evodag.__version__)
 
+    def fs_type_constraint(self, params):
+        fs_class = {}
+        for x in EvoDAG()._function_set:
+            fs_class[x.__name__] = x
+        for x in params.keys():
+            if x in fs_class:
+                try:
+                    if self.data.classifier:
+                        flag = fs_class[x].classification
+                    else:
+                        flag = fs_class[x].regression
+                    if not flag:
+                        del params[x]
+                except AttributeError:
+                    pass
+
     def evolve(self, kw):
         if self.data.parameters_values:
             with open(self.data.parameters_values, 'r') as fpt:
@@ -356,6 +372,7 @@ class CommandLineParams(CommandLine):
             for k, v in kw.items():
                 if k in params and v is not None:
                     params[k] = [v]
+        self.fs_type_constraint(params)
         parameters = self.data.parameters
         if parameters is None:
             parameters = self.data.training_set + '.EvoDAGparams'

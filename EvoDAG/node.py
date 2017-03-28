@@ -19,6 +19,9 @@ from SparseArray import SparseArray
 
 
 class Variable(object):
+    classification = True
+    regression = True
+
     def __init__(self, variable, weight=None, ytr=None,
                  mask=None, height=0, finite=True):
         if isinstance(variable, list):
