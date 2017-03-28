@@ -20,7 +20,7 @@ from SparseArray import SparseArray
 
 class Variable(object):
     def __init__(self, variable, weight=None, ytr=None,
-                 mask=None, height=0, finite=False):
+                 mask=None, height=0, finite=True):
         if isinstance(variable, list):
             variable = variable if len(variable) > 1 else variable[0]
         self._variable = variable

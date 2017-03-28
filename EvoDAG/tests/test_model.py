@@ -127,6 +127,7 @@ def test_regression():
     ens = Ensemble([gp.model() for gp in gps])
     hy = np.median([gp.predict() for gp in gps], axis=0)
     hy1 = ens.predict(X=[SparseArray.fromlist(x)])
+    print(hy, hy1)
     assert np.all(hy == hy1)
 
 
