@@ -663,9 +663,10 @@ class Argmin(Argmax):
 
 class NaiveBayes(Function):
     nargs = 2
-    min_nargs = 1
+    min_nargs = 2
     symbol = 'NB'
     density_safe = True
+    unique_args = True
     regression = False
 
     def __init__(self, variable, naive_bayes=None, **kwargs):
@@ -693,6 +694,8 @@ class NaiveBayes(Function):
     def set_weight(self, X):
         if self.weight is not None:
             return True
+        if self._naive_bayes is None:
+            return False
         coef = self._naive_bayes.coef
         self.weight = [coef(x) for x in X]
         return True
@@ -702,7 +705,10 @@ class NaiveBayes(Function):
         hy, hyt = self.hy2listM(X)
         if not self.set_weight(hy):
             return False
-        nclass = self._naive_bayes._nclass
+        try:
+            nclass = self._naive_bayes._nclass
+        except AttributeError:
+            nclass = len(self.weight[0][2])
         self.hy = NB(hy, self.weight, nclass)
         if hyt is not None:
             self.hy_test = NB(hyt, self.weight, nclass)

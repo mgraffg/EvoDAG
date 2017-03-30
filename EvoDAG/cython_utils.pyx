@@ -18,6 +18,7 @@ from cpython.list cimport PyList_GET_SIZE, PyList_GET_ITEM, PyList_New, PyList_A
 from cpython cimport array
 from cpython cimport list
 from libc cimport math
+cimport cython
 
 
 cpdef double fitness_SSE(list _ytr, list _hy, SparseArray _mask):
@@ -55,7 +56,7 @@ cpdef list naive_bayes_mean_std2(SparseArray var, array.array klass, array.array
     cdef Py_ssize_t i, k=0
     cdef unsigned int var_end = var.non_zero
     if var_end == 0:
-        return [mean_num, std_num]
+        return [mean_num, std_num, mean_den]
     for i in range(len(mask)):
         index = mask_value[i]
         for k in range(k, var_end):
@@ -88,6 +89,7 @@ cpdef list naive_bayes_mean_std2(SparseArray var, array.array klass, array.array
     return [mean_num, std_num, mean_den]
 
 
+@cython.cdivision(True)
 cpdef list naive_bayes(list var, list coef, unsigned int nclass):
     cdef Py_ssize_t i, j
     cdef list l = <list> PyList_GET_ITEM(coef, 0)

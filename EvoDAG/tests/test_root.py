@@ -1072,9 +1072,9 @@ def test_multiple_outputs():
                 multiple_outputs=True,
                 seed=0,
                 popsize=10000)
+    gp.X = X
     gp.nclasses(y)
     gp.y = y
-    gp.X = X
     gp.create_population()
     assert len(gp.y) == 3
 

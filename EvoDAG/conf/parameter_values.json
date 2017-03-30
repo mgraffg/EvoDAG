@@ -62,9 +62,6 @@
         true,
         false
     ],
-    "finite": [
-        true
-    ],
     "Floor": [
         false
     ],
@@ -112,6 +109,14 @@
         20,
         40
     ],
+    "NaiveBayes": [
+        0,
+        2,
+        5,
+        10,
+        20,
+        40
+    ],    
     "Sign": [
         false
     ],
@@ -150,6 +155,9 @@
         2000,
 	4000
     ],
+    "finite": [
+        true
+    ],    
     "fitness_function": [
         "BER"
     ],

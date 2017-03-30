@@ -350,6 +350,7 @@ class CommandLineParams(CommandLine):
         fs_class = {}
         for x in EvoDAG()._function_set:
             fs_class[x.__name__] = x
+        p_delete = []
         for x in params.keys():
             if x in fs_class:
                 try:
@@ -358,9 +359,11 @@ class CommandLineParams(CommandLine):
                     else:
                         flag = fs_class[x].regression
                     if not flag:
-                        del params[x]
+                        p_delete.append(x)
                 except AttributeError:
                     pass
+        for x in p_delete:
+            del params[x]
 
     def evolve(self, kw):
         if self.data.parameters_values:

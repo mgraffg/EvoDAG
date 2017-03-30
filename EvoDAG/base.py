@@ -21,13 +21,13 @@ from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Log1p
 from .node import Sq, Min, Max
 from .node import Atan2, Hypot, Acos, Asin, Atan, Tan, Cosh, Sinh
 from .node import Tanh, Acosh, Asinh, Atanh, Expm1, Log, Log2, Log10
-from .node import Lgamma, Sign, Ceil, Floor
+from .node import Lgamma, Sign, Ceil, Floor, NaiveBayes
 from .model import Model, Models
 from .population import SteadyState
 from .utils import tonparray
 from .cython_utils import fitness_SAE
 from .function_selection import FunctionSelection
-from .naive_bayes import NaiveBayes
+from .naive_bayes import NaiveBayes as NB
 import time
 import importlib
 import inspect
@@ -42,7 +42,7 @@ class EvoDAG(object):
                                Sq, Min, Max, Atan2, Hypot, Acos, Asin, Atan,
                                Tan, Cosh, Sinh, Tanh, Acosh, Asinh, Atanh,
                                Expm1, Log, Log2, Log10, Lgamma, Sign,
-                               Ceil, Floor],
+                               Ceil, Floor, NaiveBayes],
                  tr_fraction=0.5, population_class=SteadyState,
                  number_tries_feasible_ind=30, time_limit=None,
                  unique_individuals=True, classifier=True,
@@ -432,17 +432,8 @@ class EvoDAG(object):
         self._nvar = v
 
     def _random_leaf(self, var):
-        try:
-            naive_bayes = self._naive_bayes
-        except AttributeError:
-            if hasattr(self, '_y_klass'):
-                self._naive_bayes = NaiveBayes(mask=self._mask_ts, klass=self._y_klass,
-                                               nclass=self._labels.shape[0])
-            else:
-                self._naive_bayes = None
-            naive_bayes = self._naive_bayes
         v = Variable(var, ytr=self._ytr, finite=self._finite, mask=self._mask,
-                     naive_bayes=naive_bayes)
+                     naive_bayes=self.naive_bayes)
         if not v.eval(self.X):
             return None
         if not v.isfinite():
@@ -469,8 +460,21 @@ class EvoDAG(object):
         self._unfeasible_counter += 1
         return None
 
+    @property
+    def naive_bayes(self):
+        try:
+            return self._naive_bayes
+        except AttributeError:
+            if hasattr(self, '_y_klass'):
+                self._naive_bayes = NB(mask=self._mask_ts, klass=self._y_klass,
+                                       nclass=self._labels.shape[0])
+            else:
+                self._naive_bayes = None
+        return self._naive_bayes
+
     def _random_offspring(self, func, args):
-        f = func(args, ytr=self._ytr, finite=self._finite, mask=self._mask)
+        f = func(args, ytr=self._ytr, naive_bayes=self.naive_bayes,
+                 finite=self._finite, mask=self._mask)
         if self._unique_individuals:
             sig = f.signature()
             if self.unique_individual(sig):
