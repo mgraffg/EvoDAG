@@ -27,6 +27,7 @@ from .population import SteadyState
 from .utils import tonparray
 from .cython_utils import fitness_SAE
 from .function_selection import FunctionSelection
+from .naive_bayes import NaiveBayes
 import time
 import importlib
 import inspect
@@ -431,8 +432,17 @@ class EvoDAG(object):
         self._nvar = v
 
     def _random_leaf(self, var):
-        v = Variable(var, ytr=self._ytr,
-                     finite=self._finite, mask=self._mask)
+        try:
+            naive_bayes = self._naive_bayes
+        except AttributeError:
+            if hasattr(self, '_y_klass'):
+                self._naive_bayes = NaiveBayes(mask=self._mask_ts, klass=self._y_klass,
+                                               nclass=self._labels.shape[0])
+            else:
+                self._naive_bayes = None
+            naive_bayes = self._naive_bayes
+        v = Variable(var, ytr=self._ytr, finite=self._finite, mask=self._mask,
+                     naive_bayes=naive_bayes)
         if not v.eval(self.X):
             return None
         if not v.isfinite():
@@ -460,8 +470,7 @@ class EvoDAG(object):
         return None
 
     def _random_offspring(self, func, args):
-        f = func(args, ytr=self._ytr,
-                 finite=self._finite, mask=self._mask)
+        f = func(args, ytr=self._ytr, finite=self._finite, mask=self._mask)
         if self._unique_individuals:
             sig = f.signature()
             if self.unique_individual(sig):

@@ -15,6 +15,7 @@
 
 import numpy as np
 from .linalg_solve import compute_weight
+from .cython_utils import naive_bayes as NB
 from SparseArray import SparseArray
 
 
@@ -23,7 +24,7 @@ class Variable(object):
     regression = True
 
     def __init__(self, variable, weight=None, ytr=None,
-                 mask=None, height=0, finite=True):
+                 mask=None, height=0, finite=True, **kwargs):
         if isinstance(variable, list):
             variable = variable if len(variable) > 1 else variable[0]
         self._variable = variable
@@ -658,3 +659,51 @@ class Argmin(Argmax):
     @staticmethod
     def argop(r):
         return SparseArray.argmin(r)
+
+
+class NaiveBayes(Function):
+    nargs = 2
+    min_nargs = 1
+    symbol = 'NB'
+    density_safe = True
+    regression = False
+
+    def __init__(self, variable, naive_bayes=None, **kwargs):
+        super(NaiveBayes, self).__init__(variable, **kwargs)
+        self._variable = sorted(self._variable)
+        self._naive_bayes = naive_bayes
+
+    def hy2listM(self, X):
+        if self._multiple_outputs:
+            hy = []
+            for x in X:
+                hy += x.hy
+            hyt = None
+            if X[0].hy_test is not None:
+                hyt = []
+                for x in X:
+                    hyt += x.hy_test
+            return hy, hyt
+        hy = [x.hy for x in X]
+        hyt = None
+        if X[0].hy_test is not None:
+            hyt = [x.hy_test for x in X]
+        return hy, hyt
+
+    def set_weight(self, X):
+        if self.weight is not None:
+            return True
+        coef = self._naive_bayes.coef
+        self.weight = [coef(x) for x in X]
+        return True
+
+    def eval(self, X):
+        X = [X[x] for x in self.variable]
+        hy, hyt = self.hy2listM(X)
+        if not self.set_weight(hy):
+            return False
+        nclass = self._naive_bayes._nclass
+        self.hy = NB(hy, self.weight, nclass)
+        if hyt is not None:
+            self.hy_test = NB(hyt, self.weight, nclass)
+        return True

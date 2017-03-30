@@ -428,3 +428,69 @@ def test_classification_regression_klass():
     from EvoDAG.node import Variable
     assert Variable.classification
     assert Variable.regression
+
+
+def create_problem_node2(nargs=4, seed=0):
+    from EvoDAG import RootGP
+    gp = RootGP(generations=1, popsize=nargs,
+                multiple_outputs=True, seed=seed)
+    gp.X = X
+    gp.Xtest = X
+    y = cl.copy()
+    gp.nclasses(y)
+    gp.y = y
+    return gp, [gp.X[x] for x in range(nargs)]
+
+
+def test_functions_extra_args():
+    from EvoDAG.node import Variable, Mul, Div, Min, Max, Atan2, Hypot
+    from EvoDAG.node import Argmax, Argmin
+    for ff in [Mul, Div, Min, Max, Atan2, Hypot, Argmax, Argmin]:
+        gp, args = create_problem_node2(nargs=4, seed=0)
+        vars = [Variable(k, ytr=gp._ytr, y_klass=gp._y_klass,
+                         mask=gp._mask, finite=True)
+                for k in range(len(args))]
+        [x.eval(args) for x in vars]
+        mul = ff(range(len(vars)), ytr=gp._ytr, klass=gp._y_klass,
+                 mask=gp._mask, finite=True)
+        mul.eval(vars)
+
+
+def test_naive_bayes():
+    import numpy as np
+    from EvoDAG.node import Variable, NaiveBayes
+    gp, args = create_problem_node2(nargs=4, seed=0)
+    gp.random_leaf()
+    vars = [Variable(k, ytr=gp._ytr, y_klass=gp._y_klass,
+                     mask=gp._mask, finite=True)
+            for k in range(len(args))]
+    [x.eval(args) for x in vars]
+    naive_bayes = NaiveBayes(range(len(vars)), ytr=gp._ytr, naive_bayes=gp._naive_bayes,
+                             mask=gp._mask, finite=True)
+    naive_bayes.eval(vars)
+    mask = np.array(gp._mask_ts.sign().full_array(), dtype=np.bool)
+    klass = np.array(gp._y_klass.full_array())[mask]
+    unique_klass = np.unique(klass)
+    mean = []
+    std2 = []
+    p_klass = []
+    l = []
+    for v in vars:
+        l += v.hy
+    for v in l:
+        var = np.array(v.full_array())[mask]
+        mean.append([np.mean(var[k == klass]) for k in unique_klass])
+        std2.append([np.var(var[k == klass]) for k in unique_klass])
+        p_klass = [(k == klass).mean() for k in unique_klass]
+    mean = np.array(mean)
+    std2 = np.array(std2)
+    p_klass = np.array(p_klass)
+    likelihood = []
+    for i in range(unique_klass.shape[0]):
+        a = np.log(p_klass[i])
+        b = - 0.5 * np.sum([np.log(2. * np.pi * s[i]) for s in std2])
+        _ = [(x + -m[i]).sq() * (1 / s[i]) for x, m, s in zip(l, mean, std2)]
+        _ = SparseArray.cumsum(_) * -0.5
+        likelihood.append(_ + b + a)
+    for a, b in zip(likelihood, naive_bayes.hy):
+        [assert_almost_equals(v, w) for v, w in zip(a.data, b.data)]
