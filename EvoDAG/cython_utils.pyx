@@ -40,6 +40,19 @@ cpdef double fitness_SAE(list _ytr, list _hy, list _mask):
     return res / len(_ytr)
 
 
+cpdef bint naive_bayes_isfinite(list coef, int nclass):
+    cdef Py_ssize_t i, j=0
+    cdef array.array c
+    cdef double *c_value
+    for j in range(1, 3):
+        c = <array.array> PyList_GET_ITEM(coef, j)
+        c_value = c.data.as_doubles
+        for i in range(nclass):
+            if c_value[i] == 0:
+                return False
+    return True
+
+
 cpdef list naive_bayes_mean_std2(SparseArray var, array.array klass, array.array mask, int nclass):
     cdef array.array mean_num, mean_den
     cdef unsigned int *a = var.index.data.as_uints, index

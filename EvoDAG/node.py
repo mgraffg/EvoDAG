@@ -16,6 +16,7 @@
 import numpy as np
 from .linalg_solve import compute_weight
 from .cython_utils import naive_bayes as NB
+from .cython_utils import naive_bayes_isfinite
 from SparseArray import SparseArray
 
 
@@ -697,7 +698,18 @@ class NaiveBayes(Function):
         if self._naive_bayes is None:
             return False
         coef = self._naive_bayes.coef
-        self.weight = [coef(x) for x in X]
+        nclass = self._naive_bayes._nclass
+        w = []
+        v = []
+        for k, x in enumerate(X):
+            c = coef(x)
+            if not naive_bayes_isfinite(c, nclass):
+                continue
+            w.append(c)
+            v.append(k)
+        if len(v) == 0:
+            return False
+        self.weight = [w, v, nclass]
         return True
 
     def eval(self, X):
@@ -705,11 +717,8 @@ class NaiveBayes(Function):
         hy, hyt = self.hy2listM(X)
         if not self.set_weight(hy):
             return False
-        try:
-            nclass = self._naive_bayes._nclass
-        except AttributeError:
-            nclass = len(self.weight[0][2])
-        self.hy = NB(hy, self.weight, nclass)
+        weight, var, nclass = self.weight
+        self.hy = NB([hy[x] for x in var], weight, nclass)
         if hyt is not None:
-            self.hy_test = NB(hyt, self.weight, nclass)
+            self.hy_test = NB([hyt[x] for x in var], weight, nclass)
         return True
