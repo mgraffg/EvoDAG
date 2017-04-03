@@ -187,8 +187,8 @@ problems (these benchmarks can be found:
 The best performance among each classification dataset is in
 bold face to facilitate the reading. It can be observed from the table
 that PSMS obtained the best performance on five datasets, SVM
-on two dataset, and EvoDAG obtained the
-best performance in the rest of the datasets (six). One
+on one dataset, and EvoDAG obtained the
+best performance in the rest of the datasets (seven). One
 characteristic that caught our attention is the high confidence
 intervals of auto-sklearn (not shown here), it is one order of magnitude higher than
 the other systems. Analyzing the predictions performed by
@@ -202,18 +202,18 @@ decided to keep auto-sklearn without modifications.
 |Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.6.17)|
 | ----- | ---------------------------------------------: | --------------------------------------------: | -----------------------------------: | -----------: |
 |banana          |     **11.08**      |  28.00  |11.27 | 12.05 | 
-|titanic          |    **24.18**    |  37.18   |  30.27  |  29.82 |
-|thyroid        |      **4.32**      |  23.38  |  6.13  |  7.25  | 
+|titanic          |    **24.18**    |  37.18   |  30.27  |  29.55 |
+|thyroid        |      **4.32**      |  23.38  |  6.13  |  7.58  | 
 |diabetis        |     27.06   |   37.65  |  26.65  |  **25.32** |
 |breast-cancer    |    **33.01**    |  42.36  |  36.25  |  34.10 | 
 |flare-solar     |     34.81     |  39.05 |  33.41  |  **32.99** | 
 |heart             |   20.69        |  27.69  |  18.12  |  **16.30** |
-|ringnorm       |      7.98      |  15.49  |  **1.96**  |  2.53 |
+|ringnorm       |      7.98      |  15.49  |  1.96  |  **1.63** |
 |twonorm       |       3.09      |  20.87  |  2.90  |  **2.61** | 
 |german         |      30.10    | 39.45  |  29.00  | **28.78** | 
-|image         |       **2.90** | 21.29  |  3.32  | 3.55 | 
-|waveform      |       12.80   | 22.67  |  **10.62**  |  10.99 |
-|splice       |        14.63  | 10.79  |  11.23  |  **9.89** | 
+|image         |       **2.90** | 21.29  |  3.32  | 4.15 | 
+|waveform      |       12.80   | 22.67  |  **10.62**  |  10.90 |
+|splice       |        14.63  | 10.79  |  11.23  |  **9.72** | 
 
 
 # Install EvoDAG #
