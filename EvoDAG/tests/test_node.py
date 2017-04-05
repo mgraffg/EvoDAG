@@ -494,3 +494,28 @@ def test_naive_bayes():
         likelihood.append(_ + b + a)
     for a, b in zip(likelihood, naive_bayes.hy):
         [assert_almost_equals(v, w) for v, w in zip(a.data, b.data)]
+
+
+def test_naive_bayes_sklearn():
+    from EvoDAG.naive_bayes import NaiveBayes as NB
+    from EvoDAG.node import NaiveBayes
+    try:
+        from sklearn.naive_bayes import GaussianNB
+    except ImportError:
+        return
+
+    class Var(object):
+        def __init__(self, a):
+            self.hy = a
+            self.hy_test = None
+
+    m = GaussianNB().fit(X, cl)
+    hy = m._joint_log_likelihood(X)
+    vars = [Var(SparseArray.fromlist(x)) for x in X.T]
+    nb = NB(mask=SparseArray.fromlist([1 for _ in X[:, 0]]), klass=SparseArray.fromlist(cl),
+            nclass=3)
+    naive_bayes = NaiveBayes([x for x in range(4)], naive_bayes=nb)
+    naive_bayes.eval(vars)
+    for a, b in zip(naive_bayes.hy, hy.T):
+        for a1, b1 in zip(a.full_array(), b):
+            assert_almost_equals(a1, b1, 3)
