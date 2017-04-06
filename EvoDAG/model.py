@@ -68,6 +68,15 @@ class Model(object):
     def height(self):
         return self._hist[-1].height
 
+    def inputs(self, counter=None):
+        from collections import Counter
+        if counter is None:
+            counter = Counter()
+        for node in self._hist:
+            if not isinstance(node, Function):
+                counter[node._variable] += 1
+        return counter
+
     def transform(self, v):
         if not isinstance(v, Function):
             return v
@@ -212,6 +221,14 @@ class Models(object):
         l = [x.fitness_vs for x in self.models]
         return np.median(l)
 
+    def inputs(self, counter=None):
+        from collections import Counter
+        if counter is None:
+            counter = Counter()
+        for m in self.models:
+            m.inputs(counter=counter)
+        return counter
+
     def __iter__(self):
         "Iterates on the models"
         for i in self.models:
@@ -279,7 +296,15 @@ class Ensemble(object):
     def height(self):
         l = [x.height for x in self.models]
         return np.median(l)
-    
+
+    def inputs(self, counter=None):
+        from collections import Counter
+        if counter is None:
+            counter = Counter()
+        for m in self.models:
+            m.inputs(counter=counter)
+        return counter
+
     def _decision_function_raw(self, X, cpu_cores=1):
         if cpu_cores == 1:
             r = [m.decision_function(X) for m in self._models]

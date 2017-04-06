@@ -17,6 +17,7 @@ from .utils import RandomParameterSearch, PARAMS
 from SparseArray import SparseArray
 from .model import Ensemble
 import collections
+import os
 from multiprocessing import Pool
 import EvoDAG as evodag
 from EvoDAG import EvoDAG
@@ -178,6 +179,9 @@ class CommandLine(object):
         import json
         X = None
         y = []
+        dependent = os.getenv('KLASS')
+        if dependent is None:
+            dependent = 'klass'
         if fname.endswith('.gz'):
             with gzip.open(fname, 'rb') as fpt:
                 l = fpt.readlines()
@@ -196,7 +200,7 @@ class CommandLine(object):
                     k = int(k)
                     X[k].append((row, self.convert(v)))
                 except ValueError:
-                    if k == 'klass' or k == 'y':
+                    if k == dependent:
                         y.append(self.convert_label(v))
         num_rows = len(l)
         X = [SparseArray.index_data(x, num_rows) for x in X]
@@ -256,17 +260,24 @@ class CommandLine(object):
             self.evo = EvoDAG(**kw).fit(self.X, self.y, test_set=self.Xtest)
             self.model = self.evo.model()
         else:
-            seed = self.data.seed
+            min_size = self.data.min_size
             esize = self.data.ensemble_size
-            args = [(x, kw, self.X, self.y, self.Xtest)
-                    for x in range(seed, seed+esize)]
-            if self.data.cpu_cores == 1:
-                evo = [init_evodag(x) for x in tqdm(args, total=len(args))]
-            else:
-                p = Pool(self.data.cpu_cores, maxtasksperchild=1)
-                evo = [x for x in tqdm(p.imap_unordered(init_evodag, args),
-                                       total=len(args))]
-                p.close()
+            init = self.data.seed
+            end = init + esize
+            evo = []
+            while len(evo) < esize:
+                args = [(x, kw, self.X, self.y, self.Xtest)
+                        for x in range(init, end)]
+                if self.data.cpu_cores == 1:
+                    _ = [init_evodag(x) for x in tqdm(args, total=len(args))]
+                else:
+                    p = Pool(self.data.cpu_cores, maxtasksperchild=1)
+                    _ = [x for x in tqdm(p.imap_unordered(init_evodag, args),
+                                         total=len(args))]
+                    p.close()
+                [evo.append(x) for x in _ if x.size >= min_size]
+                init = end
+                end = init + (esize - len(evo))
             self.model = Ensemble(evo)
         model_file = self.get_model_file()
         with gzip.open(model_file, 'w') as fpt:
@@ -335,6 +346,25 @@ class CommandLineParams(CommandLine):
         pa('--version',
            action='version', version='EvoDAG %s' % evodag.__version__)
 
+    def fs_type_constraint(self, params):
+        fs_class = {}
+        for x in EvoDAG()._function_set:
+            fs_class[x.__name__] = x
+        p_delete = []
+        for x in params.keys():
+            if x in fs_class:
+                try:
+                    if self.data.classifier:
+                        flag = fs_class[x].classification
+                    else:
+                        flag = fs_class[x].regression
+                    if not flag:
+                        p_delete.append(x)
+                except AttributeError:
+                    pass
+        for x in p_delete:
+            del params[x]
+
     def evolve(self, kw):
         if self.data.parameters_values:
             with open(self.data.parameters_values, 'r') as fpt:
@@ -345,6 +375,7 @@ class CommandLineParams(CommandLine):
             for k, v in kw.items():
                 if k in params and v is not None:
                     params[k] = [v]
+        self.fs_type_constraint(params)
         parameters = self.data.parameters
         if parameters is None:
             parameters = self.data.training_set + '.EvoDAGparams'
@@ -432,6 +463,8 @@ class CommandLineTrain(CommandLine):
            action="store_true",
            help='Whether the inputs are in json format',
            default=False)
+        pa('--min-size', dest='min_size',
+           type=int, default=1, help='Model min-size')
 
     def version(self):
         pa = self.parser.add_argument
@@ -553,7 +586,14 @@ class CommandLineUtils(CommandLine):
         self.size()
         self.height()
         self.remove_terminals()
+        self.used_inputs_number()
         self.version()
+
+    def used_inputs_number(self):
+        self.parser.add_argument('--used-inputs-number',
+                                 help='Number of inputs used',
+                                 dest='used_inputs_number',
+                                 default=False, action='store_true')
 
     def remove_terminals(self):
         self.parser.add_argument('--remove-terminals',
@@ -590,7 +630,7 @@ class CommandLineUtils(CommandLine):
                                  help='Parameters statistics',
                                  dest='params_stats',
                                  default=False, action='store_true')
-        
+
     def output_file(self):
         self.parser.add_argument('-o', '--output-file',
                                  help='File / directory to store the result(s)',
@@ -674,6 +714,13 @@ class CommandLineUtils(CommandLine):
                 self.word2id = pickle.load(fpt)
                 self.label2id = pickle.load(fpt)
             print("Height: %s" % m.height)
+        elif self.data.used_inputs_number:
+            with gzip.open(model_file, 'r') as fpt:
+                m = pickle.load(fpt)
+                self.word2id = pickle.load(fpt)
+                self.label2id = pickle.load(fpt)
+            inputs = m.inputs()
+            print("Used inputs number", len(inputs))
 
 
 def params():

@@ -44,19 +44,25 @@ class RandomParameterSearch(object):
                  npoints=1468,
                  training_size=5000,
                  seed=0):
+        self._training_size = training_size
+        self.popsize_constraint(params)
         self._params = sorted(params.items())
         self._params.reverse()
         self._len = None
         self._npoints = npoints
         self._seed = seed
-        self._training_size = training_size
         self.fix_early_popsize()
+
+    def popsize_constraint(self, params):
+        try:
+            params['popsize'] = [x for x in params['popsize'] if x <= self._training_size]
+        except KeyError:
+            pass
 
     def fix_early_popsize(self):
         try:
             popsize = [x for x in self._params if x[0] == 'popsize'][0]
-            popsize_min = min(popsize[1])
-            if popsize_min > self._training_size:
+            if len(popsize[1]) == 0:
                 popsize[1].append(self._training_size)
         except IndexError:
             pass

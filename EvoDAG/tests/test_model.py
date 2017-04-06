@@ -30,12 +30,14 @@ def test_pickle_model():
                 tournament_size=2,
                 early_stopping_rounds=-1,
                 seed=0,
+                multiple_outputs=True,
                 popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
     m = gp.model()
     hy = gp.decision_function(X=X[-10:])
     m1 = pickle.loads(pickle.dumps(m))
     hy1 = m1.decision_function(X=X[-10:])
-    assert hy.SSE(hy1) == 0
+    for a, b in zip(hy, hy1):
+        assert a.SSE(b) == 0
 
 
 def test_model_hist():
@@ -127,6 +129,7 @@ def test_regression():
     ens = Ensemble([gp.model() for gp in gps])
     hy = np.median([gp.predict() for gp in gps], axis=0)
     hy1 = ens.predict(X=[SparseArray.fromlist(x)])
+    print(hy, hy1)
     assert np.all(hy == hy1)
 
 

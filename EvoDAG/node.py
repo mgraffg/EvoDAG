@@ -15,12 +15,17 @@
 
 import numpy as np
 from .linalg_solve import compute_weight
+from .cython_utils import naive_bayes as NB
+from .cython_utils import naive_bayes_isfinite
 from SparseArray import SparseArray
 
 
 class Variable(object):
-    def __init__(self, variable, weight=None, ytr=None, mask=None,
-                 height=0):
+    classification = True
+    regression = True
+
+    def __init__(self, variable, weight=None, ytr=None,
+                 mask=None, height=0, finite=True, **kwargs):
         if isinstance(variable, list):
             variable = variable if len(variable) > 1 else variable[0]
         self._variable = variable
@@ -35,6 +40,7 @@ class Variable(object):
         self._height = height
         self._multiple_outputs = False
         self._n_outputs = 1
+        self._finite = finite
         if isinstance(ytr, list) and len(ytr) > 1:
             self._multiple_outputs = True
             self._n_outputs = len(ytr)
@@ -143,17 +149,25 @@ class Variable(object):
     def eval(self, X):
         r, hr = self.raw_outputs(X)
         if isinstance(r, list):
-            r = [x.finite(inplace=True) for x in r]
+            if self._finite:
+                r = [x.finite(inplace=True) for x in r]
+            else:
+                r = [x for x in r]
         else:
-            r = r.finite(inplace=True)
+            if self._finite:
+                r = r.finite(inplace=True)
         if not self.set_weight(r):
             return False
         self.hy = self._mul(r, self.weight)
         if hr is not None:
             if isinstance(hr, list):
-                hr = [x.finite(inplace=True) for x in hr]
+                if self._finite:
+                    hr = [x.finite(inplace=True) for x in hr]
+                else:
+                    hr = [x for x in hr]
             else:
-                hr = hr.finite(inplace=True)
+                if self._finite:
+                    hr = hr.finite(inplace=True)
             self.hy_test = self._mul(hr, self.weight)
         return True
 
@@ -646,3 +660,65 @@ class Argmin(Argmax):
     @staticmethod
     def argop(r):
         return SparseArray.argmin(r)
+
+
+class NaiveBayes(Function):
+    nargs = 2
+    min_nargs = 2
+    symbol = 'NB'
+    density_safe = True
+    unique_args = True
+    regression = False
+
+    def __init__(self, variable, naive_bayes=None, **kwargs):
+        super(NaiveBayes, self).__init__(variable, **kwargs)
+        self._variable = sorted(self._variable)
+        self._naive_bayes = naive_bayes
+
+    def hy2listM(self, X):
+        if self._multiple_outputs:
+            hy = []
+            for x in X:
+                hy += x.hy
+            hyt = None
+            if X[0].hy_test is not None:
+                hyt = []
+                for x in X:
+                    hyt += x.hy_test
+            return hy, hyt
+        hy = [x.hy for x in X]
+        hyt = None
+        if X[0].hy_test is not None:
+            hyt = [x.hy_test for x in X]
+        return hy, hyt
+
+    def set_weight(self, X):
+        if self.weight is not None:
+            return True
+        if self._naive_bayes is None:
+            return False
+        coef = self._naive_bayes.coef
+        nclass = self._naive_bayes._nclass
+        w = []
+        v = []
+        for k, x in enumerate(X):
+            c = coef(x)
+            if not naive_bayes_isfinite(c, nclass):
+                continue
+            w.append(c)
+            v.append(k)
+        if len(v) == 0:
+            return False
+        self.weight = [w, v, nclass]
+        return True
+
+    def eval(self, X):
+        X = [X[x] for x in self.variable]
+        hy, hyt = self.hy2listM(X)
+        if not self.set_weight(hy):
+            return False
+        weight, var, nclass = self.weight
+        self.hy = NB([hy[x] for x in var], weight, nclass)
+        if hyt is not None:
+            self.hy_test = NB([hyt[x] for x in var], weight, nclass)
+        return True

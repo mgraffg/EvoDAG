@@ -750,3 +750,78 @@ def test_utils_graphviz_terminals():
         os.unlink('evodag_gv/evodag-%s' % i)
     os.rmdir('evodag_gv')
     default_nargs()
+
+
+def test_json_gzip_dependent_variable():
+    from EvoDAG.command_line import params
+    import gzip
+    import tempfile
+    import json
+    import os
+    os.environ['KLASS'] = 'dependent'
+    fname = tempfile.mktemp() + '.gz'
+    with gzip.open(fname, 'wb') as fpt:
+        for x, y in zip(X, cl):
+            a = {k: v for k, v in enumerate(x)}
+            a['dependent'] = int(y)
+            a['num_terms'] = len(x)
+            try:
+                fpt.write(bytes(json.dumps(a) + '\n', encoding='utf-8'))
+            except TypeError:
+                fpt.write(json.dumps(a) + '\n')
+    print("termine con el json")
+    sys.argv = ['EvoDAG', '-C', '-Poutput.evodag', '--json',
+                '-e1', '-p3', '-r2', fname]
+    params()
+    os.unlink(fname)
+    print(open('output.evodag').read())
+    os.unlink('output.evodag')
+    default_nargs()
+
+
+def test_model_used_inputs_number():
+    import os
+    from EvoDAG.command_line import params, train, utils
+    fname = mo_training_set()
+    sys.argv = ['EvoDAG', '--output-dim=3',
+                '-R', '--parameters',
+                'cache.evodag', '-p3', '-e1',
+                '-r2', fname]
+    params()
+    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
+                '-n2', '--output-dim=3',
+                '--model', 'model.evodag',
+                '--test', fname, fname]
+    train()
+    sys.argv = ['EvoDAG', '--used-inputs-number', 'model.evodag']
+    utils()
+    os.unlink('cache.evodag')
+    os.unlink('model.evodag')
+    default_nargs()
+
+
+def test_model_min_size():
+    import os
+    from EvoDAG.command_line import params, train
+    import gzip
+    import pickle
+    fname = mo_training_set()
+    sys.argv = ['EvoDAG', '--output-dim=3',
+                '-R', '--parameters',
+                'cache.evodag', '-p3', '-e2',
+                '-r2', fname]
+    params()
+    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
+                '-n2', '--output-dim=3',
+                '--min-size=6',
+                '--model', 'model.evodag',
+                '--test', fname, fname]
+    train()
+    os.unlink('cache.evodag')
+    with gzip.open('model.evodag') as fpt:
+        m = pickle.load(fpt)
+        for x in m.models:
+            print(x.size)
+            assert x.size >= 6
+    os.unlink('model.evodag')
+    default_nargs()

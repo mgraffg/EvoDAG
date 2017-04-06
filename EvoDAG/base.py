@@ -21,12 +21,13 @@ from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Log1p
 from .node import Sq, Min, Max
 from .node import Atan2, Hypot, Acos, Asin, Atan, Tan, Cosh, Sinh
 from .node import Tanh, Acosh, Asinh, Atanh, Expm1, Log, Log2, Log10
-from .node import Lgamma, Sign, Ceil, Floor
+from .node import Lgamma, Sign, Ceil, Floor, NaiveBayes
 from .model import Model, Models
 from .population import SteadyState
 from .utils import tonparray
 from .cython_utils import fitness_SAE
 from .function_selection import FunctionSelection
+from .naive_bayes import NaiveBayes as NB
 import time
 import importlib
 import inspect
@@ -41,13 +42,15 @@ class EvoDAG(object):
                                Sq, Min, Max, Atan2, Hypot, Acos, Asin, Atan,
                                Tan, Cosh, Sinh, Tanh, Acosh, Asinh, Atanh,
                                Expm1, Log, Log2, Log10, Lgamma, Sign,
-                               Ceil, Floor],
+                               Ceil, Floor, NaiveBayes],
                  tr_fraction=0.5, population_class=SteadyState,
                  number_tries_feasible_ind=30, time_limit=None,
                  unique_individuals=True, classifier=True,
                  labels=None, all_inputs=False, random_generations=0, fitness_function='BER',
-                 min_density=0.8, multiple_outputs=False, function_selection=True, **kwargs):
+                 min_density=0.8, multiple_outputs=False, function_selection=True,
+                 fs_tournament_size=2, finite=True, **kwargs):
         generations = np.inf if generations is None else generations
+        self._finite = finite
         self._fitness_function = fitness_function
         self._generations = generations
         self._popsize = popsize
@@ -65,10 +68,11 @@ class EvoDAG(object):
         self._multiclass = False
         self._function_set = function_set
         self._function_selection = function_selection
+        self._fs_tournament_size = fs_tournament_size
         density_safe = [k for k, v in enumerate(function_set) if v.density_safe]
         self._function_selection_ins = FunctionSelection(nfunctions=len(self._function_set),
                                                          seed=seed,
-                                                         tournament_size=tournament_size,
+                                                         tournament_size=self._fs_tournament_size,
                                                          nargs=map(lambda x: x.nargs,
                                                                    function_set),
                                                          density_safe=density_safe)
@@ -428,7 +432,8 @@ class EvoDAG(object):
         self._nvar = v
 
     def _random_leaf(self, var):
-        v = Variable(var, ytr=self._ytr, mask=self._mask)
+        v = Variable(var, ytr=self._ytr, finite=self._finite, mask=self._mask,
+                     naive_bayes=self.naive_bayes)
         if not v.eval(self.X):
             return None
         if not v.isfinite():
@@ -455,8 +460,21 @@ class EvoDAG(object):
         self._unfeasible_counter += 1
         return None
 
+    @property
+    def naive_bayes(self):
+        try:
+            return self._naive_bayes
+        except AttributeError:
+            if hasattr(self, '_y_klass'):
+                self._naive_bayes = NB(mask=self._mask_ts, klass=self._y_klass,
+                                       nclass=self._labels.shape[0])
+            else:
+                self._naive_bayes = None
+        return self._naive_bayes
+
     def _random_offspring(self, func, args):
-        f = func(args, ytr=self._ytr, mask=self._mask)
+        f = func(args, ytr=self._ytr, naive_bayes=self.naive_bayes,
+                 finite=self._finite, mask=self._mask)
         if self._unique_individuals:
             sig = f.signature()
             if self.unique_individual(sig):

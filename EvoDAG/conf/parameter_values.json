@@ -109,6 +109,14 @@
         20,
         40
     ],
+    "NaiveBayes": [
+        0,
+        2,
+        5,
+        10,
+        20,
+        40
+    ],    
     "Sign": [
         false
     ],
@@ -147,8 +155,14 @@
         2000,
 	4000
     ],
+    "finite": [
+        true
+    ],    
     "fitness_function": [
         "BER"
+    ],
+    "fs_tournament_size": [
+	2
     ],
     "function_selection": [
         true,
