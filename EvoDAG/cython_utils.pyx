@@ -53,12 +53,25 @@ cpdef bint naive_bayes_isfinite(list coef, int nclass):
     return True
 
 
+cpdef bint naive_bayes_isfinite_MN(list coef, int nclass):
+    cdef Py_ssize_t i, j=0
+    cdef array.array c
+    cdef double *c_value
+    for j in range(2):
+        c = <array.array> PyList_GET_ITEM(coef, j)
+        c_value = c.data.as_doubles
+        for i in range(nclass):
+            if not math.isfinite(c_value[i]):
+                return False
+    return True
+
+
 cpdef list naive_bayes_mean_std2(SparseArray var, array.array klass, array.array mask, int nclass):
-    cdef array.array mean_num, mean_den
+    cdef array.array mean_num, mean_den, std_num
     cdef unsigned int *a = var.index.data.as_uints, index
     cdef unsigned int *klass_value = klass.data.as_uints
     cdef double *a_value = var.data.data.as_doubles, tmp
-    cdef double *mean_num_value, *mean_den_value
+    cdef double *mean_num_value, *mean_den_value, *std_num_value
     cdef unsigned int *mask_value = mask.data.as_uints
     mean_num = array.clone(var.data, nclass, zero=True)
     mean_num_value = mean_num.data.as_doubles
@@ -127,5 +140,63 @@ cpdef list naive_bayes(list var, list coef, unsigned int nclass):
             b = b.add(((v.add2(-m_klass_value[i])).sq()).mul2(1 / s_klass_value[i]))
         b = b.mul2(-0.5)
         b = b.add2(a - (0.5 * c))
+        PyList_Append(res, b)
+    return res
+
+
+@cython.cdivision(True)
+cpdef list naive_bayes_Nc(SparseArray var, array.array klass, array.array mask, int nclass):
+    cdef array.array mean_num, mean_den
+    cdef unsigned int *a = var.index.data.as_uints, index
+    cdef unsigned int *klass_value = klass.data.as_uints
+    cdef double *a_value = var.data.data.as_doubles, tmp
+    cdef double *mean_num_value, *mean_den_value, N=0
+    cdef unsigned int *mask_value = mask.data.as_uints
+    mean_num = array.clone(var.data, nclass, zero=True)
+    mean_num_value = mean_num.data.as_doubles
+    mean_den = array.clone(var.data, nclass, zero=True)
+    mean_den_value = mean_den.data.as_doubles
+    cdef Py_ssize_t i, k=0
+    cdef unsigned int var_end = var.non_zero
+    if var_end == 0:
+        return [mean_num, mean_den]
+    for i in range(len(mask)):
+        index = mask_value[i]
+        for k in range(k, var_end):
+            if a[k] >= index:
+                break
+        if a[k] == index and a_value[k] > 0:
+            mean_num_value[klass_value[index]] += a_value[k]
+            N += a_value[k]
+            mean_den_value[klass_value[index]] += 1
+        else:
+            mean_den_value[klass_value[index]] += 1
+    for i in range(nclass):
+        mean_num_value[i] = math.log(mean_num_value[i] / N)
+    tmp = len(mask)
+    for i in range(nclass):
+        mean_den_value[i] = math.log(mean_den_value[i] / tmp)
+    return [mean_num, mean_den]
+
+
+@cython.cdivision(True)
+cpdef list naive_bayes_MN(list var, list coef, unsigned int nclass):
+    cdef Py_ssize_t i, j
+    cdef list l = <list> PyList_GET_ITEM(coef, 0)
+    cdef array.array p_klass = <array.array> PyList_GET_ITEM(l, 1), m_klass
+    cdef double *p_klass_value = p_klass.data.as_doubles, a, *m_klass_value
+    cdef SparseArray b = <SparseArray> PyList_GET_ITEM(var, 0), v
+    cdef unsigned int nvar = len(var)
+    cdef list res = []
+    for i in range(nclass):
+        a = p_klass_value[i]
+        b = b.mul2(0)
+        for j in range(nvar):
+            v = <SparseArray> PyList_GET_ITEM(var, j)
+            l = <list> PyList_GET_ITEM(coef, j)
+            m_klass = <array.array> PyList_GET_ITEM(l, 0)
+            m_klass_value = m_klass.data.as_doubles
+            b = b.add(v.mul2(m_klass_value[i]))
+        b = b.add2(p_klass_value[i])
         PyList_Append(res, b)
     return res

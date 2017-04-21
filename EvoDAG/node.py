@@ -16,7 +16,8 @@
 import numpy as np
 from .linalg_solve import compute_weight
 from .cython_utils import naive_bayes as NB
-from .cython_utils import naive_bayes_isfinite
+from .cython_utils import naive_bayes_MN as MN
+from .cython_utils import naive_bayes_isfinite, naive_bayes_isfinite_MN
 from SparseArray import SparseArray
 
 
@@ -666,7 +667,7 @@ class NaiveBayes(Function):
     nargs = 2
     min_nargs = 2
     symbol = 'NB'
-    density_safe = True
+    density_safe = False
     unique_args = True
     regression = False
 
@@ -721,4 +722,41 @@ class NaiveBayes(Function):
         self.hy = NB([hy[x] for x in var], weight, nclass)
         if hyt is not None:
             self.hy_test = NB([hyt[x] for x in var], weight, nclass)
+        return True
+
+
+class NaiveBayesMN(NaiveBayes):
+    symbol = 'MN'
+    density_safe = True
+    regression = False
+
+    def set_weight(self, X):
+        if self.weight is not None:
+            return True
+        if self._naive_bayes is None:
+            return False
+        coef = self._naive_bayes.coef_MN
+        nclass = self._naive_bayes._nclass
+        w = []
+        v = []
+        for k, x in enumerate(X):
+            c = coef(x)
+            if not naive_bayes_isfinite_MN(c, nclass):
+                continue
+            w.append(c)
+            v.append(k)
+        if len(v) == 0:
+            return False
+        self.weight = [w, v, nclass]
+        return True
+
+    def eval(self, X):
+        X = [X[x] for x in self.variable]
+        hy, hyt = self.hy2listM(X)
+        if not self.set_weight(hy):
+            return False
+        weight, var, nclass = self.weight
+        self.hy = MN([hy[x] for x in var], weight, nclass)
+        if hyt is not None:
+            self.hy_test = MN([hyt[x] for x in var], weight, nclass)
         return True
