@@ -680,12 +680,20 @@ class NaiveBayes(Function):
         if self._multiple_outputs:
             hy = []
             for x in X:
-                hy += x.hy
+                _ = x.hy
+                if isinstance(_, list):
+                    hy += _
+                else:
+                    hy.append(_)
             hyt = None
             if X[0].hy_test is not None:
                 hyt = []
                 for x in X:
-                    hyt += x.hy_test
+                    _ = x.hy_test
+                    if isinstance(_, list):
+                        hyt += _
+                    else:
+                        hyt.append(_)
             return hy, hyt
         hy = [x.hy for x in X]
         hyt = None

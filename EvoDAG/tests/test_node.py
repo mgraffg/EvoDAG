@@ -549,3 +549,13 @@ def test_naive_bayes_MN():
     naive_bayes.eval(vars)
     for a, b in zip(R, naive_bayes.hy):
         [assert_almost_equals(v, w) for v, w in zip(a.data, b.data)]
+
+
+def test_naive_bayes_MN_variable():
+    from EvoDAG.node import NaiveBayesMN
+    gp, args = create_problem_node2(nargs=3, seed=0)
+    gp.random_leaf()
+    naive_bayes = NaiveBayesMN(range(len(gp.X)), ytr=gp._ytr, naive_bayes=gp._naive_bayes,
+                               mask=gp._mask, finite=True)
+    naive_bayes.eval(gp.X)
+    assert len(naive_bayes.hy) == 3

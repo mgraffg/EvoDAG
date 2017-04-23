@@ -197,6 +197,7 @@ cpdef list naive_bayes_MN(list var, list coef, unsigned int nclass):
             m_klass = <array.array> PyList_GET_ITEM(l, 0)
             m_klass_value = m_klass.data.as_doubles
             b = b.add(v.mul2(m_klass_value[i]))
-        b = b.add2(p_klass_value[i])
+        # b = b.add2(p_klass_value[i])
+        b = b.add(SparseArray.constant(p_klass_value[i], b.index, b._len))
         PyList_Append(res, b)
     return res
