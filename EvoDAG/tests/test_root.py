@@ -202,8 +202,9 @@ def test_features():
 
 
 def test_create_population():
-    from EvoDAG import RootGP
-    gp = RootGP(generations=1, popsize=4)
+    from EvoDAG import EvoDAG
+    gp = EvoDAG(generations=1, classifier=False,
+                popsize=4)
     gp.X = X
     y = cl.copy()
     mask = y == 0
@@ -224,9 +225,10 @@ def test_create_population():
 
 
 def test_create_population2():
-    from EvoDAG import RootGP
+    from EvoDAG import EvoDAG
     from EvoDAG.node import Function
-    gp = RootGP(generations=1, popsize=10)
+    gp = EvoDAG(generations=1, classifier=False,
+                popsize=10)
     gp.X = X
     y = cl.copy()
     mask = y == 0
@@ -236,6 +238,24 @@ def test_create_population2():
     gp.create_population()
     for i in gp.population.population[4:]:
         assert isinstance(i, Function)
+
+
+def test_create_population_cl():
+    from EvoDAG import EvoDAG
+    from EvoDAG.node import Function, Variable, NaiveBayes, NaiveBayesMN
+    gp = EvoDAG(generations=1, popsize=50, multiple_outputs=True)
+    gp.X = X
+    gp.nclasses(cl)
+    gp.y = cl.copy()
+    gp.population_instance()
+    gp.create_population()
+    flag = False
+    for i in gp.population.population:
+        assert isinstance(i, Function) or isinstance(i, Variable)
+        if isinstance(i, Function):
+            if not (isinstance(i, NaiveBayes) or isinstance(i, NaiveBayesMN)):
+                flag = True
+    assert flag
 
 
 def test_best_so_far():
@@ -261,7 +281,7 @@ def test_best_so_far():
 
 def test_early_stopping():
     from EvoDAG import RootGP
-    gp = RootGP(generations=1, popsize=4)
+    gp = RootGP(generations=1, popsize=4, classifier=False)
     gp.X = X
     y = cl.copy()
     mask = y == 0
@@ -368,11 +388,11 @@ def test_regression_y():
     gp = RootGP(generations=1, popsize=4, classifier=False)
     assert not gp._classifier
     gp.X = X
-    gp.y = cl
+    gp.y = cl.copy()
     assert gp._ytr.SSE(gp.y) > 0
     gp = RootGP(generations=1, popsize=4, classifier=False, tr_fraction=1.0)
     gp.X = X
-    gp.y = cl
+    gp.y = cl.copy()
     assert gp._ytr.SSE(gp.y) == 0
 
 
@@ -431,13 +451,13 @@ def test_BER():
     gp.fitness_vs(a)
     print(b, a.fitness_vs * 100)
     assert_almost_equals(b, -a.fitness_vs * 100)
-    # assert False
 
 
 def test_tournament():
     from EvoDAG import RootGP
     gp = RootGP(generations=1,
                 tournament_size=4,
+                classifier=False,
                 popsize=4)
     gp.X = X
     y = cl.copy()
@@ -460,6 +480,7 @@ def test_tournament_negative():
     from EvoDAG import RootGP
     gp = RootGP(generations=1,
                 tournament_size=4,
+                classifier=False,
                 popsize=4)
     gp.X = X
     y = cl.copy()
@@ -479,19 +500,17 @@ def test_tournament_negative():
 
 
 def test_random_offspring():
-    from EvoDAG import RootGP
+    from EvoDAG import EvoDAG
     from EvoDAG.node import Add, Sin
-    gp = RootGP(generations=1,
+    gp = EvoDAG(generations=1,
                 function_set=[Add, Sin],
+                multiple_outputs=True,
                 seed=1,
                 tournament_size=2,
                 popsize=10)
     gp.X = X
-    y = cl.copy()
-    mask = y == 0
-    y[mask] = 1
-    y[~mask] = -1
-    gp.y = y
+    gp.nclasses(cl)
+    gp.y = cl.copy()
     gp.create_population()
     a = gp.random_offspring()
     assert isinstance(a, Add) or isinstance(a, Sin)
@@ -652,6 +671,7 @@ def test_trace():
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
                 function_set=[Add],
+                classifier=False,
                 early_stopping_rounds=-1,
                 seed=0,
                 popsize=4)
@@ -682,10 +702,10 @@ def test_class_values():
 
 
 def test_multiclass():
-    from EvoDAG import RootGP
+    from EvoDAG import EvoDAG
     y = cl.copy()
     ncl = np.unique(y).shape[0]
-    gp = RootGP(generations=np.inf,
+    gp = EvoDAG(generations=np.inf,
                 tournament_size=2,
                 early_stopping_rounds=-1,
                 seed=0,
@@ -695,9 +715,9 @@ def test_multiclass():
 
 
 def test_multiclass_decision_function():
-    from EvoDAG import RootGP
+    from EvoDAG import EvoDAG
     y = cl.copy()
-    gp = RootGP(generations=np.inf,
+    gp = EvoDAG(generations=np.inf,
                 tournament_size=2,
                 early_stopping_rounds=-1,
                 seed=0,
@@ -768,25 +788,23 @@ def test_labels():
 
 
 def test_height():
-    from EvoDAG import RootGP
-    from EvoDAG.node import Mul
-    gp = RootGP(generations=1,
+    from EvoDAG.node import Mul, NaiveBayesMN, NaiveBayes
+    from EvoDAG import EvoDAG
+    gp = EvoDAG(generations=1,
                 seed=1,
+                multiple_outputs=True,
                 tournament_size=2,
                 popsize=5)
     gp.X = X
-    y = cl.copy()
-    mask = y == 0
-    y[mask] = 1
-    y[~mask] = -1
-    gp.y = y
+    gp.nclasses(cl)
+    gp.y = cl.copy()
     gp.create_population()
-    assert np.all([x.height == 0 for x in gp.population.population[:4]])
-    n = gp.population.population[-1]
-    assert n.height == 1
+    print(NaiveBayes.nargs, NaiveBayesMN.nargs)
+    print([(x, x.height) for x in gp.population.population])
+    assert np.all([x.height == 0 for x in gp.population.population])
     args = [3, 4]
     f = gp._random_offspring(Mul, args)
-    assert f.height == 2
+    assert f.height == 1
 
 
 def test_regression():
@@ -1100,20 +1118,22 @@ def test_add_repeated_args():
     from EvoDAG.node import Add, Min, Max
     y = cl.copy()
     for ff in [Add, Min, Max]:
-        ff.nargs = 30
+        ff.nargs = 10
         gp = EvoDAG(generations=np.inf,
                     tournament_size=2,
                     early_stopping_rounds=100,
                     time_limit=0.9,
-                    multiple_outputs=True,
+                    # multiple_outputs=True,
+                    classifier=False,
                     all_inputs=True,
                     function_set=[ff],
                     seed=0,
                     popsize=10000)
         gp.X = X
-        gp.nclasses(y)
+        # gp.nclasses(y)
         gp.y = y
         gp.create_population()
+        print(gp.population.population)
         node = gp.random_offspring()
         print(node, node._variable, X.shape)
         assert len(node._variable) <= X.shape[1]
@@ -1142,14 +1162,10 @@ def test_classification_mo():
 def test_classification_mo2():
     from EvoDAG import EvoDAG
     y = cl.copy()
-    gp = EvoDAG(generations=np.inf,
-                tournament_size=2,
-                early_stopping_rounds=10,
-                time_limit=0.9,
-                multiple_outputs=True,
-                all_inputs=True,
-                seed=0,
-                popsize=10000)
+    gp = EvoDAG(generations=np.inf, tournament_size=2,
+                early_stopping_rounds=10, time_limit=0.9,
+                multiple_outputs=True, all_inputs=True,
+                seed=0, popsize=10000)
     gp.X = X
     gp.nclasses(y)
     y = gp.transform_to_mo(y)
@@ -1159,7 +1175,9 @@ def test_classification_mo2():
                 multiple_outputs=True, all_inputs=True, seed=0,
                 popsize=10000).fit(X, y)
     m = gp.model()
-    assert len(m.decision_function(X)) == 3
+    print([(x, x._variable, x.height) for x in m._hist])
+    # assert False
+    assert len(m.decision_function(gp.X)) == 3
 
 
 def test_function_selection():
@@ -1294,3 +1312,5 @@ def test_multiple_outputs_ER_vs():
     hy = np.array(SparseArray.argmax(a.hy).full_array())
     mask = np.array(gp._mask_vs.full_array()).astype(np.bool)
     assert_almost_equals(-a.fitness_vs, (y[:-1][mask] != hy[mask]).mean())
+
+

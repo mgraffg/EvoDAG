@@ -22,8 +22,9 @@ def default_nargs():
     from EvoDAG.node import Fabs, Exp, Sqrt, Sin, Cos, Log1p,\
         Sq, Acos, Asin, Atan,\
         Tan, Cosh, Sinh, Tanh, Acosh, Asinh, Atanh,\
-        Expm1, Log, Log2, Log10, Lgamma, Sign, Ceil, Floor
-    for f in [Add, Mul, Div, Min, Max, Atan2, Hypot]:
+        Expm1, Log, Log2, Log10, Lgamma, Sign, Ceil, Floor,\
+        NaiveBayes, NaiveBayesMN
+    for f in [Add, Mul, Div, Min, Max, Atan2, Hypot, NaiveBayes, NaiveBayesMN]:
         f.nargs = 2
     for f in [Fabs, Exp, Sqrt, Sin, Cos, Log1p,
               Sq, Acos, Asin, Atan,

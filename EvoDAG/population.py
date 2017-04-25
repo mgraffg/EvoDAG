@@ -145,7 +145,7 @@ class SteadyState(object):
             return
         else:
             trace_map[n.position] = 1
-        if isinstance(n, Function):
+        if isinstance(n, Function) and n.height > 0:
             if isinstance(n.variable, list):
                 for x in n.variable:
                     self._trace(self.hist[x], trace_map)

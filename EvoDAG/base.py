@@ -585,9 +585,79 @@ class EvoDAG(object):
             return self._init_popsize
         return self.popsize
 
+    def naive_bayes_input(self, density, unique_individuals, vars):
+        for _ in range(self._number_tries_feasible_ind):
+            if self._min_density < density and np.random.random() <= 0.5:
+                func = NaiveBayes
+            else:
+                func = NaiveBayesMN
+            nargs = func.nargs if func.nargs < self.nvar else self.nvar
+            if nargs == 0:
+                continue
+            np.random.shuffle(vars)
+            v = func(vars[:nargs].tolist(),
+                     ytr=self._ytr, naive_bayes=self.naive_bayes,
+                     finite=self._finite, mask=self._mask)
+            sig = v.signature()
+            if sig in unique_individuals:
+                continue
+            unique_individuals.add(sig)
+            v.height = 0
+            if not v.eval(self.X):
+                continue
+            if not v.isfinite():
+                continue
+            if not self.set_fitness(v):
+                continue
+            return v
+        return None
+
+    def variable_input_cl(self, used_inputs):
+        for _ in range(self._number_tries_feasible_ind):
+            var = np.random.randint(self.nvar)
+            if var not in used_inputs:
+                v = self._random_leaf(var)
+                if v is not None:
+                    used_inputs[var] = 1
+                    return v
+        return None
+
+    def create_population_cl(self):
+        density = sum([x.hy.density for x in self.X]) / len(self.X)
+        used_inputs = {}
+        vars = np.arange(self.nvar)
+        unique_individuals = set()
+        inputs = True
+        naive_bayes = True
+        while (self._all_inputs or
+               (self.population.popsize < self.popsize and
+                not self.stopping_criteria())):
+            if self._all_inputs and len(used_inputs) == self.nvar:
+                self._init_popsize = self.population.popsize
+                break
+            pr = 1 if inputs and not naive_bayes else 0.33
+            if inputs and np.random.random() <= pr:
+                v = self.variable_input_cl(used_inputs)
+                if v is None:
+                    inputs = False
+                    continue
+            elif naive_bayes:
+                v = self.naive_bayes_input(density, unique_individuals, vars)
+                if v is None:
+                    naive_bayes = False
+                    continue
+            else:
+                gen = self.population.generation
+                self.population.generation = 0
+                v = self.random_offspring()
+                self.population.generation = gen
+            self.add(v)
+
     def create_population(self):
         "Create the initial population"
         self.population_instance()
+        if self._classifier and self._multiple_outputs:
+            return self.create_population_cl()
         vars = np.arange(len(self.X))
         np.random.shuffle(vars)
         vars = vars.tolist()

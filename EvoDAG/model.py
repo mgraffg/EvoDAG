@@ -78,7 +78,7 @@ class Model(object):
         return counter
 
     def transform(self, v):
-        if not isinstance(v, Function):
+        if v.height == 0:
             return v
         if v.nargs == 1:
             v.variable = self._map[v.variable]
@@ -95,7 +95,8 @@ class Model(object):
         X = self.convert_features(X)
         hist = self._hist
         for node in hist:
-            if isinstance(node, Function):
+            # if isinstance(node, Function):
+            if node.height:
                 node.eval(hist)
             else:
                 node.eval(X)
