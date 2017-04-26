@@ -59,9 +59,13 @@ def test_model_hist():
     b = m._hist[-1].variable
     if not isinstance(b, list):
         b = [b]
+    print([(x, x.height) for x in m._hist])
     print((m._map, a, b))
     for v1, v2 in zip(a, b):
-        assert m._map[v1] == v2
+        if v1 not in m._map:
+            assert v1 == v2
+        else:
+            assert m._map[v1] == v2
 
 
 def test_ensemble():

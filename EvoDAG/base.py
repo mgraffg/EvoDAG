@@ -48,8 +48,9 @@ class EvoDAG(object):
                  unique_individuals=True, classifier=True,
                  labels=None, all_inputs=False, random_generations=0, fitness_function='BER',
                  min_density=0.8, multiple_outputs=False, function_selection=True,
-                 fs_tournament_size=2, finite=True, **kwargs):
+                 fs_tournament_size=2, finite=True, pr_variable=0.33, **kwargs):
         generations = np.inf if generations is None else generations
+        self._pr_variable = pr_variable
         self._finite = finite
         self._fitness_function = fitness_function
         self._generations = generations
@@ -614,28 +615,33 @@ class EvoDAG(object):
 
     def variable_input_cl(self, used_inputs):
         for _ in range(self._number_tries_feasible_ind):
-            var = np.random.randint(self.nvar)
-            if var not in used_inputs:
-                v = self._random_leaf(var)
-                if v is not None:
-                    used_inputs[var] = 1
-                    return v
+            nvar = len(used_inputs)
+            if nvar == 0:
+                return None
+            var = np.random.randint(nvar)
+            _ = used_inputs[var]
+            del used_inputs[var]
+            var = self._random_leaf(_)
+            if var is not None:
+                return var
         return None
 
     def create_population_cl(self):
         density = sum([x.hy.density for x in self.X]) / len(self.X)
-        used_inputs = {}
+        used_inputs = [x for x in range(self.nvar)]
         vars = np.arange(self.nvar)
         unique_individuals = set()
         inputs = True
         naive_bayes = True
+        if (self.popsize < self.nvar) and self._all_inputs:
+            inputs = False
         while (self._all_inputs or
                (self.population.popsize < self.popsize and
                 not self.stopping_criteria())):
-            if self._all_inputs and len(used_inputs) == self.nvar:
+            if self._all_inputs and len(used_inputs) == 0:
                 self._init_popsize = self.population.popsize
                 break
-            pr = 1 if inputs and not naive_bayes else 0.33
+            pr = 1 if inputs and not naive_bayes else self._pr_variable
             if inputs and np.random.random() <= pr:
                 v = self.variable_input_cl(used_inputs)
                 if v is None:
@@ -645,6 +651,8 @@ class EvoDAG(object):
                 v = self.naive_bayes_input(density, unique_individuals, vars)
                 if v is None:
                     naive_bayes = False
+                    if not inputs and self._all_inputs:
+                        used_inputs = []
                     continue
             else:
                 gen = self.population.generation

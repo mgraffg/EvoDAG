@@ -197,6 +197,9 @@
         "SteadyState",
         "Generational"
     ],
+    "pr_variable": [
+	0.33
+    ],
     "random_generations": [
         0,
         1

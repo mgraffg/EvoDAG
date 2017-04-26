@@ -5,7 +5,7 @@ about:
 
 package:
   name: evodag
-  version: "0.8.1"
+  version: "0.9.1"
 
 build:
   number: 0
