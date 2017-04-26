@@ -18,13 +18,20 @@ from .model import Model
 import gc
 
 
-class SteadyState(object):
-    def __init__(self, tournament_size=2,
+class BasePopulation(object):
+    def __init__(self, base=None):
+        self._base = base
+
+
+class SteadyState(BasePopulation):
+    def __init__(self, base=None,
+                 tournament_size=2,
                  classifier=True,
                  labels=None,
                  popsize=10000,
                  random_generations=0,
                  es_extra_test=lambda x: True):
+        super(SteadyState, self).__init__(base=base)
         self._p = []
         self._hist = []
         self._bsf = None

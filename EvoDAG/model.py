@@ -73,8 +73,12 @@ class Model(object):
         if counter is None:
             counter = Counter()
         for node in self._hist:
-            if not isinstance(node, Function):
-                counter[node._variable] += 1
+            if node.height == 0:
+                if isinstance(node._variable, list):
+                    for _ in node._variable:
+                        counter[_] += 1
+                else:
+                    counter[node._variable] += 1
         return counter
 
     def transform(self, v):
@@ -95,7 +99,6 @@ class Model(object):
         X = self.convert_features(X)
         hist = self._hist
         for node in hist:
-            # if isinstance(node, Function):
             if node.height:
                 node.eval(hist)
             else:

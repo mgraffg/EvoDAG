@@ -552,7 +552,8 @@ class EvoDAG(object):
 
     def population_instance(self):
         "Population instance"
-        self._p = self._population_class(tournament_size=self._tournament_size,
+        self._p = self._population_class(base=self,
+                                         tournament_size=self._tournament_size,
                                          classifier=self._classifier,
                                          labels=self._labels,
                                          es_extra_test=self.es_extra_test,
@@ -633,7 +634,8 @@ class EvoDAG(object):
         unique_individuals = set()
         inputs = True
         naive_bayes = True
-        if (self.popsize < self.nvar) and self._all_inputs:
+        naive_nargs = max([NaiveBayes.nargs, NaiveBayesMN.nargs])
+        if (self.popsize < self.nvar and self._all_inputs and naive_nargs < self.nvar):
             inputs = False
         while (self._all_inputs or
                (self.population.popsize < self.popsize and
