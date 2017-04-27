@@ -247,7 +247,6 @@ def test_create_population_cl():
     gp.X = X
     gp.nclasses(cl)
     gp.y = cl.copy()
-    gp.population_instance()
     gp.create_population()
     flag = False
     for i in gp.population.population:
@@ -448,7 +447,7 @@ def test_BER():
     a.eval([v, v1])
     hy = a.hy.sign()
     b = BER(y[m], tonparray(hy)[m])
-    gp.fitness_vs(a)
+    gp._bagging_fitness.fitness_vs(a)
     print(b, a.fitness_vs * 100)
     assert_almost_equals(b, -a.fitness_vs * 100)
 
@@ -856,7 +855,7 @@ def test_RSE():
     assert not model._classifier
     model.predict(X=[SparseArray.fromlist(x)])
     gp._mask = SparseArray.fromlist([2] * yh.shape[0])
-    gp.fitness_vs(model._hist[-1])
+    gp._bagging_fitness.fitness_vs(model._hist[-1])
     print(rse(y, yh), model._hist[-1].fitness_vs)
     assert_almost_equals(rse(y, yh),
                          -model._hist[-1].fitness_vs)
@@ -1005,7 +1004,7 @@ def test_add():
         n = gp.random_offspring()
         if n.fitness_vs > es.fitness_vs:
             break
-    gp.add(n)
+    gp.population.add(n)
     print(gp._unfeasible_counter)
     assert gp._unfeasible_counter == 0
 

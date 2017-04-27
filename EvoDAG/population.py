@@ -229,7 +229,7 @@ class BasePopulation(object):
                 continue
             if not v.isfinite():
                 continue
-            if not base.set_fitness(v):
+            if not base._bagging_fitness.set_fitness(v):
                 continue
             return v
         return None

@@ -16,6 +16,7 @@
 import numpy as np
 from SparseArray import SparseArray
 from .utils import tonparray
+from .cython_utils import fitness_SAE
 
 
 class BaggingFitness(object):
@@ -179,3 +180,70 @@ class BaggingFitness(object):
             f[y == 1] = 0.5
         f[~m] = 0
         base._mask_vs = SparseArray.fromlist(f)
+
+    def del_error(self, v):
+        try:
+            delattr(v, '_error')
+        except AttributeError:
+            pass
+
+    def fitness(self, v):
+        "Fitness function in the training set"
+        base = self._base
+        if base._classifier:
+            if base._multiple_outputs:
+                hy = SparseArray.argmax(v.hy)
+                v._error = (base._y_klass - hy).sign().fabs()
+                v.fitness = - v._error.dot(base._mask_ts)
+            else:
+                v.fitness = -base._ytr.SSE(v.hy * base._mask)
+        else:
+            if base._multiple_outputs:
+                v.fitness = fitness_SAE(base._ytr, v.hy, base._mask)
+            else:
+                v.fitness = -base._ytr.SAE(v.hy * base._mask)
+
+    def fitness_vs(self, v):
+        """Fitness function in the validation set
+        In classification it uses BER and RSE in regression"""
+        base = self._base
+        if base._classifier:
+            if base._multiple_outputs:
+                v.fitness_vs = - v._error.dot(base._mask_vs) / base._mask_vs.sum()
+            else:
+                v.fitness_vs = -((base.y - v.hy.sign()).sign().fabs() *
+                                 base._mask_vs).sum()
+        else:
+            mask = base._mask
+            y = base.y
+            hy = v.hy
+            if not isinstance(mask, list):
+                mask = [mask]
+                y = [y]
+                hy = [hy]
+            fit = []
+            for _mask, _y, _hy in zip(mask, y, hy):
+                m = (_mask + -1).fabs()
+                x = _y * m
+                y = _hy * m
+                a = (x - y).sq().sum()
+                b = (x + -x.sum() / x.size()).sq().sum()
+                fit.append(-a / b)
+            v.fitness_vs = np.mean(fit)
+
+    def set_fitness(self, v):
+        """Set the fitness to a new node.
+        Returns false in case fitness is not finite"""
+        base = self._base
+        self.fitness(v)
+        if not np.isfinite(v.fitness):
+            self.del_error(v)
+            return False
+        if base._tr_fraction < 1:
+            self.fitness_vs(v)
+            if not np.isfinite(v.fitness_vs):
+                self.del_error(v)
+                return False
+        self.del_error(v)
+        return True
+        

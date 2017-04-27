@@ -25,7 +25,6 @@ from .node import Lgamma, Sign, Ceil, Floor, NaiveBayes, NaiveBayesMN
 from .model import Model, Models
 from .population import SteadyState
 from .utils import tonparray
-from .cython_utils import fitness_SAE
 from .function_selection import FunctionSelection
 from .naive_bayes import NaiveBayes as NB
 from .bagging_fitness import BaggingFitness
@@ -225,57 +224,6 @@ class EvoDAG(object):
         "List containing the functions used to create the individuals"
         return self._function_set
 
-    def fitness(self, v):
-        "Fitness function in the training set"
-        if self._classifier:
-            if self._multiple_outputs:
-                hy = SparseArray.argmax(v.hy)
-                v._error = (self._y_klass - hy).sign().fabs()
-                v.fitness = - v._error.dot(self._mask_ts)
-            else:
-                v.fitness = -self._ytr.SSE(v.hy * self._mask)
-        else:
-            if self._multiple_outputs:
-                v.fitness = fitness_SAE(self._ytr, v.hy, self._mask)
-            else:
-                v.fitness = -self._ytr.SAE(v.hy * self._mask)
-
-    def fitness_vs(self, v):
-        """Fitness function in the validation set
-        In classification it uses BER and RSE in regression"""
-        if self._classifier:
-            if self._multiple_outputs:
-                v.fitness_vs = - v._error.dot(self._mask_vs) / self._mask_vs.sum()
-            else:
-                v.fitness_vs = -((self.y - v.hy.sign()).sign().fabs() *
-                                 self._mask_vs).sum()
-        else:
-            mask = self._mask
-            y = self.y
-            hy = v.hy
-            if not isinstance(mask, list):
-                mask = [mask]
-                y = [y]
-                hy = [hy]
-            fit = []
-            for _mask, _y, _hy in zip(mask, y, hy):
-                m = (_mask + -1).fabs()
-                x = _y * m
-                y = _hy * m
-                a = (x - y).sq().sum()
-                b = (x + -x.sum() / x.size()).sq().sum()
-                fit.append(-a / b)
-            v.fitness_vs = np.mean(fit)
-
-    def es_extra_test(self, v):
-        """This function is called from population before setting
-        the early stopping individual and after the comparisons with
-        the validation set fitness"""
-        return True
-
-    def convert_features(self, v):
-        return Model.convert_features(v)
-
     @property
     def nvar(self):
         """Number of features or variables"""
@@ -285,6 +233,45 @@ class EvoDAG(object):
     def nvar(self, v):
         self._nvar = v
 
+    @property
+    def naive_bayes(self):
+        try:
+            return self._naive_bayes
+        except AttributeError:
+            if hasattr(self, '_y_klass'):
+                self._naive_bayes = NB(mask=self._mask_ts, klass=self._y_klass,
+                                       nclass=self._labels.shape[0])
+            else:
+                self._naive_bayes = None
+        return self._naive_bayes
+
+    @property
+    def population(self):
+        "Class containing the population and all the individuals generated"
+        try:
+            return self._p
+        except AttributeError:
+            self._p = self._population_class(base=self,
+                                             tournament_size=self._tournament_size,
+                                             classifier=self._classifier,
+                                             labels=self._labels,
+                                             es_extra_test=self.es_extra_test,
+                                             popsize=self._popsize,
+                                             random_generations=self._random_generations)
+            return self._p
+
+    @property
+    def init_popsize(self):
+        if self._all_inputs:
+            return self._init_popsize
+        return self.popsize
+
+    def es_extra_test(self, v):
+        """This function is called from population before setting
+        the early stopping individual and after the comparisons with
+        the validation set fitness"""
+        return True
+
     def _random_leaf(self, var):
         v = Variable(var, ytr=self._ytr, finite=self._finite, mask=self._mask,
                      naive_bayes=self.naive_bayes)
@@ -292,7 +279,7 @@ class EvoDAG(object):
             return None
         if not v.isfinite():
             return None
-        if not self.set_fitness(v):
+        if not self._bagging_fitness.set_fitness(v):
             return None
         return v
 
@@ -314,18 +301,6 @@ class EvoDAG(object):
         self._unfeasible_counter += 1
         return None
 
-    @property
-    def naive_bayes(self):
-        try:
-            return self._naive_bayes
-        except AttributeError:
-            if hasattr(self, '_y_klass'):
-                self._naive_bayes = NB(mask=self._mask_ts, klass=self._y_klass,
-                                       nclass=self._labels.shape[0])
-            else:
-                self._naive_bayes = None
-        return self._naive_bayes
-
     def _random_offspring(self, func, args):
         f = func(args, ytr=self._ytr, naive_bayes=self.naive_bayes,
                  finite=self._finite, mask=self._mask)
@@ -340,7 +315,7 @@ class EvoDAG(object):
             return self.unfeasible_offspring()
         if not f.isfinite():
             return self.unfeasible_offspring()
-        if not self.set_fitness(f):
+        if not self._bagging_fitness.set_fitness(f):
             return self.unfeasible_offspring()
         return f
 
@@ -398,51 +373,8 @@ class EvoDAG(object):
             return f
         raise RuntimeError("Could not find a suitable random offpsring")
 
-    @property
-    def population(self):
-        "Class containing the population and all the individuals generated"
-        return self._p
-
-    def population_instance(self):
-        "Population instance"
-        self._p = self._population_class(base=self,
-                                         tournament_size=self._tournament_size,
-                                         classifier=self._classifier,
-                                         labels=self._labels,
-                                         es_extra_test=self.es_extra_test,
-                                         popsize=self._popsize,
-                                         random_generations=self._random_generations)
-
-    def del_error(self, v):
-        try:
-            delattr(v, '_error')
-        except AttributeError:
-            pass
-
-    def set_fitness(self, v):
-        """Set the fitness to a new node.
-        Returns false in case fitness is not finite"""
-        self.fitness(v)
-        if not np.isfinite(v.fitness):
-            self.del_error(v)
-            return False
-        if self._tr_fraction < 1:
-            self.fitness_vs(v)
-            if not np.isfinite(v.fitness_vs):
-                self.del_error(v)
-                return False
-        self.del_error(v)
-        return True
-
-    @property
-    def init_popsize(self):
-        if self._all_inputs:
-            return self._init_popsize
-        return self.popsize
-
     def create_population(self):
         "Create the initial population"
-        self.population_instance()
         self.population.create_population()
 
     def stopping_criteria(self):
@@ -482,10 +414,6 @@ class EvoDAG(object):
             v = tonparray(v)
         self._labels = np.unique(v)
         return self._labels.shape[0]
-
-    def add(self, a):
-        "Add individual a to the population"
-        self.population.add(a)
 
     def replace(self, a):
         "Replace an individual in the population with individual a"
