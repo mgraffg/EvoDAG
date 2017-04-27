@@ -22,7 +22,7 @@ from .node import Sq, Min, Max
 from .node import Atan2, Hypot, Acos, Asin, Atan, Tan, Cosh, Sinh
 from .node import Tanh, Acosh, Asinh, Atanh, Expm1, Log, Log2, Log10
 from .node import Lgamma, Sign, Ceil, Floor, NaiveBayes, NaiveBayesMN
-from .model import Model, Models
+from .model import Model
 from .population import SteadyState
 from .utils import tonparray
 from .function_selection import FunctionSelection
@@ -165,26 +165,6 @@ class EvoDAG(object):
     def y(self):
         """Dependent variable"""
         return self._y
-
-    def multiclass(self, X, v, test_set=None):
-        "Performing One vs All multiclass classification"
-        if not isinstance(v, np.ndarray):
-            v = tonparray(v)
-        mask = None
-        for i in self._labels:
-            _ = np.zeros_like(v, dtype=np.bool)
-            _[v == i] = True
-            mask = np.vstack((mask, _)) if mask is not None else _
-        time_limit = self._time_limit
-        if time_limit is not None:
-            self._time_limit = time_limit / float(len(self._labels))
-        self._multiclass_instances = [self.clone() for x in mask]
-        self._time_limit = time_limit
-        for m, gp in zip(mask, self._multiclass_instances):
-            y = np.zeros_like(m) - 1
-            y[m] = 1
-            gp.fit(X, y, test_set=test_set)
-        return self
 
     @y.setter
     def y(self, v):
@@ -427,6 +407,7 @@ class EvoDAG(object):
         if self._classifier and self._multiple_outputs:
             pass
         elif nclasses > 2:
+            assert False
             self._multiclass = True
             return self.multiclass(X, y, test_set=test_set)
         self.y = y
@@ -448,9 +429,6 @@ class EvoDAG(object):
 
     def model(self, v=None):
         "Returns the model of node v"
-        if self._multiclass:
-            models = [gp.model(v=v) for gp in self._multiclass_instances]
-            return Models(models, labels=self._labels)
         return self.population.model(v=v)
 
     def decision_function(self, v=None, X=None):

@@ -77,6 +77,7 @@ def test_ensemble():
                   tournament_size=2,
                   early_stopping_rounds=-1,
                   seed=seed,
+                  multiple_outputs=True,
                   popsize=10).fit(X[:-10],
                                   y[:-10],
                                   test_set=X)
@@ -89,9 +90,6 @@ def test_ensemble():
     for a, b in zip(res, r2):
         print(a.SSE(b), a.data, b.data, b.full_array())
         assert a.SSE(b) == 0
-    r2 = ens.predict(None)
-    # print(np.unique(r2), np.unique(y))
-    # assert np.all(np.unique(r2) == np.unique(y))
 
 
 def test_ensemble_model():
@@ -181,28 +179,6 @@ def test_random_selection():
            early_stopping_rounds=-1,
            seed=0,
            popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
-
-
-def test_model_iter():
-    from EvoDAG import RGP
-    rgp = RGP(popsize=5).fit(X, cl)
-    m = rgp.model()
-    x = [x for x in m]
-    print(x)
-
-
-def test_model_len():
-    from EvoDAG import RGP
-    rgp = RGP(popsize=5).fit(X, cl)
-    m = rgp.model()
-    print(len(m))
-
-
-def test_models_fitness_vs():
-    from EvoDAG import EvoDAG
-    evo = EvoDAG(popsize=10, early_stopping_rounds=2).fit(X, cl)
-    l_fs = [x.fitness_vs for x in evo.model().models]
-    assert evo.model().fitness_vs == np.median(l_fs)
 
 
 def test_multiple_outputs_decision_function():

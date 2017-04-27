@@ -700,43 +700,43 @@ def test_class_values():
     assert np.all(gp._labels == np.array([-1, 0]))
 
 
-def test_multiclass():
-    from EvoDAG import EvoDAG
-    y = cl.copy()
-    ncl = np.unique(y).shape[0]
-    gp = EvoDAG(generations=np.inf,
-                tournament_size=2,
-                early_stopping_rounds=-1,
-                seed=0,
-                popsize=100).fit(X, y)
-    assert len(gp._multiclass_instances) == ncl
-    assert gp._multiclass
+# def test_multiclass():
+#     from EvoDAG import EvoDAG
+#     y = cl.copy()
+#     ncl = np.unique(y).shape[0]
+#     gp = EvoDAG(generations=np.inf,
+#                 tournament_size=2,
+#                 early_stopping_rounds=-1,
+#                 seed=0,
+#                 popsize=100).fit(X, y)
+#     assert len(gp._multiclass_instances) == ncl
+#     assert gp._multiclass
 
 
-def test_multiclass_decision_function():
-    from EvoDAG import EvoDAG
-    y = cl.copy()
-    gp = EvoDAG(generations=np.inf,
-                tournament_size=2,
-                early_stopping_rounds=-1,
-                seed=0,
-                popsize=100).fit(X, y, test_set=X)
-    d = gp.decision_function()
-    assert len(d) == np.unique(y).shape[0]
+# def test_multiclass_decision_function():
+#     from EvoDAG import EvoDAG
+#     y = cl.copy()
+#     gp = EvoDAG(generations=np.inf,
+#                 tournament_size=2,
+#                 early_stopping_rounds=-1,
+#                 seed=0,
+#                 popsize=100).fit(X, y, test_set=X)
+#     d = gp.decision_function()
+#     assert len(d) == np.unique(y).shape[0]
 
 
-def test_multiclass_predict():
-    from EvoDAG import RootGP
-    y = cl.copy()
-    y[y == 0] = 3
-    gp = RootGP(generations=np.inf,
-                tournament_size=2,
-                early_stopping_rounds=-1,
-                seed=0,
-                popsize=100).fit(X, y, test_set=X)
-    d = gp.predict()
-    assert np.unique(d).shape[0] == np.unique(y).shape[0]
-    assert np.all(np.unique(d) == np.unique(y))
+# def test_multiclass_predict():
+#     from EvoDAG import RootGP
+#     y = cl.copy()
+#     y[y == 0] = 3
+#     gp = RootGP(generations=np.inf,
+#                 tournament_size=2,
+#                 early_stopping_rounds=-1,
+#                 seed=0,
+#                 popsize=100).fit(X, y, test_set=X)
+#     d = gp.predict()
+#     assert np.unique(d).shape[0] == np.unique(y).shape[0]
+#     assert np.all(np.unique(d) == np.unique(y))
 
 
 def test_get_params():
@@ -830,6 +830,7 @@ def test_unique():
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
                 unique_individuals=True,
+                multiple_outputs=True,
                 early_stopping_rounds=-1,
                 seed=0,
                 popsize=100)
@@ -906,6 +907,7 @@ def test_population_as_parameter():
     gp = RootGP(generations=np.inf,
                 population_class=mock,
                 tournament_size=2,
+                multiple_outputs=True,
                 unique_individuals=True,
                 early_stopping_rounds=-1,
                 seed=0,
@@ -1058,6 +1060,7 @@ def test_time_limit():
     gp = RGP(generations=np.inf,
              tournament_size=2,
              early_stopping_rounds=100,
+             multiple_outputs=True,
              time_limit=0.9,
              seed=0,
              popsize=10000).fit(X, y, test_set=X)
@@ -1065,8 +1068,6 @@ def test_time_limit():
     print(t2 - t)
     assert t2 - t < 1
     assert gp._time_limit == 0.9
-    for x in gp._multiclass_instances:
-        assert x._time_limit == 0.3
 
 
 def test_transform_to_mo():

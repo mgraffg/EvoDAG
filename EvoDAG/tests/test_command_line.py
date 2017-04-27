@@ -140,7 +140,7 @@ def test_parameters_values():
     import json
     fname = training_set()
     with open('p.conf', 'w') as fpt:
-        fpt.write(json.dumps(dict(popsize=['x'])))
+        fpt.write(json.dumps(dict(popsize=['x'], multiple_outputs=[True])))
     sys.argv = ['EvoDAG', '-C', '-Pcache.evodag.gz', '-p3', '-e2',
                 '--parameters-values', 'p.conf',
                 '-r', '2', fname]
