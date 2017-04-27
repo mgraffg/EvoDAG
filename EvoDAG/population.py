@@ -13,17 +13,12 @@
 # limitations under the License.
 import logging
 import numpy as np
-from .node import Function
+from .node import Function, NaiveBayes, NaiveBayesMN
 from .model import Model
 import gc
 
 
 class BasePopulation(object):
-    def __init__(self, base=None):
-        self._base = base
-
-
-class SteadyState(BasePopulation):
     def __init__(self, base=None,
                  tournament_size=2,
                  classifier=True,
@@ -31,7 +26,7 @@ class SteadyState(BasePopulation):
                  popsize=10000,
                  random_generations=0,
                  es_extra_test=lambda x: True):
-        super(SteadyState, self).__init__(base=base)
+        self._base = base
         self._p = []
         self._hist = []
         self._bsf = None
@@ -49,6 +44,20 @@ class SteadyState(BasePopulation):
         self.generation = 1
         self._random_generations = random_generations
         self._density = 0.0
+
+    @property
+    def popsize(self):
+        return self._current_popsize
+
+    @property
+    def population(self):
+        "List containing the population"
+        return self._p
+
+    @population.setter
+    def population(self, a):
+        self._current_popsize = len(a)
+        self._p = a
 
     @property
     def density(self):
@@ -105,6 +114,7 @@ class SteadyState(BasePopulation):
             flag = True
         if flag:
             self.previous_estopping = flag
+            self._base._unfeasible_counter = 0
             vfvs = v.fitness_vs
             self._logger.info('(%i) ES: %0.4f %0.4f' % (v.position,
                                                         v.fitness,
@@ -159,55 +169,12 @@ class SteadyState(BasePopulation):
             else:
                 self._trace(self.hist[n.variable], trace_map)
 
-    def add(self, v):
-        "Add an individual to the population"
-        self.population.append(v)
-        self._current_popsize += 1
-        v.position = len(self._hist)
-        self._hist.append(v)
-        self.bsf = v
-        self.estopping = v
-        self._density += self.get_density(v)
-
     def clean(self, v):
         self._density -= self.get_density(v)
         if self.estopping is not None and v == self.estopping:
             return
         v.y = None
         v.hy = None
-
-    def replace(self, v):
-        """Replace an individual selected by negative tournament selection with
-        individual v"""
-        if self.popsize < self._popsize:
-            return self.add(v)
-        k = self.tournament(negative=True)
-        self.clean(self.population[k])
-        self.population[k] = v
-        v.position = len(self._hist)
-        self._hist.append(v)
-        self.bsf = v
-        self.estopping = v
-        self._inds_replace += 1
-        self._density += self.get_density(v)
-        if self._inds_replace == self._popsize:
-            self._inds_replace = 0
-            self.generation += 1
-            gc.collect()
-
-    @property
-    def popsize(self):
-        return self._current_popsize
-
-    @property
-    def population(self):
-        "List containing the population"
-        return self._p
-
-    @population.setter
-    def population(self, a):
-        self._current_popsize = len(a)
-        self._p = a
 
     def random_selection(self, negative=False):
         return np.random.randint(self.popsize)
@@ -238,6 +205,141 @@ class SteadyState(BasePopulation):
             fit = max(fit, key=lambda x: x[1])
         index = fit[0]
         return vars[index]
+
+    def naive_bayes_input(self, density, unique_individuals, vars):
+        base = self._base
+        for _ in range(base._number_tries_feasible_ind):
+            if base._min_density < density and np.random.random() <= 0.5:
+                func = NaiveBayes
+            else:
+                func = NaiveBayesMN
+            nargs = func.nargs if func.nargs < base.nvar else base.nvar
+            if nargs == 0:
+                continue
+            np.random.shuffle(vars)
+            v = func(vars[:nargs].tolist(),
+                     ytr=base._ytr, naive_bayes=base.naive_bayes,
+                     finite=base._finite, mask=base._mask)
+            sig = v.signature()
+            if sig in unique_individuals:
+                continue
+            unique_individuals.add(sig)
+            v.height = 0
+            if not v.eval(base.X):
+                continue
+            if not v.isfinite():
+                continue
+            if not base.set_fitness(v):
+                continue
+            return v
+        return None
+
+    def variable_input_cl(self, used_inputs):
+        base = self._base
+        for _ in range(base._number_tries_feasible_ind):
+            nvar = len(used_inputs)
+            if nvar == 0:
+                return None
+            var = np.random.randint(nvar)
+            _ = used_inputs[var]
+            del used_inputs[var]
+            var = base._random_leaf(_)
+            if var is not None:
+                return var
+        return None
+
+    def create_population_cl(self):
+        base = self._base
+        density = sum([x.hy.density for x in base.X]) / base.nvar
+        used_inputs = [x for x in range(base.nvar)]
+        vars = np.arange(base.nvar)
+        unique_individuals = set()
+        inputs = True
+        naive_bayes = True
+        naive_nargs = max([NaiveBayes.nargs, NaiveBayesMN.nargs])
+        if (base.popsize < base.nvar and base._all_inputs and naive_nargs < base.nvar):
+            inputs = False
+        while (base._all_inputs or
+               (self.popsize < base.popsize and
+                not base.stopping_criteria())):
+            if base._all_inputs and len(used_inputs) == 0:
+                base._init_popsize = self.popsize
+                break
+            pr = 1 if inputs and not naive_bayes else base._pr_variable
+            if inputs and np.random.random() <= pr:
+                v = self.variable_input_cl(used_inputs)
+                if v is None:
+                    inputs = False
+                    continue
+            elif naive_bayes:
+                v = self.naive_bayes_input(density, unique_individuals, vars)
+                if v is None:
+                    naive_bayes = False
+                    if not inputs and base._all_inputs:
+                        used_inputs = []
+                    continue
+            else:
+                gen = self.generation
+                self.generation = 0
+                v = base.random_offspring()
+                self.generation = gen
+            self.add(v)
+
+    def create_population(self):
+        "Create the initial population"
+        base = self._base
+        if base._classifier and base._multiple_outputs:
+            return self.create_population_cl()
+        vars = np.arange(len(base.X))
+        np.random.shuffle(vars)
+        vars = vars.tolist()
+        while (base._all_inputs or
+               (self.popsize < base.popsize and
+                not base.stopping_criteria())):
+            if len(vars):
+                v = base._random_leaf(vars.pop())
+                if v is None:
+                    continue
+            elif base._all_inputs:
+                base._init_popsize = self.popsize
+                break
+            else:
+                gen = self.generation
+                self.generation = 0
+                v = base.random_offspring()
+                self.generation = gen
+            self.add(v)
+
+
+class SteadyState(BasePopulation):
+    def add(self, v):
+        "Add an individual to the population"
+        self.population.append(v)
+        self._current_popsize += 1
+        v.position = len(self._hist)
+        self._hist.append(v)
+        self.bsf = v
+        self.estopping = v
+        self._density += self.get_density(v)
+
+    def replace(self, v):
+        """Replace an individual selected by negative tournament selection with
+        individual v"""
+        if self.popsize < self._popsize:
+            return self.add(v)
+        k = self.tournament(negative=True)
+        self.clean(self.population[k])
+        self.population[k] = v
+        v.position = len(self._hist)
+        self._hist.append(v)
+        self.bsf = v
+        self.estopping = v
+        self._inds_replace += 1
+        self._density += self.get_density(v)
+        if self._inds_replace == self._popsize:
+            self._inds_replace = 0
+            self.generation += 1
+            gc.collect()
 
 
 class Generational(SteadyState):

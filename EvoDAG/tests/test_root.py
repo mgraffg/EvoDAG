@@ -1013,9 +1013,11 @@ def test_unfeasible_counter_fit():
     class RGP2(RGP):
         def replace(self, a):
             self.population.replace(a)
+            self._unfeasible_counter = 100
 
         def add(self, a):
             self.population.add(a)
+            self._unfeasible_counter = 100
 
     y = cl.copy()
     mask = y == 0
@@ -1023,13 +1025,14 @@ def test_unfeasible_counter_fit():
     y[~mask] = -1
     gp = RGP2(generations=10,
               tournament_size=2,
-              early_stopping_rounds=-1,
+              early_stopping_rounds=1,
               seed=0,
               popsize=3)
     [gp.unfeasible_offspring() for _ in range(100)]
+    assert gp._unfeasible_counter == 100
     gp.fit(X, y)
-    # print(len(gp.population.hist))
-    assert len(gp.population.hist) <= 3
+    print('Hist', len(gp.population.hist), gp.population.hist)
+    assert len(gp.population.hist) <= 4
 
 
 def test_two_instances():
