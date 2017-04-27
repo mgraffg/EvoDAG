@@ -28,6 +28,7 @@ from .utils import tonparray
 from .cython_utils import fitness_SAE
 from .function_selection import FunctionSelection
 from .naive_bayes import NaiveBayes as NB
+from .bagging_fitness import BaggingFitness
 import time
 import importlib
 import inspect
@@ -49,6 +50,7 @@ class EvoDAG(object):
                  labels=None, all_inputs=False, random_generations=0, fitness_function='BER',
                  min_density=0.8, multiple_outputs=False, function_selection=True,
                  fs_tournament_size=2, finite=True, pr_variable=0.33, **kwargs):
+        self._bagging_fitness = BaggingFitness(base=self)
         generations = np.inf if generations is None else generations
         self._pr_variable = pr_variable
         self._finite = finite
@@ -165,37 +167,6 @@ class EvoDAG(object):
         """Dependent variable"""
         return self._y
 
-    def set_classifier_mask(self, v, base_mask=True):
-        """Computes the mask used to create the training and validation set"""
-        v = tonparray(v)
-        a = np.unique(v)
-        if a[0] != -1 or a[1] != 1:
-            raise RuntimeError("The labels must be -1 and 1 (%s)" % a)
-        mask = np.zeros_like(v)
-        cnt = min([(v == x).sum() for x in a]) * self._tr_fraction
-        cnt = int(round(cnt))
-        for i in a:
-            index = np.where((v == i) & base_mask)[0]
-            np.random.shuffle(index)
-            mask[index[:cnt]] = True
-        self._mask = SparseArray.fromlist(mask)
-        return SparseArray.fromlist(v)
-
-    def set_regression_mask(self, v):
-        """Computes the mask used to create the training and validation set"""
-        index = np.arange(v.size())
-        np.random.shuffle(index)
-        ones = np.ones(v.size())
-        ones[index[int(self._tr_fraction * v.size()):]] = 0
-        self._mask = SparseArray.fromlist(ones)
-
-    def test_regression_mask(self, v):
-        """Test whether the average prediction is different than zero"""
-        m = (self._mask + -1.0).fabs()
-        x = v * m
-        b = (x + -x.sum() / x.size()).sq().sum()
-        return b != 0
-
     def multiclass(self, X, v, test_set=None):
         "Performing One vs All multiclass classification"
         if not isinstance(v, np.ndarray):
@@ -216,109 +187,14 @@ class EvoDAG(object):
             gp.fit(X, y, test_set=test_set)
         return self
 
-    def transform_to_mo(self, v):
-        klass = self._labels
-        y = np.empty((v.shape[0], klass.shape[0]))
-        y.fill(-1)
-        for i, k in enumerate(klass):
-            mask = k == v
-            y[mask, i] = 1
-        return y
-
-    def mask_fitness_BER(self, k):
-        k = k.argmax(axis=1)
-        self._y_klass = SparseArray.fromlist(k)
-        klass = np.unique(k)
-        cnt = np.min([(k == x).sum() for x in klass]) * (1 - self._tr_fraction)
-        cnt = int(np.floor(cnt))
-        if cnt == 0:
-            cnt = 1
-        mask = np.ones_like(k, dtype=np.bool)
-        mask_ts = np.zeros(k.shape[0])
-        for i in klass:
-            index = np.where(k == i)[0]
-            np.random.shuffle(index)
-            mask[index[:cnt]] = False
-            mask_ts[index[cnt:]] = 1.0 / (1.0 * index[cnt:].shape[0] * klass.shape[0])
-        self._mask_vs = SparseArray.fromlist(~mask)
-        self._mask_ts = SparseArray.fromlist(mask_ts)
-        return mask
-
-    def mask_fitness_function(self, k):
-        if self._fitness_function == 'BER':
-            return self.mask_fitness_BER(k)
-        elif self._fitness_function == 'ER':
-            k = k.argmax(axis=1)
-            self._y_klass = SparseArray.fromlist(k)
-            cnt = k.shape[0] * (1 - self._tr_fraction)
-            cnt = int(np.floor(cnt))
-            if cnt == 0:
-                cnt = 1
-            mask = np.ones_like(k, dtype=np.bool)
-            mask_ts = np.zeros(k.shape[0])
-            index = np.arange(k.shape[0])
-            np.random.shuffle(index)
-            mask[index[:cnt]] = False
-            mask_ts[index[cnt:]] = 1.0
-            self._mask_vs = SparseArray.fromlist(~mask)
-            self._mask_ts = SparseArray.fromlist(mask_ts / mask_ts.sum())
-            return mask
-        raise RuntimeError('Unknown fitness function %s' % self._fitness_function)
-
-    def multiple_outputs_cl(self, v):
-        if isinstance(v, list):
-            assert len(v) == self._labels.shape[0]
-            v = np.array([tonparray(x) for x in v]).T
-        else:
-            v = tonparray(v)
-            v = self.transform_to_mo(v)
-        base_mask = self.mask_fitness_function(v)
-        mask = []
-        ytr = []
-        y = []
-        for _v in v.T:
-            _v = SparseArray.fromlist(_v)
-            self.set_classifier_mask(_v, base_mask)
-            mask.append(self._mask)
-            ytr.append(_v * self._mask)
-            y.append(_v)
-            self._y = _v
-        self._ytr = ytr
-        self._y = y
-        self._mask = mask
-
-    def multiple_outputs_regression(self, v):
-        assert isinstance(v, list)
-        v = np.array([tonparray(x) for x in v]).T
-        mask = []
-        ytr = []
-        y = []
-        for _v in v.T:
-            _v = SparseArray.fromlist(_v)
-            for _ in range(self._number_tries_feasible_ind):
-                self.set_regression_mask(_v)
-                flag = self.test_regression_mask(_v)
-                if flag:
-                    break
-            if not flag:
-                msg = "Unsuitable validation set (RSE: average equals zero)"
-                raise RuntimeError(msg)
-            mask.append(self._mask)
-            ytr.append(_v * self._mask)
-            y.append(_v)
-            self._y = _v
-        self._ytr = ytr
-        self._y = y
-        self._mask = mask
-
     @y.setter
     def y(self, v):
         if isinstance(v, np.ndarray):
             v = SparseArray.fromlist(v)
         if self._classifier and self._multiple_outputs:
-            return self.multiple_outputs_cl(v)
+            return self._bagging_fitness.multiple_outputs_cl(v)
         elif self._multiple_outputs:
-            return self.multiple_outputs_regression(v)
+            return self._bagging_fitness.multiple_outputs_regression(v)
         elif self._classifier:
             if self._labels is not None and\
                (self._labels[0] != -1 or self._labels[1] != 1):
@@ -328,11 +204,11 @@ class EvoDAG(object):
                 v[mask] = 1
                 v[~mask] = -1
                 v = SparseArray.fromlist(v)
-            self.set_classifier_mask(v)
+            self._bagging_fitness.set_classifier_mask(v)
         elif self._tr_fraction < 1:
             for i in range(self._number_tries_feasible_ind):
-                self.set_regression_mask(v)
-                flag = self.test_regression_mask(v)
+                self._bagging_fitness.set_regression_mask(v)
+                flag = self._bagging_fitness.test_regression_mask(v)
                 if flag:
                     break
             if not flag:
@@ -342,7 +218,7 @@ class EvoDAG(object):
             self._mask = 1.0
         self._ytr = v * self._mask
         self._y = v
-        self.mask_vs()
+        self._bagging_fitness.mask_vs()
 
     @property
     def function_set(self):
@@ -363,29 +239,6 @@ class EvoDAG(object):
                 v.fitness = fitness_SAE(self._ytr, v.hy, self._mask)
             else:
                 v.fitness = -self._ytr.SAE(v.hy * self._mask)
-
-    def mask_vs(self):
-        """Procedure to perform, in classification,
-        more efficiently BER in the validation set"""
-        if not self._classifier:
-            return
-        if self._tr_fraction == 1:
-            return
-        m = ~ tonparray(self._mask).astype(np.bool)
-        f = np.zeros(len(self._mask))
-        y = tonparray(self.y)
-        den = (y[m] == -1).sum()
-        if den:
-            f[y == -1] = 0.5 / den
-        else:
-            f[y == -1] = 0.5
-        den = (y[m] == 1).sum()
-        if den:
-            f[y == 1] = 0.5 / den
-        else:
-            f[y == 1] = 0.5
-        f[~m] = 0
-        self._mask_vs = SparseArray.fromlist(f)
 
     def fitness_vs(self, v):
         """Fitness function in the validation set

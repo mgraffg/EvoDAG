@@ -863,28 +863,31 @@ def test_RSE():
 
 
 def test_RSE_avg_zero():
+    from EvoDAG.bagging_fitness import BaggingFitness
     from EvoDAG import EvoDAG
 
-    class EvoDAG2(EvoDAG):
+    class B(BaggingFitness):
         def __init__(self, **kw):
-            super(EvoDAG2, self).__init__(**kw)
-            self._times = 0
+            super(B, self).__init__(**kw)
+            self._base._times = 0
 
         def set_regression_mask(self, v):
+            base = self._base
             mask = np.ones(v.size())
-            if self._times == 0:
+            if base._times == 0:
                 mask[10:12] = 0
             else:
                 mask[10:13] = 0
-            self._mask = SparseArray.fromlist(mask)
-            self._times += 1
+            base._mask = SparseArray.fromlist(mask)
+            base._times += 1
 
     x = np.linspace(-1, 1, 100)
     y = 4.3*x**2 + 3.2 * x - 3.2
     y[10:12] = 0
-    gp = EvoDAG2(classifier=False,
-                 popsize=10,
-                 generations=2)
+    gp = EvoDAG(classifier=False,
+                popsize=10,
+                generations=2)
+    gp._bagging_fitness = B(base=gp)
     gp.X = [SparseArray.fromlist(x)]
     gp.y = y
     print(gp._times)
@@ -1079,7 +1082,7 @@ def test_transform_to_mo():
                 popsize=10000)
     gp.nclasses(y)
     k = np.unique(y)
-    y = gp.transform_to_mo(y)
+    y = gp._bagging_fitness.transform_to_mo(y)
     assert k.shape[0] == y.shape[1]
 
 
@@ -1156,7 +1159,7 @@ def test_classification_mo():
                 popsize=10000)
     gp.X = X
     gp.nclasses(y)
-    y = gp.transform_to_mo(y)
+    y = gp._bagging_fitness.transform_to_mo(y)
     gp.y = [SparseArray.fromlist(x) for x in y.T]
     assert isinstance(gp._mask, list)
     gp.create_population()
@@ -1171,7 +1174,7 @@ def test_classification_mo2():
                 seed=0, popsize=10000)
     gp.X = X
     gp.nclasses(y)
-    y = gp.transform_to_mo(y)
+    y = gp._bagging_fitness.transform_to_mo(y)
     y = [SparseArray.fromlist(x) for x in y.T]
     gp = EvoDAG(generations=np.inf, tournament_size=2,
                 early_stopping_rounds=10, time_limit=0.9,
