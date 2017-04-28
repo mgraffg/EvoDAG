@@ -259,6 +259,8 @@ class BasePopulation(object):
         naive_nargs = max([NaiveBayes.nargs, NaiveBayesMN.nargs])
         if (base.popsize < base.nvar and base._all_inputs and naive_nargs < base.nvar):
             inputs = False
+        if base._pr_variable == 1:
+            inputs = True
         while (base._all_inputs or
                (self.popsize < base.popsize and
                 not base.stopping_criteria())):
@@ -273,6 +275,13 @@ class BasePopulation(object):
                     continue
             elif naive_bayes:
                 v = self.naive_bayes_input(density, unique_individuals, vars)
+                if base._all_inputs and not inputs:
+                    for x in v.variable:
+                        try:
+                            index = used_inputs.index(x)
+                            del used_inputs[index]
+                        except ValueError:
+                            pass
                 if v is None:
                     naive_bayes = False
                     if not inputs and base._all_inputs:
