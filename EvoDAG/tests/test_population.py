@@ -19,7 +19,7 @@ from test_root import X, cl
 def test_generational_generation():
     from EvoDAG.population import Generational
     from EvoDAG import EvoDAG
-    gp = EvoDAG(population_class='Generational',
+    gp = EvoDAG(population_class='Generational', classifier=False,
                 popsize=10)
     gp.X = X
     y = cl.copy()
@@ -47,7 +47,7 @@ def test_all_inputs():
     y[y != 1] = -1
     for pc in ['Generational', 'SteadyState']:
         gp = EvoDAG(population_class=pc,
-                    all_inputs=True,
+                    all_inputs=True, classifier=False,
                     popsize=10)
         gp.X = X
         gp.y = y
@@ -65,7 +65,7 @@ def test_all_inputs2():
     y = cl.copy()
     y[y != 1] = -1
     gp = EvoDAG(population_class='Generational',
-                all_inputs=True,
+                all_inputs=True, classifier=False,
                 popsize=3)
     gp.X = X
     gp.y = y
@@ -83,14 +83,14 @@ def test_all_init_popsize():
     y = cl.copy()
     y[y != 1] = -1
     gp = EvoDAG(population_class='Generational',
-                all_inputs=True,
+                all_inputs=True, classifier=False,
                 early_stopping_rounds=1,
                 popsize=2)
     gp.X = X
     gp.y = y
     gp.create_population()
     assert gp.init_popsize == len(gp.X)
-    gp = EvoDAG(population_class='Generational',
+    gp = EvoDAG(population_class='Generational', classifier=False,
                 # all_inputs=True,
                 early_stopping_rounds=1,
                 popsize=2)
@@ -110,7 +110,7 @@ def test_random_generations():
     y = cl.copy()
     y[y != 1] = -1
     for pop in ['SteadyState', 'Generational', P]:
-        gp = EvoDAG(population_class=pop,
+        gp = EvoDAG(population_class=pop, classifier=False,
                     all_inputs=True, random_generations=1,
                     early_stopping_rounds=1, popsize=2)
         gp.X = X
@@ -136,7 +136,7 @@ def test_SteadyState_generation():
     y = cl.copy()
     y[y != 1] = -1
     gp = EvoDAG(population_class='SteadyState',
-                all_inputs=True,
+                all_inputs=True, classifier=False,
                 early_stopping_rounds=1,
                 popsize=2)
     gp.X = X
@@ -152,7 +152,7 @@ def test_clean():
     y = cl.copy()
     y[y != 1] = -1
     for pc in ['Generational', 'SteadyState']:
-        gp = EvoDAG(population_class=pc,
+        gp = EvoDAG(population_class=pc, classifier=False,
                     popsize=5)
         gp.X = X
         gp.y = y
@@ -179,7 +179,7 @@ def test_density():
     y = cl.copy()
     y[y != 1] = -1
     for pc in ['Generational', 'SteadyState']:
-        gp = EvoDAG(population_class=pc,
+        gp = EvoDAG(population_class=pc, classifier=False,
                     popsize=5)
         gp.X = Xc
         gp.y = y

@@ -259,7 +259,7 @@ def test_create_population_cl():
 
 def test_best_so_far():
     from EvoDAG import RootGP
-    gp = RootGP(generations=1, popsize=4)
+    gp = RootGP(generations=1, classifier=False, popsize=4)
     gp.X = X
     y = cl.copy()
     mask = y == 0
@@ -302,7 +302,8 @@ def test_early_stopping():
 
 def test_variable():
     from EvoDAG import RootGP
-    gp = RootGP(generations=1, popsize=4)
+    gp = RootGP(generations=1, classifier=False,
+                popsize=4)
     gp.X = X
     Xtest = [x for x in X]
     Xtest[0] = Xtest[0] + np.inf
@@ -324,7 +325,7 @@ def test_variable():
 
 def test_random_leaf():
     from EvoDAG import RootGP
-    gp = RootGP(generations=1, popsize=4, tr_fraction=1)
+    gp = RootGP(generations=1, classifier=False, popsize=4)
     gp.X = X
     y = cl.copy()
     mask = y == 0
@@ -369,17 +370,17 @@ def test_random_leaf_inf():
 
 def test_classification_y():
     from EvoDAG import RootGP
-    gp = RootGP(generations=1, popsize=4)
+    gp = RootGP(generations=1, multiple_outputs=True, popsize=4)
     assert gp._classifier
     gp.X = X
     y = cl.copy()
-    mask = y == 0
-    y[mask] = 1
-    y[~mask] = -1
+    gp.nclasses(y)
     gp.y = y
-    assert gp._ytr.SSE(gp.y) > 0
-    assert gp._ytr.sum() == 0
-    assert gp.y.sum() < 0
+    print(gp._ytr, gp.y)
+    for a, b in zip(gp._ytr, gp.y):
+        assert a.SSE(b) > 0
+        assert a.sum() == 0
+        assert b.sum() < 0
 
 
 def test_regression_y():
@@ -397,8 +398,8 @@ def test_regression_y():
 
 def test_fitness():
     from EvoDAG import RootGP
-    gp = RootGP(generations=1, popsize=4)
-    assert gp._classifier
+    gp = RootGP(generations=1, classifier=False,
+                popsize=4)
     gp.X = X
     y = cl.copy()
     mask = y == 0
@@ -410,46 +411,49 @@ def test_fitness():
 
 
 def test_mask_vs():
+    from EvoDAG.node import Add
     from EvoDAG import RootGP
-    gp = RootGP(generations=1, popsize=4)
+    from EvoDAG.utils import BER
+    gp = RootGP(generations=1, popsize=4, multiple_outputs=True)
     assert gp._classifier
     gp.X = X
     y = cl.copy()
-    mask = y == 0
-    y[mask] = 1
-    y[~mask] = -1
+    gp.nclasses(y)
     gp.y = y
-    m = ~ tonparray(gp._mask).astype(np.bool)
-    f = np.zeros(gp._mask.size())
-    f[y == -1] = 0.5 / (y[m] == -1).sum()
-    f[y == 1] = 0.5 / (y[m] == 1).sum()
-    f[~m] = 0
-    assert gp._mask_vs.SSE(SparseArray.fromlist(f)) == 0
+    m = np.sign(tonparray(gp._mask_vs)).astype(np.bool)
+    v = gp.random_leaf()
+    v1 = gp.random_leaf()
+    v1 = gp.random_leaf()
+    a = Add([0, 1], ytr=gp._ytr, mask=gp._mask)
+    a.eval([v, v1])
+    hy = SparseArray.argmax(a.hy)
+    b = BER(y[m], tonparray(hy)[m])
+    gp._bagging_fitness.set_fitness(a)
+    print(b, a.fitness_vs * 100)
+    assert_almost_equals(b, -a.fitness_vs * 100)
 
 
 def test_BER():
     from EvoDAG.node import Add
     from EvoDAG import RootGP
     from EvoDAG.utils import BER
-    gp = RootGP(generations=1, popsize=4)
+    gp = RootGP(generations=1, popsize=4, multiple_outputs=True)
     assert gp._classifier
     gp.X = X
     y = cl.copy()
-    mask = y == 0
-    y[mask] = 1
-    y[~mask] = -1
+    gp.nclasses(y)
     gp.y = y
-    m = ~ tonparray(gp._mask).astype(np.bool)
+    m = np.sign(tonparray(gp._mask_ts)).astype(np.bool)
     v = gp.random_leaf()
     v1 = gp.random_leaf()
     v1 = gp.random_leaf()
     a = Add([0, 1], ytr=gp._ytr, mask=gp._mask)
     a.eval([v, v1])
-    hy = a.hy.sign()
+    hy = SparseArray.argmax(a.hy)
     b = BER(y[m], tonparray(hy)[m])
-    gp._bagging_fitness.fitness_vs(a)
-    print(b, a.fitness_vs * 100)
-    assert_almost_equals(b, -a.fitness_vs * 100)
+    gp._bagging_fitness.fitness(a)
+    print(b, a.fitness * 100)
+    assert_almost_equals(b, -a.fitness * 100)
 
 
 def test_tournament():
@@ -520,6 +524,7 @@ def test_replace_individual():
     from EvoDAG import RootGP
     gp = RootGP(generations=1,
                 tournament_size=2,
+                classifier=False,
                 popsize=5)
     gp.X = X
     y = cl.copy()
@@ -553,6 +558,7 @@ def test_fit_stopping_criteria_gens():
     gp = RootGP(generations=2,
                 early_stopping_rounds=None,
                 tournament_size=2,
+                classifier=False,
                 seed=1,
                 popsize=4)
     gp.X = X
@@ -574,6 +580,7 @@ def test_fit_stopping_criteria_estopping():
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
                 early_stopping_rounds=4,
+                classifier=False,
                 seed=0,
                 popsize=4)
     gp.X = X
@@ -599,6 +606,7 @@ def test_fit():
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
                 early_stopping_rounds=-1,
+                classifier=False,
                 seed=0,
                 popsize=4).fit(X, y, test_set=X)
     assert np.isfinite(gp.population.estopping.fitness)
@@ -616,6 +624,7 @@ def test_logging():
     RootGP(generations=np.inf,
            tournament_size=2,
            early_stopping_rounds=-1,
+           classifier=False,
            seed=0,
            popsize=10).fit(X, y, test_set=X)
 
@@ -647,15 +656,16 @@ def test_predict():
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
                 early_stopping_rounds=-1,
+                classifier=False,
                 seed=0,
                 popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
     es = gp.population.estopping
-    assert gp.decision_function().SSE(es.hy_test.boundaries()) == 0
-    hy_test = es.hy_test.boundaries()
+    assert gp.decision_function().SSE(es.hy_test) == 0
+    hy_test = es.hy_test
     assert gp.decision_function(X=X[-10:]).SSE(hy_test) == 0
     hy = gp.decision_function(X=X[-10:])
     _ = gp.predict(X=X[-10:])
-    assert SparseArray.fromlist(_).SSE(hy.sign()) == 0
+    assert SparseArray.fromlist(_).SSE(hy) == 0
     assert len(gp.Xtest)
 
 
@@ -695,6 +705,8 @@ def test_class_values():
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
                 early_stopping_rounds=-1,
+                classifier=True,
+                multiple_outputs=True,
                 seed=0,
                 popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
     assert np.all(gp._labels == np.array([-1, 0]))
@@ -773,15 +785,15 @@ def test_labels():
     y = cl.copy()
     mask = y == 0
     y[mask] = 1
-    y[~mask] = 2
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
                 early_stopping_rounds=-1,
+                multiple_outputs=True,
                 seed=0,
-                popsize=100).fit(X[:-10], y[:-10], test_set=X[-10:])
+                popsize=100).fit(X, y, test_set=X)
     m = gp.model()
-    hy = m.predict(X=X[:-10])
-    print(np.unique(hy))
+    hy = m.predict(X=X)
+    print(np.unique(hy), np.unique(y))
     print(np.array([1, 2]))
     assert np.all(np.unique(hy) == np.array([1, 2]))
 
@@ -953,6 +965,7 @@ def test_unfeasible_counter():
     gp = RGP(generations=np.inf,
              tournament_size=2,
              early_stopping_rounds=-1,
+             classifier=False,
              seed=0,
              popsize=100)
     assert gp._unfeasible_counter == 0
@@ -965,6 +978,7 @@ def test_replace_population_previous_estopping():
     gp = RGP(generations=np.inf,
              tournament_size=2,
              early_stopping_rounds=-1,
+             classifier=False,
              seed=0,
              popsize=3)
     gp.X = X
@@ -991,6 +1005,7 @@ def test_add():
     gp = RGP(generations=np.inf,
              tournament_size=2,
              early_stopping_rounds=-1,
+             classifier=False,
              seed=0,
              popsize=3)
     gp.X = X
@@ -1030,6 +1045,7 @@ def test_unfeasible_counter_fit():
     gp = RGP2(generations=10,
               tournament_size=2,
               early_stopping_rounds=1,
+              classifier=False,
               seed=0,
               popsize=3)
     [gp.unfeasible_offspring() for _ in range(100)]
@@ -1046,6 +1062,7 @@ def test_two_instances():
     y[-2:] = 1
     gp = EvoDAG(generations=np.inf,
                 tournament_size=2,
+                classifier=False,
                 early_stopping_rounds=-1,
                 seed=0,
                 popsize=10).fit(X, y, test_set=X)

@@ -170,20 +170,11 @@ class EvoDAG(object):
     def y(self, v):
         if isinstance(v, np.ndarray):
             v = SparseArray.fromlist(v)
-        if self._classifier and self._multiple_outputs:
+        if self._classifier:
+            self._multiple_outputs = True
             return self._bagging_fitness.multiple_outputs_cl(v)
         elif self._multiple_outputs:
             return self._bagging_fitness.multiple_outputs_regression(v)
-        elif self._classifier:
-            if self._labels is not None and\
-               (self._labels[0] != -1 or self._labels[1] != 1):
-                v = tonparray(v)
-                mask = np.ones_like(v, dtype=np.bool)
-                mask[v == self._labels[0]] = False
-                v[mask] = 1
-                v[~mask] = -1
-                v = SparseArray.fromlist(v)
-            self._bagging_fitness.set_classifier_mask(v)
         elif self._tr_fraction < 1:
             for i in range(self._number_tries_feasible_ind):
                 self._bagging_fitness.set_regression_mask(v)

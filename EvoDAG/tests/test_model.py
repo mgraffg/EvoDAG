@@ -103,6 +103,7 @@ def test_ensemble_model():
     gps = [RootGP(generations=np.inf,
                   tournament_size=2,
                   early_stopping_rounds=-1,
+                  classifier=False,
                   seed=seed,
                   popsize=10).fit(X[:-10],
                                   y[:-10],
@@ -110,11 +111,14 @@ def test_ensemble_model():
            for seed in range(3)]
     ens = Ensemble([gp.model() for gp in gps])
     res = [gp.decision_function() for gp in gps]
-    res = Add.cumsum(res) * (1 / 3.)
+    res = np.median([x.full_array() for x in res], axis=0)
+    res = SparseArray.fromlist(res)
+    print(res)
+    # res = Add.cumsum(res) * (1 / 3.)
     r2 = ens.decision_function(None)
+    print(res.full_array()[:10], r2.full_array()[:10])
+    print(res.SSE(r2))
     assert res.SSE(r2) == 0
-    a = SparseArray.fromlist(ens.predict(None))
-    assert r2.sign().SSE(a) == 0
 
 
 def test_regression():
@@ -146,6 +150,7 @@ def test_model_graphviz():
     gp = RootGP(generations=3,
                 tournament_size=2,
                 early_stopping_rounds=-1,
+                classifier=False,
                 seed=0,
                 popsize=10).fit(X, y)
     m = gp.model()
@@ -177,6 +182,7 @@ def test_random_selection():
     RootGP(generations=np.inf,
            tournament_size=1,
            early_stopping_rounds=-1,
+           classifier=False,
            seed=0,
            popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
 

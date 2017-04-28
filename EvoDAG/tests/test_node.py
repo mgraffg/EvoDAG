@@ -23,7 +23,7 @@ from nose.tools import assert_almost_equals
 
 def create_problem_node(nargs=4, seed=0):
     from EvoDAG import RootGP
-    gp = RootGP(generations=1, popsize=nargs, seed=seed)
+    gp = RootGP(generations=1, popsize=nargs, classifier=False, seed=seed)
     gp.X = X
     gp.Xtest = X
     y = cl.copy()
@@ -407,12 +407,18 @@ def test_functions_finite():
                 for i in args:
                     i.hy_test = None
             gp2, _ = create_problem_node(nargs=4, seed=1)
-            ytr = [gp._ytr, gp._ytr]
-            mask = [gp._mask, gp2._mask]
+            # ytr = [gp._ytr, gp._ytr]
+            ytr = gp._ytr
+            # mask = [gp._mask, gp2._mask]
+            mask = gp._mask.full_array()
+            mask[0] = 1
+            mask = SparseArray.fromlist(mask)
             vars = [Variable(k, ytr=ytr, mask=mask, finite=flag)
                     for k in range(len(args))]
             for x in vars:
-                assert x.eval(args) == flag
+                _ = x.eval(args)
+                print(mask.full_array())
+                assert _ == flag
             if not flag:
                 continue
             mul = ff(range(len(vars)), ytr=ytr, mask=mask, finite=False)
