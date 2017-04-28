@@ -188,7 +188,6 @@ class EvoDAG(object):
             self._mask = 1.0
         self._ytr = v * self._mask
         self._y = v
-        self._bagging_fitness.mask_vs()
 
     @property
     def function_set(self):

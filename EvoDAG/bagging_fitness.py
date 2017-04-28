@@ -157,30 +157,6 @@ class BaggingFitness(object):
         base._y = y
         base._mask = mask
 
-    def mask_vs(self):
-        """Procedure to perform, in classification,
-        more efficiently BER in the validation set"""
-        base = self._base
-        if not base._classifier:
-            return
-        if base._tr_fraction == 1:
-            return
-        m = ~ tonparray(base._mask).astype(np.bool)
-        f = np.zeros(len(base._mask))
-        y = tonparray(base.y)
-        den = (y[m] == -1).sum()
-        if den:
-            f[y == -1] = 0.5 / den
-        else:
-            f[y == -1] = 0.5
-        den = (y[m] == 1).sum()
-        if den:
-            f[y == 1] = 0.5 / den
-        else:
-            f[y == 1] = 0.5
-        f[~m] = 0
-        base._mask_vs = SparseArray.fromlist(f)
-
     def del_error(self, v):
         try:
             delattr(v, '_error')
