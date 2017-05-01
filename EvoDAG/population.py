@@ -288,12 +288,16 @@ class BasePopulation(object):
             if len(used_inputs_var) and np.random.random() < base._pr_variable:
                 v = self.variable_input_cl(used_inputs_var)
                 if v is None:
+                    used_inputs_var = []
                     continue
             elif len(used_inputs_naive):
                 v = self.naive_bayes_input(density, unique_individuals, used_inputs_naive)
                 if len(used_inputs_var) and len(used_inputs_naive) == 0:
                     base._pr_variable = 1
                 if v is None:
+                    used_inputs_naive = []
+                    if len(used_inputs_var):
+                        base._pr_variable = 1
                     continue
             else:
                 gen = self.generation
