@@ -184,12 +184,11 @@ cpdef list naive_bayes_MN(list var, list coef, unsigned int nclass):
     cdef Py_ssize_t i, j
     cdef list l = <list> PyList_GET_ITEM(coef, 0)
     cdef array.array p_klass = <array.array> PyList_GET_ITEM(l, 1), m_klass
-    cdef double *p_klass_value = p_klass.data.as_doubles, a, *m_klass_value
+    cdef double *p_klass_value = p_klass.data.as_doubles, *m_klass_value
     cdef SparseArray b = <SparseArray> PyList_GET_ITEM(var, 0), v
     cdef unsigned int nvar = len(var)
     cdef list res = []
     for i in range(nclass):
-        a = p_klass_value[i]
         b = b.mul2(0)
         for j in range(nvar):
             v = <SparseArray> PyList_GET_ITEM(var, j)

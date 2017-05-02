@@ -26,6 +26,7 @@ cdef class FunctionSelection:
     cdef public unsigned int tournament_size
     cdef public float density
     cdef public float min_density
+    cdef public worst_fitness
     cpdef int random_function(self) except -1
     cpdef double avg_fitness(self, Py_ssize_t k)
     cpdef int tournament(self) except -1

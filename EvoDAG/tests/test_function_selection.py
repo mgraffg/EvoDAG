@@ -80,3 +80,29 @@ def test_density():
     a.density = 0.7
     index = a.tournament()
     assert index == 1
+
+
+def test_worst_fitness():
+    a = FunctionSelection(seed=0, nfunctions=3, nargs=[1, 2, 2], density_safe=[1, 2])
+    assert a.worst_fitness == -float('inf')
+    a.unfeasible_individual(1)
+    assert a.fitness[1] == 0
+    a[0] = -10
+    print(a.worst_fitness, a.fitness)
+    assert a.worst_fitness == -10
+    a.unfeasible_individual(1)
+    assert a.fitness[1] == -10
+    
+    # assert a.min_density == 0 and a.density == 1.0
+    # a.min_density = 0.9
+    # a.density = 0.7
+    # for i in range(10):
+    #     index = a.tournament()
+    #     assert index == 1 or index == 2
+    # a = FunctionSelection(seed=0, nfunctions=2, nargs=[1, 2], density_safe=[1])
+    # assert a.min_density == 0 and a.density == 1.0
+    # a.min_density = 0.9
+    # a.density = 0.7
+    # index = a.tournament()
+    # assert index == 1
+    
