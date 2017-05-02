@@ -36,7 +36,7 @@ class BasePopulation(object):
         self._classifier = classifier
         self._es_extra_test = es_extra_test
         self._labels = labels
-        self._logger = logging.getLogger('EvoDAG.Population')
+        self._logger = logging.getLogger('EvoDAG')
         self._previous_estopping = False
         self._current_popsize = 0
         self._popsize = popsize

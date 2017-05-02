@@ -63,7 +63,7 @@ class Population(object):
         assert nterminals is not None
         self._function_set = function_set
         self._nterminals = nterminals
-        self._logger = logging.getLogger('EvoDAG.gp')
+        self._logger = logging.getLogger('EvoDAG')
         np.random.seed(seed)
 
     def random_function(self):

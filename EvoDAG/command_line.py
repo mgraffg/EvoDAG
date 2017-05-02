@@ -65,7 +65,7 @@ class CommandLine(object):
         pa = self.parser.add_argument
         pa('--version',
            action='version', version='EvoDAG %s' % evodag.__version__)
-        pa('--verbose', dest='verbose', default=logging.ERROR, type=int)
+        pa('--verbose', dest='verbose', default=logging.NOTSET, type=int)
 
     def output_file(self):
         self.parser.add_argument('-o', '--output-file',
@@ -136,8 +136,10 @@ class CommandLine(object):
         if hasattr(self.data, 'regressor') and self.data.regressor:
             self.data.classifier = False
         if hasattr(self.data, 'verbose'):
+            logging.basicConfig()
             logger = logging.getLogger('EvoDAG')
             logger.setLevel(self.data.verbose)
+            logger.info('Logging to: %s', self.data.verbose)
         self.main()
 
     def convert(self, x):
