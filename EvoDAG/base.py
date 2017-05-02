@@ -412,8 +412,10 @@ class EvoDAG(object):
             try:
                 a = self.random_offspring()
             except RuntimeError:
+                self._logger.info("Done evolution (hist: %s)" % len(self.population.hist))
                 return self
             self.replace(a)
+        self._logger.info("Done evolution (hist: %s)" % len(self.population.hist))
         return self
 
     def trace(self, n):
