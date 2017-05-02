@@ -34,7 +34,7 @@ def decision_function(model_X):
 class Model(object):
     """Object to store the necesary elements to make predictions
     based on an individual"""
-    def __init__(self, trace, hist, classifier=True, labels=None):
+    def __init__(self, trace, hist, nvar=None, classifier=True, labels=None):
         self._classifier = classifier
         self._trace = trace
         self._hist = hist
@@ -45,6 +45,11 @@ class Model(object):
         self._hist = [self.transform(self._hist[x].tostore()) for x in
                       self._trace]
         self._labels = labels
+        self._nvar = nvar
+
+    @property
+    def nvar(self):
+        return self._nvar
 
     @property
     def multiple_outputs(self):
@@ -99,6 +104,9 @@ class Model(object):
                 return self._hy_test.boundaries()
             return self._hy_test
         X = self.convert_features(X)
+        if len(X) < self.nvar:
+            _ = 'Number of variables differ, trained with %s given %s' % (self.nvar, len(X))
+            raise RuntimeError(_)
         hist = self._hist
         for node in hist:
             if node.height:

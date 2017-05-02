@@ -25,6 +25,7 @@ from .utils import tonparray
 import time
 import gzip
 import json
+import logging
 import gc
 import pickle
 try:
@@ -133,6 +134,9 @@ class CommandLine(object):
         self.data = self.parser.parse_args()
         if hasattr(self.data, 'regressor') and self.data.regressor:
             self.data.classifier = False
+        if hasattr(self.data, 'verbose'):
+            logger = logging.getLogger('EvoDAG')
+            logger.setLevel(self.data.verbose)
         self.main()
 
     def convert(self, x):
@@ -345,6 +349,7 @@ class CommandLineParams(CommandLine):
         pa = self.parser.add_argument
         pa('--version',
            action='version', version='EvoDAG %s' % evodag.__version__)
+        pa('--verbose', dest='verbose', default=logging.ERROR, type=int)
 
     def fs_type_constraint(self, params):
         fs_class = {}

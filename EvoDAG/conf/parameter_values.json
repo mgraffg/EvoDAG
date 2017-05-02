@@ -200,10 +200,13 @@
     "pr_variable": [
 	0.7
     ],
+    "share_inputs": [
+        false
+    ],
     "random_generations": [
         0,
         1
-    ],
+    ],    
     "time_limit": [
         null
     ],

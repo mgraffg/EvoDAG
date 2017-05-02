@@ -826,3 +826,12 @@ def test_model_min_size():
             assert x.size >= 6
     os.unlink('model.evodag')
     default_nargs()
+
+
+def test_logging():
+    from EvoDAG.command_line import params
+    fname = mo_training_set()
+    sys.argv = ['EvoDAG', '--output-dim=3',
+                '-R', '--parameters', 'cache.evodag',
+                '--verbose=0', '-p3', '-e2', '-r2', fname]
+    params()

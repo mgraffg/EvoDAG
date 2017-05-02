@@ -48,10 +48,12 @@ class EvoDAG(object):
                  unique_individuals=True, classifier=True,
                  labels=None, all_inputs=False, random_generations=0, fitness_function='BER',
                  min_density=0.8, multiple_outputs=False, function_selection=True,
-                 fs_tournament_size=2, finite=True, pr_variable=0.33, **kwargs):
+                 fs_tournament_size=2, finite=True, pr_variable=0.33,
+                 share_inputs=False, **kwargs):
         self._bagging_fitness = BaggingFitness(base=self)
         generations = np.inf if generations is None else generations
         self._pr_variable = pr_variable
+        self._share_inputs = share_inputs
         self._finite = finite
         self._fitness_function = fitness_function
         self._generations = generations

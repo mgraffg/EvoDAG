@@ -194,3 +194,30 @@ def test_density():
             d = sum([x.hy.density for x in gp.population.population]) / gp.popsize
             print(d, gp.population.density, 'replace')
             assert gp.population.density == d
+
+
+def test_share_inputs():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(classifier=True, multiple_outputs=True,
+                popsize=5, share_inputs=True)
+    gp.fit(X, y)
+    assert gp._share_inputs
+
+
+def test_model_nvar():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(classifier=True, multiple_outputs=True,
+                popsize=5, share_inputs=True)
+    gp.fit(X, y)
+    assert gp._share_inputs
+    m = gp.model()
+    print(X.shape)
+    assert m.nvar == X.shape[1]
+    try:
+        m.predict(X[:, :3])
+        assert False
+    except RuntimeError:
+        pass
+    

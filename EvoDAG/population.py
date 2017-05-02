@@ -145,8 +145,8 @@ class BasePopulation(object):
             v = self.estopping
         hist = self.hist
         trace = self.trace(v)
-        m = Model(trace, hist, classifier=self._classifier,
-                  labels=self._labels)
+        m = Model(trace, hist, nvar=self._base._nvar,
+                  classifier=self._classifier, labels=self._labels)
         return m
 
     def trace(self, n):
@@ -274,6 +274,9 @@ class BasePopulation(object):
     def create_population_cl(self):
         base = self._base
         density = sum([x.hy.density for x in base.X]) / base.nvar
+        if base._share_inputs:
+            used_inputs_var = [x for x in range(base.nvar)]
+            used_inputs_naive = used_inputs_var
         if base._pr_variable == 0:
             used_inputs_var = []
             used_inputs_naive = [x for x in range(base.nvar)]
