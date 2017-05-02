@@ -407,6 +407,7 @@ class EvoDAG(object):
             self.Xtest = test_set
         self._logger.info("Starting evolution")
         self.create_population()
+        self._logger.info("Population created (hist: %s)" % len(self.population.hist))
         while not self.stopping_criteria():
             try:
                 a = self.random_offspring()

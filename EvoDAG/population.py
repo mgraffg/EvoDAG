@@ -135,9 +135,8 @@ class BasePopulation(object):
             else:
                 fvs = "%0.4f" % v.fitness_vs
             fts = "%0.4f" % v.fitness
-            self._logger.log(logging.INFO-1,
-                             '(%(position)s) BSF: %(fts)s %(fvs)s',
-                             {'fts': fts, 'fvs': fvs, 'position': v.position})
+            self._logger.debug('(%(position)s) BSF: %(fts)s %(fvs)s',
+                               {'fts': fts, 'fvs': fvs, 'position': v.position})
 
     def model(self, v=None):
         "Returns the model of node v"
