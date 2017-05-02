@@ -217,6 +217,7 @@ class BasePopulation(object):
                     func = [NaiveBayesMN, NaiveBayes]
             else:
                 func = [NaiveBayesMN]
+            func = [x for x in func if x.nargs > 0]
             args = []
             for f in func:
                 if len(args) == 0:
@@ -235,6 +236,10 @@ class BasePopulation(object):
                     del vars[index]
                 if len(args) == 0:
                     return None
+                elif len(args) < f.min_nargs:
+                    for __ in range(f.min_nargs - len(args)):
+                        k = np.random.randint(base._nvar)
+                        args.append(k)
                 v = f(args,
                       ytr=base._ytr, naive_bayes=base.naive_bayes,
                       finite=base._finite, mask=base._mask)
