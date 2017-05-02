@@ -411,8 +411,8 @@ class EvoDAG(object):
         while not self.stopping_criteria():
             try:
                 a = self.random_offspring()
-            except RuntimeError:
-                self._logger.info("Done evolution (hist: %s)" % len(self.population.hist))
+            except RuntimeError as err:
+                self._logger.info("Done evolution (RuntimeError (%s), hist: %s)" % (err, len(self.population.hist)))
                 return self
             self.replace(a)
         self._logger.info("Done evolution (hist: %s)" % len(self.population.hist))
