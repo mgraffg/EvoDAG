@@ -65,6 +65,7 @@ class CommandLine(object):
         pa = self.parser.add_argument
         pa('--version',
            action='version', version='EvoDAG %s' % evodag.__version__)
+        pa('--verbose', dest='verbose', default=logging.ERROR, type=int)
 
     def output_file(self):
         self.parser.add_argument('-o', '--output-file',
@@ -345,12 +346,6 @@ class CommandLineParams(CommandLine):
                                  type=int,
                                  help="Output Dimension (default 1) use with multiple-outputs flag")
 
-    def version(self):
-        pa = self.parser.add_argument
-        pa('--version',
-           action='version', version='EvoDAG %s' % evodag.__version__)
-        pa('--verbose', dest='verbose', default=logging.ERROR, type=int)
-
     def fs_type_constraint(self, params):
         fs_class = {}
         for x in EvoDAG()._function_set:
@@ -471,11 +466,6 @@ class CommandLineTrain(CommandLine):
         pa('--min-size', dest='min_size',
            type=int, default=1, help='Model min-size')
 
-    def version(self):
-        pa = self.parser.add_argument
-        pa('--version',
-           action='version', version='EvoDAG %s' % evodag.__version__)
-
     def main(self):
         self.read_training_set()
         self.read_test_set()
@@ -542,11 +532,6 @@ class CommandLinePredict(CommandLine):
         pa('--decision-function', dest='decision_function', default=False,
            action='store_true',
            help='Outputs the decision functions instead of the class')
-
-    def version(self):
-        pa = self.parser.add_argument
-        pa('--version',
-           action='version', version='EvoDAG %s' % evodag.__version__)
 
     def main(self):
         model_file = self.get_model_file()
@@ -649,11 +634,6 @@ class CommandLineUtils(CommandLine):
                                  default=None,
                                  type=str,
                                  help=cdn)
-
-    def version(self):
-        pa = self.parser.add_argument
-        pa('--version',
-           action='version', version='EvoDAG %s' % evodag.__version__)
 
     def read_params(self, parameters):
         if parameters.endswith('.gz'):
