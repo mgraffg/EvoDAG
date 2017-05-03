@@ -14,6 +14,7 @@
 import random
 from cpython cimport array
 from libc.math cimport INFINITY
+from cpython.set cimport PySet_Contains, PySet_New, PySet_GET_SIZE
 
 
 cdef class FunctionSelection:
@@ -23,7 +24,7 @@ cdef class FunctionSelection:
         self.fitness = array.clone(array.array('d'), nfunctions, zero=True)
         self.times = array.clone(array.array('I'), nfunctions, zero=True)
         self.nargs = array.clone(array.array('I'), nfunctions, zero=True)
-        self.worst_fitness = -INFINITY
+        self.unfeasible_functions = PySet_New([])
         if nargs is not None:
             for i, k in enumerate(nargs):
                 self.nargs[i] = k
@@ -38,25 +39,25 @@ cdef class FunctionSelection:
         self.density = 1.0
         random.seed(seed)
 
-    def unfeasible_individual(self, k):
-        if self.worst_fitness == -INFINITY:
-            return
-        self.__setitem__(k, self.worst_fitness)
-
     def __setitem__(self, k, v):
-        if self.worst_fitness == -INFINITY:
-            self.worst_fitness = v
-        elif v < self.worst_fitness:
-            self.worst_fitness = v
         self.fitness[k] += v
         self.times[k] += 1
 
     cpdef int random_function(self) except -1:
-        cdef int value
+        cdef int value, r
+        cdef Py_ssize_t _
         if self.density < self.min_density and self.density_safe_size > 0:
-            value = random.randrange(0, self.density_safe_size)
-            return self.density_safe[value]
-        return random.randrange(0, self.nfunctions)
+            for _ in range(5):
+                value = random.randrange(0, self.density_safe_size)
+                r = self.density_safe[value]
+                if not PySet_Contains(self.unfeasible_functions, r):
+                    return r
+            return r
+        for _ in range(5):
+            r = random.randrange(0, self.nfunctions)
+            if not PySet_Contains(self.unfeasible_functions, r):
+                return r
+        return r    
 
     cpdef double avg_fitness(self, Py_ssize_t x):
         cdef unsigned int _times = self.times[x]
@@ -66,7 +67,14 @@ cdef class FunctionSelection:
 
     cpdef bint comparison(self, int best, int comp):
         if best == comp:
-            if self.density < self.min_density and self.density_safe_size == 1:
+            if self.density < self.min_density:
+                if self.density_safe_size == 1:
+                    return False
+                if PySet_GET_SIZE(self.unfeasible_functions) >= (self.density_safe_size - 1):
+                    return False
+            if PySet_Contains(self.unfeasible_functions, comp):
+                return False
+            if PySet_GET_SIZE(self.unfeasible_functions) >= (self.nfunctions - 1):
                 return False
             return True
         return False

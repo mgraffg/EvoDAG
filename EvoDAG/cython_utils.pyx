@@ -181,7 +181,7 @@ cpdef list naive_bayes_Nc(SparseArray var, array.array klass, array.array mask, 
 
 @cython.cdivision(True)
 cpdef list naive_bayes_MN(list var, list coef, unsigned int nclass):
-    cdef Py_ssize_t i, j
+    cdef Py_ssize_t i, j, k
     cdef list l = <list> PyList_GET_ITEM(coef, 0)
     cdef array.array p_klass = <array.array> PyList_GET_ITEM(l, 1), m_klass
     cdef double *p_klass_value = p_klass.data.as_doubles, *m_klass_value
@@ -198,5 +198,8 @@ cpdef list naive_bayes_MN(list var, list coef, unsigned int nclass):
             b = b.add(v.mul2(m_klass_value[i]))
         # b = b.add2(p_klass_value[i])
         b = b.add(SparseArray.constant(p_klass_value[i], b.index, b._len))
+        m_klass_value = b.data.data.as_doubles
+        for k in range(b.non_zero):
+            m_klass_value[k] = math.exp(m_klass_value[k])
         PyList_Append(res, b)
     return res
