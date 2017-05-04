@@ -26,3 +26,5 @@ class NaiveBayes(object):
 
     def coef_MN(self, var):
         return naive_bayes_Nc(var, self._klass, self._mask, self._nclass)
+
+

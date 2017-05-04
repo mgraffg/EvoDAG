@@ -18,6 +18,79 @@ from .model import Model
 import gc
 
 
+class NaiveBayesInput(object):
+    def __init__(self, base, vars):
+        self._base = base
+        self._vars = vars
+        self._unique_individuals = set()
+        self.functions()
+
+    def functions(self):
+        base = self._base
+        density = sum([x.hy.density for x in base.X]) / base.nvar
+        func = [x for x in [NaiveBayes, NaiveBayesMN] if x.nargs > 0]
+        if not len(func):
+            self._func = None
+            self._nfunc = 0
+            return
+        if density < self._base._min_density:
+            func = [x for x in func if x.density_safe]
+        self._nfunc = len(func)
+        self._func = func
+
+    def function(self):
+        if self._nfunc == 1:
+            return self._func
+        if np.random.random() < 0.5:
+            return self._func
+        return [self._func[1], self._func[0]]
+
+    def input(self):
+        base = self._base
+        unique_individuals = self._unique_individuals
+        vars = self._vars
+        for _ in range(base._number_tries_feasible_ind):
+            args = []
+            func = self.function()
+            for f in func:
+                if len(args) == 0:
+                    nargs = f.nargs if f.nargs < len(vars) else len(vars)
+                else:
+                    if f.nargs > len(args):
+                        missing = f.nargs - len(args)
+                        nargs = missing if missing < len(vars) else len(vars)
+                    else:
+                        for __ in range(len(args) - f.nargs):
+                            vars.append(args.pop())
+                        nargs = 0
+                for __ in range(nargs):
+                    index = np.random.randint(len(vars))
+                    args.append(vars[index])
+                    del vars[index]
+                if len(args) == 0:
+                    return None
+                elif len(args) < f.min_nargs:
+                    for __ in range(f.min_nargs - len(args)):
+                        k = np.random.randint(base._nvar)
+                        args.append(k)
+                v = f(args,
+                      ytr=base._ytr, naive_bayes=base.naive_bayes,
+                      finite=base._finite, mask=base._mask)
+                sig = v.signature()
+                if sig in unique_individuals:
+                    continue
+                unique_individuals.add(sig)
+                v.height = 0
+                if not v.eval(base.X):
+                    continue
+                if not v.isfinite():
+                    continue
+                if not base._bagging_fitness.set_fitness(v):
+                    continue
+                return v
+        return None
+
+
 class BasePopulation(object):
     def __init__(self, base=None,
                  tournament_size=2,
@@ -205,57 +278,6 @@ class BasePopulation(object):
         index = fit[0]
         return vars[index]
 
-    def naive_bayes_input(self, density, unique_individuals, vars):
-        base = self._base
-        for _ in range(base._number_tries_feasible_ind):
-            func = []
-            if base._min_density < density:
-                if np.random.random() < 0.5:
-                    func = [NaiveBayes, NaiveBayesMN]
-                else:
-                    func = [NaiveBayesMN, NaiveBayes]
-            else:
-                func = [NaiveBayesMN]
-            func = [x for x in func if x.nargs > 0]
-            args = []
-            for f in func:
-                if len(args) == 0:
-                    nargs = f.nargs if f.nargs < len(vars) else len(vars)
-                else:
-                    if f.nargs > len(args):
-                        missing = f.nargs - len(args)
-                        nargs = missing if missing < len(vars) else len(vars)
-                    else:
-                        for __ in range(len(args) - f.nargs):
-                            vars.append(args.pop())
-                        nargs = 0
-                for __ in range(nargs):
-                    index = np.random.randint(len(vars))
-                    args.append(vars[index])
-                    del vars[index]
-                if len(args) == 0:
-                    return None
-                elif len(args) < f.min_nargs:
-                    for __ in range(f.min_nargs - len(args)):
-                        k = np.random.randint(base._nvar)
-                        args.append(k)
-                v = f(args,
-                      ytr=base._ytr, naive_bayes=base.naive_bayes,
-                      finite=base._finite, mask=base._mask)
-                sig = v.signature()
-                if sig in unique_individuals:
-                    continue
-                unique_individuals.add(sig)
-                v.height = 0
-                if not v.eval(base.X):
-                    continue
-                if not v.isfinite():
-                    continue
-                if not base._bagging_fitness.set_fitness(v):
-                    continue
-                return v
-        return None
-
     def variable_input_cl(self, used_inputs):
         base = self._base
         for _ in range(base._number_tries_feasible_ind):
@@ -272,7 +294,6 @@ class BasePopulation(object):
 
     def create_population_cl(self):
         base = self._base
-        density = sum([x.hy.density for x in base.X]) / base.nvar
         if base._share_inputs:
             used_inputs_var = [x for x in range(base.nvar)]
             used_inputs_naive = used_inputs_var
@@ -285,7 +306,7 @@ class BasePopulation(object):
         else:
             used_inputs_var = [x for x in range(base.nvar)]
             used_inputs_naive = [x for x in range(base.nvar)]
-        unique_individuals = set()
+        nb_input = NaiveBayesInput(base, used_inputs_naive)
         while (base._all_inputs or
                (self.popsize < base.popsize and
                 not base.stopping_criteria())):
@@ -298,7 +319,8 @@ class BasePopulation(object):
                     used_inputs_var = []
                     continue
             elif len(used_inputs_naive):
-                v = self.naive_bayes_input(density, unique_individuals, used_inputs_naive)
+                v = nb_input.input()
+                # v = self.naive_bayes_input(density, unique_individuals, used_inputs_naive)
                 if len(used_inputs_var) and len(used_inputs_naive) == 0:
                     base._pr_variable = 1
                 if v is None:
