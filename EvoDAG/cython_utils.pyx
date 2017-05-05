@@ -18,6 +18,7 @@ from cpython.list cimport PyList_GET_SIZE, PyList_GET_ITEM, PyList_New, PyList_A
 from cpython cimport array
 from cpython cimport list
 from libc cimport math
+import random
 cimport cython
 
 
@@ -203,3 +204,33 @@ cpdef list naive_bayes_MN(list var, list coef, unsigned int nclass):
             m_klass_value[k] = math.exp(m_klass_value[k])
         PyList_Append(res, b)
     return res
+
+
+cdef class SelectNumbers:
+    cdef array.array data
+    cdef public Py_ssize_t pos
+    cdef public Py_ssize_t size
+    def __cinit__(self, list lst):
+        random.shuffle(lst)
+        self.data = array.array('I', lst)
+        self.size = PyList_GET_SIZE(lst)
+        self.pos = 0
+
+    cpdef list get(self, Py_ssize_t k):
+        cdef Py_ssize_t end = self.pos + k, i, pos = self.pos
+        cdef list res = PyList_New(0)
+        cdef array.array data = self.data
+        if end > self.size:
+            end = self.size
+        self.pos = end
+        for i in range(pos, end):
+            PyList_Append(res, data[i])
+        return res
+
+    cpdef int get_one(self):
+        cdef pos = self.pos
+        self.pos += 1
+        return self.data[pos]
+    
+    cpdef bint empty(self):
+        return self.pos == self.size

@@ -15,6 +15,7 @@ import logging
 import numpy as np
 from .node import Function, NaiveBayes, NaiveBayesMN
 from .model import Model
+from .cython_utils import SelectNumbers
 import gc
 
 
@@ -53,26 +54,14 @@ class NaiveBayesInput(object):
             args = []
             func = self.function()
             for f in func:
-                if len(args) == 0:
-                    nargs = f.nargs if f.nargs < len(vars) else len(vars)
-                else:
-                    if f.nargs > len(args):
-                        missing = f.nargs - len(args)
-                        nargs = missing if missing < len(vars) else len(vars)
-                    else:
-                        for __ in range(len(args) - f.nargs):
-                            vars.append(args.pop())
-                        nargs = 0
-                for __ in range(nargs):
-                    index = np.random.randint(len(vars))
-                    args.append(vars[index])
-                    del vars[index]
-                if len(args) == 0:
+                nargs = f.nargs
+                if len(args):
+                    vars.pos -= len(args)
+                if vars.empty():
                     return None
-                elif len(args) < f.min_nargs:
-                    for __ in range(f.min_nargs - len(args)):
-                        k = np.random.randint(base._nvar)
-                        args.append(k)
+                args = vars.get(nargs)
+                if len(args) < f.min_nargs:
+                    return None
                 v = f(args,
                       ytr=base._ytr, naive_bayes=base.naive_bayes,
                       finite=base._finite, mask=base._mask)
@@ -281,13 +270,9 @@ class BasePopulation(object):
     def variable_input_cl(self, used_inputs):
         base = self._base
         for _ in range(base._number_tries_feasible_ind):
-            nvar = len(used_inputs)
-            if nvar == 0:
+            if used_inputs.empty():
                 return None
-            var = np.random.randint(nvar)
-            _ = used_inputs[var]
-            del used_inputs[var]
-            var = base._random_leaf(_)
+            var = base._random_leaf(used_inputs.get_one())
             if var is not None:
                 return var
         return None
@@ -295,37 +280,37 @@ class BasePopulation(object):
     def create_population_cl(self):
         base = self._base
         if base._share_inputs:
-            used_inputs_var = [x for x in range(base.nvar)]
+            used_inputs_var = SelectNumbers([x for x in range(base.nvar)])
             used_inputs_naive = used_inputs_var
         if base._pr_variable == 0:
-            used_inputs_var = []
-            used_inputs_naive = [x for x in range(base.nvar)]
+            used_inputs_var = SelectNumbers([])
+            used_inputs_naive = SelectNumbers([x for x in range(base.nvar)])
         elif base._pr_variable == 1:
-            used_inputs_var = [x for x in range(base.nvar)]
-            used_inputs_naive = []
+            used_inputs_var = SelectNumbers([x for x in range(base.nvar)])
+            used_inputs_naive = SelectNumbers([])
         else:
-            used_inputs_var = [x for x in range(base.nvar)]
-            used_inputs_naive = [x for x in range(base.nvar)]
+            used_inputs_var = SelectNumbers([x for x in range(base.nvar)])
+            used_inputs_naive = SelectNumbers([x for x in range(base.nvar)])
         nb_input = NaiveBayesInput(base, used_inputs_naive)
         while (base._all_inputs or
                (self.popsize < base.popsize and
                 not base.stopping_criteria())):
-            if base._all_inputs and len(used_inputs_var) == 0 and len(used_inputs_naive) == 0:
+            if base._all_inputs and used_inputs_var.empty() and used_inputs_naive.empty():
                 base._init_popsize = self.popsize
                 break
-            if len(used_inputs_var) and np.random.random() < base._pr_variable:
+            if not used_inputs_var.empty() and np.random.random() < base._pr_variable:
                 v = self.variable_input_cl(used_inputs_var)
                 if v is None:
-                    used_inputs_var = []
+                    used_inputs_var.pos = used_inputs_var.size
                     continue
-            elif len(used_inputs_naive):
+            elif not used_inputs_naive.empty():
                 v = nb_input.input()
                 # v = self.naive_bayes_input(density, unique_individuals, used_inputs_naive)
-                if len(used_inputs_var) and len(used_inputs_naive) == 0:
+                if not used_inputs_var.empty() and used_inputs_naive.empty():
                     base._pr_variable = 1
                 if v is None:
-                    used_inputs_naive = []
-                    if len(used_inputs_var):
+                    used_inputs_naive.pos = used_inputs_naive.size
+                    if not used_inputs_var.empty():
                         base._pr_variable = 1
                     continue
             else:

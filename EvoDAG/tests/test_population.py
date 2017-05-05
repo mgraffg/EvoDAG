@@ -220,4 +220,23 @@ def test_model_nvar():
         assert False
     except RuntimeError:
         pass
-    
+
+
+def test_selectNumbers():
+    from EvoDAG.cython_utils import SelectNumbers
+    s = SelectNumbers([x for x in range(100)])
+    a = s.get(10)
+    print(a, len(a))
+    assert len(a) == 10
+    a = s.get(91)
+    assert len(a) == 90
+    s.pos -= 10
+    a = s.get(10)
+    assert len(a) == 10
+    assert s.pos == 100
+    assert s.empty()
+    s.pos = 0
+    while not s.empty():
+        s.get_one()
+    s = SelectNumbers([])
+    assert s.empty()
