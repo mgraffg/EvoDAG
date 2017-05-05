@@ -50,6 +50,8 @@ class NaiveBayesInput(object):
         base = self._base
         unique_individuals = self._unique_individuals
         vars = self._vars
+        if self._nfunc == 0:
+            return None
         for _ in range(base._number_tries_feasible_ind):
             args = []
             func = self.function()
