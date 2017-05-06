@@ -19,7 +19,7 @@ from .cython_utils import SelectNumbers
 import gc
 
 
-class NaiveBayesInput(object):
+class Inputs(object):
     def __init__(self, base, vars):
         self._base = base
         self._vars = vars
@@ -303,7 +303,7 @@ class BasePopulation(object):
         else:
             used_inputs_var = SelectNumbers([x for x in range(base.nvar)])
             used_inputs_naive = SelectNumbers([x for x in range(base.nvar)])
-        nb_input = NaiveBayesInput(base, used_inputs_naive)
+        nb_input = Inputs(base, used_inputs_naive)
         while (base._all_inputs or
                (self.popsize < base.popsize and
                 not base.stopping_criteria())):
