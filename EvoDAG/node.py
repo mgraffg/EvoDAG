@@ -768,3 +768,66 @@ class NaiveBayesMN(NaiveBayes):
         if hyt is not None:
             self.hy_test = MN([hyt[x] for x in var], weight, nclass)
         return True
+
+
+class MultipleVariables(Add):
+    symbol = 'X'
+    
+    def raw_outputs(self, X):
+        r = [X[x].hy for x in self.variable]
+        hr = None
+        if X[0].hy_test is not None:
+            hr = [X[x].hy_test for x in self.variable]
+        return r, hr
+
+    def set_weight(self, r):
+        if self.weight is None:
+            if not self._multiple_outputs:
+                ytr = [self._ytr]
+                mask = [self._mask]
+            else:
+                ytr = self._ytr
+                mask = self._mask
+            W = []
+            for _ytr, _mask in zip(ytr, mask):
+                w = self.compute_weight(r, ytr=_ytr, mask=_mask)
+                if w is None:
+                    return False
+                W.append(w)
+            if not self._multiple_outputs:
+                self.weight = W[0]
+            else:
+                self.weight = W
+        return True
+
+    def _mul(self, a, w):
+        cumsum = SparseArray.cumsum
+        if not isinstance(w, list):
+            return cumsum([x * y for x, y in zip(a, w)])
+        return [cumsum([x * y1 for x, y1 in zip(a, y)]) for y in w]
+
+    def eval(self, X):
+        r, hr = self.raw_outputs(X)
+        if isinstance(r, list):
+            if self._finite:
+                r = [x.finite(inplace=True) for x in r]
+            else:
+                r = [x for x in r]
+        else:
+            if self._finite:
+                r = r.finite(inplace=True)
+        if not self.set_weight(r):
+            return False
+        self.hy = self._mul(r, self.weight)
+        if hr is not None:
+            if isinstance(hr, list):
+                if self._finite:
+                    hr = [x.finite(inplace=True) for x in hr]
+                else:
+                    hr = [x for x in hr]
+            else:
+                if self._finite:
+                    hr = hr.finite(inplace=True)
+            self.hy_test = self._mul(hr, self.weight)
+        return True
+        

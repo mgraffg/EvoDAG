@@ -13,7 +13,7 @@
 # limitations under the License.
 import logging
 import numpy as np
-from .node import Function, NaiveBayes, NaiveBayesMN
+from .node import Function, NaiveBayes, NaiveBayesMN, MultipleVariables
 from .model import Model
 from .cython_utils import SelectNumbers
 import gc
@@ -24,12 +24,13 @@ class NaiveBayesInput(object):
         self._base = base
         self._vars = vars
         self._unique_individuals = set()
+        self._funcs = [NaiveBayes, NaiveBayesMN, MultipleVariables]
         self.functions()
 
     def functions(self):
         base = self._base
         density = sum([x.hy.density for x in base.X]) / base.nvar
-        func = [x for x in [NaiveBayes, NaiveBayesMN] if x.nargs > 0]
+        func = [x for x in self._funcs if x.nargs > 0]
         if not len(func):
             self._func = None
             self._nfunc = 0
@@ -42,9 +43,18 @@ class NaiveBayesInput(object):
     def function(self):
         if self._nfunc == 1:
             return self._func
-        if np.random.random() < 0.5:
-            return self._func
-        return [self._func[1], self._func[0]]
+        elif self._nfunc == 2:
+            if np.random.random() < 0.5:
+                return self._func
+            return [self._func[1], self._func[0]]
+        else:
+            rnd = np.random.random()
+            if rnd < 0.3:
+                return self._func
+            elif rnd < 0.6:
+                return [self._func[1], self._func[0], self._func[2]]
+            else:
+                return [self._func[2], self._func[0], self._func[1]]
 
     def input(self):
         base = self._base

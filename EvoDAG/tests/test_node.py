@@ -566,3 +566,24 @@ def test_naive_bayes_MN_variable():
                                mask=gp._mask, finite=True)
     naive_bayes.eval(gp.X)
     assert len(naive_bayes.hy) == 3
+
+
+def test_multiple_variables():
+    from EvoDAG.node import MultipleVariables
+    gp, args = create_problem_node2(nargs=3, seed=0)
+    gp.random_leaf()
+    mv = MultipleVariables([x for x in range(len(gp.X))],
+                           ytr=gp._ytr, naive_bayes=gp._naive_bayes,
+                           mask=gp._mask, finite=True)
+    mv.eval(gp.X)
+    assert len(mv.hy) == 3
+    mv2 = MultipleVariables([x for x in range(len(gp.X))],
+                            ytr=gp._ytr[0], mask=gp._mask[0], finite=True)
+    mv2.eval(gp.X)
+    assert isinstance(mv2.hy, SparseArray)
+    assert mv2.hy.SSE(mv.hy[0]) == 0
+    l = []
+    for a, b in zip(gp.X, mv2.weight):
+        l.append(a.hy * b)
+    r = SparseArray.cumsum(l)
+    assert mv2.hy.SSE(r) == 0
