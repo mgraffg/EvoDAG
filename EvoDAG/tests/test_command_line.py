@@ -835,3 +835,25 @@ def test_logging():
                 '-R', '--parameters', 'cache.evodag',
                 '--verbose=0', '-p3', '-e2', '-r2', fname]
     params()
+
+
+def test_model_seed():
+    import os
+    from EvoDAG.command_line import params, train
+    import gzip
+    import pickle
+    fname = mo_training_set()
+    sys.argv = ['EvoDAG', '--output-dim=3',
+                '-R', '--parameters',
+                'cache.evodag', '-p3', '-e2',
+                '-r2', fname]
+    params()
+    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
+                '-n2', '--output-dim=3', '--seed=1',
+                '--model', 'model.evodag',
+                '--test', fname, fname]
+    c = train()
+    os.unlink('cache.evodag')
+    default_nargs()
+    assert c.data.seed == 1
+    

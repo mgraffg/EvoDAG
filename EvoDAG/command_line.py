@@ -264,6 +264,8 @@ class CommandLine(object):
 
     def store_model(self, kw):
         if self.data.ensemble_size == 1:
+            if self.data.seed >= 0:
+                kw['seed'] = self.data.seed
             self.evo = EvoDAG(**kw).fit(self.X, self.y, test_set=self.Xtest)
             self.model = self.evo.model()
         else:
@@ -467,6 +469,8 @@ class CommandLineTrain(CommandLine):
            default=False)
         pa('--min-size', dest='min_size',
            type=int, default=1, help='Model min-size')
+        pa('-s', '--seed', dest='seed',
+           default=-1, type=int, help='Seed')
 
     def main(self):
         self.read_training_set()
@@ -488,7 +492,8 @@ class CommandLineTrain(CommandLine):
             kw = res
         kw = RandomParameterSearch.process_params(kw)
         if 'seed' in kw:
-            self.data.seed = kw['seed']
+            if self.data.seed < 0:
+                self.data.seed = kw['seed']
             del kw['seed']
         self.store_model(kw)
 
@@ -720,6 +725,7 @@ def train():
     "EvoDAG-params command line"
     c = CommandLineTrain()
     c.parse_args()
+    return c
 
 
 def predict():
