@@ -296,6 +296,8 @@ def test_inputs_func_argument():
     class Error:
         nargs = 2
         min_nargs = 2
+        classification = True
+        regression = True
 
         def __init__(self, *args, **kwargs):
             raise RuntimeError('aqui')
