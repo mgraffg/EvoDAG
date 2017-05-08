@@ -840,8 +840,6 @@ def test_logging():
 def test_model_seed():
     import os
     from EvoDAG.command_line import params, train
-    import gzip
-    import pickle
     fname = mo_training_set()
     sys.argv = ['EvoDAG', '--output-dim=3',
                 '-R', '--parameters',
@@ -856,4 +854,38 @@ def test_model_seed():
     os.unlink('cache.evodag')
     default_nargs()
     assert c.data.seed == 1
-    
+
+
+def test_create_ensemble():
+    import os
+    from EvoDAG.command_line import params, train, utils
+    from EvoDAG.model import Ensemble
+    import pickle
+    import gzip
+    fname = mo_training_set()
+    sys.argv = ['EvoDAG', '--output-dim=3',
+                '-R', '--parameters',
+                'cache.evodag', '-p3', '-e2',
+                '-r2', fname]
+    params()
+    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
+                '-n1', '--output-dim=3', '--seed=1',
+                '--model', 'model.evodag.1',
+                '--test', fname, fname]
+    train()
+    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
+                '-n1', '--output-dim=3', '--seed=2',
+                '--model', 'model.evodag.2',
+                '--test', fname, fname]
+    train()
+    os.unlink('cache.evodag')
+    sys.argv = ['EvoDAG', '--create-ensemble', '-omodel.evodag',
+                '-n3', 'model.evodag.* model.evodag.1']
+    utils()
+    os.unlink('model.evodag.1')
+    os.unlink('model.evodag.2')
+    with gzip.open('model.evodag', 'r') as fpt:
+        ens = pickle.load(fpt)
+    assert isinstance(ens, Ensemble)
+    os.unlink('model.evodag')
+    default_nargs()

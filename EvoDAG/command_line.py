@@ -584,7 +584,18 @@ class CommandLineUtils(CommandLine):
         self.height()
         self.remove_terminals()
         self.used_inputs_number()
+        self.create_ensemble_params()
         self.version()
+
+    def create_ensemble_params(self):
+        self.parser.add_argument('--create-ensemble',
+                                 help='Models to ensemble', dest='ensemble',
+                                 default=False, action='store_true')
+        self.parser.add_argument('-n', '--ensemble-size',
+                                 help='Ensemble size (default: select all models)',
+                                 dest='ensemble_size',
+                                 default=-1,
+                                 type=int)
 
     def used_inputs_number(self):
         self.parser.add_argument('--used-inputs-number',
@@ -654,6 +665,25 @@ class CommandLineUtils(CommandLine):
             with open(parameters, 'r') as fpt:
                 return json.loads(fpt.read())
 
+    def create_ensemble(self, model_file):
+        from glob import glob
+        models = []
+        for fname in model_file.split(' '):
+            for k in glob(fname):
+                with gzip.open(k, 'r') as fpt:
+                    models.append(pickle.load(fpt))
+                    self.word2id = pickle.load(fpt)
+                    self.label2id = pickle.load(fpt)
+        models.sort(key=lambda x: x.fitness_vs)
+        if self.data.ensemble_size > 0:
+            models = models[:self.data.ensemble_size]
+        self.model = Ensemble(models)
+        model_file = self.data.output_file
+        with gzip.open(model_file, 'w') as fpt:
+            pickle.dump(self.model, fpt)
+            pickle.dump(self.word2id, fpt)
+            pickle.dump(self.label2id, fpt)
+
     def main(self):
         def most_common(K, a):
             l = a.most_common()
@@ -713,6 +743,8 @@ class CommandLineUtils(CommandLine):
                 self.label2id = pickle.load(fpt)
             inputs = m.inputs()
             print("Used inputs number", len(inputs))
+        elif self.data.ensemble is not None:
+            self.create_ensemble(model_file)
 
 
 def params():
