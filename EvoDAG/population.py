@@ -29,6 +29,9 @@ class Inputs(object):
         else:
             self._funcs = functions
         assert len(self._funcs) <= 3
+        c = base._classifier
+        tag = 'classification' if c else 'regression'
+        self._funcs = [x for x in self._funcs if getattr(x, tag)]
         self.functions()
 
     def functions(self):

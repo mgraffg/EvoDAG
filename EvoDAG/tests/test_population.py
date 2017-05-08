@@ -324,3 +324,22 @@ def test_inputs_func_argument():
         pass
     
     
+def test_restrictions():
+    from EvoDAG.population import Inputs
+    from EvoDAG.cython_utils import SelectNumbers
+    from EvoDAG import EvoDAG
+    from SparseArray import SparseArray
+    y = cl.copy()
+    gp = EvoDAG(classifier=True, multiple_outputs=True,
+                popsize=5, share_inputs=True)
+    gp.X = X
+    gp.X[-1]._eval_tr = SparseArray.fromlist([0 for x in range(gp.X[-1].hy.size())])
+    gp.nclasses(y)
+    gp.y = y
+    for c in [True, False]:
+        gp._classifier = c
+        tag = 'classification' if c else 'regression'
+        inputs = Inputs(gp, SelectNumbers([x for x in range(len(gp.X))]))
+        for x in inputs._funcs:
+            print(x, tag)
+            assert getattr(x, tag)

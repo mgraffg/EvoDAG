@@ -669,7 +669,7 @@ class CommandLineUtils(CommandLine):
         from glob import glob
         models = []
         for fname in model_file.split(' '):
-            for k in glob(fname):
+            for k in tqdm(glob(fname)):
                 with gzip.open(k, 'r') as fpt:
                     models.append(pickle.load(fpt))
                     self.word2id = pickle.load(fpt)
