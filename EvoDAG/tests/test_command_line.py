@@ -852,7 +852,7 @@ def test_model_seed():
                 '-n2', '--output-dim=3', '--seed=1',
                 '--model', 'model.evodag',
                 '--test', fname, fname]
-    c = train()
+    c = train(output=True)
     os.unlink('cache.evodag')
     default_nargs()
     assert c.data.seed == 1

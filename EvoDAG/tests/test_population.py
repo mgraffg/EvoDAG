@@ -14,6 +14,7 @@
 
 
 from test_root import X, cl
+from nose.tools import assert_almost_equals
 
 
 def test_generational_generation():
@@ -193,7 +194,8 @@ def test_density():
             gp.replace(a)
             d = sum([x.hy.density for x in gp.population.population]) / gp.popsize
             print(d, gp.population.density, 'replace')
-            assert gp.population.density == d
+            print(gp.population.density, d, '==')
+            assert_almost_equals(gp.population.density, d)
 
 
 def test_share_inputs():
@@ -240,3 +242,49 @@ def test_selectNumbers():
         s.get_one()
     s = SelectNumbers([])
     assert s.empty()
+
+
+def test_inputs():
+    from EvoDAG.population import Inputs
+    from EvoDAG.cython_utils import SelectNumbers
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(classifier=True, multiple_outputs=True,
+                popsize=5, share_inputs=True)
+    gp.X = X
+    gp.nclasses(y)
+    gp.y = y
+    inputs = Inputs(gp, SelectNumbers([x for x in range(len(gp.X))]))
+    func = inputs._func
+    for f in func:
+        inputs._func = [f]
+        inputs._nfunc = 1
+        v = inputs.input()
+        assert v is not None
+        inputs = Inputs(gp, SelectNumbers([x for x in range(len(gp.X))]))
+
+
+def test_multiple_variables():
+    import numpy as np
+    from EvoDAG.population import Inputs
+    from EvoDAG.cython_utils import SelectNumbers
+    from EvoDAG import EvoDAG
+    from SparseArray import SparseArray
+    y = cl.copy()
+    gp = EvoDAG(classifier=True, multiple_outputs=True,
+                popsize=5, share_inputs=True)
+    gp.X = X
+    gp.X[-1]._eval_tr = SparseArray.fromlist([0 for x in range(gp.X[-1].hy.size())])
+    gp.nclasses(y)
+    gp.y = y
+    inputs = Inputs(gp, SelectNumbers([x for x in range(len(gp.X))]))
+    inputs._func = [inputs._func[-1]]
+    inputs._nfunc = 1
+    v = inputs.input()
+    assert v is not None
+    mask = np.array(gp._mask[0].full_array(), dtype=np.bool)
+    D = np.array([x.hy.full_array() for x in gp.X]).T
+    b = np.array(gp._ytr[0].full_array())
+    coef = np.linalg.lstsq(D[mask], b[mask])[0]
+    for a, b in zip(coef, v.weight[0]):
+        assert_almost_equals(a, b)

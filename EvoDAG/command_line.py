@@ -721,11 +721,12 @@ def params():
     c.parse_args()
 
 
-def train():
+def train(output=False):
     "EvoDAG-params command line"
     c = CommandLineTrain()
     c.parse_args()
-    return c
+    if output:
+        return c
 
 
 def predict():

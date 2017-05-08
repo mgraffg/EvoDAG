@@ -772,7 +772,7 @@ class NaiveBayesMN(NaiveBayes):
 
 class MultipleVariables(Add):
     symbol = 'X'
-    
+
     def raw_outputs(self, X):
         r = [X[x].hy for x in self.variable]
         hr = None

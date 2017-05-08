@@ -19,7 +19,7 @@ from SparseArray.sparse_array cimport SparseArray
 from libc cimport math
 from libc.float cimport DBL_EPSILON
 from cpython cimport array
-from cpython.list cimport PyList_GET_SIZE, PyList_GET_ITEM, PyList_SET_ITEM
+from cpython.list cimport PyList_GET_SIZE, PyList_GET_ITEM, PyList_SET_ITEM, PyList_Append
 
 
 cdef bint iszero(double x):
@@ -104,27 +104,42 @@ cdef bint gauss_jordan(list m):
         
 cpdef compute_weight(list r, SparseArray ytr, mask):
     """Returns the weight (w) using OLS of r * w = gp._ytr """
-    cdef Py_ssize_t i, j, size=len(r)
+    cdef Py_ssize_t i, j, size=PyList_GET_SIZE(r), k=0
     cdef SparseArray ri, rj
-    cdef array.array data = array.array('d'), other
-    cdef list X = [array.clone(data, size+1, False) for i in range(size)]
-    cdef double tmp
+    cdef array.array data = array.array('d'), other, dependent
+    cdef list X = [], R = [], var = []
+    cdef double tmp, *dependent_value
+    dependent = array.clone(data, size, False)
+    dependent_value = dependent.data.as_doubles
     for i in range(size):
-        data = X[i]
-        ri = r[i]
+        ri = <SparseArray> PyList_GET_ITEM(r, i)
         tmp = ytr.dot(ri)
         if not math.isfinite(tmp):
-            return None
-        data.data.as_doubles[size] = tmp 
+            return None        
         ri = ri * mask
+        if ri.non_zero:
+            PyList_Append(R, ri)
+            PyList_Append(var, i)
+            dependent_value[k] = tmp
+            k += 1
+    size = PyList_GET_SIZE(R)
+    X = [array.clone(data, size+1, False) for i in range(size)]
+    for i in range(size):
+        data = <array.array> PyList_GET_ITEM(X, i)
+        ri = <SparseArray> PyList_GET_ITEM(R, i)
+        data.data.as_doubles[size] = dependent_value[i]
         for j in range(i, size):
-            rj = r[j]
+            rj = <SparseArray> PyList_GET_ITEM(R, j)
             tmp = ri.dot(rj)
             if not math.isfinite(tmp):
                 return None
             data.data.as_doubles[j] = tmp
-            other = X[j]
+            other = <array.array> PyList_GET_ITEM(X, j)
             other.data.as_doubles[i] = tmp
     if gauss_jordan(X):
         return None
-    return np.array([x[size] for x in X])
+    res = np.zeros(PyList_GET_SIZE(r))
+    for k, i in enumerate(var):
+        data = <array.array> PyList_GET_ITEM(X, k)
+        res[i] = data[size]
+    return res
