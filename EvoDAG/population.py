@@ -20,11 +20,15 @@ import gc
 
 
 class Inputs(object):
-    def __init__(self, base, vars):
+    def __init__(self, base, vars, functions=None):
         self._base = base
         self._vars = vars
         self._unique_individuals = set()
-        self._funcs = [NaiveBayes, NaiveBayesMN, MultipleVariables]
+        if functions is None:
+            self._funcs = [NaiveBayes, NaiveBayesMN, MultipleVariables]
+        else:
+            self._funcs = functions
+        assert len(self._funcs) <= 3
         self.functions()
 
     def functions(self):
@@ -303,7 +307,7 @@ class BasePopulation(object):
         else:
             used_inputs_var = SelectNumbers([x for x in range(base.nvar)])
             used_inputs_naive = SelectNumbers([x for x in range(base.nvar)])
-        nb_input = Inputs(base, used_inputs_naive)
+        nb_input = Inputs(base, used_inputs_naive, functions=base._input_functions)
         while (base._all_inputs or
                (self.popsize < base.popsize and
                 not base.stopping_criteria())):

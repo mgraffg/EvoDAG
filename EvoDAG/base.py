@@ -49,7 +49,7 @@ class EvoDAG(object):
                  labels=None, all_inputs=False, random_generations=0, fitness_function='BER',
                  min_density=0.8, multiple_outputs=False, function_selection=True,
                  fs_tournament_size=2, finite=True, pr_variable=0.33,
-                 share_inputs=False, **kwargs):
+                 share_inputs=False, input_functions=None, **kwargs):
         self._bagging_fitness = BaggingFitness(base=self)
         generations = np.inf if generations is None else generations
         self._pr_variable = pr_variable
@@ -88,6 +88,7 @@ class EvoDAG(object):
         if not inspect.isclass(population_class):
             pop = importlib.import_module('EvoDAG.population')
             population_class = getattr(pop, population_class)
+        self._set_input_functions(input_functions)
         self._population_class = population_class
         np.random.seed(self._seed)
         self._unique_individuals = unique_individuals
@@ -100,6 +101,22 @@ class EvoDAG(object):
         self._multiple_outputs = multiple_outputs
         self._extras = kwargs
 
+    def _set_input_functions(self, input_functions):
+        if input_functions is not None:
+            if not isinstance(input_functions, list):
+                input_functions = [input_functions]
+            r = []
+            for f in input_functions:
+                if not inspect.isclass(f):
+                    _ = importlib.import_module('EvoDAG.node')
+                    f = getattr(_, f)
+                    r.append(f)
+                else:
+                    r.append(f)
+            self._input_functions = r
+        else:
+            self._input_functions = input_functions
+        
     def get_params(self):
         "Parameters used to initialize the class"
         import inspect

@@ -288,3 +288,39 @@ def test_multiple_variables():
     coef = np.linalg.lstsq(D[mask], b[mask])[0]
     for a, b in zip(coef, v.weight[0]):
         assert_almost_equals(a, b)
+
+
+def test_inputs_func_argument():
+    from EvoDAG import EvoDAG
+
+    class Error:
+        nargs = 2
+        min_nargs = 2
+
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError('aqui')
+    y = cl.copy()
+    gp = EvoDAG(classifier=True, multiple_outputs=True,
+                pr_variable=0, input_functions=[Error], popsize=5, share_inputs=True)
+    gp.X = X
+    gp.nclasses(y)
+    gp.y = y
+    try:
+        gp.create_population()
+        assert False
+    except RuntimeError:
+        pass
+    gp = EvoDAG(classifier=True, multiple_outputs=True,
+                pr_variable=0, input_functions=['NaiveBayes', 'NaiveBayesMN',
+                                                'MultipleVariables'],
+                popsize=5, share_inputs=True).fit(X, y)
+    assert gp
+    try:
+        EvoDAG(classifier=True, multiple_outputs=True,
+               pr_variable=0, input_functions=['NaiveBayesXX', 'NaiveBayesMN',
+                                               'MultipleVariables'],
+               popsize=5, share_inputs=True).fit(X, y)
+    except AttributeError:
+        pass
+    
+    
