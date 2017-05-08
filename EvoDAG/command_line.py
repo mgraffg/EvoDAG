@@ -674,7 +674,7 @@ class CommandLineUtils(CommandLine):
                     models.append(pickle.load(fpt))
                     self.word2id = pickle.load(fpt)
                     self.label2id = pickle.load(fpt)
-        models.sort(key=lambda x: x.fitness_vs)
+        models.sort(key=lambda x: x.fitness_vs, reverse=True)
         if self.data.ensemble_size > 0:
             models = models[:self.data.ensemble_size]
         self.model = Ensemble(models)
