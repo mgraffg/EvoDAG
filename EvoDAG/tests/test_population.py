@@ -67,7 +67,7 @@ def test_all_inputs2():
     y[y != 1] = -1
     gp = EvoDAG(population_class='Generational',
                 all_inputs=True, classifier=False,
-                popsize=3)
+                pr_variable=1, popsize=3)
     gp.X = X
     gp.y = y
     gp.create_population()
@@ -85,8 +85,7 @@ def test_all_init_popsize():
     y[y != 1] = -1
     gp = EvoDAG(population_class='Generational',
                 all_inputs=True, classifier=False,
-                early_stopping_rounds=1,
-                popsize=2)
+                early_stopping_rounds=1, pr_variable=1, popsize=2)
     gp.X = X
     gp.y = y
     gp.create_population()
@@ -345,3 +344,30 @@ def test_restrictions():
         for x in inputs._funcs:
             print(x, tag)
             assert getattr(x, tag)
+
+
+def test_inputs_func_argument_regression():
+    from EvoDAG import EvoDAG
+
+    class Error:
+        nargs = 2
+        min_nargs = 2
+        classification = True
+        regression = True
+
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError('aqui')
+    y = cl.copy()
+    y[y == 0] = -1
+    y[y > -1] = 1
+    gp = EvoDAG(classifier=False, multiple_outputs=False,
+                pr_variable=0, input_functions=[Error],
+                popsize=5, share_inputs=True)
+    gp.X = X
+    gp.nclasses(y)
+    gp.y = y
+    try:
+        gp.create_population()
+        assert False
+    except RuntimeError:
+        pass

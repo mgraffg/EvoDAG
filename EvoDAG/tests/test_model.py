@@ -151,6 +151,7 @@ def test_model_graphviz():
                 tournament_size=2,
                 early_stopping_rounds=-1,
                 classifier=False,
+                pr_variable=1,
                 seed=0,
                 popsize=10).fit(X, y)
     m = gp.model()

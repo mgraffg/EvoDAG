@@ -286,7 +286,7 @@ class BasePopulation(object):
         index = fit[0]
         return vars[index]
 
-    def variable_input_cl(self, used_inputs):
+    def variable_input(self, used_inputs):
         base = self._base
         for _ in range(base._number_tries_feasible_ind):
             if used_inputs.empty():
@@ -296,7 +296,8 @@ class BasePopulation(object):
                 return var
         return None
 
-    def create_population_cl(self):
+    def create_population(self):
+        "Create the initial population"
         base = self._base
         if base._share_inputs:
             used_inputs_var = SelectNumbers([x for x in range(base.nvar)])
@@ -318,7 +319,7 @@ class BasePopulation(object):
                 base._init_popsize = self.popsize
                 break
             if not used_inputs_var.empty() and np.random.random() < base._pr_variable:
-                v = self.variable_input_cl(used_inputs_var)
+                v = self.variable_input(used_inputs_var)
                 if v is None:
                     used_inputs_var.pos = used_inputs_var.size
                     continue
@@ -332,31 +333,6 @@ class BasePopulation(object):
                     if not used_inputs_var.empty():
                         base._pr_variable = 1
                     continue
-            else:
-                gen = self.generation
-                self.generation = 0
-                v = base.random_offspring()
-                self.generation = gen
-            self.add(v)
-
-    def create_population(self):
-        "Create the initial population"
-        base = self._base
-        if base._classifier and base._multiple_outputs:
-            return self.create_population_cl()
-        vars = np.arange(len(base.X))
-        np.random.shuffle(vars)
-        vars = vars.tolist()
-        while (base._all_inputs or
-               (self.popsize < base.popsize and
-                not base.stopping_criteria())):
-            if len(vars):
-                v = base._random_leaf(vars.pop())
-                if v is None:
-                    continue
-            elif base._all_inputs:
-                base._init_popsize = self.popsize
-                break
             else:
                 gen = self.generation
                 self.generation = 0

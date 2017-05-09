@@ -203,7 +203,7 @@ def test_features():
 
 def test_create_population():
     from EvoDAG import EvoDAG
-    gp = EvoDAG(generations=1, classifier=False,
+    gp = EvoDAG(generations=1, classifier=False, pr_variable=1,
                 popsize=4)
     gp.X = X
     y = cl.copy()
@@ -227,7 +227,7 @@ def test_create_population():
 def test_create_population2():
     from EvoDAG import EvoDAG
     from EvoDAG.node import Function
-    gp = EvoDAG(generations=1, classifier=False,
+    gp = EvoDAG(generations=1, classifier=False, pr_variable=1,
                 popsize=10)
     gp.X = X
     y = cl.copy()
@@ -1152,6 +1152,7 @@ def test_add_repeated_args():
                     classifier=False,
                     all_inputs=True,
                     function_set=[ff],
+                    pr_variable=1,
                     seed=0,
                     popsize=10000)
         gp.X = X
