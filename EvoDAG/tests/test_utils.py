@@ -34,7 +34,10 @@ def test_process_params():
             if k == 'generations':
                 v = np.inf
             print(k, v, params[k])
-            if hasattr(params[k], '__name__'):
+            if isinstance(v, list):
+                for a, b in zip(v, params[k]):
+                    assert a == b.__name__
+            elif hasattr(params[k], '__name__'):
                 assert v == params[k].__name__
             else:
                 assert v == params[k]

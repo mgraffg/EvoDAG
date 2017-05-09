@@ -369,6 +369,33 @@ class CommandLineParams(CommandLine):
         for x in p_delete:
             del params[x]
 
+    def if_type_contraint(self, params):
+        import importlib
+        unique = {}
+        if 'input_functions' not in params:
+            return
+        input_functions = params['input_functions']
+        R = []
+        for inner in input_functions:
+            r = []
+            for f in inner:
+                _ = importlib.import_module('EvoDAG.node')
+                j = getattr(_, f)
+                if self.data.classifier:
+                    flag = j.classification
+                else:
+                    flag = j.regression
+                if flag:
+                    r.append(f)
+            if len(r):
+                key = ';'.join(r)
+                if key not in unique:
+                    R.append(r)
+                    unique[key] = 1
+        if len(R) == 1:
+            R = R[0]
+        params['input_functions'] = R
+
     def evolve(self, kw):
         if self.data.parameters_values:
             with open(self.data.parameters_values, 'r') as fpt:
@@ -380,6 +407,7 @@ class CommandLineParams(CommandLine):
                 if k in params and v is not None:
                     params[k] = [v]
         self.fs_type_constraint(params)
+        self.if_type_contraint(params)
         parameters = self.data.parameters
         if parameters is None:
             parameters = self.data.training_set + '.EvoDAGparams'
@@ -690,6 +718,8 @@ class CommandLineUtils(CommandLine):
             if len(l):
                 if len(PARAMS[K]) <= 2:
                     return l[0]
+                elif isinstance(l[0][0], str):
+                    return l[0]
                 else:
                     num = np.sum([x * y for x, y in a.items()])
                     den = float(np.sum([y for y in a.values()]))
@@ -747,10 +777,12 @@ class CommandLineUtils(CommandLine):
             self.create_ensemble(model_file)
 
 
-def params():
+def params(output=False):
     "EvoDAG-params command line"
     c = CommandLineParams()
     c.parse_args()
+    if output:
+        return c
 
 
 def train(output=False):

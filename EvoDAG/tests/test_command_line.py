@@ -889,3 +889,32 @@ def test_create_ensemble():
     assert isinstance(ens, Ensemble)
     os.unlink('model.evodag')
     default_nargs()
+
+
+def test_input_type_constraint_R():
+    from EvoDAG.command_line import params
+    from EvoDAG.utils import PARAMS
+    fname = mo_training_set()
+    sys.argv = ['EvoDAG', '--output-dim=3',
+                '-R', '--parameters', 'cache.evodag',
+                '--verbose=0', '-p3', '-e2', '-r2', fname]
+    c = params(output=True)
+    _params = PARAMS.copy()
+    c.if_type_contraint(_params)
+    print(_params['input_functions'], 'MultipleVariables')
+    assert _params['input_functions'][0] == 'MultipleVariables'
+
+
+def test_input_type_constraint_C():
+    from EvoDAG.command_line import params
+    from EvoDAG.utils import PARAMS
+    fname = mo_training_set()
+    sys.argv = ['EvoDAG', '--output-dim=3',
+                '-C', '--parameters', 'cache.evodag',
+                '--verbose=0', '-p3', '-e2', '-r2', fname]
+    c = params(output=True)
+    _params = PARAMS.copy()
+    c.if_type_contraint(_params)
+    print(_params['input_functions'], 'MultipleVariables')
+    assert len(_params['input_functions']) == 4
+    

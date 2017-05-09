@@ -188,7 +188,7 @@ The best performance among each classification dataset is in
 bold face to facilitate the reading. It can be observed from the table
 that PSMS obtained the best performance on five datasets, SVM
 on one dataset, and EvoDAG obtained the
-best performance in the rest of the datasets (seven). One
+best performance in the rest of the datasets (six). One
 characteristic that caught our attention is the high confidence
 intervals of auto-sklearn (not shown here), it is one order of magnitude higher than
 the other systems. Analyzing the predictions performed by
@@ -199,21 +199,21 @@ automatically spotted, and, one possible solution could be as simple
 as execute auto-sklearn again on that particular case. Nonetheless, we
 decided to keep auto-sklearn without modifications.
 
-|Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.9.8)|
+|Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.10.1)|
 | ----- | ---------------------------------------------: | --------------------------------------------: | -----------------------------------: | -----------: |
-|banana          |     **11.08**      |  28.00  |11.27 | 11.99 | 
-|titanic          |    **24.18**    |  37.18   |  30.27  |  29.60 |
-|thyroid        |      **4.32**      |  23.38  |  6.13  |  8.39  | 
-|diabetis        |     27.06   |   37.65  |  26.65  |  **25.46** |
-|breast-cancer    |    **33.01**    |  42.36  |  36.25  |  33.95 | 
-|flare-solar     |     34.81     |  39.05 |  33.41  |  **32.94** | 
-|heart             |   20.69        |  27.69  |  18.12  |  **16.27** |
-|ringnorm       |      7.98      |  15.49  |  1.96  |  **1.62** |
-|twonorm       |       3.09      |  20.87  |  2.90  |  **2.47** | 
-|german         |      30.10    | 39.45  |  29.00  | **28.60** | 
-|image         |       **2.90** | 21.29  |  3.32  | 3.73 | 
-|waveform      |       12.80   | 22.67  |  **10.62**  |  10.85 |
-|splice       |        14.63  | 10.79  |  11.23  |  **9.90** | 
+|banana          |     **11.08**      |  28.00  |11.27 | 11.75 | 
+|titanic          |    **24.18**    |  37.18   |  30.27  |  29.54 |
+|thyroid        |      **4.32**      |  23.38  |  6.13  |  8.76  | 
+|diabetis        |     27.06   |   37.65  |  26.65  |  **25.35** |
+|breast-cancer    |    **33.01**    |  42.36  |  36.25  |  34.14 | 
+|flare-solar     |     34.81     |  39.05 |  33.41  |  **32.84** | 
+|heart             |   20.69        |  27.69  |  18.12  |  **16.21** |
+|ringnorm       |      7.98      |  15.49  |  1.96  |  **1.68** |
+|twonorm       |       3.09      |  20.87  |  2.90  |  **2.46** | 
+|german         |      30.10    | 39.45  |  29.00  | **28.56** | 
+|image         |       **2.90** | 21.29  |  3.32  | 4.50 | 
+|waveform      |       12.80   | 22.67  |  **10.62**  |  10.86 |
+|splice       |        14.63  | **10.79**  |  11.23  |  11.43 | 
 
 
 # Install EvoDAG #
