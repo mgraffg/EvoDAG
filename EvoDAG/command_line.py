@@ -427,7 +427,6 @@ class CommandLineParams(CommandLine):
                                    npoints=npoints)
         if self.data.do_nothing:
             os.mkdir(parameters)
-            print('hola', parameters)
             for k, x in enumerate(rs):
                 fname = os.path.join(parameters, '%s_params.json' % k)
                 with open(fname, 'w') as fpt:
