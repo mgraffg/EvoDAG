@@ -714,11 +714,16 @@ class CommandLineUtils(CommandLine):
 
     def main(self):
         def most_common(K, a):
+            try:
+                str_type = unicode
+            except NameError:
+                str_type = str
+
             l = a.most_common()
             if len(l):
                 if len(PARAMS[K]) <= 2:
                     return l[0]
-                elif isinstance(l[0][0], str):
+                elif isinstance(l[0][0], str_type):
                     return l[0]
                 else:
                     num = np.sum([x * y for x, y in a.items()])
