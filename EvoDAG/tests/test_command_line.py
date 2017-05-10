@@ -918,3 +918,18 @@ def test_input_type_constraint_C():
     print(_params['input_functions'], 'MultipleVariables')
     assert len(_params['input_functions']) == 4
     
+
+def test_params_files():
+    import os
+    from EvoDAG.command_line import params
+    import shutil
+    fname = training_set()
+    sys.argv = ['EvoDAG', '-C', '-Pcache', '--only-paramsfiles',
+                '-r', '2', fname]
+    params()
+    if os.path.isdir('cache'):
+        shutil.rmtree('cache')
+        default_nargs()
+        return
+    assert False
+    

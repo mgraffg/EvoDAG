@@ -349,6 +349,11 @@ class CommandLineParams(CommandLine):
                                  default=1,
                                  type=int,
                                  help="Output Dimension (default 1) use with multiple-outputs flag")
+        self.parser.add_argument('--only-paramsfiles',
+                                 help='Save the params to disk creating a directory',
+                                 dest='do_nothing',
+                                 action="store_true",
+                                 default=False)
 
     def fs_type_constraint(self, params):
         fs_class = {}
@@ -420,6 +425,14 @@ class CommandLineParams(CommandLine):
                                    seed=self.data.seed,
                                    training_size=training_size,
                                    npoints=npoints)
+        if self.data.do_nothing:
+            os.mkdir(parameters)
+            print('hola', parameters)
+            for k, x in enumerate(rs):
+                fname = os.path.join(parameters, '%s_params.json' % k)
+                with open(fname, 'w') as fpt:
+                    fpt.write(json.dumps(x, sort_keys=True, indent=2))
+            return
         if self.data.cpu_cores == 1:
             res = [rs_evodag((args, self.X, self.y))
                    for args in tqdm(rs, total=rs._npoints)]
