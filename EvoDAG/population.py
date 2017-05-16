@@ -339,6 +339,10 @@ class BasePopulation(object):
                 v = base.random_offspring()
                 self.generation = gen
             self.add(v)
+        if self.popsize > self._popsize:
+            self.population.sort(key=lambda x: x.fitness, reverse=True)
+            [self.clean(x) for x in self.population[self._popsize:]]
+            self.population = self.population[:self._popsize]
 
 
 class SteadyState(BasePopulation):
@@ -392,3 +396,76 @@ class Generational(SteadyState):
             self._inner = []
             self.generation += 1
             gc.collect()
+
+
+class HGenerational(Generational):
+    def input(self, vars):
+        base = self._base
+        function_set = base.function_set
+        function_selection = base._function_selection_ins
+        function_selection.density = base.population.density
+        function_selection.unfeasible_functions.clear()
+        for i in range(base._number_tries_feasible_ind):
+            if base._function_selection:
+                func_index = function_selection.tournament()
+            else:
+                func_index = function_selection.random_function()
+            func = function_set[func_index]
+            args = vars.get(func.nargs)
+            try:
+                if len(args) < func.min_nargs:
+                    return None
+            except AttributeError:
+                if len(args) < func.nargs:
+                    return None
+            args = [self.population[x].position for x in args]
+            f = base._random_offspring(func, args)
+            if f is None:
+                vars.pos -= len(args)
+                function_selection.unfeasible_functions.add(func_index)
+                continue
+            function_selection[func_index] = f.fitness
+            return f
+        return None
+
+    def extra_inputs(self):
+        base = self._base
+        if self.popsize <= self._popsize:
+            base._init_popsize = self.popsize
+            return
+        previous = 0
+        end = self.popsize
+        nvar = end
+        while nvar > self._popsize:
+            _ = [x for x in range(previous, end)]
+            vars = SelectNumbers(_)
+            while True:
+                f = self.input(vars)
+                if f is not None:
+                    self.add(f)
+                else:
+                    break
+            nvar = self.popsize - end
+            previous = end
+            end = self.popsize
+        base._unfeasible_counter = 0
+        base._init_popsize = self.popsize
+        if self.popsize > self._popsize:
+            self.population.sort(key=lambda x: x.fitness, reverse=True)
+            [self.clean(x) for x in self.population[self._popsize:]]
+            self.population = self.population[:self._popsize]
+
+    def create_population(self):
+        base = self._base
+        nvar = base.nvar
+        _ = [x for x in range(nvar)]
+        used_inputs_naive = SelectNumbers(_)
+        nb_input = Inputs(base, used_inputs_naive,
+                          functions=base._input_functions)
+        while not used_inputs_naive.empty():
+            v = nb_input.input()
+            if v is None:
+                used_inputs_naive.pos = used_inputs_naive.size
+                continue
+            self.add(v)
+        return self.extra_inputs()
