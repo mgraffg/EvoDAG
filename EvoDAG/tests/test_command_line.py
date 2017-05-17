@@ -967,6 +967,9 @@ def test_get_best_params_files():
     sys.argv = ['EvoDAG', '--best-params-file', 'cache']
     c = utils(output=True)
     assert c.best_params == param
+    sys.argv = ['EvoDAG', '-u2', '--best-params-file', 'cache']
+    c = utils(output=True)
+    assert c.best_params == param
     if os.path.isdir('cache'):
         shutil.rmtree('cache')
         default_nargs()

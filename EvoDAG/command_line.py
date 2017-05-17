@@ -60,6 +60,12 @@ def rs_evodag(args_X_y):
     return fit, args
 
 
+def get_model_fitness(fname):
+    with gzip.open(fname) as fpt:
+        _ = pickle.load(fpt)
+        return (fname, _.fitness_vs)
+
+
 class CommandLine(object):
     def version(self):
         pa = self.parser.add_argument
@@ -625,6 +631,7 @@ class CommandLineUtils(CommandLine):
         self.remove_terminals()
         self.used_inputs_number()
         self.create_ensemble_params()
+        self.cores()
         self.version()
 
     def create_ensemble_params(self):
@@ -729,10 +736,15 @@ class CommandLineUtils(CommandLine):
     def get_best_params(self, model_file):
         from glob import glob
         h = {}
-        for m in glob('%s/*.model' % model_file):
-            with gzip.open(m) as fpt:
-                _ = pickle.load(fpt)
-                fit = _.fitness_vs
+        args = glob('%s/*.model' % model_file)
+        if self.data.cpu_cores == 1:
+            res = [get_model_fitness(x) for x in tqdm(args)]
+        else:
+            p = Pool(self.data.cpu_cores)
+            res = [x for x in tqdm(p.imap_unordered(get_model_fitness, args),
+                                   total=len(args))]
+            p.close()
+        for m, fit in res:
             basename = (m.split(model_file + '/')[1]).split('_')[:1]
             fname = "_".join(basename)
             try:
