@@ -409,9 +409,12 @@ def test_HGeneration():
 
     get_remote_data()
     params = json.loads(open('evodag.params').read())
-    with gzip.open('train.sp') as fpt:
-        X = pickle.load(fpt)
-        y = pickle.load(fpt)
+    try:
+        with gzip.open('train.sp') as fpt:
+            X = pickle.load(fpt)
+            y = pickle.load(fpt)
+    except ValueError:
+        return
     params['population_class'] = 'HGenerational'
     kw = RandomParameterSearch.process_params(params)
     gp = EvoDAG(**kw).fit(X, y)
