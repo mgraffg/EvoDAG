@@ -79,6 +79,24 @@ def test_all_inputs2():
     assert len(gp.population.population) == gp.popsize
 
 
+def test_all_inputs3():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    y[y != 1] = -1
+    gp = EvoDAG(population_class='SteadyState',
+                all_inputs=True, classifier=False,
+                pr_variable=1, popsize=3)
+    gp.X = X
+    gp.y = y
+    gp.create_population()
+    print(len(gp.population.population), len(gp.X))
+    assert len(gp.population.population) == gp.population.popsize
+    for i in range(gp.popsize):
+        a = gp.random_offspring()
+        gp.replace(a)
+    assert len(gp.population.population) == gp.popsize
+    
+
 def test_all_init_popsize():
     from EvoDAG import EvoDAG
     y = cl.copy()
@@ -371,3 +389,30 @@ def test_inputs_func_argument_regression():
         assert False
     except RuntimeError:
         pass
+
+
+def get_remote_data():
+    import os
+    import subprocess
+    if not os.path.isfile('evodag.params'):
+        subprocess.call(['curl', '-O', 'http://ws.ingeotec.mx/~mgraffg/evodag_data/evodag.params'])
+    if not os.path.isfile('train.sp'):
+        subprocess.call(['curl', '-O', 'http://ws.ingeotec.mx/~mgraffg/evodag_data/train.sp'])
+
+
+def test_HGeneration():
+    import json
+    import gzip
+    import pickle
+    from EvoDAG.utils import RandomParameterSearch
+    from EvoDAG import EvoDAG
+
+    get_remote_data()
+    params = json.loads(open('evodag.params').read())
+    with gzip.open('train.sp') as fpt:
+        X = pickle.load(fpt)
+        y = pickle.load(fpt)
+    params['population_class'] = 'HGenerational'
+    kw = RandomParameterSearch.process_params(params)
+    gp = EvoDAG(**kw).fit(X, y)
+    assert gp

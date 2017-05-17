@@ -631,6 +631,8 @@ class CommandLineUtils(CommandLine):
         self.parser.add_argument('--create-ensemble',
                                  help='Models to ensemble', dest='ensemble',
                                  default=False, action='store_true')
+        self.parser.add_argument('--best-params-file',
+                                 help='Search for the best configuration in a given directory', dest='best_params_file', default=False, action='store_true')
         self.parser.add_argument('-n', '--ensemble-size',
                                  help='Ensemble size (default: select all models)',
                                  dest='ensemble_size',
@@ -724,6 +726,22 @@ class CommandLineUtils(CommandLine):
             pickle.dump(self.word2id, fpt)
             pickle.dump(self.label2id, fpt)
 
+    def get_best_params(self, model_file):
+        from glob import glob
+        h = {}
+        for m in glob('%s/*.model' % model_file):
+            with gzip.open(m) as fpt:
+                _ = pickle.load(fpt)
+                fit = _.fitness_vs
+            basename = (m.split(model_file + '/')[1]).split('_')[:1]
+            fname = "_".join(basename)
+            try:
+                h[fname].append(fit)
+            except KeyError:
+                h[fname] = [fit]
+        b = max(h.items(), key=lambda x: np.median(x[1]))
+        self.best_params = b[0] + '_params.json'
+
     def main(self):
         def most_common(K, a):
             try:
@@ -790,8 +808,11 @@ class CommandLineUtils(CommandLine):
                 self.label2id = pickle.load(fpt)
             inputs = m.inputs()
             print("Used inputs number", len(inputs))
-        elif self.data.ensemble is not None:
+        elif self.data.ensemble:
             self.create_ensemble(model_file)
+        elif self.data.best_params_file:
+            self.get_best_params(model_file)
+            print(self.best_params)
 
 
 def params(output=False):
@@ -816,7 +837,9 @@ def predict():
     c.parse_args()
 
 
-def utils():
+def utils(output=False):
     "EvoDAG-utils command line"
     c = CommandLineUtils()
     c.parse_args()
+    if output:
+        return c

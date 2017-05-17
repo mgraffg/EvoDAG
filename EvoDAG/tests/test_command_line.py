@@ -932,4 +932,41 @@ def test_params_files():
         default_nargs()
         return
     assert False
-    
+
+
+def test_get_best_params_files():
+    import numpy as np
+    import gzip
+    import pickle
+    import os
+    from EvoDAG.command_line import params, train, utils
+    import shutil
+    from glob import glob
+    if os.path.isdir('cache'):
+        shutil.rmtree('cache')
+    fname = training_set()
+    sys.argv = ['EvoDAG', '-C', '-Pcache', '--only-paramsfiles',
+                '-r', '2', fname]
+    params()
+    for p in glob('cache/*_params.json'):
+        basename = p.split('_params.json')[0]
+        for s in range(3):
+            model = basename + '_%s.model' % s
+            sys.argv = ['EvoDAG', '-s%s' % s, '-P%s' % p, '-m%s' % model, '-n1', fname]
+            train()
+    R = []
+    for p in range(2):
+        l = []
+        for s in range(3):
+            with gzip.open('cache/%s_%s.model' % (p, s)) as fpt:
+                m = pickle.load(fpt)
+                l.append(m.fitness_vs * -1)
+        R.append((p, l))
+    m = min(R, key=lambda x: np.median(x[1]))
+    param = '%s_params.json' % m[0]
+    sys.argv = ['EvoDAG', '--best-params-file', 'cache']
+    c = utils(output=True)
+    assert c.best_params == param
+    if os.path.isdir('cache'):
+        shutil.rmtree('cache')
+        default_nargs()

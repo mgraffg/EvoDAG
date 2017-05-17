@@ -339,13 +339,7 @@ class BasePopulation(object):
                 v = base.random_offspring()
                 self.generation = gen
             self.add(v)
-        if self.popsize > self._popsize:
-            self.population.sort(key=lambda x: x.fitness, reverse=True)
-            [self.clean(x) for x in self.population[self._popsize:]]
-            self.population = self.population[:self._popsize]
 
-
-class SteadyState(BasePopulation):
     def add(self, v):
         "Add an individual to the population"
         self.population.append(v)
@@ -376,7 +370,16 @@ class SteadyState(BasePopulation):
             gc.collect()
 
 
-class Generational(SteadyState):
+class SteadyState(BasePopulation):
+    def create_population(self):
+        super(SteadyState, self).create_population()
+        if self.popsize > self._popsize:
+            self.population.sort(key=lambda x: x.fitness, reverse=True)
+            [self.clean(x) for x in self.population[self._popsize:]]
+            self.population = self.population[:self._popsize]
+
+
+class Generational(BasePopulation):
     "Generational GP using a steady-state as base"
     def __init__(self, *args, **kwargs):
         self._inner = []
