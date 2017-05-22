@@ -460,15 +460,24 @@ class HGenerational(Generational):
 
     def create_population(self):
         base = self._base
+        random = np.random.random
+        pr_variable = base._pr_variable
+        assert pr_variable < 1
         nvar = base.nvar
         _ = [x for x in range(nvar)]
         used_inputs_naive = SelectNumbers(_)
         nb_input = Inputs(base, used_inputs_naive,
                           functions=base._input_functions)
+        variable_input = self.variable_input
+        add = self.add
+        input = nb_input.input
         while not used_inputs_naive.empty():
-            v = nb_input.input()
+            if pr_variable > 0 and random() < pr_variable:
+                v = variable_input(used_inputs_naive)
+            else:
+                v = input()
             if v is None:
                 used_inputs_naive.pos = used_inputs_naive.size
                 continue
-            self.add(v)
+            add(v)
         return self.extra_inputs()

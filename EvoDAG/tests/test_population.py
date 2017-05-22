@@ -416,6 +416,25 @@ def test_HGeneration():
     except ValueError:
         return
     params['population_class'] = 'HGenerational'
+    params['pr_variable'] = 0.1
     kw = RandomParameterSearch.process_params(params)
     gp = EvoDAG(**kw).fit(X, y)
     assert gp
+
+
+def test_HGeneration_pr_variable():
+    import json
+    from EvoDAG.utils import RandomParameterSearch
+    from EvoDAG import EvoDAG
+    get_remote_data()
+    params = json.loads(open('evodag.params').read())
+    params['population_class'] = 'HGenerational'
+    params['pr_variable'] = 1.0
+    kw = RandomParameterSearch.process_params(params)
+    y = cl.copy()
+    try:
+        EvoDAG(**kw).fit(X, y)
+    except AssertionError:
+        return
+    assert False
+    
