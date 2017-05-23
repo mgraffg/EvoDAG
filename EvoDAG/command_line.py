@@ -188,7 +188,7 @@ class CommandLine(object):
                 num_terms -= 1
         return num_terms
 
-    def read_data_json(self, fname):
+    def read_data_json_vec(self, fname):
         import json
         X = None
         y = []
@@ -206,6 +206,45 @@ class CommandLine(object):
                 a = json.loads(str(d, encoding='utf-8'))
             except TypeError:
                 a = json.loads(d)
+            vec = a['vec']
+            vecsize = a['vecsize']
+            if X is None:
+                X = [list() for i in range(vecsize)]
+            for k, v in vec:
+                k = int(k)
+                X[k].append((row, self.convert(v)))
+            y.append(self.convert_label(a[dependent]))
+        num_rows = len(l)
+        X = [SparseArray.index_data(x, num_rows) for x in X]
+        if len(y) == 0:
+            y = None
+        else:
+            y = np.array(y)
+        return X, y
+
+    def read_data_json(self, fname):
+        import json
+        X = None
+        y = []
+        dependent = os.getenv('KLASS')
+        if dependent is None:
+            dependent = 'klass'
+        if fname.endswith('.gz'):
+            with gzip.open(fname, 'rb') as fpt:
+                l = fpt.readlines()
+        else:
+            with open(fname, 'r') as fpt:
+                l = fpt.readlines()
+        flag = True
+        for row, d in enumerate(l):
+            try:
+                a = json.loads(str(d, encoding='utf-8'))
+            except TypeError:
+                a = json.loads(d)
+            if flag and 'vec' in a:
+                return self.read_data_json_vec(fname)
+            else:
+                flag = False
             if X is None:
                 X = [list() for i in range(self._num_terms(a))]
             for k, v in a.items():

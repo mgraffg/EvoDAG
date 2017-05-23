@@ -778,7 +778,7 @@ def test_json_gzip_dependent_variable():
     print(open('output.evodag').read())
     os.unlink('output.evodag')
     default_nargs()
-
+    del os.environ['KLASS']
 
 def test_model_used_inputs_number():
     import os
@@ -973,3 +973,25 @@ def test_get_best_params_files():
     if os.path.isdir('cache'):
         shutil.rmtree('cache')
         default_nargs()
+
+
+def test_json2():
+    from EvoDAG.command_line import params
+    import tempfile
+    import json
+    fname = tempfile.mktemp()
+    with open(fname, 'w') as fpt:
+        for x, y in zip(X, cl):
+            a = {}
+            a['vec'] = [[k, v] for k, v in enumerate(x)]
+            a['klass'] = int(y)
+            a['vecsize'] = len(x)
+            fpt.write(json.dumps(a) + '\n')
+    print("termine con el json")
+    sys.argv = ['EvoDAG', '-C', '-Poutput.evodag', '--json',
+                '-e1', '-p3', '-r2', fname]
+    params()
+    os.unlink(fname)
+    print(open('output.evodag').read())
+    os.unlink('output.evodag')
+    default_nargs()
