@@ -213,7 +213,7 @@
         1
     ],    
     "time_limit": [
-        null
+        3600
     ],
     "tournament_size": [
 	2

@@ -780,6 +780,7 @@ def test_json_gzip_dependent_variable():
     default_nargs()
     del os.environ['KLASS']
 
+
 def test_model_used_inputs_number():
     import os
     from EvoDAG.command_line import params, train, utils
