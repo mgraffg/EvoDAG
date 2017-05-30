@@ -424,9 +424,15 @@ class EvoDAG(object):
         self.y = y
         if test_set is not None:
             self.Xtest = test_set
-        self._logger.info("Starting evolution")
-        self.create_population()
-        self._logger.info("Population created (hist: %s)" % len(self.population.hist))
+        for _ in range(self._number_tries_feasible_ind):
+            self._logger.info("Starting evolution")
+            self.create_population()
+            self._logger.info("Population created (hist: %s)" % len(self.population.hist))
+            if len(self.population.hist) >= self._tournament_size:
+                break
+        if len(self.population.hist) < self._tournament_size:
+            self._logger.info("Done evolution (hist: %s)" % len(self.population.hist))
+            return self
         while not self.stopping_criteria():
             try:
                 a = self.random_offspring()
