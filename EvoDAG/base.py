@@ -426,7 +426,11 @@ class EvoDAG(object):
             self.Xtest = test_set
         for _ in range(self._number_tries_feasible_ind):
             self._logger.info("Starting evolution")
-            self.create_population()
+            try:
+                self.create_population()
+            except RuntimeError as err:
+                self._logger.info("Done evolution (RuntimeError (%s), hist: %s)" % (err, len(self.population.hist)))
+                return self
             self._logger.info("Population created (hist: %s)" % len(self.population.hist))
             if len(self.population.hist) >= self._tournament_size:
                 break
