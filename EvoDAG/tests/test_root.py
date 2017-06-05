@@ -935,17 +935,21 @@ def test_population_as_parameter():
 
 def test_es_extra_test():
     from EvoDAG import RootGP
+
+    class ParticularException(Exception):
+        pass
+
     x = np.linspace(-1, 1, 100)
     y = 4.3*x**2 + 3.2 * x - 3.2
     es_extra_test = RootGP.es_extra_test
-    RootGP.es_extra_test = MagicMock(side_effect=RuntimeError('Mock'))
+    RootGP.es_extra_test = MagicMock(side_effect=ParticularException('Mock'))
     try:
         RootGP(classifier=False,
                popsize=10,
                generations=2).fit([SparseArray.fromlist(x)], y,
                                   test_set=[SparseArray.fromlist(x)])
         assert False
-    except RuntimeError:
+    except ParticularException:
         RootGP.es_extra_test = es_extra_test
 
 
@@ -1089,55 +1093,6 @@ def test_time_limit():
     assert gp._time_limit == 0.9
 
 
-def test_transform_to_mo():
-    from EvoDAG import EvoDAG
-    y = cl.copy()
-    gp = EvoDAG(generations=np.inf,
-                tournament_size=2,
-                early_stopping_rounds=100,
-                time_limit=0.9,
-                multiple_outputs=True,
-                seed=0,
-                popsize=10000)
-    gp.nclasses(y)
-    k = np.unique(y)
-    y = gp._bagging_fitness.transform_to_mo(y)
-    assert k.shape[0] == y.shape[1]
-
-
-def test_multiple_outputs():
-    from EvoDAG import EvoDAG
-    y = cl.copy()
-    gp = EvoDAG(generations=np.inf,
-                tournament_size=2,
-                early_stopping_rounds=100,
-                time_limit=0.9,
-                multiple_outputs=True,
-                seed=0,
-                popsize=10000)
-    gp.X = X
-    gp.nclasses(y)
-    gp.y = y
-    gp.create_population()
-    assert len(gp.y) == 3
-
-
-def test_multiple_outputs2():
-    from EvoDAG import EvoDAG
-    from EvoDAG.model import Model
-    y = cl.copy()
-    gp = EvoDAG(generations=np.inf,
-                tournament_size=2,
-                early_stopping_rounds=100,
-                time_limit=0.9,
-                multiple_outputs=True,
-                seed=0,
-                popsize=10000).fit(X, y, test_set=X)
-    m = gp.model()
-    assert isinstance(m, Model)
-    assert len(gp.y) == 3
-
-
 def test_add_repeated_args():
     from EvoDAG import EvoDAG
     from EvoDAG.node import Add, Min, Max
@@ -1221,122 +1176,3 @@ def test_function_selection():
     assert gp._function_selection_ins
     for i in range(gp._function_selection_ins.nfunctions):
         assert gp._function_selection_ins.avg_fitness(i) != 0
-
-
-def test_multiple_outputs_mask():
-    from EvoDAG import EvoDAG
-    from EvoDAG.node import Add, Min, Max
-    y = cl.copy()
-    gp = EvoDAG(generations=np.inf,
-                tournament_size=2,
-                function_set=[Add, Min, Max],
-                early_stopping_rounds=100,
-                time_limit=0.9,
-                tr_fraction=0.8,
-                multiple_outputs=True,
-                seed=0,
-                popsize=100)
-    gp.X = X[:-1]
-    gp.nclasses(y[:-1])
-    gp.y = y[:-1]
-    assert gp._mask_vs.sum() == 27
-
-
-def test_multiple_outputs_BER_vs():
-    from EvoDAG import EvoDAG
-    from EvoDAG.node import Add, Min, Max
-    from EvoDAG.utils import BER
-    y = cl.copy()
-    gp = EvoDAG(generations=np.inf,
-                tournament_size=2,
-                function_set=[Add, Min, Max],
-                early_stopping_rounds=100,
-                time_limit=0.9,
-                multiple_outputs=True,
-                seed=0,
-                popsize=100)
-    gp.X = X[:-1]
-    gp.nclasses(y[:-1])
-    gp.y = y[:-1]
-    gp.create_population()
-    a = gp.random_offspring()
-    hy = np.array(SparseArray.argmax(a.hy).full_array())
-    mask = np.array(gp._mask_vs.full_array()).astype(np.bool)
-    assert_almost_equals(-a.fitness_vs * 100, BER(y[:-1][mask], hy[mask]))
-
-
-def test_multiple_outputs_BER_ts():
-    from EvoDAG import EvoDAG
-    from EvoDAG.node import Add, Min, Max
-    from EvoDAG.utils import BER
-    y = cl.copy()
-    gp = EvoDAG(generations=np.inf,
-                tournament_size=2,
-                function_set=[Add, Min, Max],
-                early_stopping_rounds=100,
-                time_limit=0.9,
-                multiple_outputs=True,
-                seed=0,
-                popsize=100)
-    gp.X = X[:-1]
-    gp.nclasses(y[:-1])
-    gp.y = y[:-1]
-    gp.create_population()
-    a = gp.random_offspring()
-    hys = SparseArray.argmax(a.hy)
-    hy = np.array(hys.full_array())
-    print(((hys - gp._y_klass).sign().fabs() * gp._mask_ts).sum())
-    mask = np.array(gp._mask_ts.full_array()).astype(np.bool)
-    assert_almost_equals(-a.fitness * 100, BER(y[:-1][mask], hy[mask]))
-
-
-def test_multiple_outputs_error_rate_ts():
-    from EvoDAG import EvoDAG
-    from EvoDAG.node import Add, Min, Max
-    y = cl.copy()
-    gp = EvoDAG(generations=np.inf,
-                tournament_size=2,
-                function_set=[Add, Min, Max],
-                early_stopping_rounds=100,
-                time_limit=0.9,
-                multiple_outputs=True,
-                fitness_function='ER',
-                seed=0,
-                popsize=100)
-    gp.X = X[:-1]
-    gp.nclasses(y[:-1])
-    gp.y = y[:-1]
-    gp.create_population()
-    a = gp.random_offspring()
-    hys = SparseArray.argmax(a.hy)
-    hy = np.array(hys.full_array())
-    # print(((hys - gp._y_klass).sign().fabs() * gp._mask_ts).sum())
-    mask = np.array(gp._mask_ts.full_array()).astype(np.bool)
-    # print((y[:-1][mask] != hy[mask]).mean())
-    print(-a.fitness, (y[:-1][mask] != hy[mask]).mean())
-    assert_almost_equals(-a.fitness, (y[:-1][mask] != hy[mask]).mean())
-
-
-def test_multiple_outputs_ER_vs():
-    from EvoDAG import EvoDAG
-    from EvoDAG.node import Add, Min, Max
-    y = cl.copy()
-    gp = EvoDAG(generations=np.inf,
-                tournament_size=2,
-                function_set=[Add, Min, Max],
-                early_stopping_rounds=100,
-                fitness_function='ER',
-                time_limit=0.9,
-                multiple_outputs=True,
-                seed=0,
-                popsize=100)
-    gp.X = X[:-1]
-    gp.nclasses(y[:-1])
-    gp.y = y[:-1]
-    gp.create_population()
-    a = gp.random_offspring()
-    hy = np.array(SparseArray.argmax(a.hy).full_array())
-    mask = np.array(gp._mask_vs.full_array()).astype(np.bool)
-    assert_almost_equals(-a.fitness_vs, (y[:-1][mask] != hy[mask]).mean())
-
-

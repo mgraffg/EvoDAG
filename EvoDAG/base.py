@@ -191,6 +191,8 @@ class EvoDAG(object):
             v = SparseArray.fromlist(v)
         if self._classifier:
             self._multiple_outputs = True
+            if self._labels is None:
+                self.nclasses(v)
             return self._bagging_fitness.multiple_outputs_cl(v)
         elif self._multiple_outputs:
             return self._bagging_fitness.multiple_outputs_regression(v)
