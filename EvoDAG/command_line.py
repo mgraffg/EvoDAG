@@ -756,12 +756,19 @@ class CommandLineUtils(CommandLine):
     def create_ensemble(self, model_file):
         from glob import glob
         models = []
+        flag = False
         for fname in model_file.split(' '):
             for k in tqdm(glob(fname)):
-                with gzip.open(k, 'r') as fpt:
-                    models.append(pickle.load(fpt))
-                    self.word2id = pickle.load(fpt)
-                    self.label2id = pickle.load(fpt)
+                try:
+                    with gzip.open(k, 'r') as fpt:
+                        models.append(pickle.load(fpt))
+                        self.word2id = pickle.load(fpt)
+                        self.label2id = pickle.load(fpt)
+                except EOFError:
+                    flag = True
+                    os.unlink(k)
+        if flag:
+            raise RuntimeError('Unable to read models')
         models.sort(key=lambda x: x.fitness_vs, reverse=True)
         if self.data.ensemble_size > 0:
             models = models[:self.data.ensemble_size]
