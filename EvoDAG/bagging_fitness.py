@@ -61,9 +61,7 @@ class BaggingFitness(object):
 
     def mask_fitness_function(self, k):
         base = self._base
-        if base._fitness_function in ['BER', 'F1']:
-            return self.mask_fitness_BER(k)
-        elif base._fitness_function == 'ER':
+        if base._fitness_function == 'ER':
             k = k.argmax(axis=1)
             base._y_klass = SparseArray.fromlist(k)
             cnt = k.shape[0] * (1 - base._tr_fraction)
@@ -79,7 +77,10 @@ class BaggingFitness(object):
             base._mask_vs = SparseArray.fromlist(~mask)
             base._mask_ts = SparseArray.fromlist(mask_ts / mask_ts.sum())
             return mask
-        raise RuntimeError('Unknown fitness function %s' % self._fitness_function)
+        else:
+            # base._fitness_function in ['BER', 'F1']:
+            return self.mask_fitness_BER(k)
+        # raise RuntimeError('Unknown fitness function %s' % self._fitness_function)
 
     def set_classifier_mask(self, v, base_mask=True):
         """Computes the mask used to create the training and validation set"""

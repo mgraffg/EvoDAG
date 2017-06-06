@@ -219,6 +219,8 @@ def test_macro_f1():
             continue
         assert_almost_equals(x, y)
     _ = (2 * precision * recall) / (precision + recall)
+    m = ~ np.isfinite(_)
+    _[m] = 0
     assert_almost_equals(np.mean(_), mf1)
     print(f1.precision, f1.recall, mf1, mf1_v)
     gp._fitness_function = 'F1'
