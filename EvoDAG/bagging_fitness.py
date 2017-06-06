@@ -22,6 +22,11 @@ from .cython_utils import fitness_SAE, F1Score
 class BaggingFitness(object):
     def __init__(self, base=None):
         self._base = base
+        self.assert_fitness_function()
+
+    def assert_fitness_function(self):
+        base = self._base
+        assert base._fitness_function in ['BER', 'ER', 'F1', 'macro-F1']
 
     @property
     def nclasses(self):
@@ -88,9 +93,7 @@ class BaggingFitness(object):
             base._mask_ts = SparseArray.fromlist(mask_ts / mask_ts.sum())
             return mask
         else:
-            # base._fitness_function in ['BER', 'F1']:
             return self.mask_fitness_BER(k)
-        # raise RuntimeError('Unknown fitness function %s' % self._fitness_function)
 
     def set_classifier_mask(self, v, base_mask=True):
         """Computes the mask used to create the training and validation set"""
