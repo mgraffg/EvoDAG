@@ -61,7 +61,7 @@ class BaggingFitness(object):
 
     def mask_fitness_function(self, k):
         base = self._base
-        if base._fitness_function == 'BER':
+        if base._fitness_function in ['BER', 'F1']:
             return self.mask_fitness_BER(k)
         elif base._fitness_function == 'ER':
             k = k.argmax(axis=1)
