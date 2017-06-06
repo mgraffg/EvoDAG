@@ -200,7 +200,6 @@ def test_macro_f1():
     gp.create_population()
     off = gp.random_offspring()
     hy = SparseArray.argmax(off.hy)
-    # print(gp._mask_ts.index, hy.full_array(), gp._y_klass.full_array(), gp._bagging_fitness.nclasses)
     index = np.array(gp._mask_ts.index)
     y = np.array(gp._y_klass.full_array())[index]
     hy = np.array(hy.full_array())[index]
@@ -223,9 +222,17 @@ def test_macro_f1():
     _[m] = 0
     assert_almost_equals(np.mean(_), mf1)
     print(f1.precision, f1.recall, mf1, mf1_v)
-    gp._fitness_function = 'F1'
+    gp._fitness_function = 'macro-F1'
     gp._bagging_fitness.set_fitness(off)
     assert_almost_equals(off.fitness, mf1 - 1)
     assert_almost_equals(off.fitness_vs, mf1_v - 1)
-    if m.sum() == 0:
-        assert mf1_v != mf1
+    index = np.array(gp._mask_ts.full_array()) == 0
+    y = np.array(gp._y_klass.full_array())[index]
+    hy = SparseArray.argmax(off.hy)
+    hy = np.array(hy.full_array())[index]
+    precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
+    recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
+    _ = (2 * precision * recall) / (precision + recall)
+    m = ~ np.isfinite(_)
+    _[m] = 0
+    assert_almost_equals(np.mean(_) - 1, off.fitness_vs)

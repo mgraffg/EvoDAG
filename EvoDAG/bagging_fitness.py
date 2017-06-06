@@ -186,7 +186,7 @@ class BaggingFitness(object):
         if base._classifier:
             if base._multiple_outputs:
                 hy = SparseArray.argmax(v.hy)
-                if base._fitness_function == 'F1':
+                if base._fitness_function == 'macro-F1':
                     f1_score = self.f1_score
                     mf1, mf1_v = f1_score.macroF1(base._y_klass, hy, base._mask_ts.index)
                     v._error = mf1_v - 1
@@ -208,7 +208,7 @@ class BaggingFitness(object):
         base = self._base
         if base._classifier:
             if base._multiple_outputs:
-                if base._fitness_function == 'F1':
+                if base._fitness_function == 'macro-F1':
                     v.fitness_vs = v._error
                 else:
                     v.fitness_vs = - v._error.dot(base._mask_vs) / base._mask_vs.sum()
