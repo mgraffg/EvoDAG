@@ -324,7 +324,8 @@ cdef class F1Score:
         f1 = f1 / self.nclasses
         f12 = f12 / self.nclasses
         return f1, f12
-        
+
+    @cython.cdivision(True)
     cpdef do(self, SparseArray y, SparseArray hy, array.array index):
         self.clean()
         cdef unsigned int *index_value = index.data.as_uints
