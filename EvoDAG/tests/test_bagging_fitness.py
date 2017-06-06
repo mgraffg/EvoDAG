@@ -211,14 +211,18 @@ def test_macro_f1():
     f1 = F1Score(nclasses)
     mf1, mf1_v = f1.macroF1(gp._y_klass, SparseArray.argmax(off.hy), gp._mask_ts.index)
     for x, y in zip(precision, f1.precision):
+        if not np.isfinite(x):
+            continue
         assert_almost_equals(x, y)
     for x, y in zip(recall, f1.recall):
+        if not np.isfinite(x):
+            continue
         assert_almost_equals(x, y)
     _ = (2 * precision * recall) / (precision + recall)
     assert_almost_equals(np.mean(_), mf1)
     print(f1.precision, f1.recall, mf1, mf1_v)
     gp._fitness_function = 'F1'
     gp._bagging_fitness.set_fitness(off)
-    assert_almost_equals(off.fitness, mf1)
-    assert_almost_equals(off.fitness_vs, mf1_v)
+    assert_almost_equals(off.fitness, mf1 - 1)
+    assert_almost_equals(off.fitness_vs, mf1_v - 1)
     assert mf1_v != mf1

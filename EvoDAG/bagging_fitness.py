@@ -188,8 +188,8 @@ class BaggingFitness(object):
                 if base._fitness_function == 'F1':
                     f1_score = self.f1_score
                     mf1, mf1_v = f1_score.macroF1(base._y_klass, hy, base._mask_ts.index)
-                    v._error = mf1_v
-                    v.fitness = mf1
+                    v._error = mf1_v - 1
+                    v.fitness = mf1 - 1
                 else:
                     v._error = (base._y_klass - hy).sign().fabs()
                     v.fitness = - v._error.dot(base._mask_ts)
