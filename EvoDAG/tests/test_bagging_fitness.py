@@ -227,4 +227,5 @@ def test_macro_f1():
     gp._bagging_fitness.set_fitness(off)
     assert_almost_equals(off.fitness, mf1 - 1)
     assert_almost_equals(off.fitness_vs, mf1_v - 1)
-    assert mf1_v != mf1
+    if m.sum() == 0:
+        assert mf1_v != mf1
