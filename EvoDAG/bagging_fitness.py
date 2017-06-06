@@ -26,7 +26,7 @@ class BaggingFitness(object):
 
     def assert_fitness_function(self):
         base = self._base
-        assert base._fitness_function in ['BER', 'ER', 'F1', 'macro-F1']
+        assert base._fitness_function in ['BER', 'ER', 'F1', 'macro-F1', 'macro-RecallF1']
 
     @property
     def nclasses(self):
@@ -203,6 +203,11 @@ class BaggingFitness(object):
                     mf1, mf1_v = f1_score.macroF1(base._y_klass, hy, base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
+                elif base._fitness_function == 'macro-RecallF1':
+                    f1_score = self.f1_score
+                    mf1, mf1_v = f1_score.macroRecallF1(base._y_klass, hy, base._mask_ts.index)
+                    v._error = mf1_v - 1
+                    v.fitness = mf1 - 1
                 elif base._fitness_function == 'F1':
                     f1_score = self.f1_score
                     mf1, mf1_v = f1_score.F1(self.min_class, base._y_klass,
@@ -228,6 +233,8 @@ class BaggingFitness(object):
             if base._multiple_outputs:
                 if base._fitness_function == 'macro-F1':
                     v.fitness_vs = v._error
+                elif base._fitness_function == 'macro-RecallF1':
+                    v.fitness_vs = v._error                    
                 elif base._fitness_function == 'F1':
                     v.fitness_vs = v._error
                 else:
