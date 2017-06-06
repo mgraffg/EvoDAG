@@ -298,4 +298,68 @@ def test_min_class():
     gp.y = y[:-1]
     gp.X = X[:-1]
     assert gp._bagging_fitness.min_class == 2
+
+
+def test_mask():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=100,
+                time_limit=0.9,
+                multiple_outputs=True,
+                seed=0,
+                popsize=100)
+    gp.y = y
+    gp.X = X
+    gp.create_population()
+    ts = np.array(gp._mask_ts.full_array()) == 0
+    vs = np.array(gp._mask_vs.full_array()) == 1
+    assert np.all(ts == vs)
+
+
+def test_RecallF1():
+    from EvoDAG.cython_utils import F1Score
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=100,
+                time_limit=0.9,
+                multiple_outputs=True,
+                seed=0,
+                popsize=100)
+    gp.y = y
+    gp.X = X
+    gp.create_population()
+    off = gp.random_offspring()
+    hy = SparseArray.argmax(off.hy)
+    index = np.array(gp._mask_ts.index)
+    y = np.array(gp._y_klass.full_array())[index]
+    hy = np.array(hy.full_array())[index]
+    nclasses = gp._bagging_fitness.nclasses
+    precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
+    recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
+    f1 = F1Score(nclasses)
+    mf1, mf1_v = f1.macroRecallF1(gp._y_klass, SparseArray.argmax(off.hy),
+                                  gp._mask_ts.index)
+    assert_almost_equals(np.mean(recall), mf1)
+    gp._fitness_function = 'macro-RecallF1'
+    gp._bagging_fitness.set_fitness(off)
+    assert_almost_equals(mf1 - 1, off.fitness)
+    index = np.array(gp._mask_ts.full_array()) == 0
+    y = np.array(gp._y_klass.full_array())[index]
+    hy = SparseArray.argmax(off.hy)
+    hy = np.array(hy.full_array())[index]
+    precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
+    recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
+    _ = (2 * precision * recall) / (precision + recall)
+    m = ~ np.isfinite(_)
+    _[m] = 0
+    print(precision, recall)
+    print(f1.precision2, f1.recall2)
+    for x, y in zip(precision, f1.precision2):
+        assert_almost_equals(x, y)
+    for x, y in zip(recall, f1.recall2):
+        assert_almost_equals(x, y)
     
