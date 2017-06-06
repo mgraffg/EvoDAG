@@ -39,6 +39,16 @@ class BaggingFitness(object):
             self._f1_score = F1Score(self.nclasses)
         return self._f1_score
 
+    @property
+    def min_class(self):
+        try:
+            return self._min_class
+        except AttributeError:
+            klass = tonparray(self._base._y_klass)
+            c = [(klass == x).sum() for x in np.unique(klass)]
+            self._min_class = np.argmin(c)
+        return self._min_class
+
     def mask_fitness_BER(self, k):
         base = self._base
         k = k.argmax(axis=1)
@@ -191,6 +201,12 @@ class BaggingFitness(object):
                     mf1, mf1_v = f1_score.macroF1(base._y_klass, hy, base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
+                elif base._fitness_function == 'F1':
+                    f1_score = self.f1_score
+                    mf1, mf1_v = f1_score.F1(self.min_class, base._y_klass,
+                                             hy, base._mask_ts.index)
+                    v._error = mf1_v - 1
+                    v.fitness = mf1 - 1
                 else:
                     v._error = (base._y_klass - hy).sign().fabs()
                     v.fitness = - v._error.dot(base._mask_ts)
@@ -209,6 +225,8 @@ class BaggingFitness(object):
         if base._classifier:
             if base._multiple_outputs:
                 if base._fitness_function == 'macro-F1':
+                    v.fitness_vs = v._error
+                elif base._fitness_function == 'F1':
                     v.fitness_vs = v._error
                 else:
                     v.fitness_vs = - v._error.dot(base._mask_vs) / base._mask_vs.sum()

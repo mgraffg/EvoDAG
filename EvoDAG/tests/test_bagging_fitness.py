@@ -184,7 +184,7 @@ def test_multiple_outputs_ER_vs():
     assert_almost_equals(-a.fitness_vs, (y[:-1][mask] != hy[mask]).mean())
 
 
-def test_macro_f1():
+def test_macro_F1():
     from EvoDAG.cython_utils import F1Score
     from EvoDAG import EvoDAG
     y = cl.copy()
@@ -236,3 +236,66 @@ def test_macro_f1():
     m = ~ np.isfinite(_)
     _[m] = 0
     assert_almost_equals(np.mean(_) - 1, off.fitness_vs)
+
+
+def test_F1():
+    from EvoDAG.cython_utils import F1Score
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=100,
+                time_limit=0.9,
+                multiple_outputs=True,
+                seed=0,
+                popsize=100)
+    gp.y = y
+    gp.X = X
+    gp.create_population()
+    off = gp.random_offspring()
+    hy = SparseArray.argmax(off.hy)
+    index = np.array(gp._mask_ts.index)
+    y = np.array(gp._y_klass.full_array())[index]
+    hy = np.array(hy.full_array())[index]
+    nclasses = gp._bagging_fitness.nclasses
+    precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
+    recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
+    f1 = F1Score(nclasses)
+    assert gp._bagging_fitness.min_class >= 0 and gp._bagging_fitness.min_class < gp._bagging_fitness.nclasses
+    mf1, mf1_v = f1.F1(gp._bagging_fitness.min_class,
+                       gp._y_klass, SparseArray.argmax(off.hy),
+                       gp._mask_ts.index)
+
+    _ = (2 * precision * recall) / (precision + recall)
+    m = ~ np.isfinite(_)
+    _[m] = 0
+    assert_almost_equals(_[gp._bagging_fitness.min_class], mf1)
+    gp._fitness_function = 'F1'
+    gp._bagging_fitness.set_fitness(off)
+    assert_almost_equals(mf1 - 1, off.fitness)
+    index = np.array(gp._mask_ts.full_array()) == 0
+    y = np.array(gp._y_klass.full_array())[index]
+    hy = SparseArray.argmax(off.hy)
+    hy = np.array(hy.full_array())[index]
+    precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
+    recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
+    _ = (2 * precision * recall) / (precision + recall)
+    m = ~ np.isfinite(_)
+    _[m] = 0
+    assert_almost_equals(_[gp._bagging_fitness.min_class] - 1, off.fitness_vs)
+
+
+def test_min_class():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=100,
+                time_limit=0.9,
+                multiple_outputs=True,
+                seed=0,
+                popsize=100)
+    gp.y = y[:-1]
+    gp.X = X[:-1]
+    assert gp._bagging_fitness.min_class == 2
+    
