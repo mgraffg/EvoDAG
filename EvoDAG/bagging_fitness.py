@@ -78,6 +78,8 @@ class BaggingFitness(object):
         base = self._base
         if base._fitness_function == 'BER':
             return self.mask_fitness_BER(k)
+        elif base._fitness_function == 'macro-RecallF1':
+            return self.mask_fitness_BER(k)
         k = k.argmax(axis=1)
         base._y_klass = SparseArray.fromlist(k)
         cnt = k.shape[0] * (1 - base._tr_fraction)
