@@ -76,24 +76,23 @@ class BaggingFitness(object):
 
     def mask_fitness_function(self, k):
         base = self._base
-        if base._fitness_function == 'ER':
-            k = k.argmax(axis=1)
-            base._y_klass = SparseArray.fromlist(k)
-            cnt = k.shape[0] * (1 - base._tr_fraction)
-            cnt = int(np.floor(cnt))
-            if cnt == 0:
-                cnt = 1
-            mask = np.ones_like(k, dtype=np.bool)
-            mask_ts = np.zeros(k.shape[0])
-            index = np.arange(k.shape[0])
-            np.random.shuffle(index)
-            mask[index[:cnt]] = False
-            mask_ts[index[cnt:]] = 1.0
-            base._mask_vs = SparseArray.fromlist(~mask)
-            base._mask_ts = SparseArray.fromlist(mask_ts / mask_ts.sum())
-            return mask
-        else:
+        if base._fitness_function == 'BER':
             return self.mask_fitness_BER(k)
+        k = k.argmax(axis=1)
+        base._y_klass = SparseArray.fromlist(k)
+        cnt = k.shape[0] * (1 - base._tr_fraction)
+        cnt = int(np.floor(cnt))
+        if cnt == 0:
+            cnt = 1
+        mask = np.ones_like(k, dtype=np.bool)
+        mask_ts = np.zeros(k.shape[0])
+        index = np.arange(k.shape[0])
+        np.random.shuffle(index)
+        mask[index[:cnt]] = False
+        mask_ts[index[cnt:]] = 1.0
+        base._mask_vs = SparseArray.fromlist(~mask)
+        base._mask_ts = SparseArray.fromlist(mask_ts / mask_ts.sum())
+        return mask
 
     def set_classifier_mask(self, v, base_mask=True):
         """Computes the mask used to create the training and validation set"""
