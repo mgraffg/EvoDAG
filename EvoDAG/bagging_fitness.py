@@ -16,12 +16,28 @@
 import numpy as np
 from SparseArray import SparseArray
 from .utils import tonparray
-from .cython_utils import fitness_SAE
+from .cython_utils import fitness_SAE, F1Score
 
 
 class BaggingFitness(object):
     def __init__(self, base=None):
         self._base = base
+
+    @property
+    def nclasses(self):
+        try:
+            return self._nclasses
+        except AttributeError:
+            self._nclasses = self._base._labels.shape[0]
+        return self._nclasses
+
+    @property
+    def f1_score(self):
+        try:
+            return self._f1_score
+        except AttributeError:
+            self._f1_score = F1Score(self.nclasses)
+        return self._f1_score
 
     def mask_fitness_BER(self, k):
         base = self._base
@@ -169,8 +185,14 @@ class BaggingFitness(object):
         if base._classifier:
             if base._multiple_outputs:
                 hy = SparseArray.argmax(v.hy)
-                v._error = (base._y_klass - hy).sign().fabs()
-                v.fitness = - v._error.dot(base._mask_ts)
+                if base._fitness_function == 'F1':
+                    f1_score = self.f1_score
+                    mf1, mf1_v = f1_score.macroF1(base._y_klass, hy, base._mask_ts.index)
+                    v._error = mf1_v
+                    v.fitness = mf1
+                else:
+                    v._error = (base._y_klass - hy).sign().fabs()
+                    v.fitness = - v._error.dot(base._mask_ts)
             else:
                 v.fitness = -base._ytr.SSE(v.hy * base._mask)
         else:
@@ -185,7 +207,10 @@ class BaggingFitness(object):
         base = self._base
         if base._classifier:
             if base._multiple_outputs:
-                v.fitness_vs = - v._error.dot(base._mask_vs) / base._mask_vs.sum()
+                if base._fitness_function == 'F1':
+                    v.fitness_vs = v._error
+                else:
+                    v.fitness_vs = - v._error.dot(base._mask_vs) / base._mask_vs.sum()
             else:
                 v.fitness_vs = -((base.y - v.hy.sign()).sign().fabs() *
                                  base._mask_vs).sum()

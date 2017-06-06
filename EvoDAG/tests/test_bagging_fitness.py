@@ -185,6 +185,7 @@ def test_multiple_outputs_ER_vs():
 
 
 def test_macro_f1():
+    from EvoDAG.cython_utils import F1Score
     from EvoDAG import EvoDAG
     y = cl.copy()
     gp = EvoDAG(generations=np.inf,
@@ -193,7 +194,31 @@ def test_macro_f1():
                 time_limit=0.9,
                 multiple_outputs=True,
                 seed=0,
-                popsize=10000)
+                popsize=100)
     gp.y = y
     gp.X = X
-    #still working on it
+    gp.create_population()
+    off = gp.random_offspring()
+    hy = SparseArray.argmax(off.hy)
+    # print(gp._mask_ts.index, hy.full_array(), gp._y_klass.full_array(), gp._bagging_fitness.nclasses)
+    index = np.array(gp._mask_ts.index)
+    y = np.array(gp._y_klass.full_array())[index]
+    hy = np.array(hy.full_array())[index]
+    nclasses = gp._bagging_fitness.nclasses
+    precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
+    recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
+    print(precision, recall)
+    f1 = F1Score(nclasses)
+    mf1, mf1_v = f1.macroF1(gp._y_klass, SparseArray.argmax(off.hy), gp._mask_ts.index)
+    for x, y in zip(precision, f1.precision):
+        assert_almost_equals(x, y)
+    for x, y in zip(recall, f1.recall):
+        assert_almost_equals(x, y)
+    _ = (2 * precision * recall) / (precision + recall)
+    assert_almost_equals(np.mean(_), mf1)
+    print(f1.precision, f1.recall, mf1, mf1_v)
+    gp._fitness_function = 'F1'
+    gp._bagging_fitness.set_fitness(off)
+    assert_almost_equals(off.fitness, mf1)
+    assert_almost_equals(off.fitness_vs, mf1_v)
+    assert mf1_v != mf1
