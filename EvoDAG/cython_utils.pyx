@@ -359,6 +359,21 @@ cdef class Score:
         f1 = f1 / self.nclasses
         f12 = f12 / self.nclasses
         return f1, f12
+
+    @cython.cdivision(True)    
+    def macroPrecision(self, SparseArray y, SparseArray hy, array.array index):
+        self.count(y, hy, index)
+        self.precision_recall()
+        cdef double *recall = self.precision.data.as_doubles
+        cdef double *recall2 = self.precision2.data.as_doubles
+        cdef double f1 = 0, f12 = 0, den
+        cdef Py_ssize_t i = 0
+        for i in range(self.nclasses):
+            f1 += recall[i]
+            f12 += recall2[i]
+        f1 = f1 / self.nclasses
+        f12 = f12 / self.nclasses
+        return f1, f12
     
     @cython.cdivision(True)    
     cdef recall2accuracy(self):

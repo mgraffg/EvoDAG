@@ -210,6 +210,12 @@ class BaggingFitness(object):
                     mf1, mf1_v = f1_score.macroRecall(base._y_klass, hy, base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
+                elif base._fitness_function == 'macro-Precision':
+                    f1_score = self.score
+                    mf1, mf1_v = f1_score.macroPrecision(base._y_klass, hy,
+                                                         base._mask_ts.index)
+                    v._error = mf1_v - 1
+                    v.fitness = mf1 - 1
                 elif base._fitness_function == 'accDotMacroF1':
                     f1_score = self.score
                     mf1, mf1_v = f1_score.accDotMacroF1(base._y_klass, hy,
@@ -248,6 +254,8 @@ class BaggingFitness(object):
                 if base._fitness_function == 'macro-F1':
                     v.fitness_vs = v._error
                 elif base._fitness_function == 'BER':
+                    v.fitness_vs = v._error
+                elif base._fitness_function == 'macro-Precision':
                     v.fitness_vs = v._error
                 elif base._fitness_function == 'accDotMacroF1':
                     v.fitness_vs = v._error

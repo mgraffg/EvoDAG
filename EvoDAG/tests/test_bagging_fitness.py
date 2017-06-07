@@ -410,3 +410,38 @@ def test_AccdDotMacroF1():
     _[m] = 0
     assert_almost_equals(np.mean(_) * (y == hy).mean() - 1, off.fitness_vs)
 
+
+def test_Precision():
+    from EvoDAG.cython_utils import Score
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=100,
+                time_limit=0.9,
+                multiple_outputs=True,
+                seed=0,
+                popsize=500)
+    gp.y = y
+    gp.X = X
+    gp.create_population()
+    off = gp.random_offspring()
+    hy = SparseArray.argmax(off.hy)
+    index = np.array(gp._mask_ts.index)
+    y = np.array(gp._y_klass.full_array())[index]
+    hy = np.array(hy.full_array())[index]
+    nclasses = gp._bagging_fitness.nclasses
+    precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
+    f1 = Score(nclasses)
+    mf1, mf1_v = f1.macroPrecision(gp._y_klass, SparseArray.argmax(off.hy),
+                                   gp._mask_ts.index)
+    assert_almost_equals(np.mean(precision), mf1)
+    gp._fitness_function = 'macro-Precision'
+    gp._bagging_fitness.set_fitness(off)
+    assert_almost_equals(mf1 - 1, off.fitness)
+    index = np.array(gp._mask_ts.full_array()) == 0
+    y = np.array(gp._y_klass.full_array())[index]
+    hy = SparseArray.argmax(off.hy)
+    hy = np.array(hy.full_array())[index]
+    precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
+    assert_almost_equals(np.mean(precision) - 1, off.fitness_vs)
