@@ -236,7 +236,7 @@ cdef class SelectNumbers:
         return self.pos == self.size
 
 
-cdef class F1Score:
+cdef class Score:
     cdef public array.array precision
     cdef public array.array precision_den
     cdef public array.array recall
@@ -245,6 +245,8 @@ cdef class F1Score:
     cdef public array.array precision2_den
     cdef public array.array recall2
     cdef public array.array recall2_den
+    cdef public double accuracy
+    cdef public double accuracy2
     cdef unsigned int y_pos
     cdef unsigned int hy_pos
     cdef unsigned int y_size
@@ -287,6 +289,8 @@ cdef class F1Score:
         self._cleanI(self.recall2_den)
         self.y_pos = 0
         self.hy_pos = 0
+        self.accuracy = 0
+        self.accuracy2 = 0
 
     cdef double get_klass(self, double *data, unsigned int *index, unsigned int i):
         cdef double res = 0
@@ -308,7 +312,8 @@ cdef class F1Score:
 
     @cython.cdivision(True)    
     def F1(self, Py_ssize_t i, SparseArray y, SparseArray hy, array.array index):
-        self.do(y, hy, index)
+        self.count(y, hy, index)
+        self.precision_recall()
         cdef double *precision = self.precision.data.as_doubles
         cdef double *recall = self.recall.data.as_doubles
         cdef double *precision2 = self.precision2.data.as_doubles
@@ -324,7 +329,8 @@ cdef class F1Score:
 
     @cython.cdivision(True)    
     def macroRecallF1(self, SparseArray y, SparseArray hy, array.array index):
-        self.do(y, hy, index)
+        self.count(y, hy, index)
+        self.precision_recall()
         cdef double *recall = self.recall.data.as_doubles
         cdef double *precision2 = self.precision2.data.as_doubles
         cdef double *recall2 = self.recall2.data.as_doubles
@@ -338,10 +344,64 @@ cdef class F1Score:
         f1 = f1 / self.nclasses
         f12 = f12 / self.nclasses
         return f1, f12
+
+    @cython.cdivision(True)    
+    def macroRecall(self, SparseArray y, SparseArray hy, array.array index):
+        self.count(y, hy, index)
+        self.precision_recall()
+        cdef double *recall = self.recall.data.as_doubles
+        cdef double *recall2 = self.recall2.data.as_doubles
+        cdef double f1 = 0, f12 = 0, den
+        cdef Py_ssize_t i = 0
+        for i in range(self.nclasses):
+            f1 += recall[i]
+            f12 += recall2[i]
+        f1 = f1 / self.nclasses
+        f12 = f12 / self.nclasses
+        return f1, f12
+    
+    @cython.cdivision(True)    
+    cdef recall2accuracy(self):
+        cdef double *recall = self.recall.data.as_doubles
+        cdef double *recall2 = self.recall2.data.as_doubles
+        cdef unsigned int *recall_den = self.recall_den.data.as_uints
+        cdef unsigned int *recall2_den = self.recall2_den.data.as_uints
+        cdef unsigned int den = 0, den2 = 0
+        cdef Py_ssize_t i
+        for i in range(self.nclasses):
+            self.accuracy += recall[i]
+            self.accuracy2 += recall2[i]
+            den += recall_den[i]
+            den2 += recall2_den[i]
+        self.accuracy = self.accuracy / den
+        self.accuracy2 = self.accuracy2 / den
+
+    @cython.cdivision(True)    
+    def accDotMacroF1(self, SparseArray y, SparseArray hy, array.array index):
+        cdef double *precision = self.precision.data.as_doubles
+        cdef double *recall = self.recall.data.as_doubles
+        cdef double *precision2 = self.precision2.data.as_doubles
+        cdef double *recall2 = self.recall2.data.as_doubles
+        cdef double f1 = 0, f12 = 0, den
+        cdef Py_ssize_t i = 0
+        self.count(y, hy, index)
+        self.recall2accuracy()
+        self.precision_recall()
+        for i in range(self.nclasses):
+            den = precision[i] + recall[i]
+            if den > 0:
+                f1 += (2 * precision[i] * recall[i]) / den
+            den = precision2[i] + recall2[i]
+            if den > 0:
+                f12 += (2 * precision2[i] * recall2[i]) / den
+        f1 = f1 / self.nclasses
+        f12 = f12 / self.nclasses
+        return f1 * self.accuracy, f12 * self.accuracy2
     
     @cython.cdivision(True)    
     def macroF1(self, SparseArray y, SparseArray hy, array.array index):
-        self.do(y, hy, index)
+        self.count(y, hy, index)
+        self.precision_recall()
         cdef double *precision = self.precision.data.as_doubles
         cdef double *recall = self.recall.data.as_doubles
         cdef double *precision2 = self.precision2.data.as_doubles
@@ -360,7 +420,36 @@ cdef class F1Score:
         return f1, f12
 
     @cython.cdivision(True)
-    cpdef do(self, SparseArray y, SparseArray hy, array.array index):
+    cdef precision_recall(self):
+        cdef double *precision = self.precision.data.as_doubles
+        cdef double *recall = self.recall.data.as_doubles
+        cdef double *precision2 = self.precision2.data.as_doubles
+        cdef double *recall2 = self.recall2.data.as_doubles
+        cdef unsigned int *precision_den = self.precision_den.data.as_uints
+        cdef unsigned int *recall_den = self.recall_den.data.as_uints
+        cdef unsigned int *precision2_den = self.precision2_den.data.as_uints
+        cdef unsigned int *recall2_den = self.recall2_den.data.as_uints
+        cdef Py_ssize_t i
+        for i in range(self.nclasses):
+            if precision_den[i] > 0:
+                precision[i] = precision[i] / precision_den[i]
+            else:
+                precision[i] = 0
+            if recall_den[i] > 0:
+                recall[i] = recall[i] / recall_den[i]
+            else:
+                recall[i] = 0
+            if precision2_den[i] > 0:
+                precision2[i] = precision2[i] / precision2_den[i]
+            else:
+                precision2[i] = 0
+            if recall2_den[i] > 0:
+                recall2[i] = recall2[i] / recall2_den[i]
+            else:
+                recall2[i] = 0
+        
+    @cython.cdivision(True)
+    cdef count(self, SparseArray y, SparseArray hy, array.array index):
         self.clean()
         cdef unsigned int *index_value = index.data.as_uints
         cdef bint flag
@@ -401,20 +490,3 @@ cdef class F1Score:
                 if _y == _hy:
                     precision2[_y] += 1
                     recall2[_y] += 1
-        for i in range(self.nclasses):
-            if precision_den[i] > 0:
-                precision[i] = precision[i] / precision_den[i]
-            else:
-                precision[i] = 0
-            if recall_den[i] > 0:
-                recall[i] = recall[i] / recall_den[i]
-            else:
-                recall[i] = 0
-            if precision2_den[i] > 0:
-                precision2[i] = precision2[i] / precision2_den[i]
-            else:
-                precision2[i] = 0
-            if recall2_den[i] > 0:
-                recall2[i] = recall2[i] / recall2_den[i]
-            else:
-                recall2[i] = 0

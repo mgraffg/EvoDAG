@@ -185,7 +185,7 @@ def test_multiple_outputs_ER_vs():
 
 
 def test_macro_F1():
-    from EvoDAG.cython_utils import F1Score
+    from EvoDAG.cython_utils import Score
     from EvoDAG import EvoDAG
     y = cl.copy()
     gp = EvoDAG(generations=np.inf,
@@ -193,8 +193,8 @@ def test_macro_F1():
                 early_stopping_rounds=100,
                 time_limit=0.9,
                 multiple_outputs=True,
-                seed=0,
-                popsize=100)
+                seed=2,
+                popsize=1000)
     gp.y = y
     gp.X = X
     gp.create_population()
@@ -207,7 +207,7 @@ def test_macro_F1():
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     print(precision, recall)
-    f1 = F1Score(nclasses)
+    f1 = Score(nclasses)
     mf1, mf1_v = f1.macroF1(gp._y_klass, SparseArray.argmax(off.hy), gp._mask_ts.index)
     for x, y in zip(precision, f1.precision):
         if not np.isfinite(x):
@@ -239,7 +239,7 @@ def test_macro_F1():
 
 
 def test_F1():
-    from EvoDAG.cython_utils import F1Score
+    from EvoDAG.cython_utils import Score
     from EvoDAG import EvoDAG
     y = cl.copy()
     gp = EvoDAG(generations=np.inf,
@@ -248,7 +248,7 @@ def test_F1():
                 time_limit=0.9,
                 multiple_outputs=True,
                 seed=0,
-                popsize=100)
+                popsize=500)
     gp.y = y
     gp.X = X
     gp.create_population()
@@ -260,7 +260,7 @@ def test_F1():
     nclasses = gp._bagging_fitness.nclasses
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
-    f1 = F1Score(nclasses)
+    f1 = Score(nclasses)
     assert gp._bagging_fitness.min_class >= 0 and gp._bagging_fitness.min_class < gp._bagging_fitness.nclasses
     mf1, mf1_v = f1.F1(gp._bagging_fitness.min_class,
                        gp._y_klass, SparseArray.argmax(off.hy),
@@ -319,7 +319,7 @@ def test_mask():
 
 
 def test_RecallF1():
-    from EvoDAG.cython_utils import F1Score
+    from EvoDAG.cython_utils import Score
     from EvoDAG import EvoDAG
     y = cl.copy()
     gp = EvoDAG(generations=np.inf,
@@ -328,7 +328,7 @@ def test_RecallF1():
                 time_limit=0.9,
                 multiple_outputs=True,
                 seed=0,
-                popsize=100)
+                popsize=500)
     gp.y = y
     gp.X = X
     gp.create_population()
@@ -340,7 +340,7 @@ def test_RecallF1():
     nclasses = gp._bagging_fitness.nclasses
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
-    f1 = F1Score(nclasses)
+    f1 = Score(nclasses)
     mf1, mf1_v = f1.macroRecallF1(gp._y_klass, SparseArray.argmax(off.hy),
                                   gp._mask_ts.index)
     assert_almost_equals(np.mean(recall), mf1)
@@ -364,4 +364,49 @@ def test_RecallF1():
         assert_almost_equals(x, y)
     for x, y in zip(recall, f1.recall2):
         assert_almost_equals(x, y)
-    
+
+
+def test_AccdDotMacroF1():
+    from EvoDAG.cython_utils import Score
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=100,
+                time_limit=0.9,
+                multiple_outputs=True,
+                seed=0,
+                popsize=500)
+    gp.y = y
+    gp.X = X
+    gp.create_population()
+    off = gp.random_offspring()
+    hy = SparseArray.argmax(off.hy)
+    index = np.array(gp._mask_ts.index)
+    y = np.array(gp._y_klass.full_array())[index]
+    hy = np.array(hy.full_array())[index]
+    nclasses = gp._bagging_fitness.nclasses
+    precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
+    recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
+    f1 = Score(nclasses)
+    mf1, mf1_v = f1.accDotMacroF1(gp._y_klass, SparseArray.argmax(off.hy),
+                                  gp._mask_ts.index)
+    _ = (2 * precision * recall) / (precision + recall)
+    m = ~ np.isfinite(_)
+    _[m] = 0
+    assert_almost_equals(np.mean(_) * (y == hy).mean(), mf1)
+    gp._fitness_function = 'accDotMacroF1'
+    gp._bagging_fitness.set_fitness(off)
+    assert_almost_equals(off.fitness, mf1 - 1)
+    assert_almost_equals(off.fitness_vs, mf1_v - 1)
+    index = np.array(gp._mask_ts.full_array()) == 0
+    y = np.array(gp._y_klass.full_array())[index]
+    hy = SparseArray.argmax(off.hy)
+    hy = np.array(hy.full_array())[index]
+    precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
+    recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
+    _ = (2 * precision * recall) / (precision + recall)
+    m = ~ np.isfinite(_)
+    _[m] = 0
+    assert_almost_equals(np.mean(_) * (y == hy).mean() - 1, off.fitness_vs)
+

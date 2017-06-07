@@ -16,7 +16,7 @@
 import numpy as np
 from SparseArray import SparseArray
 from .utils import tonparray
-from .cython_utils import fitness_SAE, F1Score
+from .cython_utils import fitness_SAE, Score
 
 
 class BaggingFitness(object):
@@ -26,7 +26,7 @@ class BaggingFitness(object):
 
     def assert_fitness_function(self):
         base = self._base
-        assert base._fitness_function in ['BER', 'ER', 'F1', 'macro-F1', 'macro-RecallF1']
+        assert base._fitness_function in ['BER', 'ER', 'F1', 'macro-F1', 'macro-RecallF1', 'accDotMacroF1']
 
     @property
     def nclasses(self):
@@ -37,12 +37,12 @@ class BaggingFitness(object):
         return self._nclasses
 
     @property
-    def f1_score(self):
+    def score(self):
         try:
-            return self._f1_score
+            return self._score
         except AttributeError:
-            self._f1_score = F1Score(self.nclasses)
-        return self._f1_score
+            self._score = Score(self.nclasses)
+        return self._score
 
     @property
     def min_class(self):
@@ -201,17 +201,29 @@ class BaggingFitness(object):
             if base._multiple_outputs:
                 hy = SparseArray.argmax(v.hy)
                 if base._fitness_function == 'macro-F1':
-                    f1_score = self.f1_score
+                    f1_score = self.score
                     mf1, mf1_v = f1_score.macroF1(base._y_klass, hy, base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
+                elif base._fitness_function == 'BER':
+                    f1_score = self.score
+                    mf1, mf1_v = f1_score.macroRecall(base._y_klass, hy, base._mask_ts.index)
+                    v._error = mf1_v - 1
+                    v.fitness = mf1 - 1
+                elif base._fitness_function == 'accDotMacroF1':
+                    f1_score = self.score
+                    mf1, mf1_v = f1_score.accDotMacroF1(base._y_klass, hy,
+                                                        base._mask_ts.index)
+                    v._error = mf1_v - 1
+                    v.fitness = mf1 - 1
                 elif base._fitness_function == 'macro-RecallF1':
-                    f1_score = self.f1_score
-                    mf1, mf1_v = f1_score.macroRecallF1(base._y_klass, hy, base._mask_ts.index)
+                    f1_score = self.score
+                    mf1, mf1_v = f1_score.macroRecallF1(base._y_klass, hy,
+                                                        base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
                 elif base._fitness_function == 'F1':
-                    f1_score = self.f1_score
+                    f1_score = self.score
                     mf1, mf1_v = f1_score.F1(self.min_class, base._y_klass,
                                              hy, base._mask_ts.index)
                     v._error = mf1_v - 1
@@ -235,8 +247,12 @@ class BaggingFitness(object):
             if base._multiple_outputs:
                 if base._fitness_function == 'macro-F1':
                     v.fitness_vs = v._error
+                elif base._fitness_function == 'BER':
+                    v.fitness_vs = v._error
+                elif base._fitness_function == 'accDotMacroF1':
+                    v.fitness_vs = v._error
                 elif base._fitness_function == 'macro-RecallF1':
-                    v.fitness_vs = v._error                    
+                    v.fitness_vs = v._error
                 elif base._fitness_function == 'F1':
                     v.fitness_vs = v._error
                 else:
