@@ -359,6 +359,8 @@ def test_RecallF1():
     print(precision, recall)
     print(f1.precision2, f1.recall2)
     for x, y in zip(precision, f1.precision2):
+        if not np.isfinite(x):
+            continue
         assert_almost_equals(x, y)
     for x, y in zip(recall, f1.recall2):
         assert_almost_equals(x, y)
