@@ -26,7 +26,7 @@ class BaggingFitness(object):
 
     def assert_fitness_function(self):
         base = self._base
-        assert base._fitness_function in ['BER', 'ER', 'F1', 'macro-F1', 'macro-RecallF1', 'accDotMacroF1']
+        assert base._fitness_function in ['BER', 'ER', 'F1', 'macro-F1', 'macro-RecallF1', 'accDotMacroF1', 'macro-Precision']
 
     @property
     def nclasses(self):
