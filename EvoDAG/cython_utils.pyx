@@ -310,6 +310,19 @@ cdef class Score:
             self.hy_pos += 1
         return res
 
+    def RecallDotPrecision(self, Py_ssize_t i, SparseArray y,
+                           SparseArray hy, array.array index):
+        self.count(y, hy, index)
+        self.precision_recall()
+        cdef double *precision = self.precision.data.as_doubles
+        cdef double *recall = self.recall.data.as_doubles
+        cdef double *precision2 = self.precision2.data.as_doubles
+        cdef double *recall2 = self.recall2.data.as_doubles
+        cdef double f1 = 0, f12 = 0
+        f1 = precision[i] * recall[i]
+        f12 = precision2[i] * recall2[i]
+        return f1, f12
+    
     @cython.cdivision(True)    
     def F1(self, Py_ssize_t i, SparseArray y, SparseArray hy, array.array index):
         self.count(y, hy, index)
