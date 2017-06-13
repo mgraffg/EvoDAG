@@ -514,4 +514,44 @@ def test_DotRecall():
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     score = np.prod(recall) - 1
     assert_almost_equals(score, off.fitness_vs)
+
+
+def test_DotF1():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=100,
+                time_limit=0.9, fitness_function='DotF1',
+                multiple_outputs=True, seed=0, popsize=500)
+    gp.y = y
+    gp.X = X
+    gp.create_population()
+    off = gp.random_offspring()
+    hy = SparseArray.argmax(off.hy)
+    index = np.array(gp._mask_ts.index)
+    y = np.array(gp._y_klass.full_array())[index]
+    hy = np.array(hy.full_array())[index]
+    nclasses = gp._bagging_fitness.nclasses
+    recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
+    precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
+    _ = (2 * precision * recall) / (precision + recall)
+    m = ~ np.isfinite(_)
+    _[m] = 0
+    score = np.prod(_) - 1
+    assert gp._fitness_function == 'DotF1'
+    gp._bagging_fitness.set_fitness(off)
+    print(_)
+    assert_almost_equals(score, off.fitness)
+    index = np.array(gp._mask_ts.full_array()) == 0
+    y = np.array(gp._y_klass.full_array())[index]
+    hy = SparseArray.argmax(off.hy)
+    hy = np.array(hy.full_array())[index]
+    recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
+    precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
+    _ = (2 * precision * recall) / (precision + recall)
+    m = ~ np.isfinite(_)
+    _[m] = 0
+    score = np.prod(_) - 1
+    assert_almost_equals(score, off.fitness_vs)
     

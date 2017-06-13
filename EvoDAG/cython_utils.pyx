@@ -437,6 +437,24 @@ cdef class Score:
         f1 = f1 / self.nclasses
         f12 = f12 / self.nclasses
         return f1 * self.accuracy, f12 * self.accuracy2
+
+    def DotF1(self, SparseArray y, SparseArray hy, array.array index):
+        self.count(y, hy, index)
+        self.precision_recall()
+        cdef double *precision = self.precision.data.as_doubles
+        cdef double *recall = self.recall.data.as_doubles
+        cdef double *precision2 = self.precision2.data.as_doubles
+        cdef double *recall2 = self.recall2.data.as_doubles
+        cdef double f1 = 1, f12 = 1, den
+        cdef Py_ssize_t i = 0
+        for i in range(self.nclasses):
+            den = precision[i] + recall[i]
+            if den > 0:
+                f1 *= (2 * precision[i] * recall[i]) / den
+            den = precision2[i] + recall2[i]
+            if den > 0:
+                f12 *= (2 * precision2[i] * recall2[i]) / den
+        return f1, f12
     
     @cython.cdivision(True)    
     def macroF1(self, SparseArray y, SparseArray hy, array.array index):
