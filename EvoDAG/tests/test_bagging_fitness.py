@@ -448,7 +448,6 @@ def test_Precision():
 
 
 def test_RecallDotPrecision():
-    from EvoDAG.cython_utils import Score
     from EvoDAG import EvoDAG
     y = cl.copy()
     gp = EvoDAG(generations=np.inf,
@@ -481,5 +480,38 @@ def test_RecallDotPrecision():
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     score = (precision[min_class] * recall[min_class]) - 1
+    assert_almost_equals(score, off.fitness_vs)
+
+
+def test_DotRecall():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=100,
+                time_limit=0.9,
+                multiple_outputs=True,
+                seed=0,
+                popsize=500)
+    gp.y = y
+    gp.X = X
+    gp.create_population()
+    off = gp.random_offspring()
+    hy = SparseArray.argmax(off.hy)
+    index = np.array(gp._mask_ts.index)
+    y = np.array(gp._y_klass.full_array())[index]
+    hy = np.array(hy.full_array())[index]
+    nclasses = gp._bagging_fitness.nclasses
+    recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
+    score = np.prod(recall) - 1
+    gp._fitness_function = 'DotRecall'
+    gp._bagging_fitness.set_fitness(off)
+    assert_almost_equals(score, off.fitness)
+    index = np.array(gp._mask_ts.full_array()) == 0
+    y = np.array(gp._y_klass.full_array())[index]
+    hy = SparseArray.argmax(off.hy)
+    hy = np.array(hy.full_array())[index]
+    recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
+    score = np.prod(recall) - 1
     assert_almost_equals(score, off.fitness_vs)
     
