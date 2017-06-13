@@ -29,7 +29,7 @@ class BaggingFitness(object):
         assert base._fitness_function in ['BER', 'ER', 'F1', 'macro-F1',
                                           'macro-RecallF1', 'accDotMacroF1',
                                           'macro-Precision', 'RecallDotPrecision',
-                                          'DotRecall', 'DotF1']
+                                          'DotRecall', 'DotF1', 'DotPrecision']
 
     @property
     def nclasses(self):
@@ -230,6 +230,12 @@ class BaggingFitness(object):
                                                          base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
+                elif base._fitness_function == 'DotPrecision':
+                    f1_score = self.score
+                    mf1, mf1_v = f1_score.DotPrecision(base._y_klass, hy,
+                                                       base._mask_ts.index)
+                    v._error = mf1_v - 1
+                    v.fitness = mf1 - 1    
                 elif base._fitness_function == 'accDotMacroF1':
                     f1_score = self.score
                     mf1, mf1_v = f1_score.accDotMacroF1(base._y_klass, hy,

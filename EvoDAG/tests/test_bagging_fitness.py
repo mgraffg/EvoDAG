@@ -558,3 +558,36 @@ def test_DotF1():
     print(score, _)
     assert_almost_equals(score, off.fitness_vs)
     # assert False
+
+
+def test_DotPrecision():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(generations=np.inf,
+                tournament_size=2,
+                early_stopping_rounds=100,
+                time_limit=0.9, fitness_function='DotPrecision',
+                multiple_outputs=True, seed=0, popsize=500)
+    gp.y = y
+    gp.X = X
+    gp.create_population()
+    off = gp.random_offspring()
+    hy = SparseArray.argmax(off.hy)
+    index = np.array(gp._mask_ts.index)
+    y = np.array(gp._y_klass.full_array())[index]
+    hy = np.array(hy.full_array())[index]
+    nclasses = gp._bagging_fitness.nclasses
+    precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
+    score = np.prod(precision) - 1
+    assert gp._fitness_function == 'DotPrecision'
+    gp._bagging_fitness.set_fitness(off)
+    assert_almost_equals(score, off.fitness)
+    index = np.array(gp._mask_ts.full_array()) == 0
+    y = np.array(gp._y_klass.full_array())[index]
+    hy = SparseArray.argmax(off.hy)
+    hy = np.array(hy.full_array())[index]
+    precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
+    score = np.prod(precision) - 1
+    assert_almost_equals(score, off.fitness_vs)
+    # assert False
+    
