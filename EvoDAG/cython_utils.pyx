@@ -400,7 +400,7 @@ cdef class Score:
             f12 *= recall2[i]
         return f1, f12
     
-    @cython.cdivision(True)    
+    @cython.cdivision(True)
     cdef recall2accuracy(self):
         cdef double *recall = self.recall.data.as_doubles
         cdef double *recall2 = self.recall2.data.as_doubles
@@ -414,8 +414,13 @@ cdef class Score:
             den += recall_den[i]
             den2 += recall2_den[i]
         self.accuracy = self.accuracy / den
-        self.accuracy2 = self.accuracy2 / den
+        self.accuracy2 = self.accuracy2 / den2
 
+    def errorRate(self, SparseArray y, SparseArray hy, array.array index):
+        self.count(y, hy, index)
+        self.recall2accuracy()
+        return 1 - self.accuracy, 1 - self.accuracy2
+        
     @cython.cdivision(True)    
     def accDotMacroF1(self, SparseArray y, SparseArray hy, array.array index):
         cdef double *precision = self.precision.data.as_doubles
@@ -451,9 +456,13 @@ cdef class Score:
             den = precision[i] + recall[i]
             if den > 0:
                 f1 *= (2 * precision[i] * recall[i]) / den
+            else:
+                f1 = 0
             den = precision2[i] + recall2[i]
             if den > 0:
                 f12 *= (2 * precision2[i] * recall2[i]) / den
+            else:
+                f12 = 0
         return f1, f12
     
     @cython.cdivision(True)    

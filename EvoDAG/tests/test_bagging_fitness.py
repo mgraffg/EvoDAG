@@ -180,7 +180,9 @@ def test_multiple_outputs_ER_vs():
     gp.create_population()
     a = gp.random_offspring()
     hy = np.array(SparseArray.argmax(a.hy).full_array())
-    mask = np.array(gp._mask_vs.full_array()).astype(np.bool)
+    # mask = np.array(gp._mask_vs.full_array()).astype(np.bool)
+    mask = np.array(gp._mask_ts.full_array()) == 0
+    print(mask)
     assert_almost_equals(-a.fitness_vs, (y[:-1][mask] != hy[mask]).mean())
 
 
@@ -541,7 +543,7 @@ def test_DotF1():
     score = np.prod(_) - 1
     assert gp._fitness_function == 'DotF1'
     gp._bagging_fitness.set_fitness(off)
-    print(_)
+    print(score, _)
     assert_almost_equals(score, off.fitness)
     index = np.array(gp._mask_ts.full_array()) == 0
     y = np.array(gp._y_klass.full_array())[index]
@@ -553,5 +555,6 @@ def test_DotF1():
     m = ~ np.isfinite(_)
     _[m] = 0
     score = np.prod(_) - 1
+    print(score, _)
     assert_almost_equals(score, off.fitness_vs)
-    
+    # assert False

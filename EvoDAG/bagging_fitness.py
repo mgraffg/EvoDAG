@@ -218,16 +218,16 @@ class BaggingFitness(object):
                     mf1, mf1_v = f1_score.macroRecall(base._y_klass, hy, base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
-                elif base._fitness_function == 'macro-Precision':
-                    f1_score = self.score
-                    mf1, mf1_v = f1_score.macroPrecision(base._y_klass, hy,
-                                                         base._mask_ts.index)
-                    v._error = mf1_v - 1
-                    v.fitness = mf1 - 1
                 elif base._fitness_function == 'DotRecall':
                     f1_score = self.score
                     mf1, mf1_v = f1_score.DotRecall(base._y_klass, hy,
                                                     base._mask_ts.index)
+                    v._error = mf1_v - 1
+                    v.fitness = mf1 - 1
+                elif base._fitness_function == 'macro-Precision':
+                    f1_score = self.score
+                    mf1, mf1_v = f1_score.macroPrecision(base._y_klass, hy,
+                                                         base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
                 elif base._fitness_function == 'accDotMacroF1':
@@ -254,6 +254,12 @@ class BaggingFitness(object):
                                                              hy, base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
+                elif base._fitness_function == 'ER':
+                    f1_score = self.score
+                    mf1, mf1_v = f1_score.errorRate(base._y_klass,
+                                                    hy, base._mask_ts.index)
+                    v._error = -mf1_v
+                    v.fitness = -mf1
                 else:
                     raise RuntimeError('Unknown fitness function %s' % base._fitness_function)
                 # v._error = (base._y_klass - hy).sign().fabs()
