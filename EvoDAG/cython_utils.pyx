@@ -455,6 +455,20 @@ cdef class Score:
         f12 = f12 / self.nclasses
         return f1 * self.accuracy, f12 * self.accuracy2
 
+    def DotRecallDotPrecision(self, SparseArray y, SparseArray hy, array.array index):
+        self.count(y, hy, index)
+        self.precision_recall()
+        cdef double *precision = self.precision.data.as_doubles
+        cdef double *recall = self.recall.data.as_doubles
+        cdef double *precision2 = self.precision2.data.as_doubles
+        cdef double *recall2 = self.recall2.data.as_doubles
+        cdef double f1 = 1, f12 = 1
+        cdef Py_ssize_t i = 0
+        for i in range(self.nclasses):
+            f1 *= precision[i] * recall[i]
+            f12 *= precision2[i] * recall2[i]
+        return f1, f12
+    
     def DotF1(self, SparseArray y, SparseArray hy, array.array index):
         self.count(y, hy, index)
         self.precision_recall()

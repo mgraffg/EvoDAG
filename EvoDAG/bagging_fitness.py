@@ -26,10 +26,11 @@ class BaggingFitness(object):
 
     def assert_fitness_function(self):
         base = self._base
-        assert base._fitness_function in ['BER', 'ER', 'F1', 'macro-F1',
-                                          'macro-RecallF1', 'accDotMacroF1',
-                                          'macro-Precision', 'RecallDotPrecision',
-                                          'DotRecall', 'DotF1', 'DotPrecision']
+        assert base._fitness_function in ['ER', 'macro-F1', 'BER', 'macro-Precision',
+                                          'DotF1', 'DotRecall', 'DotPrecision',
+                                          'DotRecallDotPrecision', 'F1',
+                                          'RecallDotPrecision', 'macro-RecallF1',
+                                          'accDotMacroF1']
 
     @property
     def nclasses(self):
@@ -213,6 +214,12 @@ class BaggingFitness(object):
                     mf1, mf1_v = f1_score.DotF1(base._y_klass, hy, base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
+                elif base._fitness_function == 'DotRecallDotPrecision':
+                    f1_score = self.score
+                    mf1, mf1_v = f1_score.DotRecallDotPrecision(base._y_klass, hy,
+                                                                base._mask_ts.index)
+                    v._error = mf1_v - 1
+                    v.fitness = mf1 - 1
                 elif base._fitness_function == 'BER':
                     f1_score = self.score
                     mf1, mf1_v = f1_score.macroRecall(base._y_klass, hy, base._mask_ts.index)
@@ -235,7 +242,7 @@ class BaggingFitness(object):
                     mf1, mf1_v = f1_score.DotPrecision(base._y_klass, hy,
                                                        base._mask_ts.index)
                     v._error = mf1_v - 1
-                    v.fitness = mf1 - 1    
+                    v.fitness = mf1 - 1   
                 elif base._fitness_function == 'accDotMacroF1':
                     f1_score = self.score
                     mf1, mf1_v = f1_score.accDotMacroF1(base._y_klass, hy,
