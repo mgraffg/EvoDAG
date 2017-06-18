@@ -14,12 +14,13 @@
 
 
 from test_root import X, cl
+from nose.tools import assert_almost_equals
 
 
 def test_generational_generation():
     from EvoDAG.population import Generational
     from EvoDAG import EvoDAG
-    gp = EvoDAG(population_class='Generational',
+    gp = EvoDAG(population_class='Generational', classifier=False,
                 popsize=10)
     gp.X = X
     y = cl.copy()
@@ -47,7 +48,7 @@ def test_all_inputs():
     y[y != 1] = -1
     for pc in ['Generational', 'SteadyState']:
         gp = EvoDAG(population_class=pc,
-                    all_inputs=True,
+                    all_inputs=True, classifier=False,
                     popsize=10)
         gp.X = X
         gp.y = y
@@ -65,8 +66,8 @@ def test_all_inputs2():
     y = cl.copy()
     y[y != 1] = -1
     gp = EvoDAG(population_class='Generational',
-                all_inputs=True,
-                popsize=3)
+                all_inputs=True, classifier=False,
+                pr_variable=1, popsize=3)
     gp.X = X
     gp.y = y
     gp.create_population()
@@ -78,19 +79,36 @@ def test_all_inputs2():
     assert len(gp.population.population) == gp.popsize
 
 
+def test_all_inputs3():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    y[y != 1] = -1
+    gp = EvoDAG(population_class='SteadyState',
+                all_inputs=True, classifier=False,
+                pr_variable=1, popsize=3)
+    gp.X = X
+    gp.y = y
+    gp.create_population()
+    print(len(gp.population.population), len(gp.X))
+    assert len(gp.population.population) == gp.population.popsize
+    for i in range(gp.popsize):
+        a = gp.random_offspring()
+        gp.replace(a)
+    assert len(gp.population.population) == gp.popsize
+    
+
 def test_all_init_popsize():
     from EvoDAG import EvoDAG
     y = cl.copy()
     y[y != 1] = -1
     gp = EvoDAG(population_class='Generational',
-                all_inputs=True,
-                early_stopping_rounds=1,
-                popsize=2)
+                all_inputs=True, classifier=False,
+                early_stopping_rounds=1, pr_variable=1, popsize=2)
     gp.X = X
     gp.y = y
     gp.create_population()
     assert gp.init_popsize == len(gp.X)
-    gp = EvoDAG(population_class='Generational',
+    gp = EvoDAG(population_class='Generational', classifier=False,
                 # all_inputs=True,
                 early_stopping_rounds=1,
                 popsize=2)
@@ -110,7 +128,7 @@ def test_random_generations():
     y = cl.copy()
     y[y != 1] = -1
     for pop in ['SteadyState', 'Generational', P]:
-        gp = EvoDAG(population_class=pop,
+        gp = EvoDAG(population_class=pop, classifier=False,
                     all_inputs=True, random_generations=1,
                     early_stopping_rounds=1, popsize=2)
         gp.X = X
@@ -136,7 +154,7 @@ def test_SteadyState_generation():
     y = cl.copy()
     y[y != 1] = -1
     gp = EvoDAG(population_class='SteadyState',
-                all_inputs=True,
+                all_inputs=True, classifier=False,
                 early_stopping_rounds=1,
                 popsize=2)
     gp.X = X
@@ -152,7 +170,7 @@ def test_clean():
     y = cl.copy()
     y[y != 1] = -1
     for pc in ['Generational', 'SteadyState']:
-        gp = EvoDAG(population_class=pc,
+        gp = EvoDAG(population_class=pc, classifier=False,
                     popsize=5)
         gp.X = X
         gp.y = y
@@ -179,7 +197,7 @@ def test_density():
     y = cl.copy()
     y[y != 1] = -1
     for pc in ['Generational', 'SteadyState']:
-        gp = EvoDAG(population_class=pc,
+        gp = EvoDAG(population_class=pc, classifier=False,
                     popsize=5)
         gp.X = Xc
         gp.y = y
@@ -193,4 +211,230 @@ def test_density():
             gp.replace(a)
             d = sum([x.hy.density for x in gp.population.population]) / gp.popsize
             print(d, gp.population.density, 'replace')
-            assert gp.population.density == d
+            print(gp.population.density, d, '==')
+            assert_almost_equals(gp.population.density, d)
+
+
+def test_share_inputs():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(classifier=True, multiple_outputs=True,
+                popsize=5, share_inputs=True)
+    gp.fit(X, y)
+    assert gp._share_inputs
+
+
+def test_model_nvar():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(classifier=True, multiple_outputs=True,
+                popsize=5, share_inputs=True)
+    gp.fit(X, y)
+    assert gp._share_inputs
+    m = gp.model()
+    print(X.shape)
+    assert m.nvar == X.shape[1]
+    try:
+        m.predict(X[:, :3])
+        assert False
+    except RuntimeError:
+        pass
+
+
+def test_selectNumbers():
+    from EvoDAG.cython_utils import SelectNumbers
+    s = SelectNumbers([x for x in range(100)])
+    a = s.get(10)
+    print(a, len(a))
+    assert len(a) == 10
+    a = s.get(91)
+    assert len(a) == 90
+    s.pos -= 10
+    a = s.get(10)
+    assert len(a) == 10
+    assert s.pos == 100
+    assert s.empty()
+    s.pos = 0
+    while not s.empty():
+        s.get_one()
+    s = SelectNumbers([])
+    assert s.empty()
+
+
+def test_inputs():
+    from EvoDAG.population import Inputs
+    from EvoDAG.cython_utils import SelectNumbers
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(classifier=True, multiple_outputs=True,
+                popsize=5, share_inputs=True)
+    gp.X = X
+    gp.nclasses(y)
+    gp.y = y
+    inputs = Inputs(gp, SelectNumbers([x for x in range(len(gp.X))]))
+    func = inputs._func
+    for f in func:
+        inputs._func = [f]
+        inputs._nfunc = 1
+        v = inputs.input()
+        assert v is not None
+        inputs = Inputs(gp, SelectNumbers([x for x in range(len(gp.X))]))
+
+
+def test_multiple_variables():
+    import numpy as np
+    from EvoDAG.population import Inputs
+    from EvoDAG.cython_utils import SelectNumbers
+    from EvoDAG import EvoDAG
+    from SparseArray import SparseArray
+    y = cl.copy()
+    gp = EvoDAG(classifier=True, multiple_outputs=True,
+                popsize=5, share_inputs=True)
+    gp.X = X
+    gp.X[-1]._eval_tr = SparseArray.fromlist([0 for x in range(gp.X[-1].hy.size())])
+    gp.nclasses(y)
+    gp.y = y
+    inputs = Inputs(gp, SelectNumbers([x for x in range(len(gp.X))]))
+    inputs._func = [inputs._func[-1]]
+    inputs._nfunc = 1
+    v = inputs.input()
+    assert v is not None
+    mask = np.array(gp._mask[0].full_array(), dtype=np.bool)
+    D = np.array([x.hy.full_array() for x in gp.X]).T
+    b = np.array(gp._ytr[0].full_array())
+    coef = np.linalg.lstsq(D[mask], b[mask])[0]
+    for a, b in zip(coef, v.weight[0]):
+        assert_almost_equals(a, b)
+
+
+def test_inputs_func_argument():
+    from EvoDAG import EvoDAG
+
+    class Error:
+        nargs = 2
+        min_nargs = 2
+        classification = True
+        regression = True
+
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError('aqui')
+    y = cl.copy()
+    gp = EvoDAG(classifier=True, multiple_outputs=True,
+                pr_variable=0, input_functions=[Error], popsize=5, share_inputs=True)
+    gp.X = X
+    gp.nclasses(y)
+    gp.y = y
+    try:
+        gp.create_population()
+        assert False
+    except RuntimeError:
+        pass
+    gp = EvoDAG(classifier=True, multiple_outputs=True,
+                pr_variable=0, input_functions=['NaiveBayes', 'NaiveBayesMN',
+                                                'MultipleVariables'],
+                popsize=5, share_inputs=True).fit(X, y)
+    assert gp
+    try:
+        EvoDAG(classifier=True, multiple_outputs=True,
+               pr_variable=0, input_functions=['NaiveBayesXX', 'NaiveBayesMN',
+                                               'MultipleVariables'],
+               popsize=5, share_inputs=True).fit(X, y)
+    except AttributeError:
+        pass
+
+
+def test_restrictions():
+    from EvoDAG.population import Inputs
+    from EvoDAG.cython_utils import SelectNumbers
+    from EvoDAG import EvoDAG
+    from SparseArray import SparseArray
+    y = cl.copy()
+    gp = EvoDAG(classifier=True, multiple_outputs=True,
+                popsize=5, share_inputs=True)
+    gp.X = X
+    gp.X[-1]._eval_tr = SparseArray.fromlist([0 for x in range(gp.X[-1].hy.size())])
+    gp.nclasses(y)
+    gp.y = y
+    for c in [True, False]:
+        gp._classifier = c
+        tag = 'classification' if c else 'regression'
+        inputs = Inputs(gp, SelectNumbers([x for x in range(len(gp.X))]))
+        for x in inputs._funcs:
+            print(x, tag)
+            assert getattr(x, tag)
+
+
+def test_inputs_func_argument_regression():
+    from EvoDAG import EvoDAG
+
+    class Error:
+        nargs = 2
+        min_nargs = 2
+        classification = True
+        regression = True
+
+        def __init__(self, *args, **kwargs):
+            raise RuntimeError('aqui')
+    y = cl.copy()
+    y[y == 0] = -1
+    y[y > -1] = 1
+    gp = EvoDAG(classifier=False, multiple_outputs=False,
+                pr_variable=0, input_functions=[Error],
+                popsize=5, share_inputs=True)
+    gp.X = X
+    gp.nclasses(y)
+    gp.y = y
+    try:
+        gp.create_population()
+        assert False
+    except RuntimeError:
+        pass
+
+
+def get_remote_data():
+    import os
+    import subprocess
+    if not os.path.isfile('evodag.params'):
+        subprocess.call(['curl', '-O', 'http://ws.ingeotec.mx/~mgraffg/evodag_data/evodag.params'])
+    if not os.path.isfile('train.sp'):
+        subprocess.call(['curl', '-O', 'http://ws.ingeotec.mx/~mgraffg/evodag_data/train.sp'])
+
+
+def test_HGeneration():
+    import json
+    import gzip
+    import pickle
+    from EvoDAG.utils import RandomParameterSearch
+    from EvoDAG import EvoDAG
+
+    get_remote_data()
+    params = json.loads(open('evodag.params').read())
+    try:
+        with gzip.open('train.sp') as fpt:
+            X = pickle.load(fpt)
+            y = pickle.load(fpt)
+    except ValueError:
+        return
+    params['population_class'] = 'HGenerational'
+    params['pr_variable'] = 0.1
+    kw = RandomParameterSearch.process_params(params)
+    gp = EvoDAG(**kw).fit(X, y)
+    assert gp
+
+
+def test_HGeneration_pr_variable():
+    import json
+    from EvoDAG.utils import RandomParameterSearch
+    from EvoDAG import EvoDAG
+    get_remote_data()
+    params = json.loads(open('evodag.params').read())
+    params['population_class'] = 'HGenerational'
+    params['pr_variable'] = 1.0
+    kw = RandomParameterSearch.process_params(params)
+    y = cl.copy()
+    try:
+        EvoDAG(**kw).fit(X, y)
+    except AssertionError:
+        return
+    assert False
+    

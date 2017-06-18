@@ -25,6 +25,7 @@ from .utils import tonparray
 import time
 import gzip
 import json
+import logging
 import gc
 import pickle
 try:
@@ -59,11 +60,18 @@ def rs_evodag(args_X_y):
     return fit, args
 
 
+def get_model_fitness(fname):
+    with gzip.open(fname) as fpt:
+        _ = pickle.load(fpt)
+        return (fname, _.fitness_vs)
+
+
 class CommandLine(object):
     def version(self):
         pa = self.parser.add_argument
         pa('--version',
            action='version', version='EvoDAG %s' % evodag.__version__)
+        pa('--verbose', dest='verbose', default=logging.NOTSET, type=int)
 
     def output_file(self):
         self.parser.add_argument('-o', '--output-file',
@@ -133,6 +141,11 @@ class CommandLine(object):
         self.data = self.parser.parse_args()
         if hasattr(self.data, 'regressor') and self.data.regressor:
             self.data.classifier = False
+        if hasattr(self.data, 'verbose'):
+            logging.basicConfig()
+            logger = logging.getLogger('EvoDAG')
+            logger.setLevel(self.data.verbose)
+            logger.info('Logging to: %s', self.data.verbose)
         self.main()
 
     def convert(self, x):
@@ -175,7 +188,7 @@ class CommandLine(object):
                 num_terms -= 1
         return num_terms
 
-    def read_data_json(self, fname):
+    def read_data_json_vec(self, fname):
         import json
         X = None
         y = []
@@ -193,6 +206,45 @@ class CommandLine(object):
                 a = json.loads(str(d, encoding='utf-8'))
             except TypeError:
                 a = json.loads(d)
+            vec = a['vec']
+            vecsize = a['vecsize']
+            if X is None:
+                X = [list() for i in range(vecsize)]
+            for k, v in vec:
+                k = int(k)
+                X[k].append((row, self.convert(v)))
+            y.append(self.convert_label(a[dependent]))
+        num_rows = len(l)
+        X = [SparseArray.index_data(x, num_rows) for x in X]
+        if len(y) == 0:
+            y = None
+        else:
+            y = np.array(y)
+        return X, y
+
+    def read_data_json(self, fname):
+        import json
+        X = None
+        y = []
+        dependent = os.getenv('KLASS')
+        if dependent is None:
+            dependent = 'klass'
+        if fname.endswith('.gz'):
+            with gzip.open(fname, 'rb') as fpt:
+                l = fpt.readlines()
+        else:
+            with open(fname, 'r') as fpt:
+                l = fpt.readlines()
+        flag = True
+        for row, d in enumerate(l):
+            try:
+                a = json.loads(str(d, encoding='utf-8'))
+            except TypeError:
+                a = json.loads(d)
+            if flag and 'vec' in a:
+                return self.read_data_json_vec(fname)
+            else:
+                flag = False
             if X is None:
                 X = [list() for i in range(self._num_terms(a))]
             for k, v in a.items():
@@ -257,6 +309,8 @@ class CommandLine(object):
 
     def store_model(self, kw):
         if self.data.ensemble_size == 1:
+            if self.data.seed >= 0:
+                kw['seed'] = self.data.seed
             self.evo = EvoDAG(**kw).fit(self.X, self.y, test_set=self.Xtest)
             self.model = self.evo.model()
         else:
@@ -340,11 +394,11 @@ class CommandLineParams(CommandLine):
                                  default=1,
                                  type=int,
                                  help="Output Dimension (default 1) use with multiple-outputs flag")
-
-    def version(self):
-        pa = self.parser.add_argument
-        pa('--version',
-           action='version', version='EvoDAG %s' % evodag.__version__)
+        self.parser.add_argument('--only-paramsfiles',
+                                 help='Save the params to disk creating a directory',
+                                 dest='do_nothing',
+                                 action="store_true",
+                                 default=False)
 
     def fs_type_constraint(self, params):
         fs_class = {}
@@ -365,6 +419,33 @@ class CommandLineParams(CommandLine):
         for x in p_delete:
             del params[x]
 
+    def if_type_contraint(self, params):
+        import importlib
+        unique = {}
+        if 'input_functions' not in params:
+            return
+        input_functions = params['input_functions']
+        R = []
+        for inner in input_functions:
+            r = []
+            for f in inner:
+                _ = importlib.import_module('EvoDAG.node')
+                j = getattr(_, f)
+                if self.data.classifier:
+                    flag = j.classification
+                else:
+                    flag = j.regression
+                if flag:
+                    r.append(f)
+            if len(r):
+                key = ';'.join(r)
+                if key not in unique:
+                    R.append(r)
+                    unique[key] = 1
+        if len(R) == 1:
+            R = R[0]
+        params['input_functions'] = R
+
     def evolve(self, kw):
         if self.data.parameters_values:
             with open(self.data.parameters_values, 'r') as fpt:
@@ -376,6 +457,7 @@ class CommandLineParams(CommandLine):
                 if k in params and v is not None:
                     params[k] = [v]
         self.fs_type_constraint(params)
+        self.if_type_contraint(params)
         parameters = self.data.parameters
         if parameters is None:
             parameters = self.data.training_set + '.EvoDAGparams'
@@ -388,6 +470,13 @@ class CommandLineParams(CommandLine):
                                    seed=self.data.seed,
                                    training_size=training_size,
                                    npoints=npoints)
+        if self.data.do_nothing:
+            os.mkdir(parameters)
+            for k, x in enumerate(rs):
+                fname = os.path.join(parameters, '%s_params.json' % k)
+                with open(fname, 'w') as fpt:
+                    fpt.write(json.dumps(x, sort_keys=True, indent=2))
+            return
         if self.data.cpu_cores == 1:
             res = [rs_evodag((args, self.X, self.y))
                    for args in tqdm(rs, total=rs._npoints)]
@@ -465,11 +554,8 @@ class CommandLineTrain(CommandLine):
            default=False)
         pa('--min-size', dest='min_size',
            type=int, default=1, help='Model min-size')
-
-    def version(self):
-        pa = self.parser.add_argument
-        pa('--version',
-           action='version', version='EvoDAG %s' % evodag.__version__)
+        pa('-s', '--seed', dest='seed',
+           default=-1, type=int, help='Seed')
 
     def main(self):
         self.read_training_set()
@@ -491,7 +577,8 @@ class CommandLineTrain(CommandLine):
             kw = res
         kw = RandomParameterSearch.process_params(kw)
         if 'seed' in kw:
-            self.data.seed = kw['seed']
+            if self.data.seed < 0:
+                self.data.seed = kw['seed']
             del kw['seed']
         self.store_model(kw)
 
@@ -538,11 +625,6 @@ class CommandLinePredict(CommandLine):
            action='store_true',
            help='Outputs the decision functions instead of the class')
 
-    def version(self):
-        pa = self.parser.add_argument
-        pa('--version',
-           action='version', version='EvoDAG %s' % evodag.__version__)
-
     def main(self):
         model_file = self.get_model_file()
         with gzip.open(model_file, 'r') as fpt:
@@ -587,7 +669,21 @@ class CommandLineUtils(CommandLine):
         self.height()
         self.remove_terminals()
         self.used_inputs_number()
+        self.create_ensemble_params()
+        self.cores()
         self.version()
+
+    def create_ensemble_params(self):
+        self.parser.add_argument('--create-ensemble',
+                                 help='Models to ensemble', dest='ensemble',
+                                 default=False, action='store_true')
+        self.parser.add_argument('--best-params-file',
+                                 help='Search for the best configuration in a given directory', dest='best_params_file', default=False, action='store_true')
+        self.parser.add_argument('-n', '--ensemble-size',
+                                 help='Ensemble size (default: select all models)',
+                                 dest='ensemble_size',
+                                 default=-1,
+                                 type=int)
 
     def used_inputs_number(self):
         self.parser.add_argument('--used-inputs-number',
@@ -645,11 +741,6 @@ class CommandLineUtils(CommandLine):
                                  type=str,
                                  help=cdn)
 
-    def version(self):
-        pa = self.parser.add_argument
-        pa('--version',
-           action='version', version='EvoDAG %s' % evodag.__version__)
-
     def read_params(self, parameters):
         if parameters.endswith('.gz'):
             with gzip.open(parameters, 'rb') as fpt:
@@ -662,11 +753,65 @@ class CommandLineUtils(CommandLine):
             with open(parameters, 'r') as fpt:
                 return json.loads(fpt.read())
 
+    def create_ensemble(self, model_file):
+        from glob import glob
+        models = []
+        flag = False
+        for fname in model_file.split(' '):
+            for k in tqdm(glob(fname)):
+                try:
+                    with gzip.open(k, 'r') as fpt:
+                        models.append(pickle.load(fpt))
+                        self.word2id = pickle.load(fpt)
+                        self.label2id = pickle.load(fpt)
+                except EOFError:
+                    flag = True
+                    os.unlink(k)
+        if flag:
+            raise RuntimeError('Unable to read models')
+        models.sort(key=lambda x: x.fitness_vs, reverse=True)
+        if self.data.ensemble_size > 0:
+            models = models[:self.data.ensemble_size]
+        self.model = Ensemble(models)
+        model_file = self.data.output_file
+        with gzip.open(model_file, 'w') as fpt:
+            pickle.dump(self.model, fpt)
+            pickle.dump(self.word2id, fpt)
+            pickle.dump(self.label2id, fpt)
+
+    def get_best_params(self, model_file):
+        from glob import glob
+        h = {}
+        args = glob('%s/*.model' % model_file)
+        if self.data.cpu_cores == 1:
+            res = [get_model_fitness(x) for x in tqdm(args)]
+        else:
+            p = Pool(self.data.cpu_cores)
+            res = [x for x in tqdm(p.imap_unordered(get_model_fitness, args),
+                                   total=len(args))]
+            p.close()
+        for m, fit in res:
+            basename = (m.split(model_file + '/')[1]).split('_')[:1]
+            fname = "_".join(basename)
+            try:
+                h[fname].append(fit)
+            except KeyError:
+                h[fname] = [fit]
+        b = max(h.items(), key=lambda x: np.median(x[1]))
+        self.best_params = b[0] + '_params.json'
+
     def main(self):
         def most_common(K, a):
+            try:
+                str_type = unicode
+            except NameError:
+                str_type = str
+
             l = a.most_common()
             if len(l):
                 if len(PARAMS[K]) <= 2:
+                    return l[0]
+                elif isinstance(l[0][0], str_type):
                     return l[0]
                 else:
                     num = np.sum([x * y for x, y in a.items()])
@@ -721,18 +866,27 @@ class CommandLineUtils(CommandLine):
                 self.label2id = pickle.load(fpt)
             inputs = m.inputs()
             print("Used inputs number", len(inputs))
+        elif self.data.ensemble:
+            self.create_ensemble(model_file)
+        elif self.data.best_params_file:
+            self.get_best_params(model_file)
+            print(self.best_params)
 
 
-def params():
+def params(output=False):
     "EvoDAG-params command line"
     c = CommandLineParams()
     c.parse_args()
+    if output:
+        return c
 
 
-def train():
+def train(output=False):
     "EvoDAG-params command line"
     c = CommandLineTrain()
     c.parse_args()
+    if output:
+        return c
 
 
 def predict():
@@ -741,7 +895,9 @@ def predict():
     c.parse_args()
 
 
-def utils():
+def utils(output=False):
     "EvoDAG-utils command line"
     c = CommandLineUtils()
     c.parse_args()
+    if output:
+        return c

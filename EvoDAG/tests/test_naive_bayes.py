@@ -52,4 +52,28 @@ def test_mean_std_pk():
             assert_almost_equals(a, b)
         for a, b in zip(p_klass, _klass):
             assert_almost_equals(a, b)
-            
+
+
+def test_MN_Nc_pk():
+    import numpy as np
+    from EvoDAG.naive_bayes import NaiveBayes
+    gp, args = create_problem_node2(nargs=5, seed=0)
+    mask = np.array(gp._mask_ts.sign().full_array(), dtype=np.bool)
+    klass = np.array(gp._y_klass.full_array())[mask]
+    unique_klass = np.unique(klass)
+    naive_bayes = NaiveBayes(mask=gp._mask_ts, klass=gp._y_klass,
+                             nclass=gp._labels.shape[0])
+    for v in args:
+        var = np.array(v._eval_tr.full_array())[mask]
+        Nc = [np.sum([x for x in var[k == klass] if x > 0]) for k in
+              unique_klass]
+        if len(Nc) > len([x for x in Nc if x > 0]):
+            continue
+        N = np.sum(Nc).reshape(-1, 1)
+        w = np.log((Nc / N)[0])
+        p_klass = np.log([(k == klass).mean() for k in unique_klass])
+        _w, _klass = naive_bayes.coef_MN(v._eval_tr)
+        for a, b in zip(w, _w):
+            assert_almost_equals(a, b)
+        for a, b in zip(p_klass, _klass):
+            assert_almost_equals(a, b)

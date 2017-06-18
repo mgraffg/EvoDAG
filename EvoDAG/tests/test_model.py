@@ -59,9 +59,13 @@ def test_model_hist():
     b = m._hist[-1].variable
     if not isinstance(b, list):
         b = [b]
+    print([(x, x.height) for x in m._hist])
     print((m._map, a, b))
     for v1, v2 in zip(a, b):
-        assert m._map[v1] == v2
+        if v1 not in m._map:
+            assert v1 == v2
+        else:
+            assert m._map[v1] == v2
 
 
 def test_ensemble():
@@ -73,6 +77,7 @@ def test_ensemble():
                   tournament_size=2,
                   early_stopping_rounds=-1,
                   seed=seed,
+                  multiple_outputs=True,
                   popsize=10).fit(X[:-10],
                                   y[:-10],
                                   test_set=X)
@@ -85,9 +90,6 @@ def test_ensemble():
     for a, b in zip(res, r2):
         print(a.SSE(b), a.data, b.data, b.full_array())
         assert a.SSE(b) == 0
-    r2 = ens.predict(None)
-    # print(np.unique(r2), np.unique(y))
-    # assert np.all(np.unique(r2) == np.unique(y))
 
 
 def test_ensemble_model():
@@ -101,6 +103,7 @@ def test_ensemble_model():
     gps = [RootGP(generations=np.inf,
                   tournament_size=2,
                   early_stopping_rounds=-1,
+                  classifier=False,
                   seed=seed,
                   popsize=10).fit(X[:-10],
                                   y[:-10],
@@ -108,11 +111,14 @@ def test_ensemble_model():
            for seed in range(3)]
     ens = Ensemble([gp.model() for gp in gps])
     res = [gp.decision_function() for gp in gps]
-    res = Add.cumsum(res) * (1 / 3.)
+    res = np.median([x.full_array() for x in res], axis=0)
+    res = SparseArray.fromlist(res)
+    print(res)
+    # res = Add.cumsum(res) * (1 / 3.)
     r2 = ens.decision_function(None)
+    print(res.full_array()[:10], r2.full_array()[:10])
+    print(res.SSE(r2))
     assert res.SSE(r2) == 0
-    a = SparseArray.fromlist(ens.predict(None))
-    assert r2.sign().SSE(a) == 0
 
 
 def test_regression():
@@ -144,6 +150,8 @@ def test_model_graphviz():
     gp = RootGP(generations=3,
                 tournament_size=2,
                 early_stopping_rounds=-1,
+                classifier=False,
+                pr_variable=1,
                 seed=0,
                 popsize=10).fit(X, y)
     m = gp.model()
@@ -175,30 +183,9 @@ def test_random_selection():
     RootGP(generations=np.inf,
            tournament_size=1,
            early_stopping_rounds=-1,
+           classifier=False,
            seed=0,
            popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
-
-
-def test_model_iter():
-    from EvoDAG import RGP
-    rgp = RGP(popsize=5).fit(X, cl)
-    m = rgp.model()
-    x = [x for x in m]
-    print(x)
-
-
-def test_model_len():
-    from EvoDAG import RGP
-    rgp = RGP(popsize=5).fit(X, cl)
-    m = rgp.model()
-    print(len(m))
-
-
-def test_models_fitness_vs():
-    from EvoDAG import EvoDAG
-    evo = EvoDAG(popsize=10, early_stopping_rounds=2).fit(X, cl)
-    l_fs = [x.fitness_vs for x in evo.model().models]
-    assert evo.model().fitness_vs == np.median(l_fs)
 
 
 def test_multiple_outputs_decision_function():

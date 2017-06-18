@@ -14,7 +14,9 @@
 
 
 from cpython cimport array
+from cpython cimport set
 cimport cython
+
 
 cdef class FunctionSelection:
     cdef public array.array fitness
@@ -26,6 +28,7 @@ cdef class FunctionSelection:
     cdef public unsigned int tournament_size
     cdef public float density
     cdef public float min_density
+    cdef public set unfeasible_functions
     cpdef int random_function(self) except -1
     cpdef double avg_fitness(self, Py_ssize_t k)
     cpdef int tournament(self) except -1

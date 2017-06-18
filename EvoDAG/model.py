@@ -34,7 +34,7 @@ def decision_function(model_X):
 class Model(object):
     """Object to store the necesary elements to make predictions
     based on an individual"""
-    def __init__(self, trace, hist, classifier=True, labels=None):
+    def __init__(self, trace, hist, nvar=None, classifier=True, labels=None):
         self._classifier = classifier
         self._trace = trace
         self._hist = hist
@@ -45,6 +45,11 @@ class Model(object):
         self._hist = [self.transform(self._hist[x].tostore()) for x in
                       self._trace]
         self._labels = labels
+        self._nvar = nvar
+
+    @property
+    def nvar(self):
+        return self._nvar
 
     @property
     def multiple_outputs(self):
@@ -73,12 +78,16 @@ class Model(object):
         if counter is None:
             counter = Counter()
         for node in self._hist:
-            if not isinstance(node, Function):
-                counter[node._variable] += 1
+            if node.height == 0:
+                if isinstance(node._variable, list):
+                    for _ in node._variable:
+                        counter[_] += 1
+                else:
+                    counter[node._variable] += 1
         return counter
 
     def transform(self, v):
-        if not isinstance(v, Function):
+        if v.height == 0:
             return v
         if v.nargs == 1:
             v.variable = self._map[v.variable]
@@ -90,12 +99,17 @@ class Model(object):
         "Decision function i.e. the raw data of the prediction"
         if X is None:
             if self._classifier:
+                if self.multiple_outputs:
+                    return [x.boundaries() for x in self._hy_test]
                 return self._hy_test.boundaries()
             return self._hy_test
         X = self.convert_features(X)
+        if len(X) < self.nvar:
+            _ = 'Number of variables differ, trained with %s given %s' % (self.nvar, len(X))
+            raise RuntimeError(_)
         hist = self._hist
         for node in hist:
-            if isinstance(node, Function):
+            if node.height:
                 node.eval(hist)
             else:
                 node.eval(X)
@@ -199,61 +213,6 @@ class Model(object):
                 var._eval_ts = SparseArray.fromlist(d)
 
 
-class Models(object):
-    "List of model in multiclass classification"
-    def __init__(self, models, labels=None):
-        self._models = models
-        self._labels = labels
-
-    @property
-    def classifier(self):
-        "whether this is classification or regression task"
-        return self.models[0].classifier
-
-    @property
-    def models(self):
-        "List containing the different models. One model for each class"
-        return self._models
-
-    @property
-    def fitness_vs(self):
-        "Median Fitness in the validation set"
-        l = [x.fitness_vs for x in self.models]
-        return np.median(l)
-
-    def inputs(self, counter=None):
-        from collections import Counter
-        if counter is None:
-            counter = Counter()
-        for m in self.models:
-            m.inputs(counter=counter)
-        return counter
-
-    def __iter__(self):
-        "Iterates on the models"
-        for i in self.models:
-            yield i
-
-    def __len__(self):
-        "Number of models"
-        return len(self.models)
-
-    def decision_function(self, X, **kwargs):
-        return [x.decision_function(X) for x in self._models]
-
-    def predict(self, X, **kwargs):
-        d = self.decision_function(X, **kwargs)
-        d = np.array([tonparray(x) for x in d])
-        hy = d.argmax(axis=0)
-        if self._labels is not None:
-            hy = self._labels[hy]
-        return hy
-
-    def graphviz(self, skel, **kwargs):
-        for k, m in enumerate(self.models):
-            m.graphviz(skel + '-%s.gv' % k, **kwargs)
-
-
 class Ensemble(object):
     "Ensemble that predicts using the average"
     def __init__(self, models):
@@ -261,10 +220,7 @@ class Ensemble(object):
         self._labels = self._models[0]._labels
         self._classifier = False
         flag = False
-        if isinstance(self._models[0], Models):
-            if self._models[0]._models[0]._classifier:
-                flag = True
-        elif self._models[0]._classifier:
+        if self._models[0]._classifier:
             flag = True
         self._classifier = flag
 

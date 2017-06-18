@@ -116,6 +116,13 @@
         10,
         20,
         40
+    ],
+    "NaiveBayesMN": [
+        2,
+        5,
+        10,
+        20,
+        40
     ],    
     "Sign": [
         false
@@ -171,6 +178,12 @@
     "generations": [
         null
     ],
+    "input_functions": [
+	["NaiveBayes", "NaiveBayesMN", "MultipleVariables"],
+	["NaiveBayes"],
+	["NaiveBayesMN"],
+	["MultipleVariables"]
+    ],
     "min_density": [
         0.8
     ],
@@ -189,12 +202,18 @@
         "SteadyState",
         "Generational"
     ],
+    "pr_variable": [
+	0.7
+    ],
+    "share_inputs": [
+        false
+    ],
     "random_generations": [
         0,
         1
-    ],
+    ],    
     "time_limit": [
-        null
+        3600
     ],
     "tournament_size": [
 	2

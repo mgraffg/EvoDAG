@@ -80,3 +80,20 @@ def test_density():
     a.density = 0.7
     index = a.tournament()
     assert index == 1
+
+
+def test_unfeasible_functions():
+    a = FunctionSelection(seed=0, nfunctions=3, nargs=[1, 2, 2], density_safe=[1, 2])
+    assert len(a.unfeasible_functions) == 0
+    a.unfeasible_functions.add(1)
+    a.unfeasible_functions.add(0)
+    x = a.tournament()
+    assert x == 2
+    a = FunctionSelection(seed=0, nfunctions=3, nargs=[1, 2, 2])
+    assert len(a.unfeasible_functions) == 0
+    a.unfeasible_functions.add(1)
+    a.unfeasible_functions.add(0)
+    x = a.tournament()
+    assert x == 2
+    a.unfeasible_functions.add(2)
+    x = a.tournament()

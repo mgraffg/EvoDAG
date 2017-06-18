@@ -23,7 +23,7 @@ from nose.tools import assert_almost_equals
 
 def create_problem_node(nargs=4, seed=0):
     from EvoDAG import RootGP
-    gp = RootGP(generations=1, popsize=nargs, seed=seed)
+    gp = RootGP(generations=1, popsize=nargs, classifier=False, seed=seed)
     gp.X = X
     gp.Xtest = X
     y = cl.copy()
@@ -407,12 +407,18 @@ def test_functions_finite():
                 for i in args:
                     i.hy_test = None
             gp2, _ = create_problem_node(nargs=4, seed=1)
-            ytr = [gp._ytr, gp._ytr]
-            mask = [gp._mask, gp2._mask]
+            # ytr = [gp._ytr, gp._ytr]
+            ytr = gp._ytr
+            # mask = [gp._mask, gp2._mask]
+            mask = gp._mask.full_array()
+            mask[0] = 1
+            mask = SparseArray.fromlist(mask)
             vars = [Variable(k, ytr=ytr, mask=mask, finite=flag)
                     for k in range(len(args))]
             for x in vars:
-                assert x.eval(args) == flag
+                _ = x.eval(args)
+                print(mask.full_array())
+                assert _ == flag
             if not flag:
                 continue
             mul = ff(range(len(vars)), ytr=ytr, mask=mask, finite=False)
@@ -519,3 +525,65 @@ def test_naive_bayes_sklearn():
     for a, b in zip(naive_bayes.hy, hy.T):
         for a1, b1 in zip(a.full_array(), b):
             assert_almost_equals(a1, b1, 3)
+
+
+def test_naive_bayes_MN():
+    import numpy as np
+    import math
+    from EvoDAG.node import Variable, NaiveBayesMN
+    from EvoDAG.naive_bayes import NaiveBayes as MN
+    gp, args = create_problem_node2(nargs=3, seed=0)
+    gp.random_leaf()
+    vars = [Variable(k, ytr=gp._ytr, y_klass=gp._y_klass,
+                     mask=gp._mask, finite=True)
+            for k in range(len(args))]
+    [x.eval(args) for x in vars]
+    nb = MN(mask=gp._mask_ts, klass=gp._y_klass,
+            nclass=gp._labels.shape[0])
+    l = []
+    [[l.append(y) for y in x.hy] for x in vars]
+    coef = [nb.coef_MN(x) for x in l]
+    p_klass = coef[0][1]
+    coef = [(k, x[0]) for k, x in enumerate(coef) if np.all(np.isfinite(np.array(x[0])))]
+    R = []
+    for k, p in enumerate(p_klass):
+        r = p
+        for v, w in coef:
+            r += (l[v] * w[k])
+        R.append(r)
+    naive_bayes = NaiveBayesMN(range(len(vars)), ytr=gp._ytr, naive_bayes=gp._naive_bayes,
+                               mask=gp._mask, finite=True)
+    naive_bayes.eval(vars)
+    for a, b in zip(R, naive_bayes.hy):
+        [assert_almost_equals(math.exp(v), w) for v, w in zip(a.data, b.data)]
+
+
+def test_naive_bayes_MN_variable():
+    from EvoDAG.node import NaiveBayesMN
+    gp, args = create_problem_node2(nargs=3, seed=0)
+    gp.random_leaf()
+    naive_bayes = NaiveBayesMN(range(len(gp.X)), ytr=gp._ytr, naive_bayes=gp._naive_bayes,
+                               mask=gp._mask, finite=True)
+    naive_bayes.eval(gp.X)
+    assert len(naive_bayes.hy) == 3
+
+
+def test_multiple_variables():
+    from EvoDAG.node import MultipleVariables
+    gp, args = create_problem_node2(nargs=3, seed=0)
+    gp.random_leaf()
+    mv = MultipleVariables([x for x in range(len(gp.X))],
+                           ytr=gp._ytr, naive_bayes=gp._naive_bayes,
+                           mask=gp._mask, finite=True)
+    mv.eval(gp.X)
+    assert len(mv.hy) == 3
+    mv2 = MultipleVariables([x for x in range(len(gp.X))],
+                            ytr=gp._ytr[0], mask=gp._mask[0], finite=True)
+    mv2.eval(gp.X)
+    assert isinstance(mv2.hy, SparseArray)
+    assert mv2.hy.SSE(mv.hy[0]) == 0
+    l = []
+    for a, b in zip(gp.X, mv2.weight):
+        l.append(a.hy * b)
+    r = SparseArray.cumsum(l)
+    assert mv2.hy.SSE(r) == 0

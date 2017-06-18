@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from .cython_utils import naive_bayes_mean_std2
+from .cython_utils import naive_bayes_mean_std2, naive_bayes_Nc
 import array
 
 
@@ -23,3 +23,8 @@ class NaiveBayes(object):
 
     def coef(self, var):
         return naive_bayes_mean_std2(var, self._klass, self._mask, self._nclass)
+
+    def coef_MN(self, var):
+        return naive_bayes_Nc(var, self._klass, self._mask, self._nclass)
+
+

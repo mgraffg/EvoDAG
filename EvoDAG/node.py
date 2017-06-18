@@ -16,7 +16,8 @@
 import numpy as np
 from .linalg_solve import compute_weight
 from .cython_utils import naive_bayes as NB
-from .cython_utils import naive_bayes_isfinite
+from .cython_utils import naive_bayes_MN as MN
+from .cython_utils import naive_bayes_isfinite, naive_bayes_isfinite_MN
 from SparseArray import SparseArray
 
 
@@ -666,7 +667,7 @@ class NaiveBayes(Function):
     nargs = 2
     min_nargs = 2
     symbol = 'NB'
-    density_safe = True
+    density_safe = False
     unique_args = True
     regression = False
 
@@ -679,12 +680,20 @@ class NaiveBayes(Function):
         if self._multiple_outputs:
             hy = []
             for x in X:
-                hy += x.hy
+                _ = x.hy
+                if isinstance(_, list):
+                    hy += _
+                else:
+                    hy.append(_)
             hyt = None
             if X[0].hy_test is not None:
                 hyt = []
                 for x in X:
-                    hyt += x.hy_test
+                    _ = x.hy_test
+                    if isinstance(_, list):
+                        hyt += _
+                    else:
+                        hyt.append(_)
             return hy, hyt
         hy = [x.hy for x in X]
         hyt = None
@@ -722,3 +731,103 @@ class NaiveBayes(Function):
         if hyt is not None:
             self.hy_test = NB([hyt[x] for x in var], weight, nclass)
         return True
+
+
+class NaiveBayesMN(NaiveBayes):
+    symbol = 'MN'
+    density_safe = True
+    regression = False
+
+    def set_weight(self, X):
+        if self.weight is not None:
+            return True
+        if self._naive_bayes is None:
+            return False
+        coef = self._naive_bayes.coef_MN
+        nclass = self._naive_bayes._nclass
+        w = []
+        v = []
+        for k, x in enumerate(X):
+            c = coef(x)
+            if not naive_bayes_isfinite_MN(c, nclass):
+                continue
+            w.append(c)
+            v.append(k)
+        if len(v) == 0:
+            return False
+        self.weight = [w, v, nclass]
+        return True
+
+    def eval(self, X):
+        X = [X[x] for x in self.variable]
+        hy, hyt = self.hy2listM(X)
+        if not self.set_weight(hy):
+            return False
+        weight, var, nclass = self.weight
+        self.hy = MN([hy[x] for x in var], weight, nclass)
+        if hyt is not None:
+            self.hy_test = MN([hyt[x] for x in var], weight, nclass)
+        return True
+
+
+class MultipleVariables(Add):
+    symbol = 'X'
+
+    def raw_outputs(self, X):
+        r = [X[x].hy for x in self.variable]
+        hr = None
+        if X[0].hy_test is not None:
+            hr = [X[x].hy_test for x in self.variable]
+        return r, hr
+
+    def set_weight(self, r):
+        if self.weight is None:
+            if not self._multiple_outputs:
+                ytr = [self._ytr]
+                mask = [self._mask]
+            else:
+                ytr = self._ytr
+                mask = self._mask
+            W = []
+            for _ytr, _mask in zip(ytr, mask):
+                w = self.compute_weight(r, ytr=_ytr, mask=_mask)
+                if w is None:
+                    return False
+                W.append(w)
+            if not self._multiple_outputs:
+                self.weight = W[0]
+            else:
+                self.weight = W
+        return True
+
+    def _mul(self, a, w):
+        cumsum = SparseArray.cumsum
+        if not isinstance(w, list):
+            return cumsum([x * y for x, y in zip(a, w)])
+        return [cumsum([x * y1 for x, y1 in zip(a, y)]) for y in w]
+
+    def eval(self, X):
+        r, hr = self.raw_outputs(X)
+        if isinstance(r, list):
+            if self._finite:
+                r = [x.finite(inplace=True) for x in r]
+            else:
+                r = [x for x in r]
+        else:
+            if self._finite:
+                r = r.finite(inplace=True)
+        if not self.set_weight(r):
+            return False
+        self.hy = self._mul(r, self.weight)
+        if hr is not None:
+            if isinstance(hr, list):
+                if self._finite:
+                    hr = [x.finite(inplace=True) for x in hr]
+                else:
+                    hr = [x for x in hr]
+            else:
+                if self._finite:
+                    hr = hr.finite(inplace=True)
+            self.hy_test = self._mul(hr, self.weight)
+        return True
+        
