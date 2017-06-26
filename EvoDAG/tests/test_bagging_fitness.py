@@ -210,7 +210,7 @@ def test_macro_F1():
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     print(precision, recall)
     f1 = Score(nclasses)
-    mf1, mf1_v = f1.macroF1(gp._y_klass, SparseArray.argmax(off.hy), gp._mask_ts.index)
+    mf1, mf1_v = f1.a_F1(gp._y_klass, SparseArray.argmax(off.hy), gp._mask_ts.index)
     for x, y in zip(precision, f1.precision):
         if not np.isfinite(x):
             continue
@@ -413,7 +413,7 @@ def test_AccdDotMacroF1():
     assert_almost_equals(np.mean(_) * (y == hy).mean() - 1, off.fitness_vs)
 
 
-def test_Precision():
+def test_a_precision():
     from EvoDAG.cython_utils import Score
     from EvoDAG import EvoDAG
     y = cl.copy()
@@ -435,10 +435,10 @@ def test_Precision():
     nclasses = gp._bagging_fitness.nclasses
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     f1 = Score(nclasses)
-    mf1, mf1_v = f1.macroPrecision(gp._y_klass, SparseArray.argmax(off.hy),
-                                   gp._mask_ts.index)
+    mf1, mf1_v = f1.a_precision(gp._y_klass, SparseArray.argmax(off.hy),
+                                gp._mask_ts.index)
     assert_almost_equals(np.mean(precision), mf1)
-    gp._fitness_function = 'macro-Precision'
+    gp._fitness_function = 'a_precision'
     gp._bagging_fitness.set_fitness(off)
     assert_almost_equals(mf1 - 1, off.fitness)
     index = np.array(gp._mask_ts.full_array()) == 0
@@ -449,7 +449,7 @@ def test_Precision():
     assert_almost_equals(np.mean(precision) - 1, off.fitness_vs)
 
 
-def test_RecallDotPrecision():
+def test_g_recall_precision():
     from EvoDAG import EvoDAG
     y = cl.copy()
     gp = EvoDAG(generations=np.inf,
@@ -472,7 +472,7 @@ def test_RecallDotPrecision():
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     min_class = gp._bagging_fitness.min_class
     score = (precision[min_class] * recall[min_class]) - 1
-    gp._fitness_function = 'RecallDotPrecision'
+    gp._fitness_function = 'g_recall_precision'
     gp._bagging_fitness.set_fitness(off)
     assert_almost_equals(score, off.fitness)
     index = np.array(gp._mask_ts.full_array()) == 0
@@ -485,7 +485,7 @@ def test_RecallDotPrecision():
     assert_almost_equals(score, off.fitness_vs)
 
 
-def test_DotRecall():
+def test_g_recall():
     from EvoDAG import EvoDAG
     y = cl.copy()
     gp = EvoDAG(generations=np.inf,
@@ -506,7 +506,7 @@ def test_DotRecall():
     nclasses = gp._bagging_fitness.nclasses
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     score = np.prod(recall) - 1
-    gp._fitness_function = 'DotRecall'
+    gp._fitness_function = 'g_recall'
     gp._bagging_fitness.set_fitness(off)
     assert_almost_equals(score, off.fitness)
     index = np.array(gp._mask_ts.full_array()) == 0
@@ -518,13 +518,13 @@ def test_DotRecall():
     assert_almost_equals(score, off.fitness_vs)
 
 
-def test_DotF1():
+def test_g_F1():
     from EvoDAG import EvoDAG
     y = cl.copy()
     gp = EvoDAG(generations=np.inf,
                 tournament_size=2,
                 early_stopping_rounds=100,
-                time_limit=0.9, fitness_function='DotF1',
+                time_limit=0.9, fitness_function='g_F1',
                 multiple_outputs=True, seed=0, popsize=500)
     gp.y = y
     gp.X = X
@@ -541,7 +541,7 @@ def test_DotF1():
     m = ~ np.isfinite(_)
     _[m] = 0
     score = np.prod(_) - 1
-    assert gp._fitness_function == 'DotF1'
+    assert gp._fitness_function == 'g_F1'
     gp._bagging_fitness.set_fitness(off)
     print(score, _)
     assert_almost_equals(score, off.fitness)
@@ -560,13 +560,13 @@ def test_DotF1():
     # assert False
 
 
-def test_DotPrecision():
+def test_g_precision():
     from EvoDAG import EvoDAG
     y = cl.copy()
     gp = EvoDAG(generations=np.inf,
                 tournament_size=2,
                 early_stopping_rounds=100,
-                time_limit=0.9, fitness_function='DotPrecision',
+                time_limit=0.9, fitness_function='g_precision',
                 multiple_outputs=True, seed=0, popsize=500)
     gp.y = y
     gp.X = X
@@ -579,7 +579,7 @@ def test_DotPrecision():
     nclasses = gp._bagging_fitness.nclasses
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     score = np.prod(precision) - 1
-    assert gp._fitness_function == 'DotPrecision'
+    assert gp._fitness_function == 'g_precision'
     gp._bagging_fitness.set_fitness(off)
     assert_almost_equals(score, off.fitness)
     index = np.array(gp._mask_ts.full_array()) == 0
@@ -592,13 +592,13 @@ def test_DotPrecision():
     # assert False
 
 
-def test_DotRecallDotPrecision():
+def test_g_g_recall_precision():
     from EvoDAG import EvoDAG
     y = cl.copy()
     gp = EvoDAG(generations=np.inf,
                 tournament_size=2,
                 early_stopping_rounds=100,
-                time_limit=0.9, fitness_function='DotRecallDotPrecision',
+                time_limit=0.9, fitness_function='g_g_recall_precision',
                 multiple_outputs=True, seed=0, popsize=1000)
     gp.y = y
     gp.X = X
@@ -613,7 +613,7 @@ def test_DotRecallDotPrecision():
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     print(precision, recall)
     score = np.prod([a * b for a, b in zip(recall, precision)]) - 1
-    assert gp._fitness_function == 'DotRecallDotPrecision'
+    assert gp._fitness_function == 'g_g_recall_precision'
     gp._bagging_fitness.set_fitness(off)
     assert_almost_equals(score, off.fitness)
     index = np.array(gp._mask_ts.full_array()) == 0

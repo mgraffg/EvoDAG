@@ -245,8 +245,8 @@ cdef class Score:
     cdef public array.array precision2_den
     cdef public array.array recall2
     cdef public array.array recall2_den
-    cdef public double accuracy
-    cdef public double accuracy2
+    cdef public double _accuracy
+    cdef public double _accuracy2
     cdef unsigned int y_pos
     cdef unsigned int hy_pos
     cdef unsigned int y_size
@@ -289,8 +289,8 @@ cdef class Score:
         self._cleanI(self.recall2_den)
         self.y_pos = 0
         self.hy_pos = 0
-        self.accuracy = 0
-        self.accuracy2 = 0
+        self._accuracy = 0
+        self._accuracy2 = 0
 
     cdef double get_klass(self, double *data, unsigned int *index, unsigned int i):
         cdef double res = 0
@@ -310,7 +310,7 @@ cdef class Score:
             self.hy_pos += 1
         return res
 
-    def RecallDotPrecision(self, Py_ssize_t i, SparseArray y,
+    def g_recall_precision(self, Py_ssize_t i, SparseArray y,
                            SparseArray hy, array.array index):
         self.count(y, hy, index)
         self.precision_recall()
@@ -359,7 +359,7 @@ cdef class Score:
         return f1, f12
 
     @cython.cdivision(True)    
-    def macroRecall(self, SparseArray y, SparseArray hy, array.array index):
+    def a_recall(self, SparseArray y, SparseArray hy, array.array index):
         self.count(y, hy, index)
         self.precision_recall()
         cdef double *recall = self.recall.data.as_doubles
@@ -374,7 +374,7 @@ cdef class Score:
         return f1, f12
 
     @cython.cdivision(True)    
-    def macroPrecision(self, SparseArray y, SparseArray hy, array.array index):
+    def a_precision(self, SparseArray y, SparseArray hy, array.array index):
         self.count(y, hy, index)
         self.precision_recall()
         cdef double *recall = self.precision.data.as_doubles
@@ -388,7 +388,7 @@ cdef class Score:
         f12 = f12 / self.nclasses
         return f1, f12
 
-    def DotPrecision(self, SparseArray y, SparseArray hy, array.array index):
+    def g_precision(self, SparseArray y, SparseArray hy, array.array index):
         self.count(y, hy, index)
         self.precision_recall()
         cdef double *recall = self.precision.data.as_doubles
@@ -400,7 +400,7 @@ cdef class Score:
             f12 *= recall2[i]
         return f1, f12    
 
-    def DotRecall(self, SparseArray y, SparseArray hy, array.array index):
+    def g_recall(self, SparseArray y, SparseArray hy, array.array index):
         self.count(y, hy, index)
         self.precision_recall()
         cdef double *recall = self.recall.data.as_doubles
@@ -421,17 +421,17 @@ cdef class Score:
         cdef unsigned int den = 0, den2 = 0
         cdef Py_ssize_t i
         for i in range(self.nclasses):
-            self.accuracy += recall[i]
-            self.accuracy2 += recall2[i]
+            self._accuracy += recall[i]
+            self._accuracy2 += recall2[i]
             den += recall_den[i]
             den2 += recall2_den[i]
-        self.accuracy = self.accuracy / den
-        self.accuracy2 = self.accuracy2 / den2
+        self._accuracy = self._accuracy / den
+        self._accuracy2 = self._accuracy2 / den2
 
-    def errorRate(self, SparseArray y, SparseArray hy, array.array index):
+    def accuracy(self, SparseArray y, SparseArray hy, array.array index):
         self.count(y, hy, index)
         self.recall2accuracy()
-        return 1 - self.accuracy, 1 - self.accuracy2
+        return self._accuracy, self._accuracy2
         
     @cython.cdivision(True)    
     def accDotMacroF1(self, SparseArray y, SparseArray hy, array.array index):
@@ -453,9 +453,9 @@ cdef class Score:
                 f12 += (2 * precision2[i] * recall2[i]) / den
         f1 = f1 / self.nclasses
         f12 = f12 / self.nclasses
-        return f1 * self.accuracy, f12 * self.accuracy2
+        return f1 * self._accuracy, f12 * self._accuracy2
 
-    def DotRecallDotPrecision(self, SparseArray y, SparseArray hy, array.array index):
+    def g_g_recall_precision(self, SparseArray y, SparseArray hy, array.array index):
         self.count(y, hy, index)
         self.precision_recall()
         cdef double *precision = self.precision.data.as_doubles
@@ -469,7 +469,7 @@ cdef class Score:
             f12 *= precision2[i] * recall2[i]
         return f1, f12
     
-    def DotF1(self, SparseArray y, SparseArray hy, array.array index):
+    def g_F1(self, SparseArray y, SparseArray hy, array.array index):
         self.count(y, hy, index)
         self.precision_recall()
         cdef double *precision = self.precision.data.as_doubles
@@ -492,7 +492,7 @@ cdef class Score:
         return f1, f12
     
     @cython.cdivision(True)    
-    def macroF1(self, SparseArray y, SparseArray hy, array.array index):
+    def a_F1(self, SparseArray y, SparseArray hy, array.array index):
         self.count(y, hy, index)
         self.precision_recall()
         cdef double *precision = self.precision.data.as_doubles
