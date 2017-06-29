@@ -611,6 +611,7 @@ def test_g_g_recall_precision():
     nclasses = gp._bagging_fitness.nclasses
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
+    precision[~ np.isfinite(precision)] = 0
     print(precision, recall)
     score = np.prod([a * b for a, b in zip(recall, precision)]) - 1
     assert gp._fitness_function == 'g_g_recall_precision'
