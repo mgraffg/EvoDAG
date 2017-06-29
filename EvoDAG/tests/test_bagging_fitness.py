@@ -565,9 +565,9 @@ def test_g_precision():
     y = cl.copy()
     gp = EvoDAG(generations=np.inf,
                 tournament_size=2,
-                early_stopping_rounds=100,
+                early_stopping_rounds=200,
                 time_limit=0.9, fitness_function='g_precision',
-                multiple_outputs=True, seed=0, popsize=500)
+                multiple_outputs=True, seed=0, popsize=1000)
     gp.y = y
     gp.X = X
     gp.create_population()
@@ -597,7 +597,7 @@ def test_g_g_recall_precision():
     y = cl.copy()
     gp = EvoDAG(generations=np.inf,
                 tournament_size=2,
-                early_stopping_rounds=100,
+                early_stopping_rounds=500,
                 time_limit=0.9, fitness_function='g_g_recall_precision',
                 multiple_outputs=True, seed=0, popsize=1000)
     gp.y = y
