@@ -30,7 +30,10 @@ class BaggingFitness(object):
                                           'DotF1', 'DotRecall', 'DotPrecision',
                                           'DotRecallDotPrecision', 'F1',
                                           'RecallDotPrecision', 'macro-RecallF1',
-                                          'accDotMacroF1']
+                                          'accDotMacroF1',
+                                          'accuracy', 'g_recall_precision',
+                                          'g_precision', 'a_precision', 'g_recall',
+                                          'g_g_recall_precision', 'g_F1', 'a_F1']
 
     @property
     def nclasses(self):
@@ -204,79 +207,79 @@ class BaggingFitness(object):
         if base._classifier:
             if base._multiple_outputs:
                 hy = SparseArray.argmax(v.hy)
-                if base._fitness_function == 'macro-F1':
+                fit_func = base._fitness_function
+                if fit_func == 'macro-F1' or fit_func == 'a_F1':
                     f1_score = self.score
-                    mf1, mf1_v = f1_score.macroF1(base._y_klass, hy, base._mask_ts.index)
+                    mf1, mf1_v = f1_score.a_F1(base._y_klass, hy, base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
-                elif base._fitness_function == 'DotF1':
+                elif fit_func == 'DotF1' or fit_func == 'g_F1':
                     f1_score = self.score
-                    mf1, mf1_v = f1_score.DotF1(base._y_klass, hy, base._mask_ts.index)
+                    mf1, mf1_v = f1_score.g_F1(base._y_klass, hy, base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
-                elif base._fitness_function == 'DotRecallDotPrecision':
+                elif fit_func == 'DotRecallDotPrecision' or fit_func == 'g_g_recall_precision':
                     f1_score = self.score
-                    mf1, mf1_v = f1_score.DotRecallDotPrecision(base._y_klass, hy,
-                                                                base._mask_ts.index)
+                    mf1, mf1_v = f1_score.g_g_recall_precision(base._y_klass, hy,
+                                                               base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
-                elif base._fitness_function == 'BER':
+                elif fit_func == 'BER' or fit_func == 'a_recall':
                     f1_score = self.score
-                    mf1, mf1_v = f1_score.macroRecall(base._y_klass, hy, base._mask_ts.index)
+                    mf1, mf1_v = f1_score.a_recall(base._y_klass, hy, base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
-                elif base._fitness_function == 'DotRecall':
+                elif fit_func == 'DotRecall' or fit_func == 'g_recall':
                     f1_score = self.score
-                    mf1, mf1_v = f1_score.DotRecall(base._y_klass, hy,
-                                                    base._mask_ts.index)
+                    mf1, mf1_v = f1_score.g_recall(base._y_klass, hy,
+                                                   base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
-                elif base._fitness_function == 'macro-Precision':
+                elif fit_func == 'macro-Precision' or fit_func == 'a_precision':
                     f1_score = self.score
-                    mf1, mf1_v = f1_score.macroPrecision(base._y_klass, hy,
-                                                         base._mask_ts.index)
+                    mf1, mf1_v = f1_score.a_precision(base._y_klass, hy,
+                                                      base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
-                elif base._fitness_function == 'DotPrecision':
+                elif fit_func == 'DotPrecision' or fit_func == 'g_precision':
                     f1_score = self.score
-                    mf1, mf1_v = f1_score.DotPrecision(base._y_klass, hy,
-                                                       base._mask_ts.index)
+                    mf1, mf1_v = f1_score.g_precision(base._y_klass, hy,
+                                                      base._mask_ts.index)
                     v._error = mf1_v - 1
-                    v.fitness = mf1 - 1   
-                elif base._fitness_function == 'accDotMacroF1':
+                    v.fitness = mf1 - 1
+                elif fit_func == 'accDotMacroF1':
                     f1_score = self.score
                     mf1, mf1_v = f1_score.accDotMacroF1(base._y_klass, hy,
                                                         base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
-                elif base._fitness_function == 'macro-RecallF1':
+                elif fit_func == 'macro-RecallF1':
                     f1_score = self.score
                     mf1, mf1_v = f1_score.macroRecallF1(base._y_klass, hy,
                                                         base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
-                elif base._fitness_function == 'F1':
+                elif fit_func == 'F1':
                     f1_score = self.score
                     mf1, mf1_v = f1_score.F1(self.min_class, base._y_klass,
                                              hy, base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
-                elif base._fitness_function == 'RecallDotPrecision':
+                elif fit_func == 'RecallDotPrecision' or fit_func == 'g_recall_precision':
                     f1_score = self.score
-                    mf1, mf1_v = f1_score.RecallDotPrecision(self.min_class, base._y_klass,
+                    mf1, mf1_v = f1_score.g_recall_precision(self.min_class,
+                                                             base._y_klass,
                                                              hy, base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
-                elif base._fitness_function == 'ER':
+                elif fit_func == 'ER' or fit_func == 'accuracy':
                     f1_score = self.score
-                    mf1, mf1_v = f1_score.errorRate(base._y_klass,
-                                                    hy, base._mask_ts.index)
-                    v._error = -mf1_v
-                    v.fitness = -mf1
+                    mf1, mf1_v = f1_score.accuracy(base._y_klass,
+                                                   hy, base._mask_ts.index)
+                    v._error = mf1_v - 1
+                    v.fitness = mf1 - 1
                 else:
                     raise RuntimeError('Unknown fitness function %s' % base._fitness_function)
-                # v._error = (base._y_klass - hy).sign().fabs()
-                # v.fitness = - v._error.dot(base._mask_ts)
             else:
                 v.fitness = -base._ytr.SSE(v.hy * base._mask)
         else:
