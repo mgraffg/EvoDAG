@@ -623,6 +623,7 @@ def test_g_g_recall_precision():
     hy = np.array(hy.full_array())[index]
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
+    precision[~ np.isfinite(precision)] = 0
     score = np.prod([a * b for a, b in zip(recall, precision)]) - 1
     assert_almost_equals(score, off.fitness_vs)
     
