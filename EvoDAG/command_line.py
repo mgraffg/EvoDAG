@@ -213,7 +213,10 @@ class CommandLine(object):
             for k, v in vec:
                 k = int(k)
                 X[k].append((row, self.convert(v)))
-            y.append(self.convert_label(a[dependent]))
+            try:
+                y.append(self.convert_label(a[dependent]))
+            except KeyError:
+                pass
         num_rows = len(l)
         X = [SparseArray.index_data(x, num_rows) for x in X]
         if len(y) == 0:
