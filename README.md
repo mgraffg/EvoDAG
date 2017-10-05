@@ -213,7 +213,7 @@ decided to keep auto-sklearn without modifications.
 |german         |      30.10    | 39.45  |  29.00  | **28.50** | 
 |image         |       **2.90** | 21.29  |  3.32  | 4.38 | 
 |waveform      |       12.80   | 22.67  |  **10.62**  |  10.84 |
-|splice       |        14.63  | 10.79  |  11.23  |  **10.25** | 
+|splice*       |        14.63  | 10.79  |  11.23  |  **10.25** | 
 
 
 # Install EvoDAG #
