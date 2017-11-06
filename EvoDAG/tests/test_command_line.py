@@ -175,6 +175,20 @@ def test_train():
     default_nargs()
 
 
+def test_train_default_params():
+    import os
+    from EvoDAG.command_line import CommandLineTrain
+    fname = training_set()
+    sys.argv = ['EvoDAG', '-n2',
+                '--model', 'model.evodag', fname]
+    c = CommandLineTrain()
+    c.parse_args()
+    assert os.path.isfile('model.evodag')
+    os.unlink(fname)
+    os.unlink('model.evodag')
+    default_nargs()
+    
+
 def test_predict():
     import os
     from EvoDAG.command_line import params, train, predict

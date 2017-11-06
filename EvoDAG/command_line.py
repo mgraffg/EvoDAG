@@ -28,6 +28,8 @@ import json
 import logging
 import gc
 import pickle
+DEFAULT_PARAMETERS = os.path.join(os.path.dirname(__file__),
+                                  'conf', 'default_parameters.json')
 try:
     from tqdm import tqdm
 except ImportError:
@@ -536,6 +538,7 @@ class CommandLineTrain(CommandLine):
         the first one being the best'
         self.parser.add_argument('-P', '--parameters',
                                  dest='parameters',
+                                 default=DEFAULT_PARAMETERS,
                                  type=str,
                                  help=cdn)
         self.parser.add_argument('--output-dim',
