@@ -147,8 +147,16 @@ EvoDAG-train -P params.evodag -m model.evodag -n 100 -u 4 iris.data
 
 where `-m` specifies the file name used to store the model, `-n` is
 the size of the ensemble, `-P` receives EvoDAG's parameters, `-u` is
-the number of cpu cores, and `iris.data` is the dataset. 
+the number of cpu cores, and `iris.data` is the dataset.
 
+Let us assume, you do not want to optimise the parameters, so the
+default parameters are used if the flag `-P` is not present, i.e., 
+
+```bash   
+EvoDAG-train -m model.evodag -n 100 -u 4 iris.data 
+```
+The performance of EvoDAG without optimising the parameters is
+presented in the last column of the performance table. 
 
 ### Predict using EvoDAG model
 
@@ -187,7 +195,7 @@ problems (these benchmarks can be found:
 The best performance among each classification dataset is in
 bold face to facilitate the reading. It can be observed from the table
 that PSMS obtained the best performance on five datasets, SVM
-on one dataset, and EvoDAG obtained the
+on one dataset, and EvoDAG (0.10.6) obtained the
 best performance in the rest of the datasets (seven). One
 characteristic that caught our attention is the high confidence
 intervals of auto-sklearn (not shown here), it is one order of magnitude higher than
@@ -199,21 +207,30 @@ automatically spotted, and, one possible solution could be as simple
 as execute auto-sklearn again on that particular case. Nonetheless, we
 decided to keep auto-sklearn without modifications.
 
-|Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.10.6)|
-| ----- | ---------------------------------------------: | --------------------------------------------: | -----------------------------------: | -----------: |
-|banana          |     **11.08**      |  28.00  |11.27 | 11.94 | 
-|titanic*          |    **24.18**    |  37.18   |  30.27  |  29.61 |
-|thyroid        |      **4.32**      |  23.38  |  6.13  |  8.58  | 
-|diabetis        |     27.06   |   37.65  |  26.65  |  **25.51** |
-|breast-cancer*    |    **33.01**    |  42.36  |  36.25  |  34.03 | 
-|flare-solar*     |     34.81     |  39.05 |  33.41  |  **32.84** | 
-|heart             |   20.69        |  27.69  |  18.12  |  **16.21** |
-|ringnorm       |      7.98      |  15.49  |  1.96  |  **1.60** |
-|twonorm       |       3.09      |  20.87  |  2.90  |  **2.49** | 
-|german         |      30.10    | 39.45  |  29.00  | **28.50** | 
-|image         |       **2.90** | 21.29  |  3.32  | 4.38 | 
-|waveform      |       12.80   | 22.67  |  **10.62**  |  10.84 |
-|splice*       |        14.63  | 10.79  |  11.23  |  **10.25** | 
+The table also presents the performance of EvoDAG (0.10.7), being the
+only difference that EvoDAG (0.10.7) does not optimise the parameters,
+thus it is only necessary to train the model as:
+
+```bash   
+EvoDAG-train -m model.evodag -n 100 -u 4 iris.data 
+```
+assuming the dataset is *iris.data*. 
+
+|Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.10.6)|EvoDAG (0.10.7)|
+| ----- | ---------------------------------------------: | --------------------------------------------: | -----------------------------------: | -----------: |-----------: |
+|banana          |     **11.08**      |  28.00  |11.27 | 11.94 | 11.70|
+|titanic*          |    **24.18**    |  37.18   |  30.27  |  29.61 | NA |
+|thyroid        |      **4.32**      |  23.38  |  6.13  |  8.58  | 7.01 |
+|diabetis        |     27.06   |   37.65  |  26.65  |  **25.51** | 24.68 |
+|breast-cancer*    |    **33.01**    |  42.36  |  36.25  |  34.03 | NA |
+|flare-solar*     |     34.81     |  39.05 |  33.41  |  **32.84** | NA |
+|heart             |   20.69        |  27.69  |  18.12  |  **16.21** | 16.47 |
+|ringnorm       |      7.98      |  15.49  |  1.96  |  **1.60** | 1.95 |
+|twonorm       |       3.09      |  20.87  |  2.90  |  **2.49** | 2.58 |
+|german         |      30.10    | 39.45  |  29.00  | **28.50** | 28.61 |
+|image         |       **2.90** | 21.29  |  3.32  | 4.38 | 3.33 |
+|waveform      |       12.80   | 22.67  |  **10.62**  |  10.84 | NA |
+|splice*       |        14.63  | 10.79  |  11.23  |  **10.25** | NA |
 
 
 # Install EvoDAG #
