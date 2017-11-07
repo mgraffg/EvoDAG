@@ -187,16 +187,16 @@ Iris-setosa
 # Performance #
 
 The next table presents the average performance in terms of the
-balance error rate (BER) of PSMS, auto-sklearn, SVM, and EvoDAG on thirteen classification
+balance error rate (BER) of PSMS, auto-sklearn, SVM, and EvoDAG on nine classification
 problems (these benchmarks can be found:
 [matlab](http://theoval.cmp.uea.ac.uk/matlab/benchmarks) and [text](http://ws.ingeotec.mx/~mgraffg/classification)).
   
 
 The best performance among each classification dataset is in
 bold face to facilitate the reading. It can be observed from the table
-that PSMS obtained the best performance on five datasets, SVM
+that PSMS obtained the best performance on three datasets, SVM
 on one dataset, and EvoDAG (0.10.6) obtained the
-best performance in the rest of the datasets (seven). One
+best performance in the rest of the datasets (five). One
 characteristic that caught our attention is the high confidence
 intervals of auto-sklearn (not shown here), it is one order of magnitude higher than
 the other systems. Analyzing the predictions performed by
@@ -219,18 +219,14 @@ assuming the dataset is *iris.data*.
 |Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.10.6)|EvoDAG (0.10.7)|
 | ----- | ---------------------------------------------: | --------------------------------------------: | -----------------------------------: | -----------: |-----------: |
 |banana          |     **11.08**      |  28.00  |11.27 | 11.94 | 11.70|
-|titanic*          |    **24.18**    |  37.18   |  30.27  |  29.61 | NA |
 |thyroid        |      **4.32**      |  23.38  |  6.13  |  8.58  | 7.01 |
 |diabetis        |     27.06   |   37.65  |  26.65  |  **25.51** | 24.68 |
-|breast-cancer*    |    **33.01**    |  42.36  |  36.25  |  34.03 | NA |
-|flare-solar*     |     34.81     |  39.05 |  33.41  |  **32.84** | NA |
 |heart             |   20.69        |  27.69  |  18.12  |  **16.21** | 16.47 |
 |ringnorm       |      7.98      |  15.49  |  1.96  |  **1.60** | 1.95 |
 |twonorm       |       3.09      |  20.87  |  2.90  |  **2.49** | 2.58 |
 |german         |      30.10    | 39.45  |  29.00  | **28.50** | 28.61 |
 |image         |       **2.90** | 21.29  |  3.32  | 4.38 | 3.33 |
 |waveform      |       12.80   | 22.67  |  **10.62**  |  10.84 | 10.56 |
-|splice*       |        14.63  | 10.79  |  11.23  |  **10.25** | NA |
 
 
 # Install EvoDAG #
