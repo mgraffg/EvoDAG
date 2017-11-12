@@ -1010,3 +1010,23 @@ def test_json2():
     print(open('output.evodag').read())
     os.unlink('output.evodag')
     default_nargs()
+
+
+def test_train_inner_model():
+    import os
+    import gzip
+    from EvoDAG.command_line import CommandLineTrain
+    fname = training_set()
+    if not os.path.isdir('.dir_model.evodag'):
+        os.mkdir('.dir_model.evodag')
+    with gzip.open('.dir_model.evodag/0.evodag', 'w') as fpt:
+        fpt.write(b'')
+    sys.argv = ['EvoDAG', '-n2',
+                '--model', 'model.evodag', fname]
+    c = CommandLineTrain()
+    c.parse_args()
+    assert os.path.isfile('model.evodag')
+    os.unlink(fname)
+    os.unlink('model.evodag')
+    default_nargs()
+    

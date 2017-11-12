@@ -27,6 +27,7 @@ import gzip
 import json
 import logging
 import gc
+import shutil
 import pickle
 DEFAULT_PARAMETERS = os.path.join(os.path.dirname(__file__),
                                   'conf', 'default_parameters.json')
@@ -38,10 +39,21 @@ except ImportError:
 
 
 def init_evodag(seed_args_X_y_test):
-    seed, args, X, y, test = seed_args_X_y_test
+    seed, args, X, y, test, dirname = seed_args_X_y_test
+    if dirname is not None:
+        output = dirname + '/%s.evodag' % seed
+        if os.path.isfile(output):
+            with gzip.open(output) as fpt:
+                try:
+                    return pickle.load(fpt)
+                except Exception:
+                    pass
     m = EvoDAG(seed=seed, **args).fit(X, y, test_set=test)
     m = m.model()
     gc.collect()
+    if dirname is not None:
+        with gzip.open(output, 'w') as fpt:
+            pickle.dump(m, fpt)
     return m
 
 
@@ -319,13 +331,17 @@ class CommandLine(object):
             self.evo = EvoDAG(**kw).fit(self.X, self.y, test_set=self.Xtest)
             self.model = self.evo.model()
         else:
+            model_file = self.get_model_file()
+            model_dir = '.dir_' + model_file
+            if not os.path.isdir(model_dir):
+                os.mkdir(model_dir)
             min_size = self.data.min_size
             esize = self.data.ensemble_size
             init = self.data.seed
             end = init + esize
             evo = []
             while len(evo) < esize:
-                args = [(x, kw, self.X, self.y, self.Xtest)
+                args = [(x, kw, self.X, self.y, self.Xtest, model_dir)
                         for x in range(init, end)]
                 if self.data.cpu_cores == 1:
                     _ = [init_evodag(x) for x in tqdm(args, total=len(args))]
@@ -337,8 +353,8 @@ class CommandLine(object):
                 [evo.append(x) for x in _ if x.size >= min_size]
                 init = end
                 end = init + (esize - len(evo))
+            shutil.rmtree(model_dir)
             self.model = Ensemble(evo)
-        model_file = self.get_model_file()
         with gzip.open(model_file, 'w') as fpt:
             pickle.dump(self.model, fpt)
             pickle.dump(self.word2id, fpt)
