@@ -325,7 +325,7 @@ class CommandLine(object):
         return self.data.model_file
 
     def store_model(self, kw):
-        model_file = self.get_model_file()        
+        model_file = self.get_model_file()
         if self.data.ensemble_size == 1:
             if self.data.seed >= 0:
                 kw['seed'] = self.data.seed

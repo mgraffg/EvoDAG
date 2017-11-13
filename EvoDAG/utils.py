@@ -14,8 +14,37 @@
 
 
 import numpy as np
+from SparseArray import SparseArray
 import json
 import os
+import gzip
+
+
+def line_iterator(filename):
+    if filename.endswith(".gz"):
+        f = gzip.GzipFile(filename)
+    else:
+        f = open(filename, encoding='utf8')
+    while True:
+        line = f.readline()
+        # Test the type of the line and encode it if neccesary...
+        if type(line) is bytes:
+            line = str(line, encoding='utf8')
+        # If the line is empty, we are done...
+        if len(line) == 0:
+            break
+        line = line.strip()
+        # If line is empty, jump to next...
+        if len(line) == 0:
+            continue
+        yield line
+    # Close the file...
+    f.close()
+
+
+def json_iterator(filename):
+    for line in line_iterator(filename):
+        yield json.loads(line)
 
 
 def tonparray(a):
@@ -37,6 +66,98 @@ def RSE(x, y):
 params_fname = os.path.join(os.path.dirname(__file__), 'conf', 'parameter_values.json')
 with open(params_fname, 'r') as fpt:
     PARAMS = json.loads(fpt.read())
+
+
+class Inputs(object):
+    def __init__(self):
+        self.word2id = {}
+        self.label2id = {}
+
+    @staticmethod
+    def _num_terms(a):
+        if 'num_terms' in a:
+            num_terms = a['num_terms']
+        else:
+            num_terms = len(a)
+            if 'klass' in a:
+                num_terms -= 1
+        return num_terms
+        
+    def convert(self, x):
+        try:
+            return float(x)
+        except ValueError:
+            if x not in self.word2id:
+                self.word2id[x] = len(self.word2id)
+            return self.word2id[x]
+
+    def convert_label(self, x):
+        try:
+            x = float(x)
+            if np.isfinite(x):
+                return x
+            x = str(x)
+        except ValueError:
+            pass
+        if x not in self.label2id:
+            self.label2id[x] = len(self.label2id)
+        return self.label2id[x]
+
+    def read_data_json(self, fname):
+        X = None
+        y = []
+        dependent = os.getenv('KLASS')
+        if dependent is None:
+            dependent = 'klass'
+        for row, a in enumerate(json_iterator(fname)):
+            if 'vec' in a:
+                return self.read_data_json_vec(fname)
+            if X is None:
+                X = [list() for i in range(self._num_terms(a))]
+            for k, v in a.items():
+                try:
+                    k = int(k)
+                    X[k].append((row, self.convert(v)))
+                except ValueError:
+                    if k == dependent:
+                        y.append(self.convert_label(v))
+        num_rows = a
+        X = [SparseArray.index_data(x, num_rows) for x in X]
+        if len(y) == 0:
+            y = None
+        else:
+            y = np.array(y)
+        return X, y
+
+    def read_data_json_vec(self, fname):
+        X = None
+        y = []
+        dependent = os.getenv('KLASS')
+        if dependent is None:
+            dependent = 'klass'
+        for row, d in enumerate(json_iterator(fname)):
+            try:
+                a = json.loads(str(d, encoding='utf-8'))
+            except TypeError:
+                a = json.loads(d)
+            vec = a['vec']
+            vecsize = a['vecsize']
+            if X is None:
+                X = [list() for i in range(vecsize)]
+            for k, v in vec:
+                k = int(k)
+                X[k].append((row, self.convert(v)))
+            try:
+                y.append(self.convert_label(a[dependent]))
+            except KeyError:
+                pass
+        num_rows = row
+        X = [SparseArray.index_data(x, num_rows) for x in X]
+        if len(y) == 0:
+            y = None
+        else:
+            y = np.array(y)
+        return X, y
 
 
 class RandomParameterSearch(object):
