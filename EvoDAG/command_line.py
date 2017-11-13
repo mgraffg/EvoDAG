@@ -325,13 +325,13 @@ class CommandLine(object):
         return self.data.model_file
 
     def store_model(self, kw):
+        model_file = self.get_model_file()        
         if self.data.ensemble_size == 1:
             if self.data.seed >= 0:
                 kw['seed'] = self.data.seed
             self.evo = EvoDAG(**kw).fit(self.X, self.y, test_set=self.Xtest)
             self.model = self.evo.model()
         else:
-            model_file = self.get_model_file()
             model_dir = '.dir_' + model_file
             if not os.path.isdir(model_dir):
                 os.mkdir(model_dir)
