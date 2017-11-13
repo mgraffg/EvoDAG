@@ -63,6 +63,7 @@ def BER(y, yh):
 def RSE(x, y):
     return ((x - y)**2).sum() / ((x - x.mean())**2).sum()
 
+
 params_fname = os.path.join(os.path.dirname(__file__), 'conf', 'parameter_values.json')
 with open(params_fname, 'r') as fpt:
     PARAMS = json.loads(fpt.read())
@@ -70,8 +71,24 @@ with open(params_fname, 'r') as fpt:
 
 class Inputs(object):
     def __init__(self):
-        self.word2id = {}
-        self.label2id = {}
+        self._word2id = {}
+        self._label2id = {}
+
+    @property
+    def word2id(self):
+        return self._word2id
+
+    @property
+    def label2id(self):
+        return self._label2id
+
+    @word2id.setter
+    def word2id(self, s):
+        self._word2id = s
+
+    @label2id.setter
+    def label2id(self, s):
+        self._label2id = s
 
     @staticmethod
     def _num_terms(a):
@@ -82,7 +99,7 @@ class Inputs(object):
             if 'klass' in a:
                 num_terms -= 1
         return num_terms
-        
+
     def convert(self, x):
         try:
             return float(x)
@@ -103,6 +120,34 @@ class Inputs(object):
             self.label2id[x] = len(self.label2id)
         return self.label2id[x]
 
+    def _read_csv(self, fname):
+        X = []
+        for i in line_iterator(fname):
+            x = i.rstrip().lstrip()
+            if len(x):
+                X.append([i for i in x.split(',')])
+        return X
+
+    def read_csv(self, fname, dim):
+        X = []
+        y = []
+        d = self._read_csv(fname)
+        if dim > 1:
+            for x in d:
+                X.append([self.convert(i) for i in x[:-dim]])
+                y.append(x[-dim:])
+            X = np.array(X)
+            y = [SparseArray.fromlist([float(x[i]) for x in y]) for i in range(dim)]
+        elif dim == 1:
+            for x in d:
+                X.append([self.convert(i) for i in x[:-1]])
+                y.append(self.convert_label(x[-1]))
+            X = np.array(X)
+            y = np.array(y)
+        else:
+            X, y = np.array([[self.convert(i) for i in x] for x in d]), None
+        return X, y
+
     def read_data_json(self, fname):
         X = None
         y = []
@@ -121,7 +166,7 @@ class Inputs(object):
                 except ValueError:
                     if k == dependent:
                         y.append(self.convert_label(v))
-        num_rows = a
+        num_rows = row
         X = [SparseArray.index_data(x, num_rows) for x in X]
         if len(y) == 0:
             y = None
@@ -135,11 +180,7 @@ class Inputs(object):
         dependent = os.getenv('KLASS')
         if dependent is None:
             dependent = 'klass'
-        for row, d in enumerate(json_iterator(fname)):
-            try:
-                a = json.loads(str(d, encoding='utf-8'))
-            except TypeError:
-                a = json.loads(d)
+        for row, a in enumerate(json_iterator(fname)):
             vec = a['vec']
             vecsize = a['vecsize']
             if X is None:

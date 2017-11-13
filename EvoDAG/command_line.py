@@ -22,6 +22,7 @@ from multiprocessing import Pool
 import EvoDAG as evodag
 from EvoDAG import EvoDAG
 from .utils import tonparray
+from .utils import Inputs
 import time
 import gzip
 import json
@@ -136,13 +137,8 @@ class CommandLine(object):
            action="store_true",
            help='Whether the inputs are in json format',
            default=False)
-        # pa('--evolution', dest='population_class',
-        #    help="Type of evolution (SteadyState|Generational)",
-        #    type=str)
         pa('--time-limit', dest='time_limit',
            help='Time limit in seconds', type=int)
-        # pa('--random-generations', dest='random_generations',
-        #    help='Number of random generations', type=int)
 
     def training_set(self):
         cdn = 'File containing the training set on csv.'
@@ -162,160 +158,24 @@ class CommandLine(object):
             logger.info('Logging to: %s', self.data.verbose)
         self.main()
 
-    def convert(self, x):
-        try:
-            return float(x)
-        except ValueError:
-            if x not in self.word2id:
-                self.word2id[x] = len(self.word2id)
-            return self.word2id[x]
-
-    def convert_label(self, x):
-        try:
-            x = float(x)
-            if np.isfinite(x):
-                return x
-            x = str(x)
-        except ValueError:
-            pass
-        if x not in self.label2id:
-            self.label2id[x] = len(self.label2id)
-        return self.label2id[x]
-
-    def read_data(self, fname):
-        with open(fname, 'r') as fpt:
-            l = fpt.readlines()
-        X = []
-        for i in l:
-            x = i.rstrip().lstrip()
-            if len(x):
-                X.append([i for i in x.split(',')])
-        return X
-
-    @staticmethod
-    def _num_terms(a):
-        if 'num_terms' in a:
-            num_terms = a['num_terms']
-        else:
-            num_terms = len(a)
-            if 'klass' in a:
-                num_terms -= 1
-        return num_terms
-
-    def read_data_json_vec(self, fname):
-        import json
-        X = None
-        y = []
-        dependent = os.getenv('KLASS')
-        if dependent is None:
-            dependent = 'klass'
-        if fname.endswith('.gz'):
-            with gzip.open(fname, 'rb') as fpt:
-                l = fpt.readlines()
-        else:
-            with open(fname, 'r') as fpt:
-                l = fpt.readlines()
-        for row, d in enumerate(l):
-            try:
-                a = json.loads(str(d, encoding='utf-8'))
-            except TypeError:
-                a = json.loads(d)
-            vec = a['vec']
-            vecsize = a['vecsize']
-            if X is None:
-                X = [list() for i in range(vecsize)]
-            for k, v in vec:
-                k = int(k)
-                X[k].append((row, self.convert(v)))
-            try:
-                y.append(self.convert_label(a[dependent]))
-            except KeyError:
-                pass
-        num_rows = len(l)
-        X = [SparseArray.index_data(x, num_rows) for x in X]
-        if len(y) == 0:
-            y = None
-        else:
-            y = np.array(y)
-        return X, y
-
-    def read_data_json(self, fname):
-        import json
-        X = None
-        y = []
-        dependent = os.getenv('KLASS')
-        if dependent is None:
-            dependent = 'klass'
-        if fname.endswith('.gz'):
-            with gzip.open(fname, 'rb') as fpt:
-                l = fpt.readlines()
-        else:
-            with open(fname, 'r') as fpt:
-                l = fpt.readlines()
-        flag = True
-        for row, d in enumerate(l):
-            try:
-                a = json.loads(str(d, encoding='utf-8'))
-            except TypeError:
-                a = json.loads(d)
-            if flag and 'vec' in a:
-                return self.read_data_json_vec(fname)
-            else:
-                flag = False
-            if X is None:
-                X = [list() for i in range(self._num_terms(a))]
-            for k, v in a.items():
-                try:
-                    k = int(k)
-                    X[k].append((row, self.convert(v)))
-                except ValueError:
-                    if k == dependent:
-                        y.append(self.convert_label(v))
-        num_rows = len(l)
-        X = [SparseArray.index_data(x, num_rows) for x in X]
-        if len(y) == 0:
-            y = None
-        else:
-            y = np.array(y)
-        return X, y
-
     def read_training_set(self):
         if self.data.training_set is None:
             return
         if not self.data.json:
-            d = self.read_data(self.data.training_set)
-            X = []
-            y = []
-            if self.data.output_dim > 1:
-                dim = self.data.output_dim
-                for x in d:
-                    X.append([self.convert(i) for i in x[:-dim]])
-                    y.append(x[-dim:])
-                self.X = np.array(X)
-                self.y = [SparseArray.fromlist([float(x[i]) for x in y]) for i in range(dim)]
-            else:
-                for x in d:
-                    X.append([self.convert(i) for i in x[:-1]])
-                    y.append(self.convert_label(x[-1]))
-                self.X = np.array(X)
-                self.y = np.array(y)
+            self.X, self.y = self.inputs.read_csv(self.data.training_set, self.data.output_dim)
             return True
         else:
-            X, y = self.read_data_json(self.data.training_set)
-            self.X = X
-            self.y = y
+            self.X, self.y = self.inputs.read_data_json(self.data.training_set)
             return True
 
     def read_test_set(self):
         if self.data.test_set is None:
             return False
         if not self.data.json:
-            X = self.read_data(self.data.test_set)
-            self.Xtest = np.array([[self.convert(i) for i in x] for x in X])
+            self.Xtest, _ = self.inputs.read_csv(self.data.test_set, 0)
             return True
         else:
-            X, _ = self.read_data_json(self.data.test_set)
-            self.Xtest = X
+            self.Xtest, _ = self.inputs.read_data_json(self.data.test_set)
             return True
 
     def get_model_file(self):
@@ -384,8 +244,9 @@ class CommandLine(object):
 class CommandLineParams(CommandLine):
     def __init__(self):
         self.Xtest = None
-        self.word2id = {}
-        self.label2id = {}
+        self.inputs = Inputs()
+        self.word2id = self.inputs.word2id
+        self.label2id = self.inputs.label2id
         self.parser = argparse.ArgumentParser(description="EvoDAG")
         self.training_set()
         self.init_params()
@@ -538,8 +399,9 @@ class CommandLineParams(CommandLine):
 class CommandLineTrain(CommandLine):
     def __init__(self):
         self.Xtest = None
-        self.word2id = {}
-        self.label2id = {}
+        self.inputs = Inputs()
+        self.word2id = self.inputs.word2id
+        self.label2id = self.inputs.label2id
         self.parser = argparse.ArgumentParser(description="EvoDAG")
         self.training_set()
         self.parameters()
@@ -608,8 +470,9 @@ class CommandLineTrain(CommandLine):
 class CommandLinePredict(CommandLine):
     def __init__(self):
         self.Xtest = None
-        self.word2id = {}
-        self.label2id = {}
+        self.inputs = Inputs()
+        self.word2id = self.inputs.word2id
+        self.label2id = self.inputs.label2id
         self.parser = argparse.ArgumentParser(description="EvoDAG")
         self.model()
         self.test_set()
@@ -651,8 +514,8 @@ class CommandLinePredict(CommandLine):
         model_file = self.get_model_file()
         with gzip.open(model_file, 'r') as fpt:
             m = pickle.load(fpt)
-            self.word2id = pickle.load(fpt)
-            self.label2id = pickle.load(fpt)
+            self.inputs.word2id = pickle.load(fpt)
+            self.inputs.label2id = pickle.load(fpt)
         self.read_test_set()
         self.data.classifier = m.classifier
         if self.data.raw_outputs:
@@ -679,8 +542,9 @@ class CommandLinePredict(CommandLine):
 class CommandLineUtils(CommandLine):
     def __init__(self):
         self.Xtest = None
-        self.word2id = {}
-        self.label2id = {}
+        self.inputs = Inputs()
+        self.word2id = self.inputs.word2id
+        self.label2id = self.inputs.label2id
         self.parser = argparse.ArgumentParser(description="EvoDAG")
         self.model()
         self.graphviz()

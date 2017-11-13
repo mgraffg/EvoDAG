@@ -690,7 +690,7 @@ def test_nan():
     import numpy as np
     from EvoDAG.command_line import CommandLineParams
     c = CommandLineParams()
-    assert np.isfinite(c.convert_label('NaN'))
+    assert np.isfinite(c.inputs.convert_label('NaN'))
     default_nargs()
 
 
