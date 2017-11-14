@@ -188,7 +188,11 @@ class Inputs(object):
             dependent = 'klass'
         for row, a in enumerate(json_iterator(fname)):
             vec = a['vec']
-            vecsize = a['vecsize']
+            try:
+                vecsize = a['vecsize']
+            except KeyError:
+                vecsize = len(vec)
+                vec = enumerate(vec)
             if X is None:
                 X = [list() for i in range(vecsize)]
             for k, v in vec:

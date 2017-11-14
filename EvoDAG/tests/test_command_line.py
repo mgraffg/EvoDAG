@@ -1012,6 +1012,27 @@ def test_json2():
     default_nargs()
 
 
+def test_json3():
+    from EvoDAG.command_line import params
+    import tempfile
+    import json
+    fname = tempfile.mktemp()
+    with open(fname, 'w') as fpt:
+        for x, y in zip(X, cl):
+            a = {}
+            a['vec'] = x.tolist()
+            a['klass'] = int(y)
+            fpt.write(json.dumps(a) + '\n')
+    print("termine con el json")
+    sys.argv = ['EvoDAG', '-C', '-Poutput.evodag', '--json',
+                '-e1', '-p3', '-r2', fname]
+    params()
+    os.unlink(fname)
+    print(open('output.evodag').read())
+    os.unlink('output.evodag')
+    default_nargs()
+
+
 def test_train_inner_model():
     import os
     import gzip
