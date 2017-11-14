@@ -1176,3 +1176,11 @@ def test_function_selection():
     assert gp._function_selection_ins
     for i in range(gp._function_selection_ins.nfunctions):
         assert gp._function_selection_ins.avg_fitness(i) != 0
+
+
+def test_init():
+    from EvoDAG import EvoDAG
+    m = EvoDAG.init(seed=10).fit(X, cl)
+    assert m._function_set[0].nargs == 60
+    hy = m.predict(X)
+    assert (cl == hy).mean() > 0.9

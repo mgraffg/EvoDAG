@@ -121,3 +121,44 @@ def test_popsize_constraint():
     popsize = [x['popsize'] for x in rs]
     r = [x for x in popsize if x > 70]
     assert len(r) == 0
+
+
+def test_inputs_vec():
+    from test_root import X, cl
+    from EvoDAG.utils import Inputs
+    D = []
+    for x, y in zip(X, cl):
+        a = {}
+        a['vec'] = x.tolist()
+        a['klass'] = int(y)
+        D.append(a)
+    inputs = Inputs()
+    X, y = inputs.read_data_json_vec(None, D)
+
+
+def test_inputs_vecsize():
+    from test_root import X, cl
+    from EvoDAG.utils import Inputs
+    D = []
+    for x, y in zip(X, cl):
+        a = {}
+        a['vec'] = [[k, v] for k, v in enumerate(x)]
+        a['klass'] = int(y)
+        a['vecsize'] = len(x)
+        D.append(a)
+    inputs = Inputs()
+    X, y = inputs.read_data_json_vec(None, D)
+
+
+def test_inputs():
+    from test_root import X, cl
+    from EvoDAG.utils import Inputs
+    D = []
+    for x, y in zip(X, cl):
+        a = {k: v for k, v in enumerate(x)}
+        a['klass'] = int(y)
+        a['num_terms'] = len(x)
+        D.append(a)
+    inputs = Inputs()
+    X, y = inputs.read_data_json(None, D)
+    

@@ -154,13 +154,15 @@ class Inputs(object):
             X, y = np.array([[self.convert(i) for i in x] for x in d]), None
         return X, y
 
-    def read_data_json(self, fname):
+    def read_data_json(self, fname, iterable=None):
         X = None
         y = []
         dependent = os.getenv('KLASS')
         if dependent is None:
             dependent = 'klass'
-        for row, a in enumerate(json_iterator(fname)):
+        if iterable is None:
+            iterable = json_iterator(fname)
+        for row, a in enumerate(iterable):
             if 'vec' in a:
                 return self.read_data_json_vec(fname)
             if X is None:
@@ -180,13 +182,15 @@ class Inputs(object):
             y = np.array(y)
         return X, y
 
-    def read_data_json_vec(self, fname):
+    def read_data_json_vec(self, fname, iterable=None):
         X = None
         y = []
         dependent = os.getenv('KLASS')
         if dependent is None:
             dependent = 'klass'
-        for row, a in enumerate(json_iterator(fname)):
+        if iterable is None:
+            iterable = json_iterator(fname)
+        for row, a in enumerate(iterable):
             vec = a['vec']
             try:
                 vecsize = a['vecsize']

@@ -116,7 +116,7 @@ class EvoDAG(object):
             self._input_functions = r
         else:
             self._input_functions = input_functions
-        
+
     def get_params(self):
         "Parameters used to initialize the class"
         import inspect
@@ -465,8 +465,30 @@ class EvoDAG(object):
     def predict(self, v=None, X=None):
         """In classification this returns the classes, in
         regression it is equivalent to the decision function"""
+        if X is None:
+            X = v
+            v = None
         m = self.model(v=v)
         return m.predict(X)
+
+    @classmethod
+    def init(cls, params_fname=None, seed=None, classifier=True):
+        import os
+        from .utils import RandomParameterSearch
+        import json
+        if params_fname is None:
+            kw = os.path.join(os.path.dirname(__file__),
+                              'conf', 'default_parameters.json')
+        else:
+            kw = params_fname
+        with open(kw) as fpt:
+            kw = json.loads(fpt.read())
+        kw['classifier'] = classifier
+        if seed is not None:
+            kw['seed'] = seed
+        kw = RandomParameterSearch.process_params(kw)
+        return cls(**kw)
+
 
 RGP = EvoDAG
 RootGP = RGP
