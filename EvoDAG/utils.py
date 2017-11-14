@@ -172,7 +172,7 @@ class Inputs(object):
                 except ValueError:
                     if k == dependent:
                         y.append(self.convert_label(v))
-        num_rows = row
+        num_rows = row + 1
         X = [SparseArray.index_data(x, num_rows) for x in X]
         if len(y) == 0:
             y = None
@@ -198,7 +198,7 @@ class Inputs(object):
                 y.append(self.convert_label(a[dependent]))
             except KeyError:
                 pass
-        num_rows = row
+        num_rows = row + 1
         X = [SparseArray.index_data(x, num_rows) for x in X]
         if len(y) == 0:
             y = None
