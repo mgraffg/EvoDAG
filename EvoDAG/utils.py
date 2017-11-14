@@ -24,12 +24,18 @@ def line_iterator(filename):
     if filename.endswith(".gz"):
         f = gzip.GzipFile(filename)
     else:
-        f = open(filename, encoding='utf8')
+        try:
+            f = open(filename, encoding='utf8')
+        except TypeError:
+            f = open(filename)
     while True:
         line = f.readline()
         # Test the type of the line and encode it if neccesary...
         if type(line) is bytes:
-            line = str(line, encoding='utf8')
+            try:
+                line = str(line, encoding='utf8')
+            except TypeError:
+                line = str(line)
         # If the line is empty, we are done...
         if len(line) == 0:
             break
