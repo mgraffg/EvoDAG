@@ -62,7 +62,9 @@ setup(
                                                'nonecheck': False,
                                                'boundscheck': False}),
 
-    package_data={'EvoDAG/conf': ['parameter_values.json', 'default_parameters.json'],
+    package_data={'EvoDAG/conf': ['parameter_values.json',
+                                  'default_parameters.json',
+                                  'default_parameters_r.json'],
                   '': ['*.pxd']},
     install_requires=['numpy', 'SparseArray'],
     entry_points={

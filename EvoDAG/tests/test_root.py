@@ -1184,3 +1184,11 @@ def test_init():
     assert m._function_set[0].nargs == 60
     hy = m.predict(X)
     assert (cl == hy).mean() > 0.9
+
+
+def test_init_regression():
+    from EvoDAG import EvoDAG
+    m = EvoDAG.init(seed=10, classifier=False).fit(X, cl)
+    assert m._function_set[0].nargs == 60
+    hy = m.predict(X)
+    assert np.unique(hy).shape[0] > 3

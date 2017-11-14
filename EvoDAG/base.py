@@ -477,13 +477,16 @@ class EvoDAG(object):
         from .utils import RandomParameterSearch
         import json
         if params_fname is None:
-            kw = os.path.join(os.path.dirname(__file__),
-                              'conf', 'default_parameters.json')
+            if classifier:
+                kw = os.path.join(os.path.dirname(__file__),
+                                  'conf', 'default_parameters.json')
+            else:
+                kw = os.path.join(os.path.dirname(__file__),
+                                  'conf', 'default_parameters_r.json')
         else:
             kw = params_fname
         with open(kw) as fpt:
             kw = json.loads(fpt.read())
-        kw['classifier'] = classifier
         if seed is not None:
             kw['seed'] = seed
         kw = RandomParameterSearch.process_params(kw)

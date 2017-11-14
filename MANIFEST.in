@@ -2,4 +2,5 @@ include VERSION
 include LICENSE
 include EvoDAG/conf/parameter_values.json
 include EvoDAG/conf/default_parameters.json
+include EvoDAG/conf/default_parameters_r.json
 include EvoDAG/*.pyx
