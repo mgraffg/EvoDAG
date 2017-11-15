@@ -21,6 +21,45 @@ Mario Graff, Eric S. Tellez, Sabino Miranda-Jiménez, Hugo Jair Escalante.
 2016 IEEE International Autumn Meeting on Power, Electronics and Computing (ROPEC)
 pp 1-6. A pre-print version can be download from [here](http://ws.ingeotec.mx/~mgraffg/publications/pdf/ropec2016.pdf).
 
+## Quick Start ##
+
+Let us assume one wants to create a classifier of iris dataset. The
+first step is to download the dataset from the UCI Machine Learning
+Repository
+
+```bash   
+curl -O https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data
+```
+
+### Training EvoDAG from command line
+
+Let us assume, you do not want to optimise the EvoDAG parameters, so the
+default parameters are used when flag `-P` is not present, i.e., 
+
+```bash   
+EvoDAG-train -C -m model.evodag -n 100 -u 4 iris.data 
+```
+`-C` flag indicates that it is a classification problem, and 
+`-R` is for regression problems; there are different default parameters
+for each type of problems.
+
+The performance of EvoDAG without optimising the parameters is
+presented in the last column of the performance table. 
+
+### Predict from command line
+
+Once the model is obtained, it is time to use it; given that `iris.data` 
+was not split into a training and test set, let us assume 
+that `iris.data` contains some unknown data. 
+In order to predict `iris.data` one would do:
+
+```bash   
+EvoDAG-predict -m model.evodag -o iris.predicted iris.data
+```
+
+where `-o` indicates the file name used to store the predictions, `-m`
+contains the model, and `iris.data` is the test set.
+
 ## Citing EvoDAG ##
 
 If you like EvoDAG, and it is used in a scientific publication, I would
@@ -149,18 +188,7 @@ where `-m` specifies the file name used to store the model, `-n` is
 the size of the ensemble, `-P` receives EvoDAG's parameters, `-u` is
 the number of cpu cores, and `iris.data` is the dataset.
 
-Let us assume, you do not want to optimise the parameters, so the
-default parameters are used if the flag `-P` is not present, i.e., 
 
-```bash   
-EvoDAG-train -C -m model.evodag -n 100 -u 4 iris.data 
-```
-`-C` flag indicates that it is a classification problem, and 
-`-R` is for regression problems; there are different default parameters
-for each type of problems.
-
-The performance of EvoDAG without optimising the parameters is
-presented in the last column of the performance table. 
 
 ### Predict using EvoDAG model
 
