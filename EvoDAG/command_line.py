@@ -414,11 +414,19 @@ class CommandLineTrain(CommandLine):
     def parameters(self):
         cdn = 'File containing a list of parameters explored,\
         the first one being the best'
-        self.parser.add_argument('-P', '--parameters',
-                                 dest='parameters',
-                                 default=DEFAULT_PARAMETERS,
-                                 type=str,
-                                 help=cdn)
+        g = self.parser.add_mutually_exclusive_group(required=True)
+        g.add_argument('-C', '--classifier', dest='classifier',
+                       help='The task is classification (default)',
+                       default=True,
+                       action="store_true")
+        g.add_argument('-R', '--regressor', dest='regressor',
+                       help='The task is regression',
+                       action="store_true")
+        g.add_argument('-P', '--parameters',
+                       dest='parameters',
+                       default=None,
+                       type=str,
+                       help=cdn)
         self.parser.add_argument('--output-dim',
                                  dest='output_dim',
                                  default=1,
@@ -445,6 +453,13 @@ class CommandLineTrain(CommandLine):
         self.read_training_set()
         self.read_test_set()
         parameters = self.data.parameters
+        if parameters is None:
+            if self.data.classifier:
+                parameters = os.path.join(os.path.dirname(__file__),
+                                          'conf', 'default_parameters.json')
+            elif self.data.regressor:
+                parameters = os.path.join(os.path.dirname(__file__),
+                                          'conf', 'default_parameters_r.json')
         if parameters.endswith('.gz'):
             func = gzip.open
         else:

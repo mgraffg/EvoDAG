@@ -179,7 +179,7 @@ def test_train_default_params():
     import os
     from EvoDAG.command_line import CommandLineTrain
     fname = training_set()
-    sys.argv = ['EvoDAG', '-n2',
+    sys.argv = ['EvoDAG', '-n2', '-C',
                 '--model', 'model.evodag', fname]
     c = CommandLineTrain()
     c.parse_args()
@@ -1042,7 +1042,7 @@ def test_train_inner_model():
         os.mkdir('.dir_model.evodag')
     with gzip.open('.dir_model.evodag/0.evodag', 'w') as fpt:
         fpt.write(b'')
-    sys.argv = ['EvoDAG', '-n2',
+    sys.argv = ['EvoDAG', '-n2', '-C',
                 '--model', 'model.evodag', fname]
     c = CommandLineTrain()
     c.parse_args()
