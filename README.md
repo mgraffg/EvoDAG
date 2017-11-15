@@ -153,8 +153,12 @@ Let us assume, you do not want to optimise the parameters, so the
 default parameters are used if the flag `-P` is not present, i.e., 
 
 ```bash   
-EvoDAG-train -m model.evodag -n 100 -u 4 iris.data 
+EvoDAG-train -C -m model.evodag -n 100 -u 4 iris.data 
 ```
+`-C` flag indicates that it is a classification problem, and 
+`-R` is for regression problems; there are different default parameters
+for each type of problems.
+
 The performance of EvoDAG without optimising the parameters is
 presented in the last column of the performance table. 
 
