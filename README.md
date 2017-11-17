@@ -71,13 +71,20 @@ Let us assume that `X` contains the inputs and `cl` contains the
 classes. Then in order to train an ensemble of 30 EvoDAG and predict
 `X` one uses the following instructions:
 
-```python   
-# Reading the data
-from EvoDAG.tests.test_root import X, cl
+```python
 # Importing an EvoDAG ensemble
 from EvoDAG.model import EvoDAGE
+# Importing iris dataset from sklearn
+from sklearn.datasets import load_iris
+
+# Reading data
+data = load_iris()
+X = data.data
+y = data.target
+
 #train the model
-m = EvoDAGE(n_estimators=30, n_jobs=4).fit(X, cl)
+m = EvoDAGE(n_estimators=30, n_jobs=4).fit(X, y)
+
 #predict X using the model
 hy = m.predict(X)
 ```
