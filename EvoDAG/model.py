@@ -26,6 +26,14 @@ except ImportError:
         return x
 
 
+def fit(X_y_evodag):
+    from EvoDAG import EvoDAG
+    X, y, evodag = X_y_evodag
+    evodag = EvoDAG.init(**evodag)
+    evodag.fit(X, y)
+    return evodag.model()
+
+
 def decision_function(model_X):
     model, X = model_X
     return model.decision_function(X)
@@ -215,8 +223,27 @@ class Model(object):
 
 class Ensemble(object):
     "Ensemble that predicts using the average"
-    def __init__(self, models):
+    def __init__(self, models, n_jobs=1, evodags=None):
         self._models = models
+        self._n_jobs = n_jobs
+        self._evodags = evodags
+        if models is not None:
+            self._init()
+
+    def fit(self, X, y):
+        evodags = self._evodags
+        args = [(X, y, evodag) for evodag in evodags]
+        if self._n_jobs == 1:
+            self._models = [fit(x) for x in tqdm(args)]
+        else:
+            p = Pool(self._n_jobs)
+            self._models = [x for x in tqdm(p.imap_unordered(fit, args),
+                                            total=len(args))]
+            p.close()
+        self._init()
+        return self
+
+    def _init(self):
         self._labels = self._models[0]._labels
         self._classifier = False
         flag = False
@@ -316,11 +343,13 @@ class Ensemble(object):
             return [x * inv_len for x in res]
 
     def predict(self, X, cpu_cores=1):
+        cpu_cores = max(cpu_cores, self._n_jobs)
         if self.classifier:
             return self.predict_cl(X, cpu_cores=cpu_cores)
         return tonparray(self.decision_function(X, cpu_cores=cpu_cores))
 
     def predict_cl(self, X, cpu_cores=1):
+        cpu_cores = max(cpu_cores, self._n_jobs)
         hy = self.decision_function(X, cpu_cores=cpu_cores)
         if isinstance(hy, SparseArray):
             hy = hy.sign()
@@ -342,3 +371,16 @@ class Ensemble(object):
         output = os.path.join(directory, 'evodag-%s')
         for k, m in enumerate(self.models):
             m.graphviz(output % k, **kwargs)
+
+    @classmethod
+    def init(cls, n_estimators=30, n_jobs=1, **kwargs):
+        try:
+            init_seed = kwargs['seed']
+            del kwargs['seed']
+        except KeyError:
+            init_seed = 0
+        lst = []
+        for x in range(init_seed, init_seed + n_estimators):
+            kwargs['seed'] = x
+            lst.append(kwargs.copy())
+        return cls(None, evodags=lst, n_jobs=n_jobs)

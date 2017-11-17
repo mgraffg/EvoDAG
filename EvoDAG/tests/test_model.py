@@ -240,3 +240,16 @@ def test_multiple_outputs_ensemble():
     for i in np.unique(hy):
         assert i in u
     
+
+def test_init():
+    from EvoDAG.model import Ensemble
+    m = Ensemble.init(n_estimators=4, n_jobs=4, seed=10).fit(X, cl)
+    hy = m.predict(X)
+    assert (cl == hy).mean() > 0.9
+
+
+def test_init_regression():
+    from EvoDAG.model import Ensemble
+    m = Ensemble.init(n_estimators=4, n_jobs=4, seed=10, classifier=False).fit(X, cl)
+    hy = m.predict(X)
+    assert np.unique(hy).shape[0] > 3
