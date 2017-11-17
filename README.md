@@ -23,8 +23,32 @@ pp 1-6. A pre-print version can be download from [here](http://ws.ingeotec.mx/~m
 
 ## Quick Start ##
 
-There are two options to use EvoDAG, one is from the command line and
-the other is as a Library.
+There are two options to use EvoDAG, one is as a library
+and the other is as command line.
+
+### Using EvoDAG as library
+
+Let us assume that `X` contains the inputs and `cl` contains the
+classes. Then in order to train an ensemble of 30 EvoDAG and predict
+`X` one uses the following instructions:
+
+```python
+# Importing an EvoDAG ensemble
+from EvoDAG.model import EvoDAGE
+# Importing iris dataset from sklearn
+from sklearn.datasets import load_iris
+
+# Reading data
+data = load_iris()
+X = data.data
+y = data.target
+
+#train the model
+m = EvoDAGE(n_estimators=30, n_jobs=4).fit(X, y)
+
+#predict X using the model
+hy = m.predict(X)
+```
 
 ### Using EvoDAG from the command line
 
@@ -65,29 +89,6 @@ EvoDAG-predict -m model.evodag -o iris.predicted iris.data
 where `-o` indicates the file name used to store the predictions, `-m`
 contains the model, and `iris.data` is the test set.
 
-### Using EvoDAG as library
-
-Let us assume that `X` contains the inputs and `cl` contains the
-classes. Then in order to train an ensemble of 30 EvoDAG and predict
-`X` one uses the following instructions:
-
-```python
-# Importing an EvoDAG ensemble
-from EvoDAG.model import EvoDAGE
-# Importing iris dataset from sklearn
-from sklearn.datasets import load_iris
-
-# Reading data
-data = load_iris()
-X = data.data
-y = data.target
-
-#train the model
-m = EvoDAGE(n_estimators=30, n_jobs=4).fit(X, y)
-
-#predict X using the model
-hy = m.predict(X)
-```
 
 ## Citing EvoDAG ##
 
