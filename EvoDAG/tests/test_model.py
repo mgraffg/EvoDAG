@@ -253,3 +253,11 @@ def test_init_regression():
     m = Ensemble.init(n_estimators=4, n_jobs=4, seed=10, classifier=False).fit(X, cl)
     hy = m.predict(X)
     assert np.unique(hy).shape[0] > 3
+
+
+def test_init_e():
+    from EvoDAG.model import EvoDAGE
+    m = EvoDAGE(n_estimators=4, n_jobs=4, seed=10).fit(X, cl)
+    hy = m.predict(X)
+    assert (cl == hy).mean() > 0.9
+    

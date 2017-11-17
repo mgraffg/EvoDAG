@@ -384,3 +384,14 @@ class Ensemble(object):
             kwargs['seed'] = x
             lst.append(kwargs.copy())
         return cls(None, evodags=lst, n_jobs=n_jobs)
+
+
+class EvoDAGE(object):
+    def __init__(self, **kwargs):
+        self._m = Ensemble.init(**kwargs)
+
+    def fit(self, *args, **kwargs):
+        return self._m.fit(*args, **kwargs)
+
+    def predict(self, *args, **kwargs):
+        return self._m.predict(*args, **kwargs)

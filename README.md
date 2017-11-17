@@ -72,10 +72,12 @@ classes. Then in order to train an ensemble of 30 EvoDAG and predict
 `X` one uses the following instructions:
 
 ```python   
+# Reading the data
 from EvoDAG.tests.test_root import X, cl
-from EvoDAG.model import Ensemble
+# Importing an EvoDAG ensemble
+from EvoDAG.model import EvoDAGE
 #train the model
-m = Ensemble.init(n_estimators=30, n_jobs=4).fit(X, cl)
+m = EvoDAGE(n_estimators=30, n_jobs=4).fit(X, cl)
 #predict X using the model
 hy = m.predict(X)
 ```
