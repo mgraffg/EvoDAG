@@ -28,12 +28,12 @@ and the other is as command line.
 
 ### Using EvoDAG as library
 
-Let us assume that `X` contains the inputs and `cl` contains the
+Let us assume that `X` contains the inputs and `y` contains the
 classes. Then in order to train an ensemble of 30 EvoDAG and predict
 `X` one uses the following instructions:
 
 ```python
-# Importing an EvoDAG ensemble
+# Importing EvoDAG ensemble
 from EvoDAG.model import EvoDAGE
 # Importing iris dataset from sklearn
 from sklearn.datasets import load_iris
