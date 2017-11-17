@@ -23,6 +23,11 @@ pp 1-6. A pre-print version can be download from [here](http://ws.ingeotec.mx/~m
 
 ## Quick Start ##
 
+There are two options to use EvoDAG, one is from the command line and
+the other is as a Library.
+
+### Using EvoDAG from the command line
+
 Let us assume one wants to create a classifier of iris dataset. The
 first step is to download the dataset from the UCI Machine Learning
 Repository
@@ -31,7 +36,7 @@ Repository
 curl -O https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data
 ```
 
-### Training EvoDAG from command line
+#### Training EvoDAG
 
 Let us assume, you do not want to optimise the EvoDAG parameters, so the
 default parameters are used when flag `-P` is not present, i.e., 
@@ -46,7 +51,7 @@ for each type of problems.
 The performance of EvoDAG without optimising the parameters is
 presented in the last column of the performance table. 
 
-### Predict from command line
+#### Predict 
 
 Once the model is obtained, it is time to use it; given that `iris.data` 
 was not split into a training and test set, let us assume 
@@ -59,6 +64,21 @@ EvoDAG-predict -m model.evodag -o iris.predicted iris.data
 
 where `-o` indicates the file name used to store the predictions, `-m`
 contains the model, and `iris.data` is the test set.
+
+### Using EvoDAG as library
+
+Let us assume that `X` contains the inputs and `cl` contains the
+classes. Then in order to train an ensemble of 30 EvoDAG and predict
+`X` one uses the following instructions:
+
+```python   
+from EvoDAG.tests.test_root import X, cl
+from EvoDAG.model import Ensemble
+#train the model
+m = Ensemble.init(n_estimators=30, n_jobs=4).fit(X, cl)
+#predict X using the model
+hy = m.predict(X)
+```
 
 ## Citing EvoDAG ##
 
