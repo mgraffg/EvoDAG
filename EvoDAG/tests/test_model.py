@@ -260,4 +260,11 @@ def test_init_e():
     m = EvoDAGE(n_estimators=4, n_jobs=4, seed=10).fit(X, cl)
     hy = m.predict(X)
     assert (cl == hy).mean() > 0.9
+
+
+def test_init2():
+    from EvoDAG.model import Ensemble
+    m = Ensemble.init(n_estimators=2, n_jobs=1, seed=0).fit(X, cl)
+    hy = m.predict(X)
+    assert (cl == hy).mean() > 0.9
     
