@@ -17,6 +17,7 @@ from test_root import cl
 from test_root import X
 from SparseArray import SparseArray
 import numpy as np
+from test_command_line import default_nargs
 
 
 def test_pickle_model():
@@ -246,6 +247,7 @@ def test_init():
     m = Ensemble.init(n_estimators=4, n_jobs=4, seed=10).fit(X, cl)
     hy = m.predict(X)
     assert (cl == hy).mean() > 0.9
+    default_nargs()
 
 
 def test_init_regression():
@@ -253,6 +255,7 @@ def test_init_regression():
     m = Ensemble.init(n_estimators=4, n_jobs=4, seed=10, classifier=False).fit(X, cl)
     hy = m.predict(X)
     assert np.unique(hy).shape[0] > 3
+    default_nargs()
 
 
 def test_init_e():
@@ -260,6 +263,7 @@ def test_init_e():
     m = EvoDAGE(n_estimators=4, n_jobs=4, seed=10).fit(X, cl)
     hy = m.predict(X)
     assert (cl == hy).mean() > 0.9
+    default_nargs()
 
 
 def test_init2():
@@ -267,4 +271,4 @@ def test_init2():
     m = Ensemble.init(n_estimators=2, n_jobs=1, seed=0).fit(X, cl)
     hy = m.predict(X)
     assert (cl == hy).mean() > 0.9
-    
+    default_nargs()
