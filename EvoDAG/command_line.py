@@ -42,7 +42,7 @@ except ImportError:
 def init_evodag(seed_args_X_y_test):
     seed, args, X, y, test, dirname = seed_args_X_y_test
     if dirname is not None:
-        output = dirname + '/%s.evodag' % seed
+        output = os.path.join(dirname, '%s.evodag' % seed)
         if os.path.isfile(output):
             with gzip.open(output) as fpt:
                 try:
@@ -192,7 +192,7 @@ class CommandLine(object):
             self.evo = EvoDAG(**kw).fit(self.X, self.y, test_set=self.Xtest)
             self.model = self.evo.model()
         else:
-            model_dir = '.dir_' + model_file
+            model_dir = model_file + '_dir'
             if not os.path.isdir(model_dir):
                 os.mkdir(model_dir)
             min_size = self.data.min_size

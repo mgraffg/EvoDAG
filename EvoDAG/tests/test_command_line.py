@@ -1038,9 +1038,9 @@ def test_train_inner_model():
     import gzip
     from EvoDAG.command_line import CommandLineTrain
     fname = training_set()
-    if not os.path.isdir('.dir_model.evodag'):
-        os.mkdir('.dir_model.evodag')
-    with gzip.open('.dir_model.evodag/0.evodag', 'w') as fpt:
+    if not os.path.isdir('model.evodag_dir'):
+        os.mkdir('model.evodag_dir')
+    with gzip.open(os.path.join('model.evodag_dir', '0.evodag'), 'w') as fpt:
         fpt.write(b'')
     sys.argv = ['EvoDAG', '-n2', '-C',
                 '--model', 'model.evodag', fname]
