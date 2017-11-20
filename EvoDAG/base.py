@@ -487,6 +487,8 @@ class EvoDAG(object):
             kw = params_fname
         with open(kw) as fpt:
             kw = json.loads(fpt.read())
+            if isinstance(kw, list):
+                kw = kw[0]
         if seed is not None:
             kw['seed'] = seed
         kw = RandomParameterSearch.process_params(kw)

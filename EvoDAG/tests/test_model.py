@@ -272,3 +272,12 @@ def test_init2():
     hy = m.predict(X)
     assert (cl == hy).mean() > 0.9
     default_nargs()
+
+
+def test_init_evodag():
+    from EvoDAG.model import EvoDAG
+    m = EvoDAG(seed=10).fit(X, cl)
+    hy = m.predict(X)
+    assert (cl == hy).mean() > 0.9
+    default_nargs()
+    

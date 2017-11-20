@@ -1192,3 +1192,12 @@ def test_init_regression():
     assert m._function_set[0].nargs == 60
     hy = m.predict(X)
     assert np.unique(hy).shape[0] > 3
+
+
+def test_finite():
+    from EvoDAG import EvoDAG
+    evo = EvoDAG.init()
+    evo._finite = False
+    evo.fit(X, cl)
+    hy = evo.predict(X)
+    assert (hy == cl).mean() > 0.9

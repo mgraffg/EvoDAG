@@ -395,3 +395,14 @@ class EvoDAGE(object):
 
     def predict(self, *args, **kwargs):
         return self._m.predict(*args, **kwargs)
+
+
+class EvoDAG(EvoDAGE):
+    def __init__(self, **kwargs):
+        from EvoDAG import EvoDAG as evodag
+        self._m = evodag.init(**kwargs)
+
+    def fit(self, *args, **kwargs):
+        self._m.fit(*args, **kwargs)
+        self._m = self._m.model()
+        
