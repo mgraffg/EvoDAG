@@ -405,4 +405,5 @@ class EvoDAG(EvoDAGE):
     def fit(self, *args, **kwargs):
         self._m.fit(*args, **kwargs)
         self._m = self._m.model()
+        return self
         
