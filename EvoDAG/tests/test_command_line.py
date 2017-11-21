@@ -1051,3 +1051,49 @@ def test_train_inner_model():
     os.unlink('model.evodag')
     default_nargs()
     
+
+def training_set_str():
+    import tempfile
+    fname = tempfile.mktemp()
+    Xs = X.tolist()
+    h = ['cero', 'uno', 'dos']
+    y = [h[x] for x in cl]
+    Xs[0][0] = 'dato'
+    with open(fname, 'w') as fpt:
+        for x, v in zip(Xs, y):
+            l = x
+            l.append(v)
+            fpt.write(','.join(map(str, l)))
+            fpt.write('\n')
+    return fname
+
+
+def test_word_label_2id():
+    from EvoDAG.command_line import CommandLineTrain, predict
+    import gzip
+    import pickle
+    fname = training_set_str()
+    sys.argv = ['EvoDAG', '-n2', '-C',
+                '--model', 'model.evodag', fname]
+    c = CommandLineTrain()
+    c.parse_args()
+    with gzip.open('model.evodag') as fpt:
+        pickle.load(fpt)
+        a = pickle.load(fpt)
+        b = pickle.load(fpt)
+    assert len(a) == 1
+    assert 'dato' in a
+    for k in b.keys():
+        assert k in ['cero', 'uno', 'dos']
+    sys.argv = ['EvoDAG', '--output', 'output.evodag',
+                '--model', 'model.evodag', fname]
+    predict()
+    assert os.path.isfile('model.evodag')
+    os.unlink(fname)
+    os.unlink('model.evodag')
+    default_nargs()
+    with open('output.evodag') as fpt:
+        l = fpt.readlines()
+    os.unlink('output.evodag')
+    for x in l:
+        assert x.strip() in ['cero', 'uno', 'dos']

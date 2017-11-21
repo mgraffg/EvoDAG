@@ -529,8 +529,8 @@ class CommandLinePredict(CommandLine):
         model_file = self.get_model_file()
         with gzip.open(model_file, 'r') as fpt:
             m = pickle.load(fpt)
-            self.inputs.word2id = pickle.load(fpt)
-            self.inputs.label2id = pickle.load(fpt)
+            self.inputs.word2id.update(pickle.load(fpt))
+            self.inputs.label2id.update(pickle.load(fpt))
         self.read_test_set()
         self.data.classifier = m.classifier
         if self.data.raw_outputs:
@@ -663,8 +663,8 @@ class CommandLineUtils(CommandLine):
                 try:
                     with gzip.open(k, 'r') as fpt:
                         models.append(pickle.load(fpt))
-                        self.word2id = pickle.load(fpt)
-                        self.label2id = pickle.load(fpt)
+                        self.inputs.word2id.update(pickle.load(fpt))
+                        self.inputs.label2id.update(pickle.load(fpt))
                 except EOFError:
                     flag = True
                     os.unlink(k)
@@ -724,8 +724,8 @@ class CommandLineUtils(CommandLine):
         if self.data.graphviz:
             with gzip.open(model_file, 'r') as fpt:
                 m = pickle.load(fpt)
-                self.word2id = pickle.load(fpt)
-                self.label2id = pickle.load(fpt)
+                self.inputs.word2id.update(pickle.load(fpt))
+                self.inputs.label2id.update(pickle.load(fpt))
             remove_terminals = self.data.remove_terminals
             if remove_terminals:
                 m.graphviz(self.data.output_file, terminals=False)
@@ -745,20 +745,20 @@ class CommandLineUtils(CommandLine):
         elif self.data.fitness:
             with gzip.open(model_file, 'r') as fpt:
                 m = pickle.load(fpt)
-                self.word2id = pickle.load(fpt)
-                self.label2id = pickle.load(fpt)
+                self.inputs.word2id.update(pickle.load(fpt))
+                self.inputs.label2id.update(pickle.load(fpt))
             print("Median fitness: %0.4f" % (m.fitness_vs * -1))
         elif self.data.size:
             with gzip.open(model_file, 'r') as fpt:
                 m = pickle.load(fpt)
-                self.word2id = pickle.load(fpt)
-                self.label2id = pickle.load(fpt)
+                self.inputs.word2id.update(pickle.load(fpt))
+                self.inputs.label2id.update(pickle.load(fpt))
             print("Size: %s" % m.size)
         elif self.data.height:
             with gzip.open(model_file, 'r') as fpt:
                 m = pickle.load(fpt)
-                self.word2id = pickle.load(fpt)
-                self.label2id = pickle.load(fpt)
+                self.inputs.word2id.update(pickle.load(fpt))
+                self.inputs.label2id.update(pickle.load(fpt))
             print("Height: %s" % m.height)
         elif self.data.used_inputs_number:
             with gzip.open(model_file, 'r') as fpt:
