@@ -28,17 +28,32 @@ thus it is only necessary to train the model as:
 ```bash   
 EvoDAG-train -m model.evodag -n 100 -u 4 iris.data 
 ```
-assuming the dataset is *iris.data*. 
+assuming the dataset is *iris.data*.
 
-|Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG - Inductive| EvoDAG - Shuffle | EvoDAG - Transductive|
-| ----- | ---------------------------------------------: | --------------------------------------------: | -----------------------------------: | -----------: |-----------: |-----------: |
-|banana          |     **11.08**      |  28.00  |11.27 | 12.88 | 12.43 | 11.93|
-|thyroid        |      **4.32**      |  23.38  |  6.13  |  8.56 | 8.21 |7.79 |
-|diabetis        |     27.06   |   37.65  |  26.65  |  24.85 | **24.82** | 24.87 |
-|heart             |   20.69        |  27.69  |  18.12  |  17.24 | 16.87 | **16.86**|
-|ringnorm       |      7.98      |  15.49  |  **1.96**  |  2.93 | 2.71 |2.00 |
-|twonorm       |       3.09      |  20.87  |  2.90  |  3.03 | 2.99 | **2.64** |
-|german         |      30.10    | 39.45  |  29.00  | 28.71 | **28.64** | 28.83 |
-|image         |       **2.90** | 21.29  |  3.32  | 4.07 | 3.40 | 3.42 |
-|waveform      |       12.80   | 22.67  |  **10.62**  |  10.88 | 10.79 |10.69 |
+|Dataset|Input features|Training patterns|Test patterns|
+|------|----------:|--------------:|---------:|
+|banana| 2| 400 | 4900|
+|thyroid | 5 | 140 | 75 |
+|diabetis | 8 | 468 | 300 |
+|heart | 13 | 170 | 100 |
+|ringnorm | 20 | 400 | 7000 |
+|twonorm | 20 | 400 | 7000 |
+|german | 20 | 700 | 300 |
+|image | 20 | 1300 | 1010 |
+|waveform | 21 | 400 | 4600 |
+
+
+
+
+|Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG - Inductive| EvoDAG - Shuffle | EvoDAG - Transductive|EvoDAG - BSF|
+| ----- | ---------------------------------------------: | --------------------------------------------: | -----------------------------------: | -----------: |-----------: |-----------: |-----------: |
+|banana          |     **11.08**      |  28.00  |11.27 | 12.88 | 12.43 | 11.93|14.95|
+|thyroid        |      **4.32**      |  23.38  |  6.13  |  8.56 | 8.21 |7.79 |14.63|
+|diabetis        |     27.06   |   37.65  |  26.65  |  24.85 | **24.82** | 24.87 |31.96|
+|heart             |   20.69        |  27.69  |  18.12  |  17.24 | 16.87 | **16.86**|26.08|
+|ringnorm       |      7.98      |  15.49  |  **1.96**  |  2.93 | 2.71 |2.00 |1.97|
+|twonorm       |       3.09      |  20.87  |  2.90  |  3.03 | 2.99 | **2.64** |2.74|
+|german         |      30.10    | 39.45  |  29.00  | 28.71 | **28.64** | 28.83 |35.91|
+|image         |       **2.90** | 21.29  |  3.32  | 4.07 | 3.40 | 3.42 |3.00|
+|waveform      |       12.80   | 22.67  |  **10.62**  |  10.88 | 10.79 |10.69 |24.69|
 
