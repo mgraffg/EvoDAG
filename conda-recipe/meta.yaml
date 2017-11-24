@@ -1,0 +1,38 @@
+package:
+  name: evodag
+  version: "0.10.9"
+
+requirements:
+  build:
+    - python
+    - cython
+    - setuptools
+    - numpy
+    - sparsearray
+
+  run:
+    - python
+    - numpy
+    - sparsearray
+
+test:
+    requires:
+        - nose
+        - numpy
+        - cython
+        - sparsearray
+		
+    imports:
+        - EvoDAG
+
+    commands:
+        - nosetests --exe SparseArray
+        - EvoDAG-params --help
+        - EvoDAG-train --help
+        - EvoDAG-predict --help
+	
+
+about:
+  home: https://github.com/mgraffg/EvoDAG
+  summary: Evolving Directed Acyclic Graph (EvoDAG) is a steady-state Genetic Programming system with tournament selection.
+  license: Apache
