@@ -44,8 +44,8 @@ install:
   # this installs the appropriate Miniconda (Py2/Py3, 32/64 bit),
   # as well as pip, conda-build, and the binstar CLI
   - powershell .\\continuous-integration\\appveyor\\install.ps1
-  - conda config --append channels mgraffg
   - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+  - conda config --append channels mgraffg  
 
 build: false
 
