@@ -21,16 +21,16 @@ test:
         - numpy
         - cython
         - sparsearray
-		
+
     imports:
         - EvoDAG
 
     commands:
-        - nosetests --exe SparseArray
+        - nosetests --exe EvoDAG
         - EvoDAG-params --help
         - EvoDAG-train --help
         - EvoDAG-predict --help
-	
+
 
 about:
   home: https://github.com/mgraffg/EvoDAG
