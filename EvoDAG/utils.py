@@ -223,7 +223,6 @@ class RandomParameterSearch(object):
         self._training_size = training_size
         self.popsize_constraint(params)
         self._params = sorted(params.items())
-        print(self._params)
         assert len(self._params)
         self._params.reverse()
         self._len = None
@@ -255,6 +254,7 @@ class RandomParameterSearch(object):
     def __len__(self):
         if self._len is None:
             _ = np.product([len(x[1]) for x in self._params])
+            print(_, '*' * 10)
             assert _ >= 0
             self._len = _
         return self._len
