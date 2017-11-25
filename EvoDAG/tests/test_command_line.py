@@ -977,13 +977,16 @@ def test_get_best_params_files():
                 m = pickle.load(fpt)
                 l.append(m.fitness_vs * -1)
         R.append((p, l))
+    print(R)
     m = min(R, key=lambda x: np.median(x[1]))
     param = '%s_params.json' % m[0]
     sys.argv = ['EvoDAG', '--best-params-file', 'cache']
     c = utils(output=True)
+    print(c.best_params, param)
     assert c.best_params == param
     sys.argv = ['EvoDAG', '-u2', '--best-params-file', 'cache']
     c = utils(output=True)
+    print(c.best_params, param)
     assert c.best_params == param
     if os.path.isdir('cache'):
         shutil.rmtree('cache')
