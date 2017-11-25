@@ -253,8 +253,7 @@ class RandomParameterSearch(object):
 
     def __len__(self):
         if self._len is None:
-            _ = np.product([len(x[1]) for x in self._params])
-            print(_, '*' * 10)
+            _ = np.product([float(len(x[1])) for x in self._params])
             assert _ >= 0
             self._len = _
         return self._len
