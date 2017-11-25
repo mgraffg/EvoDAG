@@ -265,7 +265,7 @@ class RandomParameterSearch(object):
         for l, k_v in zip(lens, self._params):
             k, v = k_v
             key, residual = divmod(key, l)
-            res[k] = v[residual]
+            res[k] = v[int(residual)]
         return res
 
     def constraints(self, k):
