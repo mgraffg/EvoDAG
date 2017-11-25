@@ -285,7 +285,7 @@ class RandomParameterSearch(object):
         _len = self.__len__()
         npoints = self._npoints if _len > self._npoints else _len
         while npoints:
-            k = np.random.randint(_len)
+            k = np.round(np.random.uniform(0, _len)).astype(np.uint)
             if len(m) == _len:
                 return
             while k in m:
