@@ -223,6 +223,7 @@ class RandomParameterSearch(object):
         self._training_size = training_size
         self.popsize_constraint(params)
         self._params = sorted(params.items())
+        print(self._params)
         assert len(self._params)
         self._params.reverse()
         self._len = None
