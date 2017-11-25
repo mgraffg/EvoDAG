@@ -692,7 +692,7 @@ class CommandLineUtils(CommandLine):
                                    total=len(args))]
             p.close()
         for m, fit in res:
-            basename = (m.split(model_file + '/')[1]).split('_')[:1]
+            basename = (m.split(os.path.join(model_file, + ''))[1]).split('_')[:1]
             fname = "_".join(basename)
             try:
                 h[fname].append(fit)

@@ -963,7 +963,7 @@ def test_get_best_params_files():
     sys.argv = ['EvoDAG', '-C', '-Pcache', '--only-paramsfiles',
                 '-r', '2', fname]
     params()
-    for p in glob('cache/*_params.json'):
+    for p in glob(os.path.join('cache', '*_params.json')):
         basename = p.split('_params.json')[0]
         for s in range(3):
             model = basename + '_%s.model' % s
@@ -973,7 +973,7 @@ def test_get_best_params_files():
     for p in range(2):
         l = []
         for s in range(3):
-            with gzip.open('cache/%s_%s.model' % (p, s)) as fpt:
+            with gzip.open(os.path.join('cache', '%s_%s.model' % (p, s))) as fpt:
                 m = pickle.load(fpt)
                 l.append(m.fitness_vs * -1)
         R.append((p, l))

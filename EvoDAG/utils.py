@@ -223,6 +223,7 @@ class RandomParameterSearch(object):
         self._training_size = training_size
         self.popsize_constraint(params)
         self._params = sorted(params.items())
+        assert len(self._params)
         self._params.reverse()
         self._len = None
         self._npoints = npoints
@@ -253,6 +254,7 @@ class RandomParameterSearch(object):
     def __len__(self):
         if self._len is None:
             _ = np.product([len(x[1]) for x in self._params])
+            assert _ >= 0
             self._len = _
         return self._len
 
@@ -279,7 +281,7 @@ class RandomParameterSearch(object):
     def __iter__(self):
         np.random.seed(self._seed)
         m = {}
-        _len = len(self)
+        _len = self.__len__()
         npoints = self._npoints if _len > self._npoints else _len
         while npoints:
             k = np.random.randint(_len)
