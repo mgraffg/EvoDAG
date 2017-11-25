@@ -434,7 +434,7 @@ def test_time():
     assert a['popsize'] == 3
     assert a['early_stopping_rounds'] == 1
     print(a['_time'])
-    assert a['_time'] > 0.001
+    assert a['_time'] >= 0.0
     os.unlink('cache.evodag')
     default_nargs()
 
