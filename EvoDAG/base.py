@@ -472,7 +472,7 @@ class EvoDAG(object):
         return m.predict(X)
 
     @classmethod
-    def init(cls, params_fname=None, seed=None, classifier=True):
+    def init(cls, params_fname=None, seed=None, classifier=True, **kwargs):
         import os
         from .utils import RandomParameterSearch
         import json
@@ -485,13 +485,15 @@ class EvoDAG(object):
                                   'conf', 'default_parameters_r.json')
         else:
             kw = params_fname
-        with open(kw) as fpt:
-            kw = json.loads(fpt.read())
-            if isinstance(kw, list):
-                kw = kw[0]
+        if not isinstance(kw, dict):
+            with open(kw) as fpt:
+                kw = json.loads(fpt.read())
+                if isinstance(kw, list):
+                    kw = kw[0]
         if seed is not None:
             kw['seed'] = seed
         kw = RandomParameterSearch.process_params(kw)
+        kw.update(kwargs)
         return cls(**kw)
 
 

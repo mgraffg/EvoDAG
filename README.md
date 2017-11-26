@@ -298,7 +298,8 @@ assuming the dataset is *iris.data*.
 ```bash   
 conda install -c mgraffg evodag
 ```
-Currently, EvoDAG is available for Python 2.7, 3.3, 3.4, 3.5, and 3.6 for linux-64 and osx-64
+Currently, EvoDAG is available for Python 3.4, 3.5, and 3.6 for
+windows-32, windows-64, linux-64 and osx-64
 
 * Install using pip  
 ```bash   

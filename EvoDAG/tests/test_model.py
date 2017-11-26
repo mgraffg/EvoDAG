@@ -280,4 +280,3 @@ def test_init_evodag():
     hy = m.predict(X)
     assert (cl == hy).mean() > 0.9
     default_nargs()
-    
