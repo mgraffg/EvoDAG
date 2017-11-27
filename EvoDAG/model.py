@@ -19,6 +19,10 @@ from .node import Variable, Function
 from .utils import tonparray
 from multiprocessing import Pool
 import gc
+import os
+import gzip
+import pickle
+import shutil
 try:
     from tqdm import tqdm
 except ImportError:
@@ -27,11 +31,24 @@ except ImportError:
 
 
 def fit(X_y_evodag):
-    from EvoDAG import EvoDAG
-    X, y, evodag = X_y_evodag
-    evodag = EvoDAG.init(**evodag)
-    evodag.fit(X, y)
-    return evodag.model()
+    X, y, test_set, evodag, tmpdir = X_y_evodag
+    if tmpdir is not None:
+        seed = evodag['seed']
+        output = os.path.join(tmpdir, '%s.evodag' % seed)
+        if os.path.isfile(output):
+            with gzip.open(output) as fpt:
+                try:
+                    return pickle.load(fpt)
+                except Exception:
+                    pass
+    evodag = EvoDAG(**evodag)
+    evodag.fit(X, y, test_set=test_set)
+    m = evodag.model
+    gc.collect()
+    if tmpdir is not None:
+        with gzip.open(output, 'w') as fpt:
+            pickle.dump(m, fpt)
+    return m
 
 
 def decision_function(model_X):
@@ -223,16 +240,17 @@ class Model(object):
 
 class Ensemble(object):
     "Ensemble that predicts using the average"
-    def __init__(self, models, n_jobs=1, evodags=None):
+    def __init__(self, models, n_jobs=1, evodags=None, tmpdir=None):
         self._models = models
         self._n_jobs = n_jobs
         self._evodags = evodags
+        self._tmpdir = tmpdir
         if models is not None:
             self._init()
 
-    def fit(self, X, y):
+    def fit(self, X, y, test_set=None):
         evodags = self._evodags
-        args = [(X, y, evodag) for evodag in evodags]
+        args = [(X, y, test_set, evodag, self._tmpdir) for evodag in evodags]
         if self._n_jobs == 1:
             self._models = [fit(x) for x in tqdm(args)]
         else:
@@ -240,6 +258,8 @@ class Ensemble(object):
             self._models = [x for x in tqdm(p.imap_unordered(fit, args),
                                             total=len(args))]
             p.close()
+        if self._tmpdir is not None:
+            shutil.rmtree(self._tmpdir)
         self._init()
         return self
 
@@ -373,7 +393,7 @@ class Ensemble(object):
             m.graphviz(output % k, **kwargs)
 
     @classmethod
-    def init(cls, n_estimators=30, n_jobs=1, **kwargs):
+    def init(cls, n_estimators=30, n_jobs=1, tmpdir=None, **kwargs):
         try:
             init_seed = kwargs['seed']
             del kwargs['seed']
@@ -383,7 +403,9 @@ class Ensemble(object):
         for x in range(init_seed, init_seed + n_estimators):
             kwargs['seed'] = x
             lst.append(kwargs.copy())
-        return cls(None, evodags=lst, n_jobs=n_jobs)
+        if tmpdir is not None and not os.path.isdir(tmpdir):
+            os.mkdir(tmpdir)
+        return cls(None, evodags=lst, n_jobs=n_jobs, tmpdir=tmpdir)
 
 
 class EvoDAGE(object):
@@ -406,4 +428,7 @@ class EvoDAG(EvoDAGE):
         self._m.fit(*args, **kwargs)
         self._m = self._m.model()
         return self
-        
+
+    @property
+    def model(self):
+        return self._m

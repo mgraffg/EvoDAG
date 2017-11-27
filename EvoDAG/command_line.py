@@ -15,7 +15,7 @@ import argparse
 import numpy as np
 from .utils import RandomParameterSearch, PARAMS
 from SparseArray import SparseArray
-from .model import Ensemble
+from .model import Ensemble, EvoDAG as model_EvoDAG, EvoDAGE
 import collections
 import os
 from multiprocessing import Pool
@@ -183,42 +183,6 @@ class CommandLine(object):
             a = self.data.training_set.split('.')[0]
             self.data.model_file = a + '.evodag.gz'
         return self.data.model_file
-
-    def store_model(self, kw):
-        model_file = self.get_model_file()
-        if self.data.ensemble_size == 1:
-            if self.data.seed >= 0:
-                kw['seed'] = self.data.seed
-            self.evo = EvoDAG(**kw).fit(self.X, self.y, test_set=self.Xtest)
-            self.model = self.evo.model()
-        else:
-            model_dir = model_file + '_dir'
-            if not os.path.isdir(model_dir):
-                os.mkdir(model_dir)
-            min_size = self.data.min_size
-            esize = self.data.ensemble_size
-            init = self.data.seed
-            end = init + esize
-            evo = []
-            while len(evo) < esize:
-                args = [(x, kw, self.X, self.y, self.Xtest, model_dir)
-                        for x in range(init, end)]
-                if self.data.cpu_cores == 1:
-                    _ = [init_evodag(x) for x in tqdm(args, total=len(args))]
-                else:
-                    p = Pool(self.data.cpu_cores, maxtasksperchild=1)
-                    _ = [x for x in tqdm(p.imap_unordered(init_evodag, args),
-                                         total=len(args))]
-                    p.close()
-                [evo.append(x) for x in _ if x.size >= min_size]
-                init = end
-                end = init + (esize - len(evo))
-            shutil.rmtree(model_dir)
-            self.model = Ensemble(evo)
-        with gzip.open(model_file, 'w') as fpt:
-            pickle.dump(self.model, fpt)
-            pickle.dump(self.word2id, fpt)
-            pickle.dump(self.label2id, fpt)
 
     def get_output_file(self):
         if self.data.output_file is None:
@@ -444,42 +408,31 @@ class CommandLineTrain(CommandLine):
            action="store_true",
            help='Whether the inputs are in json format',
            default=False)
-        pa('--min-size', dest='min_size',
-           type=int, default=1, help='Model min-size')
+        # pa('--min-size', dest='min_size',
+        #    type=int, default=1, help='Model min-size')
         pa('-s', '--seed', dest='seed',
            default=-1, type=int, help='Seed')
 
     def main(self):
         self.read_training_set()
         self.read_test_set()
-        parameters = self.data.parameters
-        if parameters is None:
-            if self.data.classifier:
-                parameters = os.path.join(os.path.dirname(__file__),
-                                          'conf', 'default_parameters.json')
-            elif self.data.regressor:
-                parameters = os.path.join(os.path.dirname(__file__),
-                                          'conf', 'default_parameters_r.json')
-        if parameters.endswith('.gz'):
-            func = gzip.open
+        model_file = self.get_model_file()
+        classifier = False if self.data.regressor else True
+        kw = dict(params_fname=self.data.parameters, classifier=classifier)
+        if self.data.seed >= 0:
+            kw['seed'] = self.data.seed
+        if self.data.ensemble_size == 1:
+            evo = model_EvoDAG(**kw).fit(self.X, self.y, test_set=self.Xtest)
+            self.model = evo.model
         else:
-            func = open
-        with func(parameters, 'rb') as fpt:
-            try:
-                d = fpt.read()
-                res = json.loads(str(d, encoding='utf-8'))
-            except TypeError:
-                res = json.loads(d)
-        try:
-            kw = res[0]
-        except KeyError:
-            kw = res
-        kw = RandomParameterSearch.process_params(kw)
-        if 'seed' in kw:
-            if self.data.seed < 0:
-                self.data.seed = kw['seed']
-            del kw['seed']
-        self.store_model(kw)
+            self.model = EvoDAGE(n_estimators=self.data.ensemble_size,
+                                 tmpdir=model_file + '_dir',
+                                 **kw).fit(self.X, self.y,
+                                           test_set=self.Xtest)
+        with gzip.open(model_file, 'w') as fpt:
+            pickle.dump(self.model, fpt)
+            pickle.dump(self.word2id, fpt)
+            pickle.dump(self.label2id, fpt)
 
 
 class CommandLinePredict(CommandLine):

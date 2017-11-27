@@ -476,6 +476,7 @@ class EvoDAG(object):
         import os
         from .utils import RandomParameterSearch
         import json
+        import gzip
         if params_fname is None:
             if classifier:
                 kw = os.path.join(os.path.dirname(__file__),
@@ -486,10 +487,18 @@ class EvoDAG(object):
         else:
             kw = params_fname
         if not isinstance(kw, dict):
-            with open(kw) as fpt:
-                kw = json.loads(fpt.read())
-                if isinstance(kw, list):
-                    kw = kw[0]
+            if kw.endswith('.gz'):
+                func = gzip.open
+            else:
+                func = open
+            with func(kw, 'rb') as fpt:
+                try:
+                    d = fpt.read()
+                    kw = json.loads(str(d, encoding='utf-8'))
+                except TypeError:
+                    kw = json.loads(d)
+            if isinstance(kw, list):
+                kw = kw[0]
         if seed is not None:
             kw['seed'] = seed
         kw = RandomParameterSearch.process_params(kw)

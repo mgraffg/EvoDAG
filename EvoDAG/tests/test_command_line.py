@@ -816,31 +816,31 @@ def test_model_used_inputs_number():
     default_nargs()
 
 
-def test_model_min_size():
-    import os
-    from EvoDAG.command_line import params, train
-    import gzip
-    import pickle
-    fname = mo_training_set()
-    sys.argv = ['EvoDAG', '--output-dim=3',
-                '-R', '--parameters',
-                'cache.evodag', '-p3', '-e2',
-                '-r2', fname]
-    params()
-    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
-                '-n2', '--output-dim=3',
-                '--min-size=6',
-                '--model', 'model.evodag',
-                '--test', fname, fname]
-    train()
-    os.unlink('cache.evodag')
-    with gzip.open('model.evodag') as fpt:
-        m = pickle.load(fpt)
-        for x in m.models:
-            print(x.size)
-            assert x.size >= 6
-    os.unlink('model.evodag')
-    default_nargs()
+# def test_model_min_size():
+#     import os
+#     from EvoDAG.command_line import params, train
+#     import gzip
+#     import pickle
+#     fname = mo_training_set()
+#     sys.argv = ['EvoDAG', '--output-dim=3',
+#                 '-R', '--parameters',
+#                 'cache.evodag', '-p3', '-e2',
+#                 '-r2', fname]
+#     params()
+#     sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
+#                 '-n2', '--output-dim=3',
+#                 '--min-size=6',
+#                 '--model', 'model.evodag',
+#                 '--test', fname, fname]
+#     train()
+#     os.unlink('cache.evodag')
+#     with gzip.open('model.evodag') as fpt:
+#         m = pickle.load(fpt)
+#         for x in m.models:
+#             print(x.size)
+#             assert x.size >= 6
+#     os.unlink('model.evodag')
+#     default_nargs()
 
 
 def test_logging():
