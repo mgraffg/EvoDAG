@@ -49,7 +49,7 @@ class EvoDAG(object):
                  labels=None, all_inputs=False, random_generations=0, fitness_function='BER',
                  min_density=0.8, multiple_outputs=False, function_selection=True,
                  fs_tournament_size=2, finite=True, pr_variable=0.33,
-                 share_inputs=False, input_functions=None, **kwargs):
+                 share_inputs=False, input_functions=None, F1_index=-1, **kwargs):
         self._fitness_function = fitness_function
         self._bagging_fitness = BaggingFitness(base=self)
         generations = np.inf if generations is None else generations
@@ -99,6 +99,7 @@ class EvoDAG(object):
             raise RuntimeError("Infinite evolution, set generations\
             or tr_fraction < 1 ")
         self._multiple_outputs = multiple_outputs
+        self._F1_index = F1_index
         self._extras = kwargs
 
     def _set_input_functions(self, input_functions):
@@ -501,8 +502,8 @@ class EvoDAG(object):
                 kw = kw[0]
         if seed is not None:
             kw['seed'] = seed
-        kw = RandomParameterSearch.process_params(kw)
         kw.update(kwargs)
+        kw = RandomParameterSearch.process_params(kw)
         return cls(**kw)
 
 
