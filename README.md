@@ -250,47 +250,32 @@ Iris-setosa
 # Performance #
 
 The next table presents the average performance in terms of the
-balance error rate (BER) of PSMS, auto-sklearn, SVM, and EvoDAG on nine classification
+balance error rate (BER) of different classifiers found in
+[scikit-learn](http://scikit-learn.org) on nine classification
 problems (these benchmarks can be found:
 [matlab](http://theoval.cmp.uea.ac.uk/matlab/benchmarks) and [text](http://ws.ingeotec.mx/~mgraffg/classification)).
-  
-
 The best performance among each classification dataset is in
-bold face to facilitate the reading. It can be observed from the table
-that PSMS obtained the best performance on three datasets, SVM
-on one dataset, and EvoDAG (0.10.6) obtained the
-best performance in the rest of the datasets (five). One
-characteristic that caught our attention is the high confidence
-intervals of auto-sklearn (not shown here), it is one order of magnitude higher than
-the other systems. Analyzing the predictions performed by
-auto-sklearn, it is found that in some of the trails the algorithm
-predicts only one class, obtaining, consequently, the worst possible
-performance, i.e., BER equals 50. This behaviour, clearly, can be
-automatically spotted, and, one possible solution could be as simple
-as execute auto-sklearn again on that particular case. Nonetheless, we
-decided to keep auto-sklearn without modifications.
+bold face to facilitate the reading.
 
-The table also presents the performance of EvoDAG (0.10.7), being the
-only difference that EvoDAG (0.10.7) does not optimise the parameters,
-thus it is only necessary to train the model as:
-
-```bash   
-EvoDAG-train -m model.evodag -n 100 -u 4 iris.data 
-```
-assuming the dataset is *iris.data*. 
-
-|Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG (0.10.6)|EvoDAG (0.10.7)|
-| ----- | ---------------------------------------------: | --------------------------------------------: | -----------------------------------: | -----------: |-----------: |
-|banana          |     **11.08**      |  28.00  |11.27 | 11.94 | 11.70|
-|thyroid        |      **4.32**      |  23.38  |  6.13  |  8.58  | 7.01 |
-|diabetis        |     27.06   |   37.65  |  26.65  |  **25.51** | 24.68 |
-|heart             |   20.69        |  27.69  |  18.12  |  **16.21** | 16.47 |
-|ringnorm       |      7.98      |  15.49  |  1.96  |  **1.60** | 1.95 |
-|twonorm       |       3.09      |  20.87  |  2.90  |  **2.49** | 2.58 |
-|german         |      30.10    | 39.45  |  29.00  | **28.50** | 28.61 |
-|image         |       **2.90** | 21.29  |  3.32  | 4.38 | 3.33 |
-|waveform      |       12.80   | 22.67  |  **10.62**  |  10.84 | 10.56 |
-
+|Classifier|banana | thyroid | diabetis | heart | ringnorm | twonorm |german| image | waveform|Average rank|
+|-------|------:|------:|-------:|----:|--------:|--------:|------:|-----:|--------:|---------:|
+EvoDAG |11.93 | 7.79 | **24.87** | 16.86 | 2.00 | 2.64 | 28.83 | 3.42 | **10.69**|3.00|
+SVC|**11.59** | 8.08 | 29.82 | 17.75 | 1.84 | 2.73 | 33.31 | 8.86 | 10.74|5.33|
+GaussianNB|41.65 | 11.51 | 28.61 | **16.34** | **1.44** | 2.40 | 30.58 | 36.67 | 12.21|5.67|
+GradientBoostingClassifier|13.84 | 8.25 | 28.52 | 21.06 | 6.65 | 5.74 | 31.08 | **2.09** | 13.62|6.11|
+MLPClassifier|18.75 | 9.31 | 28.61 | 18.33 | 10.96 | 2.82 | 32.03 | 3.35 | 11.38|6.44|
+NearestCentroid|46.33 | 22.49 | 28.19 | 16.66 | 24.09 | **2.32** | **27.68** | 37.09 | 12.96|7.33|
+AdaBoostClassifier|28.16 | 8.73 | 29.32 | 22.51 | 7.01 | 5.35 | 31.58 | 3.20 | 14.64|8.33|
+LinearSVC|49.97 | 16.91 | 28.47 | 16.80 | 25.18 | 3.58 | 32.44 | 18.65 | 14.20|8.67|
+ExtraTreesClassifier|13.49 | **6.56** | 32.99 | 21.06 | 8.42 | 7.76 | 36.95 | 2.38 | 16.48|8.67|
+RandomForestClassifier|13.59 | 7.86 | 31.93 | 21.42 | 9.58 | 8.89 | 36.72 | 2.10 | 16.87|9.11|
+LogisticRegression |49.99 | 20.18 | 28.29 | 16.97 | 25.29 | 2.92 | 32.07 | 18.74 | 13.73|9.11|
+KNeighborsClassifier|11.92 | 12.06 | 32.12 | 18.64 | 43.72 | 3.76 | 36.18 | 5.26 | 13.80|9.44|
+BernoulliNB|45.46 | 32.47 | 31.88 | 16.62 | 28.13 | 5.83 | 32.78 | 39.03 | 14.33|11.44|
+DecisionTreeClassifier|15.21 | 9.28 | 33.85 | 27.06 | 19.20 | 20.87 | 36.51 | 3.38 | 20.78|11.78|
+SGDClassifier |50.28 | 17.69 | 34.03 | 22.19 | 32.65 | 3.89 | 38.50 | 25.12 | 17.61|14.00|
+PassiveAggressiveClassifier|49.04 | 19.48 | 34.68 | 23.31 | 31.48 | 3.85 | 38.65 | 26.24 | 17.10|14.11|
+Perceptron|50.15 | 18.18 | 34.56 | 21.59 | 33.49 | 3.92 | 37.47 | 26.69 | 19.03|14.44|
 
 # Install EvoDAG #
 
