@@ -396,6 +396,9 @@ class CommandLineTrain(CommandLine):
                                  default=1,
                                  type=int,
                                  help="Output Dimension (default 1) use with multiple-outputs flag")
+        dr = self.parser.add_argument
+        dr('--kw', dest='kwargs', default=None, type=str,
+           help='Parameters in json that overwrite default parameters')
 
     def model(self):
         cdn = 'File to store EvoDAG model'
@@ -421,6 +424,9 @@ class CommandLineTrain(CommandLine):
         kw = dict(params_fname=self.data.parameters, classifier=classifier)
         if self.data.seed >= 0:
             kw['seed'] = self.data.seed
+        if self.data.kwargs is not None:
+            _ = json.loads(self.data.kwargs)
+            kw.update(_)
         if self.data.ensemble_size == 1:
             evo = model_EvoDAG(**kw).fit(self.X, self.y, test_set=self.Xtest)
             self.model = evo.model

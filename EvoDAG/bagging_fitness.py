@@ -261,7 +261,9 @@ class BaggingFitness(object):
                     v.fitness = mf1 - 1
                 elif fit_func == 'F1':
                     f1_score = self.score
-                    mf1, mf1_v = f1_score.F1(self.min_class, base._y_klass,
+                    f1_index = self._base._F1_index
+                    index = self.min_class if f1_index < 0 else f1_index
+                    mf1, mf1_v = f1_score.F1(index, base._y_klass,
                                              hy, base._mask_ts.index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1

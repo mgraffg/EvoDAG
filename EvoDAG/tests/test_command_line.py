@@ -1101,3 +1101,51 @@ def test_word_label_2id():
     os.unlink('output.evodag')
     for x in l:
         assert x.strip() in ['cero', 'uno', 'dos']
+
+
+def test_train_kw():
+    import os
+    from EvoDAG.command_line import CommandLineTrain
+    fname = training_set()
+    sys.argv = ['EvoDAG', '-n2', '-C',
+                '--kw', '{"popsize": 10, "early_stopping_rounds": 10}',
+                '--model', 'model.evodag', fname]
+    c = CommandLineTrain()
+    c.parse_args()
+    assert os.path.isfile('model.evodag')
+    os.unlink(fname)
+    os.unlink('model.evodag')
+    default_nargs()
+
+
+def test_train_fitness_function():
+    import os
+    from EvoDAG.command_line import CommandLineTrain
+    fname = training_set()
+    sys.argv = ['EvoDAG', '-n2', '-C',
+                '--kw', '{"fitness_function": "F1", "F1_index": 0}',
+                '--model', 'model.evodag', fname]
+    c = CommandLineTrain()
+    c.parse_args()
+    assert os.path.isfile('model.evodag')
+    os.unlink(fname)
+    os.unlink('model.evodag')
+    default_nargs()
+
+
+def test_train_function_set():
+    import os
+    from EvoDAG.command_line import CommandLineTrain
+    from EvoDAG.node import Add
+    fname = training_set()
+    sys.argv = ['EvoDAG', '-n2', '-C',
+                '--kw', '{"popsize": 10, "early_stopping_rounds": 10, "Add": 10}',
+                '--model', 'model.evodag', fname]
+    c = CommandLineTrain()
+    c.parse_args()
+    assert os.path.isfile('model.evodag')
+    os.unlink(fname)
+    os.unlink('model.evodag')
+    assert Add.nargs == 10
+    default_nargs()
+    
