@@ -274,7 +274,6 @@ def test_init2():
     print((cl == hy).mean(), cl, hy)
     assert (cl == hy).mean() > 0.9
     default_nargs()
-    assert False
 
 
 def test_init_evodag():
