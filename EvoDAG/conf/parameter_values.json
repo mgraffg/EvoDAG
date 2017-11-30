@@ -224,5 +224,9 @@
     "unique_individuals": [
         true,
         false
+    ],
+    "use_all_vars_input_functions": [
+        true,
+        false
     ]
 }

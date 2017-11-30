@@ -46,10 +46,12 @@ class EvoDAG(object):
                  tr_fraction=0.5, population_class=SteadyState,
                  number_tries_feasible_ind=30, time_limit=None,
                  unique_individuals=True, classifier=True,
-                 labels=None, all_inputs=False, random_generations=0, fitness_function='BER',
+                 labels=None, all_inputs=False, random_generations=0,
+                 fitness_function='BER',
                  min_density=0.8, multiple_outputs=False, function_selection=True,
                  fs_tournament_size=2, finite=True, pr_variable=0.33,
-                 share_inputs=False, input_functions=None, F1_index=-1, **kwargs):
+                 share_inputs=False, input_functions=None, F1_index=-1,
+                 use_all_vars_input_functions=False, **kwargs):
         self._fitness_function = fitness_function
         self._bagging_fitness = BaggingFitness(base=self)
         generations = np.inf if generations is None else generations
@@ -100,6 +102,7 @@ class EvoDAG(object):
             or tr_fraction < 1 ")
         self._multiple_outputs = multiple_outputs
         self._F1_index = F1_index
+        self._use_all_vars_input_functions = use_all_vars_input_functions
         self._extras = kwargs
 
     def _set_input_functions(self, input_functions):

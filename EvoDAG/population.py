@@ -33,6 +33,29 @@ class Inputs(object):
         tag = 'classification' if c else 'regression'
         self._funcs = [x for x in self._funcs if getattr(x, tag)]
         self.functions()
+        self._all_variables_index = 0
+
+    def use_all_variables(self):
+        return self._base._use_all_vars_input_functions and self._base.nvar > 1 and self._all_variables_index < self._nfunc
+
+    def all_variables(self):
+        f = self._func[self._all_variables_index]
+        self._all_variables_index += 1
+        base = self._base
+        unique_individuals = self._unique_individuals
+        v = f([x for x in range(base.nvar)],
+              ytr=base._ytr, naive_bayes=base.naive_bayes,
+              finite=base._finite, mask=base._mask)
+        sig = v.signature()
+        unique_individuals.add(sig)
+        v.height = 0
+        if not v.eval(base.X):
+            return None
+        if not v.isfinite():
+            return None
+        if not base._bagging_fitness.set_fitness(v):
+            return None
+        return v
 
     def functions(self):
         base = self._base
@@ -315,6 +338,11 @@ class BasePopulation(object):
         while (base._all_inputs or
                (self.popsize < base.popsize and
                 not base.stopping_criteria())):
+            if nb_input.use_all_variables():
+                v = nb_input.all_variables()
+                if v is not None:
+                    self.add(v)
+                continue
             if base._all_inputs and used_inputs_var.empty() and used_inputs_naive.empty():
                 base._init_popsize = self.popsize
                 break
