@@ -728,12 +728,8 @@ class NaiveBayes(Function):
             return False
         weight, var, nclass = self.weight
         self.hy = NB([hy[x] for x in var], weight, nclass)
-        if self._finite:
-            [x.finite(inplace=True) for x in self.hy]
         if hyt is not None:
             self.hy_test = NB([hyt[x] for x in var], weight, nclass)
-            if self._finite:
-                [x.finite(inplace=True) for x in self.hy_test]
         return True
 
 
@@ -769,12 +765,8 @@ class NaiveBayesMN(NaiveBayes):
             return False
         weight, var, nclass = self.weight
         self.hy = MN([hy[x] for x in var], weight, nclass)
-        if self._finite:
-            [x.finite(inplace=True) for x in self.hy]
         if hyt is not None:
             self.hy_test = MN([hyt[x] for x in var], weight, nclass)
-            if self._finite:
-                [x.finite(inplace=True) for x in self.hy_test]
         return True
 
 
