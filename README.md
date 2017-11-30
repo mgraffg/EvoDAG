@@ -121,6 +121,31 @@ SGDClassifier |50.28 | 17.69 | 34.03 | 22.19 | 32.65 | 3.89 | 38.50 | 25.12 | 17
 PassiveAggressiveClassifier|49.04 | 19.48 | 34.68 | 23.31 | 31.48 | 3.85 | 38.65 | 26.24 | 17.10|14.11|
 Perceptron|50.15 | 18.18 | 34.56 | 21.59 | 33.49 | 3.92 | 37.47 | 26.69 | 19.03|14.44|
 
+The predictions of EvoDAG were obtained using the followin script.
+
+```bash   
+dirname=evodag-`EvoDAG-params --version | awk '{print $2}'`
+[ ! -d $dirname ] && mkdir $dirname
+
+echo Haciendo `EvoDAG-params --version`
+
+for train in csv/*train_data*.csv;
+do
+        test=`python -c "import sys; print(sys.argv[1].replace('train', 'test'))" $train`;
+        output=`basename ${test} .csv`
+        predict=${dirname}/${output}.predict
+        model=${dirname}/${output}.model
+        if [ ! -f $model ]
+        then
+            EvoDAG-train -C -u 32 -m $model -t $test $train
+        fi
+        if [ ! -f $predict ]
+        then
+            EvoDAG-predict -u 32 -m $model -o $predict $test
+        fi
+done
+```
+
 
 ## Citing EvoDAG ##
 
