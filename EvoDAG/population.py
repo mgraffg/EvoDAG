@@ -338,22 +338,20 @@ class BasePopulation(object):
         while (base._all_inputs or
                (self.popsize < base.popsize and
                 not base.stopping_criteria())):
-            if nb_input.use_all_variables():
-                v = nb_input.all_variables()
-                if v is not None:
-                    self.add(v)
-                continue
             if base._all_inputs and used_inputs_var.empty() and used_inputs_naive.empty():
                 base._init_popsize = self.popsize
                 break
-            if not used_inputs_var.empty() and np.random.random() < base._pr_variable:
+            if nb_input.use_all_variables():
+                v = nb_input.all_variables()
+                if v is None:
+                    continue
+            elif not used_inputs_var.empty() and np.random.random() < base._pr_variable:
                 v = self.variable_input(used_inputs_var)
                 if v is None:
                     used_inputs_var.pos = used_inputs_var.size
                     continue
             elif not used_inputs_naive.empty():
                 v = nb_input.input()
-                # v = self.naive_bayes_input(density, unique_individuals, used_inputs_naive)
                 if not used_inputs_var.empty() and used_inputs_naive.empty():
                     base._pr_variable = 1
                 if v is None:
