@@ -150,6 +150,22 @@ The predictions sklearn classifiers were obtained using the following
 code:
 
 ```python
+from sklearn.linear_model import LogisticRegression, SGDClassifier, Perceptron
+from sklearn.linear_model import PassiveAggressiveClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors.nearest_centroid import NearestCentroid
+from sklearn.svm import SVC, LinearSVC
+from sklearn.naive_bayes import GaussianNB, BernoulliNB
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.neural_network import MLPClassifier
+from glob import glob
+import numpy as np
+
+
 def predict(train, test, alg):
     X = np.loadtxt(train, delimiter=',')
     Xtrain = X[:, :-1]
@@ -168,7 +184,7 @@ for dataset in ['banana', 'thyroid', 'diabetis', 'heart',
                 'waveform']:
     for train in glob('csv/%s_train_data*.csv' % dataset):
         test = train.replace('_train_', '_test_')
-        [predict(train, test, alg) for alg in ALG]
+        hy_alg = [predict(train, test, alg) for alg in ALG]
 ```
 
 ## Citing EvoDAG ##
