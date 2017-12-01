@@ -103,25 +103,25 @@ commands describe in Quick Start Section.
 
 |Classifier|banana | thyroid | diabetis | heart | ringnorm | twonorm |german| image | waveform|Average rank|
 |-------|------:|------:|-------:|----:|--------:|--------:|------:|-----:|--------:|---------:|
-EvoDAG |11.93 | 7.79 | **24.87** | 16.86 | 2.00 | 2.64 | 28.83 | 3.42 | **10.69**|3.00|
-SVC|**11.59** | 8.08 | 29.82 | 17.75 | 1.84 | 2.73 | 33.31 | 8.86 | 10.74|5.33|
-GaussianNB|41.65 | 11.51 | 28.61 | **16.34** | **1.44** | 2.40 | 30.58 | 36.67 | 12.21|5.67|
-GradientBoostingClassifier|13.84 | 8.25 | 28.52 | 21.06 | 6.65 | 5.74 | 31.08 | **2.09** | 13.62|6.11|
-MLPClassifier|18.75 | 9.31 | 28.61 | 18.33 | 10.96 | 2.82 | 32.03 | 3.35 | 11.38|6.44|
-NearestCentroid|46.33 | 22.49 | 28.19 | 16.66 | 24.09 | **2.32** | **27.68** | 37.09 | 12.96|7.33|
-AdaBoostClassifier|28.16 | 8.73 | 29.32 | 22.51 | 7.01 | 5.35 | 31.58 | 3.20 | 14.64|8.33|
-LinearSVC|49.97 | 16.91 | 28.47 | 16.80 | 25.18 | 3.58 | 32.44 | 18.65 | 14.20|8.67|
-ExtraTreesClassifier|13.49 | **6.56** | 32.99 | 21.06 | 8.42 | 7.76 | 36.95 | 2.38 | 16.48|8.67|
-RandomForestClassifier|13.59 | 7.86 | 31.93 | 21.42 | 9.58 | 8.89 | 36.72 | 2.10 | 16.87|9.11|
-LogisticRegression |49.99 | 20.18 | 28.29 | 16.97 | 25.29 | 2.92 | 32.07 | 18.74 | 13.73|9.11|
-KNeighborsClassifier|11.92 | 12.06 | 32.12 | 18.64 | 43.72 | 3.76 | 36.18 | 5.26 | 13.80|9.44|
-BernoulliNB|45.46 | 32.47 | 31.88 | 16.62 | 28.13 | 5.83 | 32.78 | 39.03 | 14.33|11.44|
-DecisionTreeClassifier|15.21 | 9.28 | 33.85 | 27.06 | 19.20 | 20.87 | 36.51 | 3.38 | 20.78|11.78|
-SGDClassifier |50.28 | 17.69 | 34.03 | 22.19 | 32.65 | 3.89 | 38.50 | 25.12 | 17.61|14.00|
-PassiveAggressiveClassifier|49.04 | 19.48 | 34.68 | 23.31 | 31.48 | 3.85 | 38.65 | 26.24 | 17.10|14.11|
-Perceptron|50.15 | 18.18 | 34.56 | 21.59 | 33.49 | 3.92 | 37.47 | 26.69 | 19.03|14.44|
+|EvoDAG|12.04|7.56|**24.82**|16.47|1.65|2.50|28.64|3.51|**10.62**|2.56|
+|SVC|**11.59**|8.08|29.82|17.75|1.84|2.73|33.31|8.86|10.74|5.44|
+|GaussianNB|41.65|11.51|28.61|**16.34**|**1.44**|2.40|30.58|36.67|12.21|5.67|
+|GradientBoosting|13.84|8.25|28.52|21.06|6.65|5.74|31.08|**2.09**|13.62|6.11|
+|MLP|18.75|9.31|28.61|18.33|10.96|2.82|32.03|3.35|11.38|6.44|
+|NearestCentroid|46.33|22.49|28.19|16.66|24.09|**2.32**|**27.68**|37.09|12.96|7.44|
+|AdaBoost|28.16|8.73|29.32|22.51|7.01|5.35|31.58|3.20|14.64|8.33|
+|ExtraTrees|13.49|**6.56**|32.99|21.06|8.42|7.76|36.95|2.38|16.48|8.67|
+|LinearSVC|49.97|16.91|28.47|16.80|25.18|3.58|32.44|18.65|14.20|8.78|
+|LogisticRegression|49.99|20.18|28.29|16.97|25.29|2.92|32.07|18.74|13.73|9.11|
+|RandomForest|13.59|7.86|31.93|21.42|9.58|8.89|36.72|2.10|16.87|9.11|
+|KNeighbors|11.92|12.06|32.12|18.64|43.72|3.76|36.18|5.26|13.80|9.44|
+|BernoulliNB|45.46|32.47|31.88|16.62|28.13|5.83|32.78|39.03|14.33|11.56|
+|DecisionTree|15.21|9.28|33.85|27.06|19.20|20.87|36.51|3.38|20.78|11.78|
+|SGD|50.28|17.69|34.03|22.19|32.65|3.89|38.50|25.12|17.61|14.00|
+|PassiveAggressive|49.04|19.48|34.68|23.31|31.48|3.85|38.65|26.24|17.10|14.11|
+|Perceptron|50.15|18.18|34.56|21.59|33.49|3.92|37.47|26.69|19.03|14.44|
 
-The predictions of EvoDAG were obtained using the followin script.
+The predictions of EvoDAG were obtained using the following script:
 
 ```bash   
 dirname=evodag-`EvoDAG-params --version | awk '{print $2}'`
@@ -146,6 +146,30 @@ do
 done
 ```
 
+The predictions sklearn classifiers were obtained using the following
+code:
+
+```python
+def predict(train, test, alg):
+    X = np.loadtxt(train, delimiter=',')
+    Xtrain = X[:, :-1]
+    ytrain = X[:, -1]
+    Xtest = np.loadtxt(test, delimiter=',')
+    m = alg().fit(Xtrain, ytrain)
+    return m.predict(Xtest)
+
+ALG = [LogisticRegression, SGDClassifier, Perceptron,
+       PassiveAggressiveClassifier, SVC, LinearSVC, KNeighborsClassifier, NearestCentroid,
+       GaussianNB, BernoulliNB, DecisionTreeClassifier, RandomForestClassifier,
+       ExtraTreesClassifier, AdaBoostClassifier, GradientBoostingClassifier, MLPClassifier]
+
+for dataset in ['banana', 'thyroid', 'diabetis', 'heart',
+                'ringnorm', 'twonorm', 'german', 'image',
+                'waveform']:
+    for train in glob('csv/%s_train_data*.csv' % dataset):
+        test = train.replace('_train_', '_test_')
+        [predict(train, test, alg) for alg in ALG]
+```
 
 ## Citing EvoDAG ##
 
