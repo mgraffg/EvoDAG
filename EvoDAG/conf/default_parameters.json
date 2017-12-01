@@ -26,7 +26,7 @@
     "Max": 5,
     "Min": 5,
     "Mul": 20,
-    "NaiveBayes": 10,
+    "NaiveBayes": 5,
     "NaiveBayesMN": 5,
     "Sign": false,
     "Sin": true,
@@ -44,6 +44,7 @@
     "function_selection": true,
     "generations": null,
     "input_functions": [
+	"NaiveBayes",
 	"NaiveBayesMN"
     ],
     "min_density": 0.8,
@@ -57,5 +58,6 @@
     "time_limit": 3600,
     "tournament_size": 2,
     "tr_fraction": 0.5,
-    "unique_individuals": false
+    "unique_individuals": false,
+    "use_all_vars_input_functions": true
 }

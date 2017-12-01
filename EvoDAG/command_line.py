@@ -432,6 +432,7 @@ class CommandLineTrain(CommandLine):
             self.model = evo.model
         else:
             self.model = EvoDAGE(n_estimators=self.data.ensemble_size,
+                                 n_jobs=self.data.cpu_cores,
                                  tmpdir=model_file + '_dir',
                                  **kw).fit(self.X, self.y,
                                            test_set=self.Xtest)

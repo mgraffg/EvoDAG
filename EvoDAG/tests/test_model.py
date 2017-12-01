@@ -270,6 +270,8 @@ def test_init2():
     from EvoDAG.model import Ensemble
     m = Ensemble.init(n_estimators=2, n_jobs=1, seed=0).fit(X, cl)
     hy = m.predict(X)
+    print([x.full_array() for x in m.decision_function(X)])
+    print((cl == hy).mean(), cl, hy)
     assert (cl == hy).mean() > 0.9
     default_nargs()
 

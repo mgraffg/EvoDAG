@@ -437,4 +437,24 @@ def test_HGeneration_pr_variable():
     except AssertionError:
         return
     assert False
-    
+
+
+def test_all_variables_inputs():
+    from EvoDAG.population import Inputs
+    from EvoDAG.cython_utils import SelectNumbers
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG(classifier=True, multiple_outputs=True,
+                use_all_vars_input_functions=True,
+                popsize=5, share_inputs=True)
+    gp.X = X
+    gp.nclasses(y)
+    gp.y = y
+    inputs = Inputs(gp, SelectNumbers([x for x in range(len(gp.X))]))
+    func = inputs._func
+    print(func, gp.nvar)
+    for f in func:
+        v = inputs.all_variables()
+        assert v is not None
+        assert isinstance(v, f)
+    assert inputs._all_variables_index == len(func)
