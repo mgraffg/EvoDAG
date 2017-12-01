@@ -418,6 +418,9 @@ class EvoDAGE(object):
     def predict(self, *args, **kwargs):
         return self._m.predict(*args, **kwargs)
 
+    def decision_function(self, *args, **kwargs):
+        return self._m.decision_function(*args, **kwargs)
+
 
 class EvoDAG(EvoDAGE):
     def __init__(self, **kwargs):
