@@ -213,8 +213,10 @@ class Model(object):
             return v
         if isinstance(v, np.ndarray):
             X = v.T
-        else:
+        elif isinstance(v[0], SparseArray):
             X = v
+        else:
+            X = np.array(v).T
         lst = []
         for var, d in enumerate(X):
             v = Variable(var, 1)

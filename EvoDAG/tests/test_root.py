@@ -1225,3 +1225,15 @@ def test_init_evodag_params_dict():
                     early_stopping_rounds=10).fit(X, cl)
     assert m.popsize == 10
     default_nargs()
+
+
+def test_X_list():
+    from EvoDAG import EvoDAG
+    from test_command_line import default_nargs
+    m = EvoDAG.init(seed=10, popsize=10,
+                    early_stopping_rounds=10).fit(X.tolist(), cl)
+    assert m.popsize == 10
+    default_nargs()
+    print(X.shape, len(m.X))
+    assert len(m.X) == 4
+    
