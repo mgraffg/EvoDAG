@@ -45,7 +45,7 @@ def fit(X_y_evodag):
     try:
         time_limit = evodag['time_limit']
         evodag['time_limit'] = time_limit - (time.time() - init_time)
-        if evodag['time_limit'] < 1:
+        if evodag['time_limit'] < 2:
             return None
     except KeyError:
         pass

@@ -287,9 +287,7 @@ def test_init_time_limit():
     from EvoDAG.model import EvoDAGE
     import time
     local = time.time()
-    m = EvoDAGE(n_estimators=30, n_jobs=2, time_limit=4).fit(X, cl)
-    hy = m.predict(X)
-    assert (cl == hy).mean() > 0.9
+    EvoDAGE(n_estimators=30, n_jobs=2, time_limit=4).fit(X, cl)
     default_nargs()
     t = time.time() - local
     print(t)
