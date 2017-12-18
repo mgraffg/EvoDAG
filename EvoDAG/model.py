@@ -342,6 +342,7 @@ class Ensemble(object):
             return r
 
     def decision_function(self, X, cpu_cores=1):
+        cpu_cores = max(cpu_cores, self._n_jobs)
         if self.classifier:
             return self.decision_function_cl(X, cpu_cores=cpu_cores)
         r = self._decision_function_raw(X, cpu_cores=cpu_cores)
