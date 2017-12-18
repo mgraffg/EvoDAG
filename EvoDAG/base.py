@@ -51,7 +51,8 @@ class EvoDAG(object):
                  min_density=0.8, multiple_outputs=False, function_selection=True,
                  fs_tournament_size=2, finite=True, pr_variable=0.33,
                  share_inputs=False, input_functions=None, F1_index=-1,
-                 use_all_vars_input_functions=False, **kwargs):
+                 use_all_vars_input_functions=False, remove_raw_inputs=True, **kwargs):
+        self._remove_raw_inputs = remove_raw_inputs
         self._fitness_function = fitness_function
         self._bagging_fitness = BaggingFitness(base=self)
         generations = np.inf if generations is None else generations
@@ -104,6 +105,8 @@ class EvoDAG(object):
         self._F1_index = F1_index
         self._use_all_vars_input_functions = use_all_vars_input_functions
         self._extras = kwargs
+        if self._time_limit is not None:
+            self._logger.info('Time limit: %s' % self._time_limit)
 
     def _set_input_functions(self, input_functions):
         if input_functions is not None:
@@ -443,6 +446,9 @@ class EvoDAG(object):
         if len(self.population.hist) < self._tournament_size:
             self._logger.info("Done evolution (hist: %s)" % len(self.population.hist))
             return self
+        if self._remove_raw_inputs:
+            for x in range(self.nvar):
+                self._X[x] = None
         while not self.stopping_criteria():
             try:
                 a = self.random_offspring()

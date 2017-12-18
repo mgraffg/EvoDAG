@@ -23,6 +23,7 @@ import os
 import gzip
 import pickle
 import shutil
+import time
 try:
     from tqdm import tqdm
 except ImportError:
@@ -31,7 +32,7 @@ except ImportError:
 
 
 def fit(X_y_evodag):
-    X, y, test_set, evodag, tmpdir = X_y_evodag
+    X, y, test_set, evodag, tmpdir, init_time = X_y_evodag
     if tmpdir is not None:
         seed = evodag['seed']
         output = os.path.join(tmpdir, '%s.evodag' % seed)
@@ -41,6 +42,13 @@ def fit(X_y_evodag):
                     return pickle.load(fpt)
                 except Exception:
                     pass
+    try:
+        time_limit = evodag['time_limit']
+        evodag['time_limit'] = time_limit - (time.time() - init_time)
+        if evodag['time_limit'] < 1:
+            return None
+    except KeyError:
+        pass
     evodag = EvoDAG(**evodag)
     evodag.fit(X, y, test_set=test_set)
     m = evodag.model
@@ -252,13 +260,15 @@ class Ensemble(object):
 
     def fit(self, X, y, test_set=None):
         evodags = self._evodags
-        args = [(X, y, test_set, evodag, self._tmpdir) for evodag in evodags]
+        init_time = time.time()
+        args = [(X, y, test_set, evodag, self._tmpdir, init_time) for evodag in evodags]
         if self._n_jobs == 1:
-            self._models = [fit(x) for x in tqdm(args)]
+            _ = [fit(x) for x in tqdm(args)]
+            self._models = [x for x in _ if x is not None]
         else:
-            p = Pool(self._n_jobs)
+            p = Pool(self._n_jobs, maxtasksperchild=1)
             self._models = [x for x in tqdm(p.imap_unordered(fit, args),
-                                            total=len(args))]
+                                            total=len(args)) if x is not None]
             p.close()
         if self._tmpdir is not None:
             shutil.rmtree(self._tmpdir)
@@ -314,7 +324,7 @@ class Ensemble(object):
         if cpu_cores == 1:
             r = [m.decision_function(X) for m in self._models]
         else:
-            p = Pool(cpu_cores)
+            p = Pool(cpu_cores, maxtasksperchild=1)
             args = [(m, X) for m in self._models]
             r = [x for x in tqdm(p.imap_unordered(decision_function,
                                                   args),

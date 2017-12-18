@@ -657,6 +657,7 @@ def test_predict():
                 tournament_size=2,
                 early_stopping_rounds=-1,
                 classifier=False,
+                remove_raw_inputs=False,
                 seed=0,
                 popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
     es = gp.population.estopping
@@ -1146,6 +1147,7 @@ def test_classification_mo2():
     gp = EvoDAG(generations=np.inf, tournament_size=2,
                 early_stopping_rounds=10, time_limit=0.9,
                 multiple_outputs=True, all_inputs=True,
+                remove_raw_inputs=False,
                 seed=0, popsize=10000)
     gp.X = X
     gp.nclasses(y)
@@ -1154,6 +1156,7 @@ def test_classification_mo2():
     gp = EvoDAG(generations=np.inf, tournament_size=2,
                 early_stopping_rounds=10, time_limit=0.9,
                 multiple_outputs=True, all_inputs=True, seed=0,
+                remove_raw_inputs=False,
                 popsize=10000).fit(X, y)
     m = gp.model()
     print([(x, x._variable, x.height) for x in m._hist])

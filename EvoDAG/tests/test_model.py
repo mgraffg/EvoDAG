@@ -96,7 +96,6 @@ def test_ensemble():
 def test_ensemble_model():
     from EvoDAG import RootGP
     from EvoDAG.model import Ensemble
-    from EvoDAG.node import Add
     y = cl.copy()
     mask = y == 0
     y[mask] = 1
@@ -240,7 +239,7 @@ def test_multiple_outputs_ensemble():
     u = np.unique(y)
     for i in np.unique(hy):
         assert i in u
-    
+
 
 def test_init():
     from EvoDAG.model import Ensemble
@@ -282,3 +281,17 @@ def test_init_evodag():
     hy = m.predict(X)
     assert (cl == hy).mean() > 0.9
     default_nargs()
+
+
+def test_init_time_limit():
+    from EvoDAG.model import EvoDAGE
+    import time
+    local = time.time()
+    m = EvoDAGE(n_estimators=30, n_jobs=2, time_limit=4).fit(X, cl)
+    hy = m.predict(X)
+    assert (cl == hy).mean() > 0.9
+    default_nargs()
+    t = time.time() - local
+    print(t)
+    assert t <= 6
+    
