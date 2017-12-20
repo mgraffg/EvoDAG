@@ -18,17 +18,19 @@ from SparseArray import SparseArray
 from .node import Variable, Function
 from .utils import tonparray
 from multiprocessing import Pool
+import logging
 import gc
 import os
 import gzip
 import pickle
 import shutil
-import time
+from time import time
 try:
     from tqdm import tqdm
 except ImportError:
     def tqdm(x, **kwargs):
         return x
+LOGGER = logging.getLogger('EvoDAG')
 
 
 def fit(X_y_evodag):
@@ -44,8 +46,9 @@ def fit(X_y_evodag):
                     pass
     try:
         time_limit = evodag['time_limit']
-        evodag['time_limit'] = time_limit - (time.time() - init_time)
+        evodag['time_limit'] = time_limit - (time() - init_time)
         if evodag['time_limit'] < 2:
+            LOGGER.info('Not enough time (seed: %s) ' % evodag['seed'])
             return None
     except KeyError:
         pass
@@ -263,19 +266,33 @@ class Ensemble(object):
 
     def fit(self, X, y, test_set=None):
         evodags = self._evodags
-        init_time = time.time()
+        init_time = time()
         args = [(X, y, test_set, evodag, self._tmpdir, init_time) for evodag in evodags]
+        try:
+            time_limit = evodags[0]['time_limit']
+        except KeyError:
+            time_limit = None
+        if time_limit is not None:
+            LOGGER.info('time_limit in Ensemble: %0.2f' % time_limit)
         if self._n_jobs == 1:
             _ = [fit(x) for x in tqdm(args)]
             self._models = [x for x in _ if x is not None]
         else:
             p = Pool(self._n_jobs, maxtasksperchild=1)
-            self._models = [x for x in tqdm(p.imap_unordered(fit, args),
-                                            total=len(args)) if x is not None]
+            self._models = []
+            for x in tqdm(p.imap_unordered(fit, args),
+                          total=len(args)):
+                if x is not None:
+                    self._models.append(x)
+                if time_limit is not None and time() - init_time > time_limit:
+                    p.terminate()
+                    break
             p.close()
         if self._tmpdir is not None:
             shutil.rmtree(self._tmpdir)
         self._init()
+        if time_limit is not None:
+            LOGGER.info('Used time in Ensemble: %0.2f' % (time() - init_time))
         return self
 
     def _init(self):
@@ -343,6 +360,11 @@ class Ensemble(object):
         else:
             r = np.array([[tonparray(y) for y in x] for x in r])
             return r
+
+    def predict_proba(self, X):
+        hy = self.decision_function(X)
+        pr = np.array([tonparray(x.boundaries().mul2(0.5).add2(0.5)) for x in hy]).T
+        return pr / np.atleast_2d(pr.sum(axis=1)).T
 
     def decision_function(self, X, cpu_cores=1):
         cpu_cores = max(cpu_cores, self._n_jobs)
@@ -425,8 +447,19 @@ class Ensemble(object):
 
 
 class EvoDAGE(object):
-    def __init__(self, **kwargs):
-        self._m = Ensemble.init(**kwargs)
+    def __init__(self, time_limit=None, **kwargs):
+        self._m = Ensemble.init(time_limit=time_limit, **kwargs)
+        self._time_limit = time_limit
+
+    @property
+    def time_limit(self):
+        return self._time_limit
+
+    @time_limit.setter
+    def time_limit(self, time_limit):
+        self._time_limit = time_limit
+        for x in self._m._evodags:
+            x['time_limit'] = self._time_limit
 
     def fit(self, *args, **kwargs):
         return self._m.fit(*args, **kwargs)
@@ -436,6 +469,9 @@ class EvoDAGE(object):
 
     def decision_function(self, *args, **kwargs):
         return self._m.decision_function(*args, **kwargs)
+
+    def predict_proba(self, *args, **kwargs):
+        return self._m.predict_proba(*args, **kwargs)
 
 
 class EvoDAG(EvoDAGE):

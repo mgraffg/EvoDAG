@@ -106,7 +106,7 @@ class EvoDAG(object):
         self._use_all_vars_input_functions = use_all_vars_input_functions
         self._extras = kwargs
         if self._time_limit is not None:
-            self._logger.info('Time limit: %s' % self._time_limit)
+            self._logger.info('Time limit: %0.2f' % self._time_limit)
 
     def _set_input_functions(self, input_functions):
         if input_functions is not None:
@@ -442,6 +442,8 @@ class EvoDAG(object):
             self._logger.info("Starting evolution")
             try:
                 self.create_population()
+                if self.stopping_criteria_tl():
+                    break
             except RuntimeError as err:
                 self._logger.info("Done evolution (RuntimeError (%s), hist: %s)" % (err, len(self.population.hist)))
                 return self
