@@ -377,11 +377,16 @@ class EvoDAG(object):
         "Create the initial population"
         self.population.create_population()
 
-    def stopping_criteria(self):
-        "Test whether the stopping criteria has been achieved."
+    def stopping_criteria_tl(self):
         if self._time_limit is not None:
             if time.time() - self._init_time > self._time_limit:
                 return True
+        return False
+
+    def stopping_criteria(self):
+        "Test whether the stopping criteria has been achieved."
+        if self.stopping_criteria_tl():
+            return True
         if self.generations < np.inf:
             inds = self.popsize * self.generations
             flag = inds <= len(self.population.hist)
@@ -443,6 +448,8 @@ class EvoDAG(object):
             self._logger.info("Population created (hist: %s)" % len(self.population.hist))
             if len(self.population.hist) >= self._tournament_size:
                 break
+        if len(self.population.hist) == 0:
+            raise RuntimeError("Could not find a suitable individual")
         if len(self.population.hist) < self._tournament_size:
             self._logger.info("Done evolution (hist: %s)" % len(self.population.hist))
             return self

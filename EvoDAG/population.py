@@ -335,7 +335,7 @@ class BasePopulation(object):
             used_inputs_var = SelectNumbers([x for x in range(base.nvar)])
             used_inputs_naive = SelectNumbers([x for x in range(base.nvar)])
         nb_input = Inputs(base, used_inputs_naive, functions=base._input_functions)
-        while (base._all_inputs or
+        while ((base._all_inputs and not base.stopping_criteria_tl()) or
                (self.popsize < base.popsize and
                 not base.stopping_criteria())):
             if base._all_inputs and used_inputs_var.empty() and used_inputs_naive.empty():

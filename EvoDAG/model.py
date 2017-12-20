@@ -49,8 +49,11 @@ def fit(X_y_evodag):
             return None
     except KeyError:
         pass
-    evodag = EvoDAG(**evodag)
-    evodag.fit(X, y, test_set=test_set)
+    try:
+        evodag = EvoDAG(**evodag)
+        evodag.fit(X, y, test_set=test_set)
+    except RuntimeError:
+        return None
     m = evodag.model
     gc.collect()
     if tmpdir is not None:
