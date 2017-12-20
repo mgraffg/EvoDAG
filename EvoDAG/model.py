@@ -46,10 +46,11 @@ def fit(X_y_evodag):
                     pass
     try:
         time_limit = evodag['time_limit']
-        evodag['time_limit'] = time_limit - (time() - init_time)
-        if evodag['time_limit'] < 2:
-            LOGGER.info('Not enough time (seed: %s) ' % evodag['seed'])
-            return None
+        if time_limit is not None:
+            evodag['time_limit'] = time_limit - (time() - init_time)
+            if evodag['time_limit'] < 2:
+                LOGGER.info('Not enough time (seed: %s) ' % evodag['seed'])
+                return None
     except KeyError:
         pass
     try:
@@ -363,8 +364,14 @@ class Ensemble(object):
 
     def predict_proba(self, X):
         hy = self.decision_function(X)
+        [x.finite(inplace=True) for x in hy]
         pr = np.array([tonparray(x.boundaries().mul2(0.5).add2(0.5)) for x in hy]).T
-        return pr / np.atleast_2d(pr.sum(axis=1)).T
+        print(np.all(np.isfinite(pr)))
+        d = pr.sum(axis=1)
+        m = d > 0
+        pr[m] = pr[m] / np.atleast_2d(d[m]).T
+        pr[~m] = 1.0 / len(hy)
+        return pr
 
     def decision_function(self, X, cpu_cores=1):
         cpu_cores = max(cpu_cores, self._n_jobs)
