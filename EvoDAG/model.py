@@ -379,7 +379,6 @@ class Ensemble(object):
         hy = self.decision_function(X)
         [x.finite(inplace=True) for x in hy]
         pr = np.array([tonparray(x.boundaries().mul2(0.5).add2(0.5)) for x in hy]).T
-        print(np.all(np.isfinite(pr)))
         d = pr.sum(axis=1)
         m = d > 0
         pr[m] = pr[m] / np.atleast_2d(d[m]).T
@@ -482,8 +481,7 @@ class EvoDAGE(object):
             x['time_limit'] = self._time_limit
 
     def fit(self, *args, **kwargs):
-        self._m.fit(*args, **kwargs)
-        return self
+        return self._m.fit(*args, **kwargs)
 
     def predict(self, *args, **kwargs):
         return self._m.predict(*args, **kwargs)
