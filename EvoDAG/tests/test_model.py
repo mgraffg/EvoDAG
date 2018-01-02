@@ -301,3 +301,12 @@ def test_predict_proba():
     default_nargs()
     print(pr.min(), pr.max())
     assert pr.min() >= 0 and pr.max() <= 1
+
+
+def test_raw_decision_function():
+    from EvoDAG.model import EvoDAGE
+    m = EvoDAGE(n_estimators=3, n_jobs=2, time_limit=4).fit(X, cl)
+    pr = m.raw_decision_function(X)
+    default_nargs()
+    assert pr.shape[1] == 9
+    

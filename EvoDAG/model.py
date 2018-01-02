@@ -67,8 +67,8 @@ def fit(X_y_evodag):
 
 
 def decision_function(model_X):
-    model, X = model_X
-    return model.decision_function(X)
+    k, model, X = model_X
+    return [k, model.decision_function(X)]
 
 
 class Model(object):
@@ -346,10 +346,12 @@ class Ensemble(object):
             r = [m.decision_function(X) for m in self._models]
         else:
             p = Pool(cpu_cores, maxtasksperchild=1)
-            args = [(m, X) for m in self._models]
+            args = [(k, m, X) for k, m in enumerate(self._models)]
             r = [x for x in tqdm(p.imap_unordered(decision_function,
                                                   args),
                                  total=len(args))]
+            r.sort(key=lambda x: x[0])
+            r = [x[1] for x in r]
             p.close()
         return r
 
@@ -361,6 +363,17 @@ class Ensemble(object):
         else:
             r = np.array([[tonparray(y) for y in x] for x in r])
             return r
+
+    def raw_decision_function(self, X):
+        hy = self._decision_function_raw(X, cpu_cores=self._n_jobs)
+        if isinstance(hy[0], list):
+            _ = []
+            [[_.append(y) for y in x] for x in hy]
+            hy = _
+        [x.finite(inplace=True) for x in hy]
+        if self.classifier:
+            hy = [x.boundaries() for x in hy]
+        return np.array([tonparray(x) for x in hy]).T
 
     def predict_proba(self, X):
         hy = self.decision_function(X)
@@ -469,13 +482,17 @@ class EvoDAGE(object):
             x['time_limit'] = self._time_limit
 
     def fit(self, *args, **kwargs):
-        return self._m.fit(*args, **kwargs)
+        self._m.fit(*args, **kwargs)
+        return self
 
     def predict(self, *args, **kwargs):
         return self._m.predict(*args, **kwargs)
 
     def decision_function(self, *args, **kwargs):
         return self._m.decision_function(*args, **kwargs)
+
+    def raw_decision_function(self, *args, **kwargs):
+        return self._m.raw_decision_function(*args, **kwargs)
 
     def predict_proba(self, *args, **kwargs):
         return self._m.predict_proba(*args, **kwargs)
