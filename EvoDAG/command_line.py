@@ -28,7 +28,6 @@ import gzip
 import json
 import logging
 import gc
-import shutil
 import pickle
 DEFAULT_PARAMETERS = os.path.join(os.path.dirname(__file__),
                                   'conf', 'default_parameters.json')
