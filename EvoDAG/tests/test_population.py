@@ -166,7 +166,9 @@ def test_SteadyState_generation():
     
 
 def test_clean():
+    from EvoDAG.node import Centroid
     from EvoDAG import EvoDAG
+    Centroid.nargs = 0
     y = cl.copy()
     y[y != 1] = -1
     for pc in ['Generational', 'SteadyState']:
@@ -187,6 +189,7 @@ def test_clean():
             elif i in pop:
                 assert i.hy is not None
         assert gp.population.estopping.hy is not None
+    Centroid.nargs = 2
 
 
 def test_density():

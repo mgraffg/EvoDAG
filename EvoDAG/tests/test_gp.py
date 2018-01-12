@@ -133,10 +133,10 @@ def test_gp_population_grow():
 def test_gp_create_population():
     Add.nargs = 2
     Mul.nargs = 2
-    from EvoDAG.node import NaiveBayes, NaiveBayesMN
+    from EvoDAG.node import NaiveBayes, NaiveBayesMN, Centroid
     from EvoDAG.gp import Population
     from EvoDAG import EvoDAG
-    fs = [x for x in EvoDAG()._function_set if not (x is NaiveBayes or x is NaiveBayesMN)]
+    fs = [x for x in EvoDAG()._function_set if not (x is NaiveBayes or x is NaiveBayesMN or x is Centroid)]
     print([(x, x.nargs) for x in fs])
     pop = Population(fs, nterminals=X.shape[1])
     inds = pop.create_population(X=X)

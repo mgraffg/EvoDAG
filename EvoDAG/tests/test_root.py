@@ -226,7 +226,8 @@ def test_create_population():
 
 def test_create_population2():
     from EvoDAG import EvoDAG
-    from EvoDAG.node import Function
+    from EvoDAG.node import Function, Centroid
+    Centroid.nargs = 0
     gp = EvoDAG(generations=1, classifier=False, pr_variable=1,
                 popsize=10)
     gp.X = X
@@ -238,7 +239,7 @@ def test_create_population2():
     gp.create_population()
     for i in gp.population.population[4:]:
         assert isinstance(i, Function)
-
+    Centroid.nargs = 2
 
 def test_create_population_cl():
     from EvoDAG import EvoDAG
@@ -616,12 +617,12 @@ def test_fit():
 
 
 def test_logging():
-    from EvoDAG import RootGP
+    from EvoDAG.model import EvoDAG as evodag
     y = cl.copy()
     mask = y == 0
     y[mask] = 1
     y[~mask] = -1
-    RootGP(generations=np.inf,
+    evodag(generations=np.inf,
            tournament_size=2,
            early_stopping_rounds=-1,
            classifier=False,
@@ -822,15 +823,15 @@ def test_height():
 
 
 def test_regression():
-    from EvoDAG import RootGP
+    from EvoDAG.model import EvoDAG as evodag
     x = np.linspace(-1, 1, 100)
     y = 4.3*x**2 + 3.2 * x - 3.2
-    gp = RootGP(classifier=False,
+    gp = evodag(classifier=False,
                 popsize=10,
                 generations=2).fit([SparseArray.fromlist(x)], y,
                                    test_set=[SparseArray.fromlist(x)])
-    model = gp.model()
-    yh = gp.predict()
+    model = gp.model
+    yh = gp.predict([SparseArray.fromlist(x)])
     assert not model._classifier
     yh1 = model.predict(X=[SparseArray.fromlist(x)])
     spf = SparseArray.fromlist
@@ -859,6 +860,8 @@ def test_unique():
 def test_RSE():
     from EvoDAG import RootGP
     from EvoDAG.utils import RSE as rse
+    from EvoDAG.node import Centroid
+    Centroid.nargs = 0
     x = np.linspace(-1, 1, 100)
     y = 4.3*x**2 + 3.2 * x - 3.2
     y[10:12] = 0
@@ -875,12 +878,14 @@ def test_RSE():
     print(rse(y, yh), model._hist[-1].fitness_vs)
     assert_almost_equals(rse(y, yh),
                          -model._hist[-1].fitness_vs)
+    Centroid.nargs = 2
 
 
 def test_RSE_avg_zero():
     from EvoDAG.bagging_fitness import BaggingFitness
+    from EvoDAG.node import Centroid
     from EvoDAG import EvoDAG
-
+    Centroid.nargs = 0
     class B(BaggingFitness):
         def __init__(self, **kw):
             super(B, self).__init__(**kw)
@@ -911,6 +916,7 @@ def test_RSE_avg_zero():
     while not gp.stopping_criteria():
         a = gp.random_offspring()
         gp.replace(a)
+    Centroid.nargs = 2
 
 
 def test_population_as_parameter():
@@ -955,8 +961,9 @@ def test_es_extra_test():
 
 
 def test_fname():
-    from EvoDAG.node import Add
+    from EvoDAG.node import Add, Centroid
     from EvoDAG import RootGP
+    Centroid.nargs = 0
     x = np.linspace(-1, 1, 100)
     y = 4.3*x**2 + 3.2 * x - 3.2
     Add.nargs = 10
@@ -965,6 +972,7 @@ def test_fname():
                 generations=2).fit([SparseArray.fromlist(x)], y,
                                    test_set=[SparseArray.fromlist(x)])
     assert gp.signature.count('Ad10') == 1
+    Centroid.nargs = 2
 
 
 def test_unfeasible_counter():
@@ -1202,7 +1210,9 @@ def test_finite():
     evo = EvoDAG.init()
     evo._finite = False
     evo.fit(X, cl)
-    hy = evo.predict(X)
+    m = evo.model()
+    hy = m.predict(X)
+    print((hy == cl).mean(), [x.full_array() for x in m.decision_function(np.array(X))])
     assert (hy == cl).mean() > 0.9
 
 

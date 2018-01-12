@@ -22,6 +22,7 @@ from .node import Sq, Min, Max
 from .node import Atan2, Hypot, Acos, Asin, Atan, Tan, Cosh, Sinh
 from .node import Tanh, Acosh, Asinh, Atanh, Expm1, Log, Log2, Log10
 from .node import Lgamma, Sign, Ceil, Floor, NaiveBayes, NaiveBayesMN
+from .node import Centroid
 from .model import Model
 from .population import SteadyState
 from .utils import tonparray
@@ -42,7 +43,7 @@ class EvoDAG(object):
                                Sq, Min, Max, Atan2, Hypot, Acos, Asin, Atan,
                                Tan, Cosh, Sinh, Tanh, Acosh, Asinh, Atanh,
                                Expm1, Log, Log2, Log10, Lgamma, Sign,
-                               Ceil, Floor, NaiveBayes, NaiveBayesMN],
+                               Ceil, Floor, NaiveBayes, NaiveBayesMN, Centroid],
                  tr_fraction=0.5, population_class=SteadyState,
                  number_tries_feasible_ind=30, time_limit=None,
                  unique_individuals=True, classifier=True,

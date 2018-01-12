@@ -10,6 +10,7 @@
     "Atan2": 0,
     "Atanh": false,
     "Ceil": false,
+    "Centroid": 0,
     "Cos": false,
     "Cosh": false,
     "Div": false,

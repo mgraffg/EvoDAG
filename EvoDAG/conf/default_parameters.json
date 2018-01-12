@@ -9,6 +9,7 @@
     "Atan": true,
     "Atan2": 0,
     "Atanh": false,
+    "Centroid": 5,    
     "Ceil": false,
     "Cos": false,
     "Cosh": false,
@@ -45,7 +46,8 @@
     "generations": null,
     "input_functions": [
 	"NaiveBayes",
-	"NaiveBayesMN"
+	"NaiveBayesMN",
+	"Centroid"
     ],
     "min_density": 0.8,
     "multiple_outputs": true,

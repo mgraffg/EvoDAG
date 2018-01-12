@@ -587,3 +587,22 @@ def test_multiple_variables():
         l.append(a.hy * b)
     r = SparseArray.cumsum(l)
     assert mv2.hy.SSE(r) == 0
+
+
+def test_centroid_variable():
+    from EvoDAG.node import Centroid
+    gp, args = create_problem_node2(nargs=3, seed=0)
+    gp.random_leaf()
+    X = np.array([x.hy.full_array() for x in gp.X]).T
+    mask = np.array([x.full_array() for x in gp._mask]).T
+    centroid = Centroid(range(len(gp.X)), ytr=gp._ytr,
+                        mask=gp._mask, finite=True)
+    centroid.eval(gp.X)
+    c = [- (X * np.atleast_2d(m).T).sum(axis=0) / c for m, c in zip(mask.T, mask.sum(axis=0))]
+    [[assert_almost_equals(_v, _w) for _v, _w in zip(v, w)] for v, w
+     in zip(c, centroid.weight)]
+    r = [np.exp(- ((X + w)**2).sum(axis=1)) for w in c]
+    [[assert_almost_equals(_v, _w) for _v, _w in zip(v, w.full_array())] for v, w
+     in zip(r, centroid.hy)]
+
+    

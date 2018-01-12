@@ -94,13 +94,13 @@ def test_ensemble():
 
 
 def test_ensemble_model():
-    from EvoDAG import RootGP
+    from EvoDAG.model import EvoDAG as evodag
     from EvoDAG.model import Ensemble
     y = cl.copy()
     mask = y == 0
     y[mask] = 1
     y[~mask] = -1
-    gps = [RootGP(generations=np.inf,
+    gps = [evodag(generations=np.inf,
                   tournament_size=2,
                   early_stopping_rounds=-1,
                   classifier=False,
@@ -109,8 +109,8 @@ def test_ensemble_model():
                                   y[:-10],
                                   test_set=X)
            for seed in range(3)]
-    ens = Ensemble([gp.model() for gp in gps])
-    res = [gp.decision_function() for gp in gps]
+    ens = Ensemble([gp.model for gp in gps])
+    res = [gp.decision_function(X) for gp in gps]
     res = np.median([x.full_array() for x in res], axis=0)
     res = SparseArray.fromlist(res)
     print(res)

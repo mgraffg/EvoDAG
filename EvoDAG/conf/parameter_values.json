@@ -40,6 +40,14 @@
     "Ceil": [
         false
     ],
+    "Centroid": [
+        0,
+        2,
+        5,
+        10,
+        20,
+        40
+    ],    
     "Cos": [
         true,
         false

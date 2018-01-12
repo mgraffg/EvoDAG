@@ -13,7 +13,7 @@
 # limitations under the License.
 import logging
 import numpy as np
-from .node import Function, NaiveBayes, NaiveBayesMN, MultipleVariables
+from .node import Function, NaiveBayes, NaiveBayesMN, MultipleVariables, Centroid
 from .model import Model
 from .cython_utils import SelectNumbers
 import gc
@@ -25,10 +25,10 @@ class Inputs(object):
         self._vars = vars
         self._unique_individuals = set()
         if functions is None:
-            self._funcs = [NaiveBayes, NaiveBayesMN, MultipleVariables]
+            self._funcs = [NaiveBayes, NaiveBayesMN, MultipleVariables, Centroid]
         else:
             self._funcs = functions
-        assert len(self._funcs) <= 3
+        assert len(self._funcs) <= 4
         c = base._classifier
         tag = 'classification' if c else 'regression'
         self._funcs = [x for x in self._funcs if getattr(x, tag)]
@@ -77,7 +77,7 @@ class Inputs(object):
             if np.random.random() < 0.5:
                 return self._func
             return [self._func[1], self._func[0]]
-        else:
+        elif self._nfunc == 3:
             rnd = np.random.random()
             if rnd < 0.3:
                 return self._func
@@ -85,6 +85,10 @@ class Inputs(object):
                 return [self._func[1], self._func[0], self._func[2]]
             else:
                 return [self._func[2], self._func[0], self._func[1]]
+        else:
+            func = [x for x in self._func]
+            np.random.shuffle(func)
+            return func
 
     def input(self):
         base = self._base
