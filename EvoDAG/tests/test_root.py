@@ -650,6 +650,8 @@ def test_infite_evolution():
 
 def test_predict():
     from EvoDAG import RootGP
+    from EvoDAG.node import Centroid
+    Centroid.nargs = 0
     y = cl.copy()
     mask = y == 0
     y[mask] = 1
@@ -669,6 +671,7 @@ def test_predict():
     _ = gp.predict(X=X[-10:])
     assert SparseArray.fromlist(_).SSE(hy) == 0
     assert len(gp.Xtest)
+    Centroid.nargs = 2
 
 
 def test_trace():
