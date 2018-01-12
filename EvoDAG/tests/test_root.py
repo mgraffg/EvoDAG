@@ -556,9 +556,11 @@ def test_fit_stopping_criteria_gens():
     from EvoDAG import RootGP
     from EvoDAG.node import Add
     Add.nargs = 2
+    function_set = [x for x in RootGP()._function_set if x.regression]
     gp = RootGP(generations=2,
                 early_stopping_rounds=None,
                 tournament_size=2,
+                function_set=function_set,
                 classifier=False,
                 seed=1,
                 popsize=4)
@@ -578,9 +580,11 @@ def test_fit_stopping_criteria_gens():
 
 def test_fit_stopping_criteria_estopping():
     from EvoDAG import RootGP
+    function_set = [x for x in RootGP()._function_set if x.regression]
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
                 early_stopping_rounds=4,
+                function_set=function_set,
                 classifier=False,
                 seed=0,
                 popsize=4)
@@ -600,6 +604,7 @@ def test_fit_stopping_criteria_estopping():
 
 def test_fit():
     from EvoDAG import RootGP
+    function_set = [x for x in RootGP()._function_set if x.regression]
     y = cl.copy()
     mask = y == 0
     y[mask] = 1
@@ -607,6 +612,7 @@ def test_fit():
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
                 early_stopping_rounds=-1,
+                function_set=function_set,
                 classifier=False,
                 seed=0,
                 popsize=4).fit(X, y, test_set=X)
