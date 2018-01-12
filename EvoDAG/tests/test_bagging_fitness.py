@@ -427,7 +427,8 @@ def test_a_precision():
     gp.y = y
     gp.X = X
     gp.create_population()
-    off = gp.random_offspring()
+    # off = gp.random_offspring()
+    off = gp.population.bsf
     hy = SparseArray.argmax(off.hy)
     index = np.array(gp._mask_ts.index)
     y = np.array(gp._y_klass.full_array())[index]
