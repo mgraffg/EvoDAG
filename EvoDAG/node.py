@@ -847,7 +847,10 @@ class Centroid(NaiveBayes):
     def set_weight(self, hy):
         if self.weight is not None:
             return True
-        cnt = [m.sum() for m in self._mask]
+        try:
+            cnt = [m.sum() for m in self._mask]
+        except AttributeError:
+            cnt = [float(x.size()) for x in hy]
         w = [[- x.dot(m) / c for x in hy] for m, c in zip(self._mask, cnt)]
         self.weight = w
         return True
@@ -858,8 +861,14 @@ class Centroid(NaiveBayes):
         if not self.set_weight(hy):
             return False
         weight = self.weight
-        self.hy = [SparseArray.cumsum([x.add2(_w).sq() for x, _w in zip(hy, w)]).mul2(-1.0).exp() for w in weight]
+        self.hy = [SparseArray.cumsum([x.add2(_w).sq() for x, _w in
+                                       zip(hy, w)]).mul2(-1.0).exp() for w in weight]
+        if self._finite:
+            [x.finite(inplace=True) for x in self.hy]
         if hyt is not None:
-            self.hy_test = [SparseArray.cumsum([x.add2(_w).sq() for x, _w in zip(hyt, w)]).mul2(-1.0).exp() for w in weight]
+            self.hy_test = [SparseArray.cumsum([x.add2(_w).sq() for x,
+                                                _w in zip(hyt, w)]).mul2(-1.0).exp() for w in weight]
+            if self._finite:
+                [x.finite(inplace=True) for x in self.hy_test]
         return True
         

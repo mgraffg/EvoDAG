@@ -277,8 +277,9 @@ def test_init2():
 
 def test_init_evodag():
     from EvoDAG.model import EvoDAG
-    m = EvoDAG(seed=10).fit(X, cl)
+    m = EvoDAG().fit(X, cl)
     hy = m.predict(X)
+    print((cl == hy).mean(), cl, hy)
     assert (cl == hy).mean() > 0.9
     default_nargs()
 

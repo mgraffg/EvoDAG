@@ -650,14 +650,14 @@ def test_infite_evolution():
 
 def test_predict():
     from EvoDAG import RootGP
-    from EvoDAG.node import Centroid
-    Centroid.nargs = 0
     y = cl.copy()
     mask = y == 0
     y[mask] = 1
     y[~mask] = -1
+    function_set = [x for x in RootGP()._function_set if x.regression]
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
+                function_set=function_set,
                 early_stopping_rounds=-1,
                 classifier=False,
                 remove_raw_inputs=False,
@@ -671,7 +671,6 @@ def test_predict():
     _ = gp.predict(X=X[-10:])
     assert SparseArray.fromlist(_).SSE(hy) == 0
     assert len(gp.Xtest)
-    Centroid.nargs = 2
 
 
 def test_trace():
@@ -1088,17 +1087,17 @@ def test_two_instances():
 
 
 def test_time_limit():
-    from EvoDAG import RGP
+    from EvoDAG import EvoDAG
     import time
     y = cl.copy()
     t = time.time()
-    gp = RGP(generations=np.inf,
-             tournament_size=2,
-             early_stopping_rounds=100,
-             multiple_outputs=True,
-             time_limit=0.9,
-             seed=0,
-             popsize=10000).fit(X, y, test_set=X)
+    gp = EvoDAG.init(generations=np.inf,
+                     tournament_size=2,
+                     early_stopping_rounds=100,
+                     multiple_outputs=True,
+                     time_limit=0.9,
+                     seed=0,
+                     popsize=10000).fit(X, y, test_set=X)
     t2 = time.time()
     print(t2 - t)
     assert t2 - t < 1
@@ -1194,9 +1193,11 @@ def test_function_selection():
 
 def test_init():
     from EvoDAG import EvoDAG
-    m = EvoDAG.init(seed=10).fit(X, cl)
+    m = EvoDAG.init().fit(X, cl)
     assert m._function_set[0].nargs == 60
     hy = m.predict(X)
+    print((cl == hy).mean())
+    print(hy, cl)
     assert (cl == hy).mean() > 0.9
 
 
