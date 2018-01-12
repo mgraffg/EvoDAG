@@ -1077,9 +1077,11 @@ def test_two_instances():
     y = cl.copy()
     y[:-2] = -1
     y[-2:] = 1
+    function_set = [x for x in EvoDAG()._function_set if x.regression]
     gp = EvoDAG(generations=np.inf,
                 tournament_size=2,
                 classifier=False,
+                function_set=function_set,
                 early_stopping_rounds=-1,
                 seed=0,
                 popsize=10).fit(X, y, test_set=X)
