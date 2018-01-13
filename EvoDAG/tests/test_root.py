@@ -660,7 +660,7 @@ def test_predict():
     mask = y == 0
     y[mask] = 1
     y[~mask] = -1
-    function_set = [x for x in RootGP()._function_set if x.regression]
+    function_set = [x for x in RootGP()._function_set if x.regression and x.nargs]
     gp = RootGP(generations=np.inf,
                 tournament_size=2,
                 function_set=function_set,
