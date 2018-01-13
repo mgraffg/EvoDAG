@@ -299,6 +299,7 @@ def test_predict_proba():
     from EvoDAG.model import EvoDAGE
     m = EvoDAGE(n_estimators=3, n_jobs=2, time_limit=4).fit(X, cl)
     pr = m.predict_proba(X)
+    print(pr)
     default_nargs()
     print(pr.min(), pr.max())
     assert pr.min() >= 0 and pr.max() <= 1

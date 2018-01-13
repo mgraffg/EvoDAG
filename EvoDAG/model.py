@@ -379,11 +379,12 @@ class Ensemble(object):
         return np.array([tonparray(x) for x in hy]).T
 
     def predict_proba(self, X):
-        hy = [SparseArray.argmax(x) for x in
-              self._decision_function_raw(X, cpu_cores=self._n_jobs)]
+        hy = self._decision_function_raw(X, cpu_cores=self._n_jobs)
+        minlength = len(hy[0])
+        hy = [SparseArray.argmax(x) for x in hy]
         hy = np.array([x.full_array() for x in hy], dtype=np.int).T
-        hy = [np.bincount(x) for x in hy]
-        return [x / float(x.sum()) for x in hy]
+        hy = [np.bincount(x, minlength=minlength) for x in hy]
+        return np.array([x / float(x.sum()) for x in hy])
 
     def decision_function(self, X, cpu_cores=1):
         cpu_cores = max(cpu_cores, self._n_jobs)
