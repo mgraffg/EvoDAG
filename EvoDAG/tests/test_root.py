@@ -1083,7 +1083,7 @@ def test_two_instances():
     y = cl.copy()
     y[:-2] = -1
     y[-2:] = 1
-    function_set = [x for x in EvoDAG()._function_set if x.regression]
+    function_set = [x for x in EvoDAG()._function_set if x.regression and x.nargs]
     gp = EvoDAG(generations=np.inf,
                 tournament_size=2,
                 classifier=False,
@@ -1203,7 +1203,10 @@ def test_init():
     from EvoDAG import EvoDAG
     m = EvoDAG.init().fit(X, cl)
     assert m._function_set[0].nargs == 60
-    hy = m.predict(X)
+    model = m.model()
+    hy = model.predict(X)
+    print([x.full_array() for x in m.population.estopping.hy])
+    print([x.full_array() for x in model.decision_function(X)])
     print((cl == hy).mean())
     print(hy, cl)
     assert (cl == hy).mean() > 0.9

@@ -371,8 +371,8 @@ class Ensemble(object):
             [[_.append(y) for y in x] for x in hy]
             hy = _
         [x.finite(inplace=True) for x in hy]
-        if self.classifier:
-            hy = [x.boundaries() for x in hy]
+        # if self.classifier:
+        #     hy = [x.boundaries() for x in hy]
         return np.array([tonparray(x) for x in hy]).T
 
     def predict_proba(self, X):
