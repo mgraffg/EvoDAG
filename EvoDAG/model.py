@@ -153,15 +153,16 @@ class Model(object):
                 node.eval(hist)
             else:
                 node.eval(X)
-        if self._classifier:
-            if self.multiple_outputs:
-                [x.finite(inplace=True) for x in node.hy]
-                r = [x.tanh() for x in node.hy]
-            else:
-                node.hy.finite(inplace=True)
-                r = node.hy.tanh()
-        else:
-            r = node.hy
+        r = node.hy
+        # if self._classifier:
+        #     if self.multiple_outputs:
+        #         [x.finite(inplace=True) for x in node.hy]
+        #         r = [x.tanh() for x in node.hy]
+        #     else:
+        #         node.hy.finite(inplace=True)
+        #         r = node.hy.tanh()
+        # else:
+        #     r = node.hy
         for i in hist[:-1]:
             i.hy = None
             i.hy_test = None
@@ -380,7 +381,7 @@ class Ensemble(object):
     def predict_proba(self, X):
         hy = self.decision_function(X)
         [x.finite(inplace=True) for x in hy]
-        pr = np.array([tonparray(x.boundaries().mul2(0.5).add2(0.5)) for x in hy]).T
+        pr = np.array([tonparray(x.mul2(3.1416).add2(0.5)) for x in hy]).T
         d = pr.sum(axis=1)
         m = d > 0
         pr[m] = pr[m] / np.atleast_2d(d[m]).T

@@ -1205,7 +1205,7 @@ def test_init():
     assert m._function_set[0].nargs == 60
     model = m.model()
     hy = model.predict(X)
-    print([x.full_array() for x in m.population.estopping.hy])
+    print(model.decision_function)
     print([x.full_array() for x in model.decision_function(X)])
     print((cl == hy).mean())
     print(hy, cl)
