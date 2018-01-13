@@ -138,10 +138,10 @@ class Model(object):
     def decision_function(self, X, **kwargs):
         "Decision function i.e. the raw data of the prediction"
         if X is None:
-            if self._classifier:
-                if self.multiple_outputs:
-                    return [x.boundaries() for x in self._hy_test]
-                return self._hy_test.boundaries()
+            # if self._classifier:
+            #     if self.multiple_outputs:
+            #         return [x.boundaries() for x in self._hy_test]
+            #     return self._hy_test.boundaries()
             return self._hy_test
         X = self.convert_features(X)
         if len(X) < self.nvar:
@@ -155,9 +155,11 @@ class Model(object):
                 node.eval(X)
         if self._classifier:
             if self.multiple_outputs:
-                r = [x.boundaries() for x in node.hy]
+                [x.finite(inplace=True) for x in node.hy]
+                r = [x.tanh() for x in node.hy]
             else:
-                r = node.hy.boundaries()
+                node.hy.finite(inplace=True)
+                r = node.hy.tanh()
         else:
             r = node.hy
         for i in hist[:-1]:
@@ -404,15 +406,15 @@ class Ensemble(object):
     def decision_function_cl(self, X, cpu_cores=1):
         r = self._decision_function_raw(X, cpu_cores=cpu_cores)
         res = r[0]
-        if isinstance(res, SparseArray):
-            res = res.boundaries()
-        else:
-            res = [x.boundaries() for x in res]
+        # if isinstance(res, SparseArray):
+        #     res = res.boundaries()
+        # else:
+        #     res = [x.boundaries() for x in res]
         for x in r[1:]:
             if isinstance(x, SparseArray):
-                res = res + x.boundaries()
+                res = res + x
             else:
-                res = [x + y.boundaries() for (x, y) in zip(res, x)]
+                res = [x + y for (x, y) in zip(res, x)]
         inv_len = 1. / len(r)
         if isinstance(res, SparseArray):
             return res * inv_len
