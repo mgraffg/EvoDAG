@@ -312,4 +312,3 @@ def test_raw_decision_function():
     default_nargs()
     print(pr.shape)
     assert pr.shape[1] == np.unique(cl).shape[0] * len(m._m.models)
-    
