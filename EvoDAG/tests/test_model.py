@@ -45,12 +45,12 @@ def test_model_hist():
     from EvoDAG import EvoDAG
     from EvoDAG.base import Model
     y = cl.copy()
-    gp = EvoDAG(generations=np.inf,
-                multiple_outputs=True,
-                tournament_size=2,
-                early_stopping_rounds=-1,
-                seed=1,
-                popsize=30).fit(X[:-10], y[:-10], test_set=X[-10:])
+    gp = EvoDAG.init(generations=np.inf,
+                     multiple_outputs=True,
+                     tournament_size=2,
+                     early_stopping_rounds=-1,
+                     seed=1,
+                     popsize=30).fit(X[:-10], y[:-10], test_set=X[-10:])
     hist = gp.population.hist
     trace = gp.trace(gp.population.estopping)
     a = hist[trace[-1]].variable
@@ -299,6 +299,7 @@ def test_predict_proba():
     from EvoDAG.model import EvoDAGE
     m = EvoDAGE(n_estimators=3, n_jobs=2, time_limit=4).fit(X, cl)
     pr = m.predict_proba(X)
+    print(pr)
     default_nargs()
     print(pr.min(), pr.max())
     assert pr.min() >= 0 and pr.max() <= 1
@@ -312,4 +313,3 @@ def test_raw_decision_function():
     default_nargs()
     print(pr.shape)
     assert pr.shape[1] == np.unique(cl).shape[0] * len(m._m.models)
-    

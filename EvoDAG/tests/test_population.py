@@ -20,7 +20,9 @@ from nose.tools import assert_almost_equals
 def test_generational_generation():
     from EvoDAG.population import Generational
     from EvoDAG import EvoDAG
+    function_set = [x for x in EvoDAG()._function_set if x.regression]
     gp = EvoDAG(population_class='Generational', classifier=False,
+                function_set=function_set,
                 popsize=10)
     gp.X = X
     y = cl.copy()

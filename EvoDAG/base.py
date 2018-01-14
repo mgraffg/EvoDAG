@@ -340,6 +340,10 @@ class EvoDAG(object):
         args = []
         if func.unique_args:
             return self.get_unique_args(func)
+        try:
+            min_nargs = func.min_nargs
+        except AttributeError:
+            min_nargs = func.nargs
         for j in range(func.nargs):
             k = self.population.tournament()
             for _ in range(self._number_tries_unique_args):
@@ -348,6 +352,8 @@ class EvoDAG(object):
                 else:
                     k = self.population.tournament()
             args.append(k)
+        if len(args) < min_nargs:
+            return None
         return args
 
     def random_offspring(self):

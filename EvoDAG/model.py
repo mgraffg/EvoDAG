@@ -138,10 +138,10 @@ class Model(object):
     def decision_function(self, X, **kwargs):
         "Decision function i.e. the raw data of the prediction"
         if X is None:
-            if self._classifier:
-                if self.multiple_outputs:
-                    return [x.boundaries() for x in self._hy_test]
-                return self._hy_test.boundaries()
+            # if self._classifier:
+            #     if self.multiple_outputs:
+            #         return [x.boundaries() for x in self._hy_test]
+            #     return self._hy_test.boundaries()
             return self._hy_test
         X = self.convert_features(X)
         if len(X) < self.nvar:
@@ -153,13 +153,16 @@ class Model(object):
                 node.eval(hist)
             else:
                 node.eval(X)
-        if self._classifier:
-            if self.multiple_outputs:
-                r = [x.boundaries() for x in node.hy]
-            else:
-                r = node.hy.boundaries()
-        else:
-            r = node.hy
+        r = node.hy
+        # if self._classifier:
+        #     if self.multiple_outputs:
+        #         [x.finite(inplace=True) for x in node.hy]
+        #         r = [x.tanh() for x in node.hy]
+        #     else:
+        #         node.hy.finite(inplace=True)
+        #         r = node.hy.tanh()
+        # else:
+        #     r = node.hy
         for i in hist[:-1]:
             i.hy = None
             i.hy_test = None
@@ -371,19 +374,17 @@ class Ensemble(object):
             [[_.append(y) for y in x] for x in hy]
             hy = _
         [x.finite(inplace=True) for x in hy]
-        if self.classifier:
-            hy = [x.boundaries() for x in hy]
+        # if self.classifier:
+        #     hy = [x.boundaries() for x in hy]
         return np.array([tonparray(x) for x in hy]).T
 
     def predict_proba(self, X):
-        hy = self.decision_function(X)
-        [x.finite(inplace=True) for x in hy]
-        pr = np.array([tonparray(x.boundaries().mul2(0.5).add2(0.5)) for x in hy]).T
-        d = pr.sum(axis=1)
-        m = d > 0
-        pr[m] = pr[m] / np.atleast_2d(d[m]).T
-        pr[~m] = 1.0 / len(hy)
-        return pr
+        hy = self._decision_function_raw(X, cpu_cores=self._n_jobs)
+        minlength = len(hy[0])
+        hy = [SparseArray.argmax(x) for x in hy]
+        hy = np.array([x.full_array() for x in hy], dtype=np.int).T
+        hy = [np.bincount(x, minlength=minlength) for x in hy]
+        return np.array([x / float(x.sum()) for x in hy])
 
     def decision_function(self, X, cpu_cores=1):
         cpu_cores = max(cpu_cores, self._n_jobs)
@@ -404,15 +405,15 @@ class Ensemble(object):
     def decision_function_cl(self, X, cpu_cores=1):
         r = self._decision_function_raw(X, cpu_cores=cpu_cores)
         res = r[0]
-        if isinstance(res, SparseArray):
-            res = res.boundaries()
-        else:
-            res = [x.boundaries() for x in res]
+        # if isinstance(res, SparseArray):
+        #     res = res.boundaries()
+        # else:
+        #     res = [x.boundaries() for x in res]
         for x in r[1:]:
             if isinstance(x, SparseArray):
-                res = res + x.boundaries()
+                res = res + x
             else:
-                res = [x + y.boundaries() for (x, y) in zip(res, x)]
+                res = [x + y for (x, y) in zip(res, x)]
         inv_len = 1. / len(r)
         if isinstance(res, SparseArray):
             return res * inv_len
@@ -427,17 +428,12 @@ class Ensemble(object):
 
     def predict_cl(self, X, cpu_cores=1):
         cpu_cores = max(cpu_cores, self._n_jobs)
-        hy = self.decision_function(X, cpu_cores=cpu_cores)
-        if isinstance(hy, SparseArray):
-            hy = hy.sign()
-            if self._labels is not None:
-                hy = (hy + 1).sign()
-                hy = self._labels[tonparray(hy).astype(np.int)]
-        else:
-            d = np.array([tonparray(x) for x in hy])
-            hy = d.argmax(axis=0)
-            if self._labels is not None:
-                hy = self._labels[hy]
+        hy = [SparseArray.argmax(x) for x in
+              self._decision_function_raw(X, cpu_cores=cpu_cores)]
+        hy = np.array([x.full_array() for x in hy], dtype=np.int).T
+        hy = [np.bincount(x).argmax() for x in hy]
+        if self._labels is not None:
+            hy = self._labels[hy]
         return hy
 
     def graphviz(self, directory, **kwargs):
