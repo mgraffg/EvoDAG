@@ -14,7 +14,7 @@
 
 
 from SparseArray.sparse_array cimport SparseArray
-from cpython.list cimport PyList_GET_SIZE, PyList_GET_ITEM, PyList_New, PyList_Append
+from cpython.list cimport PyList_GET_SIZE, PyList_GET_ITEM, PyList_New, PyList_Append, PyList_SetItem
 from cpython cimport array
 from cpython cimport list
 from libc cimport math
@@ -124,8 +124,10 @@ cpdef list naive_bayes(list var, list coef, unsigned int nclass):
     cdef double *p_klass_value = p_klass.data.as_doubles, a, *s_klass_value, *m_klass_value
     cdef double c
     cdef SparseArray b = <SparseArray> PyList_GET_ITEM(var, 0), v, tmp
+    cdef SparseArray den = b.mul2(0)
     cdef unsigned int _len = len(b), nvar = len(var)
     cdef list res = []
+    cdef list res2 = []
     for i in range(nclass):
         a = math.log(p_klass_value[i])
         b = b.mul2(0)
@@ -141,8 +143,15 @@ cpdef list naive_bayes(list var, list coef, unsigned int nclass):
             b = b.add(((v.add2(-m_klass_value[i])).sq()).mul2(1 / s_klass_value[i]))
         b = b.mul2(-0.5)
         b = b.add2(a - (0.5 * c))
+        b = b.exp()
         PyList_Append(res, b)
-    return res
+        den = den + b
+    for i in range(nclass):
+        b = <SparseArray> PyList_GET_ITEM(res, i)
+        b = b / den
+        b = b.mul2(2).add2(-1.0)
+        PyList_Append(res2, b)
+    return res2
 
 
 @cython.cdivision(True)
@@ -187,8 +196,10 @@ cpdef list naive_bayes_MN(list var, list coef, unsigned int nclass):
     cdef array.array p_klass = <array.array> PyList_GET_ITEM(l, 1), m_klass
     cdef double *p_klass_value = p_klass.data.as_doubles, *m_klass_value
     cdef SparseArray b = <SparseArray> PyList_GET_ITEM(var, 0), v
+    cdef SparseArray den = b.mul2(0)
     cdef unsigned int nvar = len(var)
     cdef list res = []
+    cdef list res2 = []
     for i in range(nclass):
         b = b.mul2(0)
         for j in range(nvar):
@@ -203,7 +214,14 @@ cpdef list naive_bayes_MN(list var, list coef, unsigned int nclass):
         for k in range(b.non_zero):
             m_klass_value[k] = math.exp(m_klass_value[k])
         PyList_Append(res, b)
-    return res
+        den = den + b
+    for i in range(nclass):
+        b = <SparseArray> PyList_GET_ITEM(res, i)
+        b = b / den
+        b = b.mul2(2).add2(-1.0)
+        b.finite(inplace=True)
+        PyList_Append(res2, b)
+    return res2
 
 
 cdef class SelectNumbers:

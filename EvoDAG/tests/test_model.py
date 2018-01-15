@@ -313,3 +313,17 @@ def test_raw_decision_function():
     default_nargs()
     print(pr.shape)
     assert pr.shape[1] == np.unique(cl).shape[0] * len(m._m.models)
+
+
+# def test_normalize_naive():
+#     from EvoDAG import EvoDAG as evodag
+#     m = evodag.init(time_limit=4)
+#     m.fit(X, cl)
+#     naive = m.model(v=m.population.hist[0])
+#     df = np.array([x.full_array() for x in naive.decision_function(X)]).T
+#     df2 = df - np.atleast_2d(np.log(np.sum(np.exp(df), axis=1))).T
+#     df2 = np.exp(df2)
+#     df3 = np.exp(df)
+#     df3 = df3 / np.atleast_2d(df3.sum(axis=1)).T
+#     print(df2 - df3)
+#     default_nargs()

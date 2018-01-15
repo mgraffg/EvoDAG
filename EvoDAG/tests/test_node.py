@@ -498,7 +498,11 @@ def test_naive_bayes():
         _ = [(x + -m[i]).sq() * (1 / s[i]) for x, m, s in zip(l, mean, std2)]
         _ = SparseArray.cumsum(_) * -0.5
         likelihood.append(_ + b + a)
-    for a, b in zip(likelihood, naive_bayes.hy):
+    df = np.array([x.full_array() for x in likelihood]).T
+    df = np.exp(df)
+    df = df / np.atleast_2d(df.sum(axis=1)).T
+    df = df * 2 - 1
+    for a, b in zip(df.T, naive_bayes.hy):
         [assert_almost_equals(v, w) for v, w in zip(a.data, b.data)]
 
 
@@ -516,7 +520,8 @@ def test_naive_bayes_sklearn():
             self.hy_test = None
 
     m = GaussianNB().fit(X, cl)
-    hy = m._joint_log_likelihood(X)
+    # hy = m._joint_log_likelihood(X)
+    hy = m.predict_proba(X) * 2 - 1
     vars = [Var(SparseArray.fromlist(x)) for x in X.T]
     nb = NB(mask=SparseArray.fromlist([1 for _ in X[:, 0]]), klass=SparseArray.fromlist(cl),
             nclass=3)
@@ -554,8 +559,12 @@ def test_naive_bayes_MN():
     naive_bayes = NaiveBayesMN(range(len(vars)), ytr=gp._ytr, naive_bayes=gp._naive_bayes,
                                mask=gp._mask, finite=True)
     naive_bayes.eval(vars)
-    for a, b in zip(R, naive_bayes.hy):
-        [assert_almost_equals(math.exp(v), w) for v, w in zip(a.data, b.data)]
+    df = np.array([x.full_array() for x in R]).T
+    df = np.exp(df)
+    df = df / np.atleast_2d(df.sum(axis=1)).T
+    df = df * 2 - 1
+    for a, b in zip(df.T, naive_bayes.hy):
+        [assert_almost_equals(v, w) for v, w in zip(a.data, b.data)]
 
 
 def test_naive_bayes_MN_variable():
@@ -601,7 +610,7 @@ def test_centroid_variable():
     c = [- (X * np.atleast_2d(m).T).sum(axis=0) / c for m, c in zip(mask.T, mask.sum(axis=0))]
     [[assert_almost_equals(_v, _w) for _v, _w in zip(v, w)] for v, w
      in zip(c, centroid.weight)]
-    r = [np.exp(- ((X + w)**2).sum(axis=1)) for w in c]
+    r = [np.exp(- ((X + w)**2).sum(axis=1)) * 2 - 1 for w in c]
     [[assert_almost_equals(_v, _w) for _v, _w in zip(v, w.full_array())] for v, w
      in zip(r, centroid.hy)]
 
