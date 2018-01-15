@@ -138,10 +138,6 @@ class Model(object):
     def decision_function(self, X, **kwargs):
         "Decision function i.e. the raw data of the prediction"
         if X is None:
-            # if self._classifier:
-            #     if self.multiple_outputs:
-            #         return [x.boundaries() for x in self._hy_test]
-            #     return self._hy_test.boundaries()
             return self._hy_test
         X = self.convert_features(X)
         if len(X) < self.nvar:
@@ -154,15 +150,6 @@ class Model(object):
             else:
                 node.eval(X)
         r = node.hy
-        # if self._classifier:
-        #     if self.multiple_outputs:
-        #         [x.finite(inplace=True) for x in node.hy]
-        #         r = [x.tanh() for x in node.hy]
-        #     else:
-        #         node.hy.finite(inplace=True)
-        #         r = node.hy.tanh()
-        # else:
-        #     r = node.hy
         for i in hist[:-1]:
             i.hy = None
             i.hy_test = None
@@ -374,8 +361,6 @@ class Ensemble(object):
             [[_.append(y) for y in x] for x in hy]
             hy = _
         [x.finite(inplace=True) for x in hy]
-        # if self.classifier:
-        #     hy = [x.boundaries() for x in hy]
         return np.array([tonparray(x) for x in hy]).T
 
     def predict_proba(self, X):
