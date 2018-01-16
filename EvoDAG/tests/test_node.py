@@ -534,7 +534,6 @@ def test_naive_bayes_sklearn():
 
 def test_naive_bayes_MN():
     import numpy as np
-    import math
     from EvoDAG.node import Variable, NaiveBayesMN
     from EvoDAG.naive_bayes import NaiveBayes as MN
     gp, args = create_problem_node2(nargs=3, seed=0)

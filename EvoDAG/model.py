@@ -364,8 +364,6 @@ class Ensemble(object):
 
     def decision_function(self, X, cpu_cores=1):
         cpu_cores = max(cpu_cores, self._n_jobs)
-        if self.classifier:
-            return self.decision_function_cl(X, cpu_cores=cpu_cores)
         r = self._decision_function_raw(X, cpu_cores=cpu_cores)
         if isinstance(r[0], SparseArray):
             r = np.array([tonparray(x) for x in r if x.isfinite()])
@@ -377,20 +375,6 @@ class Ensemble(object):
             r = np.median(r, axis=0)
             r = [sp(x) for x in r]
         return r
-
-    def decision_function_cl(self, X, cpu_cores=1):
-        r = self._decision_function_raw(X, cpu_cores=cpu_cores)
-        res = r[0]
-        for x in r[1:]:
-            if isinstance(x, SparseArray):
-                res = res + x
-            else:
-                res = [x + y for (x, y) in zip(res, x)]
-        inv_len = 1. / len(r)
-        if isinstance(res, SparseArray):
-            return res * inv_len
-        else:
-            return [x * inv_len for x in res]
 
     def predict(self, X, cpu_cores=1):
         cpu_cores = max(cpu_cores, self._n_jobs)

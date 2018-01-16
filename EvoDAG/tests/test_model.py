@@ -72,7 +72,6 @@ def test_model_hist():
 def test_ensemble():
     from EvoDAG import RootGP
     from EvoDAG.model import Ensemble
-    from EvoDAG.node import Add
     y = cl.copy()
     gps = [RootGP(generations=np.inf,
                   tournament_size=2,
@@ -85,9 +84,9 @@ def test_ensemble():
            for seed in range(2, 5)]
     ens = Ensemble([gp.model() for gp in gps])
     res = [gp.decision_function() for gp in gps]
-    res = [Add.cumsum([x[j] for x in res]) for j in range(3)]
-    res = [x * (1 / 3.) for x in res]
-    r2 = ens.decision_function(None)
+    res = [np.median([x[j].full_array() for x in res], axis=0) for j in range(3)]
+    res = [SparseArray.fromlist(x) for x in res]
+    r2 = ens.decision_function(X)
     for a, b in zip(res, r2):
         print(a.SSE(b), a.data, b.data, b.full_array())
         assert a.SSE(b) == 0
