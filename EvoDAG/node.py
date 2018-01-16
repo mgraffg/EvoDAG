@@ -870,12 +870,12 @@ class Centroid(NaiveBayes):
             return False
         weight = self.weight
         self.hy = [SparseArray.cumsum([x.add2(_w).sq() for x, _w in
-                                       zip(hy, w)]).mul2(-1.0).exp().mul2(2).add2(-1.0) for w in weight]
+                                       zip(hy, w)]).mul2(-1.0) for w in weight]
         if self._finite:
             [x.finite(inplace=True) for x in self.hy]
         if hyt is not None:
             self.hy_test = [SparseArray.cumsum([x.add2(_w).sq() for x,
-                                                _w in zip(hyt, w)]).mul2(-1.0).exp().mul2(2).add2(-1.0) for w in weight]
+                                                _w in zip(hyt, w)]).mul2(-1.0) for w in weight]
             if self._finite:
                 [x.finite(inplace=True) for x in self.hy_test]
         return True
