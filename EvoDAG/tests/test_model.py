@@ -18,6 +18,7 @@ from test_root import X
 from SparseArray import SparseArray
 import numpy as np
 from test_command_line import default_nargs
+from nose.tools import assert_almost_equals
 
 
 def test_pickle_model():
@@ -314,15 +315,46 @@ def test_raw_decision_function():
     assert pr.shape[1] == np.unique(cl).shape[0] * len(m._m.models)
 
 
-# def test_normalize_naive():
-#     from EvoDAG import EvoDAG as evodag
-#     m = evodag.init(time_limit=4)
-#     m.fit(X, cl)
-#     naive = m.model(v=m.population.hist[0])
-#     df = np.array([x.full_array() for x in naive.decision_function(X)]).T
-#     df2 = df - np.atleast_2d(np.log(np.sum(np.exp(df), axis=1))).T
-#     df2 = np.exp(df2)
-#     df3 = np.exp(df)
-#     df3 = df3 / np.atleast_2d(df3.sum(axis=1)).T
-#     print(df2 - df3)
-#     default_nargs()
+def test_normalize_naive():
+    from EvoDAG import EvoDAG as evodag
+    m = evodag.init(time_limit=4)
+    m.fit(X, cl)
+    hy = m.population.hist[0].hy.copy()
+    naive = m.model(v=m.population.hist[0])
+    df = np.array([x.full_array() for x in naive.decision_function(X)]).T
+    hy = np.array([x.full_array() for x in hy]).T
+    hy = np.exp(hy - np.atleast_2d(np.log(np.sum(np.exp(hy), axis=1))).T) * 2 - 1
+    print(hy - df)
+    for a, b in zip(hy, df):
+        [assert_almost_equals(v, w) for v, w in zip(a, b)]
+    default_nargs()
+
+
+def test_normalize_naiveMN():
+    from EvoDAG import EvoDAG as evodag
+    m = evodag.init(time_limit=4)
+    m.fit(X, cl)
+    hy = m.population.hist[1].hy.copy()
+    naive = m.model(v=m.population.hist[1])
+    df = np.array([x.full_array() for x in naive.decision_function(X)]).T
+    hy = np.array([x.full_array() for x in hy]).T
+    hy = hy / np.atleast_2d(hy.sum(axis=1)).T * 2 - 1
+    for a, b in zip(hy, df):
+        [assert_almost_equals(v, w) for v, w in zip(a, b)]
+    default_nargs()
+
+
+def test_normalize_Centroid():
+    from EvoDAG import EvoDAG as evodag
+    m = evodag.init(time_limit=4)
+    m.fit(X, cl)
+    hy = m.population.hist[2].hy.copy()
+    naive = m.model(v=m.population.hist[2])
+    df = np.array([x.full_array() for x in naive.decision_function(X)]).T
+    hy = np.array([x.full_array() for x in hy]).T
+    hy = np.exp(hy) * 2 - 1
+    # hy = hy / np.atleast_2d(hy.sum(axis=1)).T * 2 - 1
+    for a, b in zip(hy, df):
+        [assert_almost_equals(v, w) for v, w in zip(a, b)]
+    default_nargs()
+    

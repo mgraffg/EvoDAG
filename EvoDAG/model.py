@@ -149,6 +149,7 @@ class Model(object):
                 node.eval(hist)
             else:
                 node.eval(X)
+        node.normalize()
         r = node.hy
         for i in hist[:-1]:
             i.hy = None

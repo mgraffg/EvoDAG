@@ -184,6 +184,9 @@ class Variable(object):
         return self.hy.isfinite() and (self.hy_test is None or
                                        self.hy_test.isfinite())
 
+    def normalize(self):
+        pass
+
     @property
     def hy(self):
         "Predicted values of the training and validation set"
@@ -736,6 +739,12 @@ class NaiveBayes(Function):
             #     [x.finite(inplace=True) for x in self.hy_test]
         return True
 
+    def normalize(self):
+        hy = [x.exp() for x in self.hy]
+        den = SparseArray.cumsum(hy)
+        hy = [(x / den).mul2(2).add2(-1.0) for x in hy]
+        self.hy = hy
+
 
 class NaiveBayesMN(NaiveBayes):
     symbol = 'MN'
@@ -776,6 +785,11 @@ class NaiveBayesMN(NaiveBayes):
             # if self._finite:
             #     [x.finite(inplace=True) for x in self.hy_test]
         return True
+
+    def normalize(self):
+        den = SparseArray.cumsum(self.hy)
+        hy = [(x / den).mul2(2).add2(-1.0) for x in self.hy]
+        self.hy = hy
 
 
 class MultipleVariables(Add):
@@ -841,12 +855,7 @@ class MultipleVariables(Add):
 
 
 class Centroid(NaiveBayes):
-    nargs = 2
-    min_nargs = 2
     symbol = 'Centroid'
-    density_safe = False
-    unique_args = True
-    regression = False
 
     def __init__(self, variable, naive_bayes=None, **kwargs):
         super(Centroid, self).__init__(variable, **kwargs)
@@ -880,3 +889,6 @@ class Centroid(NaiveBayes):
                 [x.finite(inplace=True) for x in self.hy_test]
         return True
         
+    def normalize(self):
+        hy = [x.exp().mul2(2).add2(-1.0) for x in self.hy]
+        self.hy = hy
