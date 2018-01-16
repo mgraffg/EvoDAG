@@ -503,7 +503,7 @@ def test_naive_bayes():
     df = df / np.atleast_2d(df.sum(axis=1)).T
     df = df * 2 - 1
     for a, b in zip(df.T, naive_bayes.hy):
-        [assert_almost_equals(v, w) for v, w in zip(a.data, b.data)]
+        [assert_almost_equals(v, w) for v, w in zip(a, b.data)]
 
 
 def test_naive_bayes_sklearn():

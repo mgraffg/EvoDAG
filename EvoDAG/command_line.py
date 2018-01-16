@@ -496,8 +496,8 @@ class CommandLinePredict(CommandLine):
         self.read_test_set()
         self.data.classifier = m.classifier
         if self.data.raw_outputs:
-            hy = m.raw_outputs(self.Xtest,
-                               cpu_cores=self.data.cpu_cores)
+            m._n_jobs = self.data.cpu_cores
+            hy = m.raw_decision_function(self.Xtest)
             if hy.ndim == 3:
                 hy.shape = (hy.shape[1] * hy.shape[0], hy.shape[-1])
             hy = "\n".join([",".join([str(i) for i in x]) for x in hy.T])

@@ -345,15 +345,6 @@ class Ensemble(object):
             p.close()
         return r
 
-    def raw_outputs(self, X, cpu_cores=1):
-        r = self._decision_function_raw(X, cpu_cores=cpu_cores)
-        if isinstance(r[0], SparseArray):
-            r = np.array([tonparray(x) for x in r if x.isfinite()])
-            return r
-        else:
-            r = np.array([[tonparray(y) for y in x] for x in r])
-            return r
-
     def raw_decision_function(self, X):
         hy = self._decision_function_raw(X, cpu_cores=self._n_jobs)
         if isinstance(hy[0], list):
@@ -390,10 +381,6 @@ class Ensemble(object):
     def decision_function_cl(self, X, cpu_cores=1):
         r = self._decision_function_raw(X, cpu_cores=cpu_cores)
         res = r[0]
-        # if isinstance(res, SparseArray):
-        #     res = res.boundaries()
-        # else:
-        #     res = [x.boundaries() for x in res]
         for x in r[1:]:
             if isinstance(x, SparseArray):
                 res = res + x
