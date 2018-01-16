@@ -500,7 +500,7 @@ class CommandLinePredict(CommandLine):
             hy = m.raw_decision_function(self.Xtest)
             if hy.ndim == 3:
                 hy.shape = (hy.shape[1] * hy.shape[0], hy.shape[-1])
-            hy = "\n".join([",".join([str(i) for i in x]) for x in hy.T])
+            hy = "\n".join([",".join([str(i) for i in x]) for x in hy])
         elif self.data.predict_proba:
             m._n_jobs = self.data.cpu_cores
             hy = m.predict_proba(self.Xtest)
