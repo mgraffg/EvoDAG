@@ -84,7 +84,7 @@ def test_ensemble():
                                   test_set=X)
            for seed in range(2, 5)]
     ens = Ensemble([gp.model() for gp in gps])
-    res = [gp.decision_function() for gp in gps]
+    res = [gp.model().decision_function(X) for gp in gps]
     res = [np.median([x[j].full_array() for x in res], axis=0) for j in range(3)]
     res = [SparseArray.fromlist(x) for x in res]
     r2 = ens.decision_function(X)
