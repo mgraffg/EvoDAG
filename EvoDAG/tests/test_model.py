@@ -319,7 +319,7 @@ def test_normalize_naive():
     from EvoDAG import EvoDAG as evodag
     m = evodag.init(time_limit=4)
     m.fit(X, cl)
-    hy = m.population.hist[0].hy.copy()
+    hy = [x for x in m.population.hist[0].hy]
     naive = m.model(v=m.population.hist[0])
     df = np.array([x.full_array() for x in naive.decision_function(X)]).T
     hy = np.array([x.full_array() for x in hy]).T
@@ -334,7 +334,7 @@ def test_normalize_naiveMN():
     from EvoDAG import EvoDAG as evodag
     m = evodag.init(time_limit=4)
     m.fit(X, cl)
-    hy = m.population.hist[1].hy.copy()
+    hy = [x for x in m.population.hist[1].hy]
     naive = m.model(v=m.population.hist[1])
     df = np.array([x.full_array() for x in naive.decision_function(X)]).T
     hy = np.array([x.full_array() for x in hy]).T
@@ -348,7 +348,7 @@ def test_normalize_Centroid():
     from EvoDAG import EvoDAG as evodag
     m = evodag.init(time_limit=4)
     m.fit(X, cl)
-    hy = m.population.hist[2].hy.copy()
+    hy = [x for x in m.population.hist[2].hy]
     naive = m.model(v=m.population.hist[2])
     df = np.array([x.full_array() for x in naive.decision_function(X)]).T
     hy = np.array([x.full_array() for x in hy]).T

@@ -191,7 +191,7 @@ class Inputs(object):
             dependent = 'klass'
         if iterable is None:
             iterable = json_iterator(fname)
-        VEC = os.getenv('VEC', 'vec')            
+        VEC = os.getenv('VEC', 'vec')
         for row, a in enumerate(iterable):
             vec = a[VEC]
             try:
