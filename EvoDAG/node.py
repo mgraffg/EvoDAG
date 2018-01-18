@@ -743,6 +743,7 @@ class NaiveBayes(Function):
         hy = [x.exp() for x in self.hy]
         den = SparseArray.cumsum(hy)
         hy = [(x / den).mul2(2).add2(-1.0) for x in hy]
+        [x.finite(inplace=True) for x in hy]        
         self.hy = hy
 
 
@@ -789,6 +790,7 @@ class NaiveBayesMN(NaiveBayes):
     def normalize(self):
         den = SparseArray.cumsum(self.hy)
         hy = [(x / den).mul2(2).add2(-1.0) for x in self.hy]
+        [x.finite(inplace=True) for x in hy]        
         self.hy = hy
 
 
@@ -888,7 +890,8 @@ class Centroid(NaiveBayes):
             if self._finite:
                 [x.finite(inplace=True) for x in self.hy_test]
         return True
-        
+
     def normalize(self):
         hy = [x.exp().mul2(2).add2(-1.0) for x in self.hy]
+        [x.finite(inplace=True) for x in hy]
         self.hy = hy
