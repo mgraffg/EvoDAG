@@ -35,7 +35,7 @@
     "Sq": false,
     "Sqrt": true,
     "Tan": true,
-    "Tanh": false,
+    "Tanh": true,
     "all_inputs": true,
     "classifier": false,
     "early_stopping_rounds": 4000,
