@@ -89,7 +89,9 @@ def test_ensemble():
     res = [SparseArray.fromlist(x) for x in res]
     r2 = ens.decision_function(X)
     for a, b in zip(res, r2):
-        print(a.SSE(b), a.data, b.data, b.full_array())
+        a.finite(inplace=True)
+        b.finite(inplace=True)
+        print(a.SSE(b), a.data, b.data)
         assert a.SSE(b) == 0
 
 
