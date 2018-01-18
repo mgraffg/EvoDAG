@@ -162,8 +162,9 @@ class Inputs(object):
             dependent = 'klass'
         if iterable is None:
             iterable = json_iterator(fname)
+        VEC = os.getenv('VEC', 'vec')
         for row, a in enumerate(iterable):
-            if 'vec' in a:
+            if VEC in a:
                 return self.read_data_json_vec(fname)
             if X is None:
                 X = [list() for i in range(self._num_terms(a))]
@@ -190,8 +191,9 @@ class Inputs(object):
             dependent = 'klass'
         if iterable is None:
             iterable = json_iterator(fname)
+        VEC = os.getenv('VEC', 'vec')            
         for row, a in enumerate(iterable):
-            vec = a['vec']
+            vec = a[VEC]
             try:
                 vecsize = a['vecsize']
             except KeyError:
