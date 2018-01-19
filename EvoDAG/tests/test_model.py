@@ -18,6 +18,7 @@ from test_root import X
 from SparseArray import SparseArray
 import numpy as np
 from test_command_line import default_nargs
+from nose.tools import assert_almost_equals
 
 
 def test_pickle_model():
@@ -72,7 +73,6 @@ def test_model_hist():
 def test_ensemble():
     from EvoDAG import RootGP
     from EvoDAG.model import Ensemble
-    from EvoDAG.node import Add
     y = cl.copy()
     gps = [RootGP(generations=np.inf,
                   tournament_size=2,
@@ -84,12 +84,14 @@ def test_ensemble():
                                   test_set=X)
            for seed in range(2, 5)]
     ens = Ensemble([gp.model() for gp in gps])
-    res = [gp.decision_function() for gp in gps]
-    res = [Add.cumsum([x[j] for x in res]) for j in range(3)]
-    res = [x * (1 / 3.) for x in res]
-    r2 = ens.decision_function(None)
+    res = [gp.model().decision_function(X) for gp in gps]
+    res = [np.median([x[j].full_array() for x in res], axis=0) for j in range(3)]
+    res = [SparseArray.fromlist(x) for x in res]
+    r2 = ens.decision_function(X)
     for a, b in zip(res, r2):
-        print(a.SSE(b), a.data, b.data, b.full_array())
+        # a.finite(inplace=True)
+        # b.finite(inplace=True)
+        print(a.SSE(b), a.data, b.data)
         assert a.SSE(b) == 0
 
 
@@ -313,3 +315,48 @@ def test_raw_decision_function():
     default_nargs()
     print(pr.shape)
     assert pr.shape[1] == np.unique(cl).shape[0] * len(m._m.models)
+
+
+def test_normalize_naive():
+    from EvoDAG import EvoDAG as evodag
+    m = evodag.init(time_limit=4)
+    m.fit(X, cl)
+    hy = [x for x in m.population.hist[0].hy]
+    naive = m.model(v=m.population.hist[0])
+    df = np.array([x.full_array() for x in naive.decision_function(X)]).T
+    hy = np.array([x.full_array() for x in hy]).T
+    hy = np.exp(hy - np.atleast_2d(np.log(np.sum(np.exp(hy), axis=1))).T) * 2 - 1
+    print(hy - df)
+    for a, b in zip(hy, df):
+        [assert_almost_equals(v, w) for v, w in zip(a, b)]
+    default_nargs()
+
+
+def test_normalize_naiveMN():
+    from EvoDAG import EvoDAG as evodag
+    m = evodag.init(time_limit=4)
+    m.fit(X, cl)
+    hy = [x for x in m.population.hist[1].hy]
+    naive = m.model(v=m.population.hist[1])
+    df = np.array([x.full_array() for x in naive.decision_function(X)]).T
+    hy = np.array([x.full_array() for x in hy]).T
+    hy = hy / np.atleast_2d(hy.sum(axis=1)).T * 2 - 1
+    for a, b in zip(hy, df):
+        [assert_almost_equals(v, w) for v, w in zip(a, b)]
+    default_nargs()
+
+
+def test_normalize_Centroid():
+    from EvoDAG import EvoDAG as evodag
+    m = evodag.init(time_limit=4)
+    m.fit(X, cl)
+    hy = [x for x in m.population.hist[2].hy]
+    naive = m.model(v=m.population.hist[2])
+    df = np.array([x.full_array() for x in naive.decision_function(X)]).T
+    hy = np.array([x.full_array() for x in hy]).T
+    hy = np.exp(hy) * 2 - 1
+    # hy = hy / np.atleast_2d(hy.sum(axis=1)).T * 2 - 1
+    for a, b in zip(hy, df):
+        [assert_almost_equals(v, w) for v, w in zip(a, b)]
+    default_nargs()
+    

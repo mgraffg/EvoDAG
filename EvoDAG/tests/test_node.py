@@ -499,7 +499,7 @@ def test_naive_bayes():
         _ = SparseArray.cumsum(_) * -0.5
         likelihood.append(_ + b + a)
     for a, b in zip(likelihood, naive_bayes.hy):
-        [assert_almost_equals(v, w) for v, w in zip(a.data, b.data)]
+        [assert_almost_equals(v, w) for v, w in zip(a, b.data)]
 
 
 def test_naive_bayes_sklearn():
@@ -517,6 +517,7 @@ def test_naive_bayes_sklearn():
 
     m = GaussianNB().fit(X, cl)
     hy = m._joint_log_likelihood(X)
+    # hy = m.predict_proba(X) * 2 - 1
     vars = [Var(SparseArray.fromlist(x)) for x in X.T]
     nb = NB(mask=SparseArray.fromlist([1 for _ in X[:, 0]]), klass=SparseArray.fromlist(cl),
             nclass=3)
@@ -529,7 +530,6 @@ def test_naive_bayes_sklearn():
 
 def test_naive_bayes_MN():
     import numpy as np
-    import math
     from EvoDAG.node import Variable, NaiveBayesMN
     from EvoDAG.naive_bayes import NaiveBayes as MN
     gp, args = create_problem_node2(nargs=3, seed=0)
@@ -555,7 +555,7 @@ def test_naive_bayes_MN():
                                mask=gp._mask, finite=True)
     naive_bayes.eval(vars)
     for a, b in zip(R, naive_bayes.hy):
-        [assert_almost_equals(math.exp(v), w) for v, w in zip(a.data, b.data)]
+        [assert_almost_equals(np.exp(v), w) for v, w in zip(a.data, b.data)]
 
 
 def test_naive_bayes_MN_variable():
@@ -601,7 +601,7 @@ def test_centroid_variable():
     c = [- (X * np.atleast_2d(m).T).sum(axis=0) / c for m, c in zip(mask.T, mask.sum(axis=0))]
     [[assert_almost_equals(_v, _w) for _v, _w in zip(v, w)] for v, w
      in zip(c, centroid.weight)]
-    r = [np.exp(- ((X + w)**2).sum(axis=1)) for w in c]
+    r = [- ((X + w)**2).sum(axis=1) for w in c]
     [[assert_almost_equals(_v, _w) for _v, _w in zip(v, w.full_array())] for v, w
      in zip(r, centroid.hy)]
 

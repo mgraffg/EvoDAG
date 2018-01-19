@@ -1148,4 +1148,27 @@ def test_train_function_set():
     os.unlink('model.evodag')
     assert Add.nargs == 10
     default_nargs()
-    
+
+
+def test_predict_proba():
+    import os
+    from EvoDAG.command_line import params, train, predict
+    fname = training_set()
+    sys.argv = ['EvoDAG', '-C', '--parameters',
+                'cache.evodag', '-p3', '-e1',
+                '-r', '1', fname]
+    params()
+    sys.argv = ['EvoDAG', '--parameters', 'cache.evodag',
+                '-n2',
+                '--model', 'model.evodag',
+                '--test', fname, fname]
+    train()
+    sys.argv = ['EvoDAG', '--output', 'output.evodag',
+                '--predict-proba',
+                '--model', 'model.evodag', fname]
+    predict()
+    os.unlink(fname)
+    os.unlink('cache.evodag')
+    os.unlink('model.evodag')
+    os.unlink('output.evodag')
+    default_nargs()

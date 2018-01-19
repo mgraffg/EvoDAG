@@ -138,10 +138,6 @@ class Model(object):
     def decision_function(self, X, **kwargs):
         "Decision function i.e. the raw data of the prediction"
         if X is None:
-            # if self._classifier:
-            #     if self.multiple_outputs:
-            #         return [x.boundaries() for x in self._hy_test]
-            #     return self._hy_test.boundaries()
             return self._hy_test
         X = self.convert_features(X)
         if len(X) < self.nvar:
@@ -153,16 +149,8 @@ class Model(object):
                 node.eval(hist)
             else:
                 node.eval(X)
+        node.normalize()
         r = node.hy
-        # if self._classifier:
-        #     if self.multiple_outputs:
-        #         [x.finite(inplace=True) for x in node.hy]
-        #         r = [x.tanh() for x in node.hy]
-        #     else:
-        #         node.hy.finite(inplace=True)
-        #         r = node.hy.tanh()
-        # else:
-        #     r = node.hy
         for i in hist[:-1]:
             i.hy = None
             i.hy_test = None
@@ -358,15 +346,6 @@ class Ensemble(object):
             p.close()
         return r
 
-    def raw_outputs(self, X, cpu_cores=1):
-        r = self._decision_function_raw(X, cpu_cores=cpu_cores)
-        if isinstance(r[0], SparseArray):
-            r = np.array([tonparray(x) for x in r if x.isfinite()])
-            return r
-        else:
-            r = np.array([[tonparray(y) for y in x] for x in r])
-            return r
-
     def raw_decision_function(self, X):
         hy = self._decision_function_raw(X, cpu_cores=self._n_jobs)
         if isinstance(hy[0], list):
@@ -374,8 +353,6 @@ class Ensemble(object):
             [[_.append(y) for y in x] for x in hy]
             hy = _
         [x.finite(inplace=True) for x in hy]
-        # if self.classifier:
-        #     hy = [x.boundaries() for x in hy]
         return np.array([tonparray(x) for x in hy]).T
 
     def predict_proba(self, X):
@@ -388,8 +365,6 @@ class Ensemble(object):
 
     def decision_function(self, X, cpu_cores=1):
         cpu_cores = max(cpu_cores, self._n_jobs)
-        if self.classifier:
-            return self.decision_function_cl(X, cpu_cores=cpu_cores)
         r = self._decision_function_raw(X, cpu_cores=cpu_cores)
         if isinstance(r[0], SparseArray):
             r = np.array([tonparray(x) for x in r if x.isfinite()])
@@ -401,24 +376,6 @@ class Ensemble(object):
             r = np.median(r, axis=0)
             r = [sp(x) for x in r]
         return r
-
-    def decision_function_cl(self, X, cpu_cores=1):
-        r = self._decision_function_raw(X, cpu_cores=cpu_cores)
-        res = r[0]
-        # if isinstance(res, SparseArray):
-        #     res = res.boundaries()
-        # else:
-        #     res = [x.boundaries() for x in res]
-        for x in r[1:]:
-            if isinstance(x, SparseArray):
-                res = res + x
-            else:
-                res = [x + y for (x, y) in zip(res, x)]
-        inv_len = 1. / len(r)
-        if isinstance(res, SparseArray):
-            return res * inv_len
-        else:
-            return [x * inv_len for x in res]
 
     def predict(self, X, cpu_cores=1):
         cpu_cores = max(cpu_cores, self._n_jobs)

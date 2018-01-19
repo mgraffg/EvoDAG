@@ -15,6 +15,7 @@
 
 from test_root import X, cl
 from nose.tools import assert_almost_equals
+from test_command_line import default_nargs
 
 
 def test_generational_generation():
@@ -463,3 +464,16 @@ def test_all_variables_inputs():
         assert v is not None
         assert isinstance(v, f)
     assert inputs._all_variables_index == len(func)
+
+
+def test_input_functions():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG.init(input_functions=["NaiveBayes", "NaiveBayesMN", "Centroid"],
+                     Centroid=2, time_limit=5)
+    input_functions = [x for x in gp._input_functions]
+    gp.fit(X, y)
+    default_nargs()
+    for a, b in zip(input_functions, gp.population.hist[:3]):
+        print(b, a)
+        assert isinstance(b, a)
