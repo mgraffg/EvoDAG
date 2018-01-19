@@ -507,12 +507,7 @@ class CommandLinePredict(CommandLine):
             hy = "\n".join([",".join([str(i) for i in x]) for x in hy])
         elif self.data.decision_function:
             hy = m.decision_function(self.Xtest, cpu_cores=self.data.cpu_cores)
-            if isinstance(hy, SparseArray):
-                hy = tonparray(hy)
-                hy = "\n".join(map(str, hy))
-            else:
-                hy = np.array([tonparray(x) for x in hy]).T
-                hy = "\n".join([",".join([str(i) for i in x]) for x in hy])
+            hy = "\n".join([",".join([str(i) for i in x]) for x in hy])
         else:
             hy = self.id2label(m.predict(self.Xtest, cpu_cores=self.data.cpu_cores))
             hy = "\n".join(map(str, hy))

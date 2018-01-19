@@ -158,20 +158,15 @@ class Model(object):
         return r
 
     def predict(self, X, **kwargs):
+        hy = self.decision_function(X, **kwargs)
         if self._classifier:
-            if self.multiple_outputs:
-                hy = self.decision_function(X, **kwargs)
-                hy = np.array([tonparray(x) for x in hy])
-                hy = hy.argmax(axis=0)
-                if self._labels is not None:
-                    hy = self._labels[hy]
-            else:
-                hy = self.decision_function(X, **kwargs).sign()
-                if self._labels is not None:
-                    hy = (hy + 1).sign()
-                    hy = self._labels[tonparray(hy).astype(np.int)]
-            return hy
-        return tonparray(self.decision_function(X, **kwargs))
+            [x.finite(inplace=True) for x in hy]
+            hy = np.array(SparseArray.argmax(hy).full_array(), dtype=np.int)
+            if self._labels is not None:
+                hy = self._labels[hy]
+        else:
+            hy = tonparray(hy)
+        return hy
 
     def graphviz(self, fpt, terminals=True):
         flag = False
@@ -352,7 +347,8 @@ class Ensemble(object):
             _ = []
             [[_.append(y) for y in x] for x in hy]
             hy = _
-        [x.finite(inplace=True) for x in hy]
+        if self.classifier:
+            [x.finite(inplace=True) for x in hy]
         return np.array([tonparray(x) for x in hy]).T
 
     def predict_proba(self, X):
@@ -368,20 +364,18 @@ class Ensemble(object):
         r = self._decision_function_raw(X, cpu_cores=cpu_cores)
         if isinstance(r[0], SparseArray):
             r = np.array([tonparray(x) for x in r if x.isfinite()])
-            sp = SparseArray.fromlist
-            r = sp(np.median(r, axis=0))
-        else:
-            r = np.array([[tonparray(y) for y in x] for x in r])
-            sp = SparseArray.fromlist
             r = np.median(r, axis=0)
-            r = [sp(x) for x in r]
-        return r
+        else:
+            [[x.finite(inplace=True) for x in o] for o in r]
+            r = np.array([[tonparray(y) for y in x] for x in r])
+            r = np.median(r, axis=0)
+        return r.T
 
     def predict(self, X, cpu_cores=1):
         cpu_cores = max(cpu_cores, self._n_jobs)
         if self.classifier:
             return self.predict_cl(X, cpu_cores=cpu_cores)
-        return tonparray(self.decision_function(X, cpu_cores=cpu_cores))
+        return self.decision_function(X, cpu_cores=cpu_cores)
 
     def predict_cl(self, X, cpu_cores=1):
         cpu_cores = max(cpu_cores, self._n_jobs)

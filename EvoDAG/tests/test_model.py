@@ -85,14 +85,10 @@ def test_ensemble():
            for seed in range(2, 5)]
     ens = Ensemble([gp.model() for gp in gps])
     res = [gp.model().decision_function(X) for gp in gps]
-    res = [np.median([x[j].full_array() for x in res], axis=0) for j in range(3)]
-    res = [SparseArray.fromlist(x) for x in res]
+    res = np.array([np.median([x[j].finite().full_array() for x in res], axis=0) for j in range(3)]).T
     r2 = ens.decision_function(X)
-    for a, b in zip(res, r2):
-        # a.finite(inplace=True)
-        # b.finite(inplace=True)
-        print(a.SSE(b), a.data, b.data)
-        assert a.SSE(b) == 0
+    print(res, r2)
+    assert np.fabs(res - r2).sum() == 0
 
 
 def test_ensemble_model():
@@ -113,30 +109,28 @@ def test_ensemble_model():
            for seed in range(3)]
     ens = Ensemble([gp.model for gp in gps])
     res = [gp.decision_function(X) for gp in gps]
-    res = np.median([x.full_array() for x in res], axis=0)
-    res = SparseArray.fromlist(res)
-    print(res)
-    # res = Add.cumsum(res) * (1 / 3.)
-    r2 = ens.decision_function(None)
-    print(res.full_array()[:10], r2.full_array()[:10])
-    print(res.SSE(r2))
-    assert res.SSE(r2) == 0
+    res = np.median([x.finite().full_array() for x in res], axis=0)
+    r2 = ens.decision_function(X)
+    print(res, r2)
+    assert np.fabs(res - r2).mean() == 0
 
 
 def test_regression():
-    from EvoDAG import RootGP
+    from EvoDAG import EvoDAG as evodag
     from EvoDAG.model import Ensemble
     x = np.linspace(-1, 1, 100)
     y = 4.3*x**2 + 3.2 * x - 3.2
-    gps = [RootGP(classifier=False,
-                  seed=seed,
-                  popsize=10,
-                  generations=2).fit([SparseArray.fromlist(x)], y,
-                                     test_set=[SparseArray.fromlist(x)])
+    gps = [evodag.init(classifier=False,
+                       seed=seed,
+                       popsize=10,
+                       generations=2).fit([SparseArray.fromlist(x)], y,
+                                          test_set=[SparseArray.fromlist(x)])
            for seed in range(3)]
-    ens = Ensemble([gp.model() for gp in gps])
-    hy = np.median([gp.predict() for gp in gps], axis=0)
-    hy1 = ens.predict(X=[SparseArray.fromlist(x)])
+    model = [x.model() for x in gps]
+    ens = Ensemble(model)
+    X = [SparseArray.fromlist(x)]
+    hy = np.median([m.decision_function(X).finite().full_array() for m in model], axis=0)
+    hy1 = ens.predict(X)
     print(hy, hy1)
     assert np.all(hy == hy1)
 
@@ -245,7 +239,7 @@ def test_multiple_outputs_ensemble():
 
 def test_init():
     from EvoDAG.model import Ensemble
-    m = Ensemble.init(n_estimators=4, n_jobs=4, seed=10).fit(X, cl)
+    m = Ensemble.init(n_estimators=4, n_jobs=4, seed=10, early_stopping_rounds=100).fit(X, cl)
     hy = m.predict(X)
     assert (cl == hy).mean() > 0.9
     default_nargs()
@@ -253,7 +247,8 @@ def test_init():
 
 def test_init_regression():
     from EvoDAG.model import Ensemble
-    m = Ensemble.init(n_estimators=4, n_jobs=4, seed=10, classifier=False).fit(X, cl)
+    m = Ensemble.init(n_estimators=4, n_jobs=4, seed=10,
+                      classifier=False, early_stopping_rounds=100).fit(X, cl)
     hy = m.predict(X)
     assert np.unique(hy).shape[0] > 3
     default_nargs()
@@ -261,7 +256,7 @@ def test_init_regression():
 
 def test_init_e():
     from EvoDAG.model import EvoDAGE
-    m = EvoDAGE(n_estimators=4, n_jobs=4, seed=10).fit(X, cl)
+    m = EvoDAGE(n_estimators=4, n_jobs=4, seed=10, early_stopping_rounds=100).fit(X, cl)
     hy = m.predict(X)
     assert (cl == hy).mean() > 0.9
     default_nargs()
@@ -269,9 +264,8 @@ def test_init_e():
 
 def test_init2():
     from EvoDAG.model import Ensemble
-    m = Ensemble.init(n_estimators=4, n_jobs=1, seed=10).fit(X, cl)
+    m = Ensemble.init(n_estimators=4, n_jobs=1, seed=10, early_stopping_rounds=100).fit(X, cl)
     hy = m.predict(X)
-    print([x.full_array() for x in m.decision_function(X)])
     print((cl == hy).mean(), cl, hy)
     assert (cl == hy).mean() > 0.9
     default_nargs()
