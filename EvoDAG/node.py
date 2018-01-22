@@ -18,6 +18,7 @@ from .linalg_solve import compute_weight
 from .cython_utils import naive_bayes as NB
 from .cython_utils import naive_bayes_MN as MN
 from .cython_utils import naive_bayes_isfinite, naive_bayes_isfinite_MN
+from .cython_utils import centroid_coef
 from SparseArray import SparseArray
 
 
@@ -866,12 +867,17 @@ class Centroid(NaiveBayes):
     def set_weight(self, hy):
         if self.weight is not None:
             return True
-        try:
-            cnt = [m.sum() for m in self._mask]
-        except AttributeError:
-            cnt = [float(x.size()) for x in hy]
-        w = [[- x.dot(m) / c for x in hy] for m, c in zip(self._mask, cnt)]
-        self.weight = w
+        naive = self._naive_bayes
+        
+        self.weight = centroid_coef(hy, naive._klass, naive._mask, naive._nclass)
+        # cnt = m.non_zeros()
+        # try:
+        #     cnt = [m.sum() for m in self._mask]
+        # except AttributeError:
+        #     cnt = [float(x.size()) for x in hy]
+        # w = [[- x.dot(m) / c for x in hy] for m, c in zip(self._mask, cnt)]
+        # w = [[- x.dot(m) / c for x in hy] for m, c in zip(self._mask, cnt)]
+        # self.weight = w
         return True
 
     def eval(self, X):

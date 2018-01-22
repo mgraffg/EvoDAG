@@ -582,3 +582,38 @@ cdef class Score:
                 if _y == _hy:
                     precision2[_y] += 1
                     recall2[_y] += 1
+
+@cython.cdivision(True)
+cpdef list centroid_coef(list vars, array.array klass, array.array mask, int nclass):
+    cdef array.array mean_num, mean_den
+    cdef unsigned int *a = var.index.data.as_uints, index
+    cdef unsigned int *klass_value = klass.data.as_uints
+    cdef double *a_value = var.data.data.as_doubles, tmp
+    cdef double *mean_num_value, *mean_den_value, N=0
+    cdef unsigned int *mask_value = mask.data.as_uints
+    mean_num = array.clone(var.data, nclass, zero=True)
+    mean_num_value = mean_num.data.as_doubles
+    mean_den = array.clone(var.data, nclass, zero=True)
+    mean_den_value = mean_den.data.as_doubles
+    cdef Py_ssize_t i, k=0
+    cdef unsigned int var_end = var.non_zero
+    if var_end == 0:
+        return [mean_num, mean_den]
+    for i in range(len(mask)):
+        index = mask_value[i]
+        for k in range(k, var_end):
+            if a[k] >= index:
+                break
+        if a[k] == index and a_value[k] > 0:
+            mean_num_value[klass_value[index]] += a_value[k]
+            N += a_value[k]
+            mean_den_value[klass_value[index]] += 1
+        else:
+            mean_den_value[klass_value[index]] += 1
+    for i in range(nclass):
+        mean_num_value[i] = math.log(mean_num_value[i] / N)
+    tmp = len(mask)
+    for i in range(nclass):
+        mean_den_value[i] = math.log(mean_den_value[i] / tmp)
+    return [mean_num, mean_den]
+                    
