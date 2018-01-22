@@ -869,14 +869,6 @@ class Centroid(NaiveBayes):
             return True
         naive = self._naive_bayes
         self.weight = centroid_coef(hy, naive._klass, naive._mask, naive._nclass)
-        # cnt = m.non_zeros()
-        # try:
-        #     cnt = [m.sum() for m in self._mask]
-        # except AttributeError:
-        #     cnt = [float(x.size()) for x in hy]
-        # w = [[- x.dot(m) / c for x in hy] for m, c in zip(self._mask, cnt)]
-        # w = [[- x.dot(m) / c for x in hy] for m, c in zip(self._mask, cnt)]
-        # self.weight = w
         return True
 
     def eval(self, X):
