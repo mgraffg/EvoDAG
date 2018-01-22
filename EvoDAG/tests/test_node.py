@@ -598,13 +598,12 @@ def test_centroid_variable():
     cl = np.array(gp._y_klass.full_array(), dtype=np.int)[index]
     Xt = X[index]
     coef = [-np.mean(Xt[x == cl], axis=0) for x in range(3)]
+    naive_bayes = gp.naive_bayes
     centroid = Centroid(range(len(gp.X)), ytr=gp._ytr,
-                        naive_bayes=gp.naive_bayes, finite=True)
+                        naive_bayes=naive_bayes, finite=True)
     centroid.eval(gp.X)
     [[assert_almost_equals(_v, _w) for _v, _w in zip(v, w)] for v, w
      in zip(coef, centroid.weight)]
     r = [- ((X + w)**2).sum(axis=1) for w in coef]
     [[assert_almost_equals(_v, _w) for _v, _w in zip(v, w.full_array())] for v, w
      in zip(r, centroid.hy)]
-
-    

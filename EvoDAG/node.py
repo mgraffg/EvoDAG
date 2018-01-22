@@ -860,7 +860,7 @@ class MultipleVariables(Add):
 class Centroid(NaiveBayes):
     symbol = 'Centroid'
 
-    def __init__(self, variable, naive_bayes=None, **kwargs):
+    def __init__(self, variable, **kwargs):
         super(Centroid, self).__init__(variable, **kwargs)
         self._centroids = []
 
@@ -868,7 +868,6 @@ class Centroid(NaiveBayes):
         if self.weight is not None:
             return True
         naive = self._naive_bayes
-        
         self.weight = centroid_coef(hy, naive._klass, naive._mask, naive._nclass)
         # cnt = m.non_zeros()
         # try:
