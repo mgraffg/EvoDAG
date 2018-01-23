@@ -888,7 +888,8 @@ class Centroid(NaiveBayes):
                 [x.finite(inplace=True) for x in self.hy_test]
         return True
 
-    # def normalize(self):
-    #     hy = [x.exp().mul2(2).add2(-1.0) for x in self.hy]
-    #     [x.finite(inplace=True) for x in hy]
-    #     self.hy = hy
+    def normalize(self):
+        pass
+        # hy = [x.exp().mul2(2).add2(-1.0) for x in self.hy]
+        # [x.finite(inplace=True) for x in hy]
+        # self.hy = hy
