@@ -126,7 +126,7 @@ def test_regression():
                        generations=2).fit([SparseArray.fromlist(x)], y,
                                           test_set=[SparseArray.fromlist(x)])
            for seed in range(3)]
-    model = [x.model() for x in gps]
+    model = [_.model() for _ in gps]
     ens = Ensemble(model)
     X = [SparseArray.fromlist(x)]
     hy = np.median([m.decision_function(X).finite().full_array() for m in model], axis=0)
