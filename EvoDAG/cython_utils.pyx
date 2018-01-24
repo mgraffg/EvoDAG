@@ -582,3 +582,47 @@ cdef class Score:
                 if _y == _hy:
                     precision2[_y] += 1
                     recall2[_y] += 1
+
+@cython.cdivision(True)
+cpdef list centroid_coef(list vars, array.array klass, array.array mask, int nclass):
+    cdef array.array mean_num, mean_den, coef
+    cdef unsigned int *mask_value = mask.data.as_uints    
+    cdef unsigned int *a, *klass_value = klass.data.as_uints, index
+    cdef double *a_value, *coef_value
+    cdef Py_ssize_t i, j, k, nvars = PyList_GET_SIZE(vars), nmask = len(mask)
+    cdef list res = []
+    cdef SparseArray var = <SparseArray> PyList_GET_ITEM(vars, 0)
+    mean_num = array.clone(var.data, nclass, zero=False)
+    cdef double *mean_num_value = mean_num.data.as_doubles
+    mean_den = array.clone(var.data, nclass, zero=False)
+    cdef double *mean_den_value = mean_den.data.as_doubles
+    cdef unsigned int var_end
+    for k in range(nclass):
+        coef = array.clone(var.data, nvars, zero=True)
+        PyList_Append(res, coef)
+    for i in range(nvars):
+        for k in range(nclass):
+            mean_num_value[k] = 0
+            mean_den_value[k] = 0
+        var = <SparseArray> PyList_GET_ITEM(vars, i)
+        var_end = var.non_zero
+        if var_end == 0:
+            continue
+        a = var.index.data.as_uints
+        a_value = var.data.data.as_doubles
+        k = 0
+        for j in range(nmask):
+            index = mask_value[j]
+            for k in range(k, var_end):
+                if a[k] >= index:
+                    break
+            if a[k] == index:
+                mean_num_value[klass_value[index]] += a_value[k]
+                mean_den_value[klass_value[index]] += 1
+            else:
+                mean_den_value[klass_value[index]] += 1
+        for k in range(nclass):
+            coef = <array.array> PyList_GET_ITEM(res, k)
+            coef_value = coef.data.as_doubles
+            coef_value[i] = - mean_num_value[k] / mean_den_value[k]
+    return res

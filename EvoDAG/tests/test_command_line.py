@@ -187,7 +187,7 @@ def test_train_default_params():
     os.unlink(fname)
     os.unlink('model.evodag')
     default_nargs()
-    
+
 
 def test_predict():
     import os

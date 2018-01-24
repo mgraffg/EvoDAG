@@ -18,6 +18,7 @@ from .linalg_solve import compute_weight
 from .cython_utils import naive_bayes as NB
 from .cython_utils import naive_bayes_MN as MN
 from .cython_utils import naive_bayes_isfinite, naive_bayes_isfinite_MN
+from .cython_utils import centroid_coef
 from SparseArray import SparseArray
 
 
@@ -859,19 +860,15 @@ class MultipleVariables(Add):
 class Centroid(NaiveBayes):
     symbol = 'Centroid'
 
-    def __init__(self, variable, naive_bayes=None, **kwargs):
+    def __init__(self, variable, **kwargs):
         super(Centroid, self).__init__(variable, **kwargs)
         self._centroids = []
 
     def set_weight(self, hy):
         if self.weight is not None:
             return True
-        try:
-            cnt = [m.sum() for m in self._mask]
-        except AttributeError:
-            cnt = [float(x.size()) for x in hy]
-        w = [[- x.dot(m) / c for x in hy] for m, c in zip(self._mask, cnt)]
-        self.weight = w
+        naive = self._naive_bayes
+        self.weight = centroid_coef(hy, naive._klass, naive._mask, naive._nclass)
         return True
 
     def eval(self, X):
@@ -881,17 +878,18 @@ class Centroid(NaiveBayes):
             return False
         weight = self.weight
         self.hy = [SparseArray.cumsum([x.add2(_w).sq() for x, _w in
-                                       zip(hy, w)]).mul2(-1.0) for w in weight]
+                                       zip(hy, w)]).mul2(-1.0).exp().mul2(2).add2(-1.0) for w in weight]
         if self._finite:
             [x.finite(inplace=True) for x in self.hy]
         if hyt is not None:
             self.hy_test = [SparseArray.cumsum([x.add2(_w).sq() for x,
-                                                _w in zip(hyt, w)]).mul2(-1.0) for w in weight]
+                                                _w in zip(hyt, w)]).mul2(-1.0).exp().mul2(2).add2(-1.0) for w in weight]
             if self._finite:
                 [x.finite(inplace=True) for x in self.hy_test]
         return True
 
     def normalize(self):
-        hy = [x.exp().mul2(2).add2(-1.0) for x in self.hy]
-        [x.finite(inplace=True) for x in hy]
-        self.hy = hy
+        pass
+        # hy = [x.exp().mul2(2).add2(-1.0) for x in self.hy]
+        # [x.finite(inplace=True) for x in hy]
+        # self.hy = hy
