@@ -744,7 +744,7 @@ class NaiveBayes(Function):
         hy = [x.exp() for x in self.hy]
         den = SparseArray.cumsum(hy)
         hy = [(x / den).mul2(2).add2(-1.0) for x in hy]
-        [x.finite(inplace=True) for x in hy]        
+        [x.finite(inplace=True) for x in hy]
         self.hy = hy
 
 
