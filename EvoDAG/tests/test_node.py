@@ -19,6 +19,7 @@ from EvoDAG.base import tonparray
 from SparseArray import SparseArray
 import numpy as np
 from nose.tools import assert_almost_equals
+from test_command_line import default_nargs
 
 
 def create_problem_node(nargs=4, seed=0):
@@ -36,9 +37,11 @@ def create_problem_node(nargs=4, seed=0):
 
 def test_nargs_function():
     from EvoDAG.node import Mul
+    default_nargs()
     Add.nargs = 4
     assert Add.nargs == 4
     assert Mul.nargs == 2
+    default_nargs()
 
 
 def test_node_pickle():

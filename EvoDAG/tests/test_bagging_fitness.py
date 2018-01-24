@@ -483,6 +483,8 @@ def test_g_recall_precision():
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     score = (precision[min_class] * recall[min_class]) - 1
+    if not np.isfinite(score):
+        score = -1
     assert_almost_equals(score, off.fitness_vs)
 
 
