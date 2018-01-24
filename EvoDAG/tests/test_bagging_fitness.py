@@ -475,6 +475,8 @@ def test_g_recall_precision():
     score = (precision[min_class] * recall[min_class]) - 1
     gp._fitness_function = 'g_recall_precision'
     gp._bagging_fitness.set_fitness(off)
+    if not np.isfinite(score):
+        score = -1
     assert_almost_equals(score, off.fitness)
     index = np.array(gp._mask_ts.full_array()) == 0
     y = np.array(gp._y_klass.full_array())[index]
