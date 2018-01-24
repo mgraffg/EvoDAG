@@ -344,6 +344,8 @@ def test_normalize_Centroid():
     from EvoDAG import EvoDAG as evodag
     m = evodag.init(time_limit=4)
     m.fit(X, cl)
+    if not isinstance(m.population.hist[2].hy, list):
+        return
     hy = [x for x in m.population.hist[2].hy]
     naive = m.model(v=m.population.hist[2])
     df = np.array([x.full_array() for x in naive.decision_function(X)]).T
