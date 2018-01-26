@@ -71,10 +71,16 @@ def decision_function(model_X):
     return [k, model.decision_function(X)]
 
 
+def predict_proba(model_X):
+    k, model, X = model_X
+    return [k, model.predict_proba(X)]
+
+
 class Model(object):
     """Object to store the necesary elements to make predictions
     based on an individual"""
-    def __init__(self, trace, hist, nvar=None, classifier=True, labels=None):
+    def __init__(self, trace, hist, nvar=None, classifier=True, labels=None,
+                 probability_calibration=None, nclasses=None):
         self._classifier = classifier
         self._trace = trace
         self._hist = hist
@@ -86,6 +92,12 @@ class Model(object):
                       self._trace]
         self._labels = labels
         self._nvar = nvar
+        self._probability_calibration = probability_calibration
+        self._nclasses = nclasses
+        
+    @property
+    def nclasses(self):
+        return self._nclasses
 
     @property
     def nvar(self):
@@ -134,6 +146,10 @@ class Model(object):
         else:
             v.variable = [self._map[x] for x in v.variable]
         return v
+
+    def predict_proba(self, X, **kwargs):
+        X = self.decision_function(X, **kwargs)
+        return self._probability_calibration.predict_proba(X)
 
     def decision_function(self, X, **kwargs):
         "Decision function i.e. the raw data of the prediction"
@@ -291,6 +307,14 @@ class Ensemble(object):
         self._classifier = flag
 
     @property
+    def nclasses(self):
+        return self.models[0].nclasses
+
+    @property
+    def probability_calibration(self):
+        return self.models[0]._probability_calibration is not None
+
+    @property
     def models(self):
         "List containing the models that compose the ensemble"
         return self._models
@@ -351,7 +375,27 @@ class Ensemble(object):
             [x.finite(inplace=True) for x in hy]
         return np.array([tonparray(x) for x in hy]).T
 
+    def _predict_proba_raw(self, X, cpu_cores=1):
+        if cpu_cores == 1:
+            r = [m.predict_proba(X) for m in self._models]
+        else:
+            p = Pool(cpu_cores, maxtasksperchild=1)
+            args = [(k, m, X) for k, m in enumerate(self._models)]
+            r = [x for x in tqdm(p.imap_unordered(predict_proba,
+                                                  args),
+                                 total=len(args))]
+            r.sort(key=lambda x: x[0])
+            r = [x[1] for x in r]
+            p.close()
+        return r
+
     def predict_proba(self, X):
+        if self.probability_calibration:
+            proba = np.array(self._predict_proba_raw(X, cpu_cores=self._n_jobs))
+            proba = np.mean(proba, axis=0)
+            proba /= np.sum(proba, axis=1)[:, np.newaxis]
+            proba[np.isnan(proba)] = 1. / self.nclasses
+            return proba
         hy = self._decision_function_raw(X, cpu_cores=self._n_jobs)
         minlength = len(hy[0])
         hy = [SparseArray.argmax(x) for x in hy]

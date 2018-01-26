@@ -356,3 +356,51 @@ def test_normalize_Centroid():
         [assert_almost_equals(v, w) for v, w in zip(a, b)]
     default_nargs()
 
+
+def test_probability_calibration():
+
+    class C(object):
+        def __init__(self):
+            pass
+
+        def fit(self, X, y):
+            self._X = X
+            return self
+
+        def predict_proba(self, X):
+            return np.array([[0, 1], [0.5, 0.5], [1, 0]])
+
+    from EvoDAG import EvoDAG as evodag
+    m = evodag.init(time_limit=4, early_stopping_rounds=10,
+                    probability_calibration=C).fit(X, cl)
+    model = m.model()
+    hy = model.predict_proba(X)
+    pr = np.array([[0, 1], [0.5, 0.5], [1, 0]])
+    assert np.fabs(hy - pr).sum() == 0
+    default_nargs()
+
+
+def test_probability_calibration_ensemble():
+
+    class C(object):
+        def __init__(self):
+            pass
+
+        def fit(self, X, y):
+            self._X = X
+            return self
+
+        def predict_proba(self, X):
+            return np.array([[0, 1], [0.5, 0.5], [1, 0]])
+
+    from EvoDAG.model import EvoDAGE as evodag
+    model = evodag(time_limit=4, early_stopping_rounds=10,
+                   probability_calibration=C).fit(X, cl)
+    for m in model.models:
+        assert isinstance(m._probability_calibration, C)
+    assert model.probability_calibration
+    hy = model.predict_proba(X)
+    pr = np.array([[0, 1], [0.5, 0.5], [1, 0]])
+    assert np.fabs(hy - pr).sum() == 0
+    default_nargs()
+    

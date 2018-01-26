@@ -52,7 +52,8 @@ class EvoDAG(object):
                  min_density=0.8, multiple_outputs=False, function_selection=True,
                  fs_tournament_size=2, finite=True, pr_variable=0.33,
                  share_inputs=False, input_functions=None, F1_index=-1,
-                 use_all_vars_input_functions=False, remove_raw_inputs=True, **kwargs):
+                 use_all_vars_input_functions=False, remove_raw_inputs=True,
+                 probability_calibration=None, **kwargs):
         self._remove_raw_inputs = remove_raw_inputs
         self._fitness_function = fitness_function
         self._bagging_fitness = BaggingFitness(base=self)
@@ -105,6 +106,7 @@ class EvoDAG(object):
         self._multiple_outputs = multiple_outputs
         self._F1_index = F1_index
         self._use_all_vars_input_functions = use_all_vars_input_functions
+        self._probability_calibration = probability_calibration
         self._extras = kwargs
         if self._time_limit is not None:
             self._logger.info('Time limit: %0.2f' % self._time_limit)
