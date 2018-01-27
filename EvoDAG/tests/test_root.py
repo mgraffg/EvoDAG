@@ -817,6 +817,7 @@ def test_height():
                 seed=1,
                 multiple_outputs=True,
                 tournament_size=2,
+                input_functions=[NaiveBayes],
                 popsize=5)
     gp.X = X
     gp.nclasses(cl)
