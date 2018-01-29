@@ -60,7 +60,8 @@ class Inputs(object):
     def functions(self):
         base = self._base
         density = sum([x.hy.density for x in base.X]) / base.nvar
-        func = [x for x in self._funcs if x.nargs > 0]
+        # func = [x for x in self._funcs if x.nargs > 0]
+        func = self._funcs
         if not len(func):
             self._func = None
             self._nfunc = 0
@@ -252,8 +253,21 @@ class BasePopulation(object):
             v = self.estopping
         hist = self.hist
         trace = self.trace(v)
+        ins = None
+        if self._base._probability_calibration is not None:
+            node = hist[-1]
+            node.normalize()
+            X = np.array([x.full_array() for x in node.hy]).T
+            y = np.array(self._base._y_klass.full_array())
+            mask = np.array(self._base._mask_ts.index)
+            ins = self._base._probability_calibration().fit(X[mask], y[mask])
+        if self._classifier:
+            nclasses = self._labels.shape[0]
+        else:
+            nclasses = None
         m = Model(trace, hist, nvar=self._base._nvar,
-                  classifier=self._classifier, labels=self._labels)
+                  classifier=self._classifier, labels=self._labels,
+                  probability_calibration=ins, nclasses=nclasses)
         return m
 
     def trace(self, n):

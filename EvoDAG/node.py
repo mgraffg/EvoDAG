@@ -744,7 +744,7 @@ class NaiveBayes(Function):
         hy = [x.exp() for x in self.hy]
         den = SparseArray.cumsum(hy)
         hy = [(x / den).mul2(2).add2(-1.0) for x in hy]
-        [x.finite(inplace=True) for x in hy]        
+        [x.finite(inplace=True) for x in hy]
         self.hy = hy
 
 
@@ -877,19 +877,27 @@ class Centroid(NaiveBayes):
         if not self.set_weight(hy):
             return False
         weight = self.weight
-        self.hy = [SparseArray.cumsum([x.add2(_w).sq() for x, _w in
-                                       zip(hy, w)]).mul2(-1.0).exp().mul2(2).add2(-1.0) for w in weight]
-        if self._finite:
-            [x.finite(inplace=True) for x in self.hy]
+        if self.height == 0:
+            self.hy = [SparseArray.cumsum([x.add2(_w).sq() for x, _w in
+                                           zip(hy, w)]).mul2(-1.0) for w in weight]
+        else:
+            self.hy = [SparseArray.cumsum([x.add2(_w).sq() for x, _w in
+                                           zip(hy, w)]).mul2(-1.0).exp().mul2(2).add2(-1.0) for w in weight]
+        # if self._finite:
+        #     [x.finite(inplace=True) for x in self.hy]
         if hyt is not None:
-            self.hy_test = [SparseArray.cumsum([x.add2(_w).sq() for x,
-                                                _w in zip(hyt, w)]).mul2(-1.0).exp().mul2(2).add2(-1.0) for w in weight]
-            if self._finite:
-                [x.finite(inplace=True) for x in self.hy_test]
+            if self.height == 0:
+                self.hy_test = [SparseArray.cumsum([x.add2(_w).sq() for x,
+                                                    _w in zip(hyt, w)]).mul2(-1.0) for w in weight]
+            else:
+                self.hy_test = [SparseArray.cumsum([x.add2(_w).sq() for x,
+                                                    _w in zip(hyt, w)]).mul2(-1.0).exp().mul2(2).add2(-1.0) for w in weight]
+            # if self._finite:
+            #     [x.finite(inplace=True) for x in self.hy_test]
         return True
 
     def normalize(self):
-        pass
-        # hy = [x.exp().mul2(2).add2(-1.0) for x in self.hy]
-        # [x.finite(inplace=True) for x in hy]
-        # self.hy = hy
+        if self.height == 0:
+            hy = [x.exp().mul2(2).add2(-1.0) for x in self.hy]
+            [x.finite(inplace=True) for x in hy]
+            self.hy = hy
