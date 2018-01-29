@@ -604,6 +604,7 @@ def test_centroid_variable():
     naive_bayes = gp.naive_bayes
     centroid = Centroid(range(len(gp.X)), ytr=gp._ytr,
                         naive_bayes=naive_bayes, finite=True)
+    centroid.height = 1
     centroid.eval(gp.X)
     [[assert_almost_equals(_v, _w) for _v, _w in zip(v, w)] for v, w
      in zip(coef, centroid.weight)]
