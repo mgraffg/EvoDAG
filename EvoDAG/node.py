@@ -745,12 +745,12 @@ class NaiveBayes(Function):
         hy = [x.exp() for x in hy]
         den = SparseArray.cumsum(hy)
         hy = [(x / den).mul2(2).add2(-1.0) for x in hy]
-        [x.finite(inplace=True) for x in hy]
         return hy
 
     def normalize(self):
         if self.height == 0:
             self.hy = self._normalize(self.hy)
+        [x.finite(inplace=True) for x in self.hy]
 
 
 class NaiveBayesMN(NaiveBayes):
