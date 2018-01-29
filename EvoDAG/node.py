@@ -732,12 +732,12 @@ class NaiveBayes(Function):
             return False
         weight, var, nclass = self.weight
         self.hy = NB([hy[x] for x in var], weight, nclass)
-        if self.height > 0:
-            self.hy = self._normalize(self.hy)
+        # if self.height > 0:
+        #     self.hy = self._normalize(self.hy)
         if hyt is not None:
             self.hy_test = NB([hyt[x] for x in var], weight, nclass)
-            if self.height > 0:
-                self.hy_test = self._normalize(self.hy_test)
+            # if self.height > 0:
+            #     self.hy_test = self._normalize(self.hy_test)
         return True
 
     @staticmethod
@@ -748,8 +748,7 @@ class NaiveBayes(Function):
         return hy
 
     def normalize(self):
-        if self.height == 0:
-            self.hy = self._normalize(self.hy)
+        self.hy = self._normalize(self.hy)
         [x.finite(inplace=True) for x in self.hy]
 
 
@@ -785,18 +784,14 @@ class NaiveBayesMN(NaiveBayes):
             return False
         weight, var, nclass = self.weight
         self.hy = MN([hy[x] for x in var], weight, nclass)
-        # if self._finite:
-        #     [x.finite(inplace=True) for x in self.hy]
         if hyt is not None:
             self.hy_test = MN([hyt[x] for x in var], weight, nclass)
-            # if self._finite:
-            #     [x.finite(inplace=True) for x in self.hy_test]
         return True
 
     def normalize(self):
         den = SparseArray.cumsum(self.hy)
         hy = [(x / den).mul2(2).add2(-1.0) for x in self.hy]
-        [x.finite(inplace=True) for x in hy]        
+        [x.finite(inplace=True) for x in hy]
         self.hy = hy
 
 
@@ -882,27 +877,22 @@ class Centroid(NaiveBayes):
         if not self.set_weight(hy):
             return False
         weight = self.weight
-        if self.height == 0:
-            self.hy = [SparseArray.cumsum([x.add2(_w).sq() for x, _w in
-                                           zip(hy, w)]).mul2(-1.0) for w in weight]
-        else:
-            self.hy = [SparseArray.cumsum([x.add2(_w).sq() for x, _w in
-                                           zip(hy, w)]).mul2(-1.0).exp().mul2(2).add2(-1.0) for w in weight]
-        # if self._finite:
-        #     [x.finite(inplace=True) for x in self.hy]
+        self.hy = [SparseArray.cumsum([x.add2(_w).sq() for x, _w in
+                                       zip(hy, w)]).mul2(-1.0) for w in weight]        
+        # if self.height == 0:
+        # else:
+        #     self.hy = [SparseArray.cumsum([x.add2(_w).sq() for x, _w in
+        #                                    zip(hy, w)]).mul2(-1.0).exp().mul2(2).add2(-1.0) for w in weight]
         if hyt is not None:
-            if self.height == 0:
-                self.hy_test = [SparseArray.cumsum([x.add2(_w).sq() for x,
-                                                    _w in zip(hyt, w)]).mul2(-1.0) for w in weight]
-            else:
-                self.hy_test = [SparseArray.cumsum([x.add2(_w).sq() for x,
-                                                    _w in zip(hyt, w)]).mul2(-1.0).exp().mul2(2).add2(-1.0) for w in weight]
-            # if self._finite:
-            #     [x.finite(inplace=True) for x in self.hy_test]
+            self.hy_test = [SparseArray.cumsum([x.add2(_w).sq() for x,
+                                                _w in zip(hyt, w)]).mul2(-1.0) for w in weight]
+            # if self.height == 0:
+            # else:
+            #     self.hy_test = [SparseArray.cumsum([x.add2(_w).sq() for x,
+            #                                         _w in zip(hyt, w)]).mul2(-1.0).exp().mul2(2).add2(-1.0) for w in weight]
         return True
 
     def normalize(self):
-        if self.height == 0:
-            hy = [x.exp().mul2(2).add2(-1.0) for x in self.hy]
-            [x.finite(inplace=True) for x in hy]
-            self.hy = hy
+        hy = [x.exp().mul2(2).add2(-1.0) for x in self.hy]
+        [x.finite(inplace=True) for x in hy]
+        self.hy = hy
