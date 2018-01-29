@@ -60,7 +60,8 @@ class Inputs(object):
     def functions(self):
         base = self._base
         density = sum([x.hy.density for x in base.X]) / base.nvar
-        func = [x for x in self._funcs if x.nargs > 0]
+        # func = [x for x in self._funcs if x.nargs > 0]
+        func = self._funcs
         if not len(func):
             self._func = None
             self._nfunc = 0

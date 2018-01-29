@@ -812,11 +812,16 @@ def test_labels():
 
 def test_height():
     from EvoDAG.node import Mul, NaiveBayesMN, NaiveBayes
+    from test_command_line import default_nargs
     from EvoDAG import EvoDAG
+    # NaiveBayesMN.nargs = 0
+    # NaiveBayes.nargs = 0
     gp = EvoDAG(generations=1,
                 seed=1,
                 multiple_outputs=True,
                 tournament_size=2,
+                use_all_vars_input_functions=True,
+                input_functions=[NaiveBayes],
                 popsize=5)
     gp.X = X
     gp.nclasses(cl)
@@ -828,6 +833,7 @@ def test_height():
     args = [3, 4]
     f = gp._random_offspring(Mul, args)
     assert f.height == 1
+    default_nargs()
 
 
 def test_regression():
