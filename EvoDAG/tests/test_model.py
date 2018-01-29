@@ -350,7 +350,7 @@ def test_normalize_Centroid():
     naive = m.model(v=m.population.hist[2])
     df = np.array([x.full_array() for x in naive.decision_function(X)]).T
     hy = np.array([x.full_array() for x in hy]).T
-    # hy = np.exp(hy) * 2 - 1
+    hy = np.exp(hy) * 2 - 1
     print(df, hy)
     for a, b in zip(hy, df):
         [assert_almost_equals(v, w) for v, w in zip(a, b)]
