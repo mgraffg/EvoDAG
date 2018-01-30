@@ -289,7 +289,7 @@ class BaggingFitness(object):
                 _ = np.mean([a.SAE(b.mul(c)) for a, b, c in zip(base._ytr, v.hy, base._mask)])
                 v.fitness = - _
             else:
-                v.fitness = -base._ytr.SAE(v.hy.mul(base._mask))
+                v.fitness = -base._ytr.SAE(v.hy * base._mask)
 
     def fitness_vs(self, v):
         """Fitness function in the validation set
