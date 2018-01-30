@@ -403,4 +403,11 @@ def test_probability_calibration_ensemble():
     pr = np.array([[0, 1], [0.5, 0.5], [1, 0]])
     assert np.fabs(hy - pr).sum() == 0
     default_nargs()
-    
+
+
+def test_regression_multiple_outputs():
+    from EvoDAG.model import EvoDAGE
+    from SparseArray import SparseArray
+    y = [SparseArray.fromlist(cl), SparseArray.fromlist(cl*-1), SparseArray.fromlist(cl*-1 + 0.5)]
+    m = EvoDAGE(time_limit=4, multiple_outputs=True, classifier=False).fit(X, y)
+    assert m

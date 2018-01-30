@@ -878,7 +878,7 @@ class Centroid(NaiveBayes):
             return False
         weight = self.weight
         self.hy = [SparseArray.cumsum([x.add2(_w).sq() for x, _w in
-                                       zip(hy, w)]).mul2(-1.0) for w in weight]        
+                                       zip(hy, w)]).mul2(-1.0) for w in weight]
         # if self.height == 0:
         # else:
         #     self.hy = [SparseArray.cumsum([x.add2(_w).sq() for x, _w in
