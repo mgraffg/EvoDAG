@@ -608,6 +608,6 @@ def test_centroid_variable():
     centroid.eval(gp.X)
     [[assert_almost_equals(_v, _w) for _v, _w in zip(v, w)] for v, w
      in zip(coef, centroid.weight)]
-    r = [np.exp(- ((X + w)**2).sum(axis=1)) * 2. - 1 for w in coef]
+    r = [- ((X + w)**2).sum(axis=1) for w in coef]
     [[assert_almost_equals(_v, _w) for _v, _w in zip(v, w.full_array())] for v, w
      in zip(r, centroid.hy)]

@@ -286,7 +286,8 @@ class BaggingFitness(object):
                 v.fitness = -base._ytr.SSE(v.hy * base._mask)
         else:
             if base._multiple_outputs:
-                v.fitness = fitness_SAE(base._ytr, v.hy, base._mask)
+                _ = np.mean([a.SAE(b.mul(c)) for a, b, c in zip(base._ytr, v.hy, base._mask)])
+                v.fitness = - _
             else:
                 v.fitness = -base._ytr.SAE(v.hy * base._mask)
 
