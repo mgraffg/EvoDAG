@@ -44,6 +44,9 @@
     "fs_tournament_size": 2,
     "function_selection": true,
     "generations": null,
+    "input_functions": [
+	"MultipleVariables"
+    ],    
     "input_functions": null,
     "min_density": 0.8,
     "multiple_outputs": false,
@@ -56,5 +59,6 @@
     "time_limit": 3600,
     "tournament_size": 2,
     "tr_fraction": 0.5,
-    "unique_individuals": false
+    "unique_individuals": false,
+    "use_all_vars_input_functions": true    
 }
