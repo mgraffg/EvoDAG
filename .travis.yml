@@ -5,9 +5,13 @@ language: python
 
 env:
   matrix:
-  - python=2.7  CONDA_PY=27
-  - python=3.5  CONDA_PY=35
-  - python=3.6  CONDA_PY=36
+    - python=2.7  CONDA_PY=27
+    - python=3.5  CONDA_PY=35
+    - python=3.6  CONDA_PY=36
+
+  global:
+    - secure: "MOXTAb0t9z513Rn66D/k72Bj+8ahaawGj9gVSy3e7XZo4laA4x7gXFlKWykxN04tZtJk+98s7NjRIsZHFplqasSq2nNGqOIt99q2QNf3S0JEdUWAP98uyRELEz+jdujebN5Zo4LaxydebxH6TknHvniwqZ3tEiytcpGj391d0VBSckqTEvoyHHtZZcp19C7yDpIp0Qs/bbM+5klnHEHRLqQxh5YUzuidj2VoTYOG4XBYyQv4kf8hAXAIzvs3hEc2bXmN0C6HfAEzNtf9xoGvW9qmClVqZT1IlAaTDHwkK5smrfC/pdrsNiXAs8vak2erOBRG56e6m4k1qP9FuXUeAuWdPHDE/vJDp+9V8n61VNUxsZWFOe/340qHwkVDMwdqpDPVV424irdoK+sci2+pMsgOBi5/pDB+QXgcQxNQ4FA3z17UGg7SHsB9xNWr0kzqv61McFvUDkiNlb7orv5cCvcqvIbAjmdSupspbFqiKj95k82Cuw1z9qd84CEIA2bbyiCTZY4i6fe143T49eDgCNmU1fOM8edbdqPaeAhiIkjWtmpfnSon2CJ6JCgaUoqx2Wsdy9jS6stpllfR2quf7M/uuqFSLuq6HoWji/NIHMxdIeMN7MpYRgunYRS5Rxv0r9o+ggRG0pCJGGeTihg2TQEr2pfQjLxA2DkCXB1RrLQ="
+
 
 before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh

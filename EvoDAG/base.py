@@ -433,10 +433,20 @@ class EvoDAG(object):
         "Replace an individual in the population with individual a"
         self.population.replace(a)
 
+    def shuffle_tr2ts(self):
+        L = []
+        for x in self.X:
+            l = np.array(x.hy.full_array())
+            np.random.shuffle(l)
+            L.append(l)
+        return np.array(L).T
+
     def fit(self, X, y, test_set=None):
         "Evolutive process"
         self._init_time = time.time()
         self.X = X
+        if test_set is not None and test_set == 'shuffle':
+            test_set = self.shuffle_tr2ts()
         nclasses = self.nclasses(y)
         if self._classifier and self._multiple_outputs:
             pass
