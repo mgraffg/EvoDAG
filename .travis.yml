@@ -21,7 +21,7 @@ before_install:
   - pip install coverage
   - pip install coveralls
   - conda config --append channels ingeotec  
-  - conda install --yes nose sparsearray
+  - conda install --yes nose sparsearray cython
   - python setup.py build_ext --inplace
 
 # command to run tests
