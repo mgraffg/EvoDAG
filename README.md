@@ -1,9 +1,14 @@
 [![Build Status](https://travis-ci.org/mgraffg/EvoDAG.svg?branch=master)](https://travis-ci.org/mgraffg/EvoDAG)
+[![Build Status](https://travis-ci.org/mgraffg/EvoDAG.svg?branch=develop)](https://travis-ci.org/mgraffg/EvoDAG)
 [![Build status](https://ci.appveyor.com/api/projects/status/vx09qqgluff3ko5e?svg=true)](https://ci.appveyor.com/project/mgraffg/evodag)
+[![Build status](https://ci.appveyor.com/api/projects/status/vx09qqgluff3ko5e/branch/master?svg=true)](https://ci.appveyor.com/project/mgraffg/evodag/branch/master)
+[![Coverage Status](https://coveralls.io/repos/github/mgraffg/EvoDAG/badge.svg?branch=master)](https://coveralls.io/github/mgraffg/EvoDAG?branch=master)
 [![Anaconda-Server Badge](https://anaconda.org/mgraffg/evodag/badges/version.svg)](https://anaconda.org/mgraffg/evodag)
+[![Anaconda-Server Badge](https://anaconda.org/mgraffg/evodag/badges/latest_release_date.svg)](https://anaconda.org/mgraffg/evodag)
+[![Anaconda-Server Badge](https://anaconda.org/mgraffg/evodag/badges/platforms.svg)](https://anaconda.org/mgraffg/evodag)
 [![Anaconda-Server Badge](https://anaconda.org/mgraffg/evodag/badges/installer/conda.svg)](https://conda.anaconda.org/mgraffg)
 [![PyPI version](https://badge.fury.io/py/EvoDAG.svg)](https://badge.fury.io/py/EvoDAG)
-[![Coverage Status](https://coveralls.io/repos/github/mgraffg/EvoDAG/badge.svg?branch=master)](https://coveralls.io/github/mgraffg/EvoDAG?branch=master)
+[![Anaconda-Server Badge](https://anaconda.org/mgraffg/evodag/badges/license.svg)](https://anaconda.org/mgraffg/evodag)
 
 # EvoDAG #
 
