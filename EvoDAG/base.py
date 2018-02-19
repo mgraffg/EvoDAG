@@ -445,7 +445,7 @@ class EvoDAG(object):
         "Evolutive process"
         self._init_time = time.time()
         self.X = X
-        if test_set is not None and test_set == 'shuffle':
+        if isinstance(test_set, str) and test_set == 'shuffle':
             test_set = self.shuffle_tr2ts()
         nclasses = self.nclasses(y)
         if self._classifier and self._multiple_outputs:
