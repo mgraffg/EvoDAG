@@ -1270,4 +1270,16 @@ def test_X_list():
     default_nargs()
     print(X.shape, len(m.X))
     assert len(m.X) == 4
-    
+
+
+def test_test_set_shuffle():
+    from EvoDAG import EvoDAG
+    from test_command_line import default_nargs
+    m = EvoDAG.init(seed=10, popsize=10,
+                    early_stopping_rounds=10).fit(X.tolist(), cl, test_set='shuffle')
+    assert m.popsize == 10
+    default_nargs()
+    print(X.shape, len(m.X))
+    assert len(m.X) == 4
+    v = m.population.hist[-1]
+    assert v.hy_test and len(v.hy_test) == np.unique(cl).shape[0]
