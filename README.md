@@ -353,7 +353,7 @@ Iris-setosa
 
 * Install using [conda](https://www.continuum.io)  
 ```bash   
-conda install -c mgraffg evodag
+conda install -c ingeotec evodag
 ```
 Currently, EvoDAG is available for Python 3.4, 3.5, and 3.6 for
 windows-32, windows-64, linux-64 and osx-64
