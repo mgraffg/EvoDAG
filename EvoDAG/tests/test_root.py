@@ -241,6 +241,7 @@ def test_create_population2():
         assert isinstance(i, Function)
     Centroid.nargs = 2
 
+
 def test_create_population_cl():
     from EvoDAG import EvoDAG
     from EvoDAG.node import Function, Variable, NaiveBayes, NaiveBayesMN
@@ -1283,3 +1284,20 @@ def test_test_set_shuffle():
     assert len(m.X) == 4
     v = m.population.hist[-1]
     assert v.hy_test and len(v.hy_test) == np.unique(cl).shape[0]
+
+
+def test_bug_naive_bayes():
+    from EvoDAG import EvoDAG
+    from test_command_line import default_nargs
+    Xt = X.copy()
+    y = cl.copy()
+    mask = np.zeros(y.shape[0], dtype=np.bool)
+    mask[y == 0] = True
+    mask[y == 1] = True
+    mask[np.where(y == 2)[0][:2]] = True
+    m = EvoDAG.init(seed=11, popsize=10, fitness_function='macro-F1',
+                    early_stopping_rounds=10).fit(Xt[mask], y[mask])
+    assert m.popsize == 10
+    default_nargs()
+    print(X.shape, len(m.X))
+    assert len(m.X) == 4
