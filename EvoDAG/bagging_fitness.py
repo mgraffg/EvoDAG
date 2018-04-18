@@ -96,7 +96,12 @@ class BaggingFitness(object):
         mask = np.ones_like(k, dtype=np.bool)
         mask_ts = np.zeros(k.shape[0])
         index = np.arange(k.shape[0])
-        np.random.shuffle(index)
+        nklass = np.unique(k).shape[0]
+        for i in range(base._number_tries_feasible_ind):
+            np.random.shuffle(index)
+            _count = np.unique(k[index[cnt:]], return_counts=True)[1]
+            if _count.shape[0] == nklass and np.all(_count > 0):
+                break
         mask[index[:cnt]] = False
         mask_ts[index[cnt:]] = 1.0
         base._mask_vs = SparseArray.fromlist(~mask)
