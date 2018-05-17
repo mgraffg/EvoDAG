@@ -1312,5 +1312,5 @@ def test_orthogonal_selection():
                     fitness_function='macro-F1',
                     early_stopping_rounds=10).fit(Xt, y)
     assert m._orthogonal_selection
-    f = m.selection_mechanism(Add)
-    assert f != m.population.tournament
+    args = m.get_args_orthogonal(Add)
+    assert len(args)

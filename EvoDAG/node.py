@@ -210,6 +210,7 @@ class Variable(object):
 class Function(Variable):
     nargs = 2
     unique_args = False
+    orthogonal_selection = False
 
     def tostore(self):
         ins = super(Function, self).tostore()
@@ -303,6 +304,7 @@ class Add(Function):
     unique_args = True
     min_nargs = 2
     density_safe = True
+    orthogonal_selection = True
 
     def __init__(self, *args, **kwargs):
         super(Add, self).__init__(*args, **kwargs)
@@ -674,6 +676,7 @@ class NaiveBayes(Function):
     density_safe = False
     unique_args = True
     regression = False
+    orthogonal_selection = True
 
     def __init__(self, variable, naive_bayes=None, **kwargs):
         super(NaiveBayes, self).__init__(variable, **kwargs)
@@ -755,7 +758,6 @@ class NaiveBayes(Function):
 class NaiveBayesMN(NaiveBayes):
     symbol = 'MN'
     density_safe = True
-    regression = False
 
     def set_weight(self, X):
         if self.weight is not None:

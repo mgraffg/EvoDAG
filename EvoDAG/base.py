@@ -324,14 +324,40 @@ class EvoDAG(object):
             return self.unfeasible_offspring()
         return f
 
-    def selection_mechanism(self, func):
-        if not self._orthogonal_selection:
-            return self.population.tournament
+    def _get_args_orthogonal(self, first):
+        vars = self.population.random()
+        pop = self.population.population
+        score = self._bagging_fitness.score
+        fit = [(k, score.accuracy(first, SparseArray.argmax(pop[x].hy),
+                                  self._mask_ts.index)[0]) for k, x in enumerate(vars)]
+        fit = max(fit, key=lambda x: x[1])
+        index = fit[0]
+        return vars[index]
+
+    def get_args_orthogonal(self, func):
+        first = self.population.tournament()
+        args = {first: 1}
+        first = SparseArray.argmax(self.population.population[first].hy)
+        res = []
+        sel = self._get_args_orthogonal
+        n_tries = self._number_tries_unique_args
+        for j in range(func.nargs - 1):
+            k = sel(first)
+            for _ in range(n_tries):
+                if k not in args:
+                    args[k] = 1
+                    res.append(k)
+                    break
+                else:
+                    k = sel(first)
+        if len(res) < func.min_nargs:
+            return None
+        return res
 
     def get_unique_args(self, func):
         args = {}
         res = []
-        p_tournament = self.selection_mechanism(func)
+        p_tournament = self.population.tournament
         n_tries = self._number_tries_unique_args
         for j in range(func.nargs):
             k = p_tournament()
@@ -348,13 +374,15 @@ class EvoDAG(object):
 
     def get_args(self, func):
         args = []
+        if self._orthogonal_selection and func.orthogonal_selection:
+            return self.get_args_orthogonal(func)
         if func.unique_args:
             return self.get_unique_args(func)
         try:
             min_nargs = func.min_nargs
         except AttributeError:
             min_nargs = func.nargs
-        p_tournament = self.selection_mechanism(func)
+        p_tournament = self.population.tournament
         for j in range(func.nargs):
             k = p_tournament()
             for _ in range(self._number_tries_unique_args):

@@ -611,3 +611,13 @@ def test_centroid_variable():
     r = [- ((X + w)**2).sum(axis=1) for w in coef]
     [[assert_almost_equals(_v, _w) for _v, _w in zip(v, w.full_array())] for v, w
      in zip(r, centroid.hy)]
+
+
+def test_orthogonal_selection():
+    from EvoDAG.node import Function, Add, NaiveBayes, NaiveBayesMN, Centroid
+    assert Function.orthogonal_selection is False
+    assert Add.orthogonal_selection
+    assert NaiveBayes.orthogonal_selection
+    assert NaiveBayesMN.orthogonal_selection
+    assert Centroid.orthogonal_selection
+    
