@@ -1301,3 +1301,14 @@ def test_bug_naive_bayes():
     default_nargs()
     print(X.shape, len(m.X))
     assert len(m.X) == 4
+
+
+def test_orthogonal_selection():
+    from EvoDAG import EvoDAG
+    Xt = X.copy()
+    y = cl.copy()
+    m = EvoDAG.init(seed=11, popsize=10, orthogonal_selection=True,
+                    fitness_function='macro-F1',
+                    early_stopping_rounds=10).fit(Xt, y)
+    assert m._orthogonal_selection
+    

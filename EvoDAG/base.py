@@ -48,7 +48,7 @@ class EvoDAG(object):
                  number_tries_feasible_ind=30, time_limit=None,
                  unique_individuals=True, classifier=True,
                  labels=None, all_inputs=False, random_generations=0,
-                 fitness_function='BER',
+                 fitness_function='BER', orthogonal_selection=False,
                  min_density=0.8, multiple_outputs=False, function_selection=True,
                  fs_tournament_size=2, finite=True, pr_variable=0.33,
                  share_inputs=False, input_functions=None, F1_index=-1,
@@ -107,6 +107,10 @@ class EvoDAG(object):
         self._F1_index = F1_index
         self._use_all_vars_input_functions = use_all_vars_input_functions
         self._probability_calibration = probability_calibration
+        self._orthogonal_selection = orthogonal_selection
+        # orthogonal_selection is only implemented for classification
+        if self._orthogonal_selection:
+            assert self._classifier
         self._extras = kwargs
         if self._time_limit is not None:
             self._logger.info('Time limit: %0.2f' % self._time_limit)
