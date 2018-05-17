@@ -1305,10 +1305,12 @@ def test_bug_naive_bayes():
 
 def test_orthogonal_selection():
     from EvoDAG import EvoDAG
+    from EvoDAG.node import Add
     Xt = X.copy()
     y = cl.copy()
     m = EvoDAG.init(seed=11, popsize=10, orthogonal_selection=True,
                     fitness_function='macro-F1',
                     early_stopping_rounds=10).fit(Xt, y)
     assert m._orthogonal_selection
-    
+    f = m.selection_mechanism(Add)
+    assert f != m.population.tournament

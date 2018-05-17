@@ -324,10 +324,14 @@ class EvoDAG(object):
             return self.unfeasible_offspring()
         return f
 
+    def selection_mechanism(self, func):
+        if not self._orthogonal_selection:
+            return self.population.tournament
+
     def get_unique_args(self, func):
         args = {}
         res = []
-        p_tournament = self.population.tournament
+        p_tournament = self.selection_mechanism(func)
         n_tries = self._number_tries_unique_args
         for j in range(func.nargs):
             k = p_tournament()
@@ -350,13 +354,14 @@ class EvoDAG(object):
             min_nargs = func.min_nargs
         except AttributeError:
             min_nargs = func.nargs
+        p_tournament = self.selection_mechanism(func)
         for j in range(func.nargs):
-            k = self.population.tournament()
+            k = p_tournament()
             for _ in range(self._number_tries_unique_args):
                 if k not in args:
                     break
                 else:
-                    k = self.population.tournament()
+                    k = p_tournament()
             args.append(k)
         if len(args) < min_nargs:
             return None
