@@ -330,7 +330,7 @@ class EvoDAG(object):
         score = self._bagging_fitness.score
         fit = [(k, score.accuracy(first, SparseArray.argmax(pop[x].hy),
                                   self._mask_ts.index)[0]) for k, x in enumerate(vars)]
-        fit = max(fit, key=lambda x: x[1])
+        fit = min(fit, key=lambda x: x[1])
         index = fit[0]
         return vars[index]
 
