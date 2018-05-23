@@ -620,4 +620,15 @@ def test_orthogonal_selection():
     assert NaiveBayes.orthogonal_selection
     assert NaiveBayesMN.orthogonal_selection
     assert Centroid.orthogonal_selection
-    
+
+
+def test_centroid_json():
+    from EvoDAG.node import Centroid
+    gp, args = create_problem_node2(nargs=3, seed=0)
+    gp.random_leaf()
+    naive_bayes = gp.naive_bayes
+    centroid = Centroid(range(len(gp.X)), ytr=gp._ytr,
+                        naive_bayes=naive_bayes, finite=True)
+    centroid.height = 1
+    centroid.eval(gp.X)
+    assert isinstance(centroid.tojson(), str)

@@ -65,6 +65,22 @@ class Variable(object):
         ins._n_outputs = self._n_outputs
         return ins
 
+    def w2dict(self):
+        return [x.tolist() for x in self.weight]
+
+    def _tojson(self):
+        return dict(node=self.__class__.__name__,
+                    variable=self.variable,
+                    weight=self.w2dict(),
+                    position=self.position, height=self.height, fitness=self._fitness,
+                    fitness_vs=self._fitness_vs, multiple_outputs=self._multiple_outputs,
+                    n_outputs=self._n_outputs)
+
+    def tojson(self):
+        import json
+        _ = self._tojson()
+        return json.dumps(_)
+
     @property
     def position(self):
         "Position where this variable is in the history"
@@ -215,6 +231,11 @@ class Function(Variable):
     def tostore(self):
         ins = super(Function, self).tostore()
         ins.nargs = self.nargs
+        return ins
+
+    def _tojson(self):
+        ins = super(Function, self)._tojson()
+        ins['nargs'] = self.nargs
         return ins
 
     def signature(self):
@@ -708,6 +729,9 @@ class NaiveBayes(Function):
             hyt = [x.hy_test for x in X]
         return hy, hyt
 
+    def w2dict(self):
+        return [[[x1.tolist() for x1 in x] for x in self.weight[0]], self.weight[1], self.weight[2]]
+
     def set_weight(self, X):
         if self.weight is not None:
             return True
@@ -872,6 +896,9 @@ class Centroid(NaiveBayes):
         naive = self._naive_bayes
         self.weight = centroid_coef(hy, naive._klass, naive._mask, naive._nclass)
         return True
+
+    def w2dict(self):
+        return [x.tolist() for x in self.weight]
 
     def eval(self, X):
         X = [X[x] for x in self.variable]

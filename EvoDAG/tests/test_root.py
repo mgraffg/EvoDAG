@@ -1314,3 +1314,17 @@ def test_orthogonal_selection():
     assert m._orthogonal_selection
     args = m.get_args_orthogonal(Add)
     assert len(args)
+
+
+def test_tojson():
+    from EvoDAG import EvoDAG
+    Xt = X.copy()
+    y = cl.copy()
+    m = EvoDAG.init(seed=0, popsize=10, orthogonal_selection=True,
+                    fitness_function='macro-F1',
+                    early_stopping_rounds=10).fit(Xt, y)
+    model = m.model()
+    print(model._hist)
+    for i in model._hist:
+        print(i.tojson())
+    print(len(model._hist))
