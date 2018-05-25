@@ -463,9 +463,9 @@ def test_utils_graphviz():
     os.unlink(fname)
     os.unlink('cache.evodag')
     os.unlink('model.evodag')
-    # for i in range(2):
-    #     os.unlink('evodag_gv/evodag-%s' % i)
-    # os.rmdir('evodag_gv')
+    for i in range(2):
+        os.unlink('evodag_gv/evodag-%s' % i)
+    os.rmdir('evodag_gv')
     default_nargs()
 
 
