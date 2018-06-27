@@ -259,7 +259,8 @@ class BasePopulation(object):
             node.normalize()
             X = np.array([x.full_array() for x in node.hy]).T
             y = np.array(self._base._y_klass.full_array())
-            mask = np.array(self._base._mask_ts.index)
+            mask = np.ones(X.shape[0])
+            mask[np.array(self._base._mask_ts.index)] = False
             ins = self._base._probability_calibration().fit(X[mask], y[mask])
         if self._classifier:
             nclasses = self._labels.shape[0]
