@@ -109,8 +109,8 @@ class EvoDAG(object):
         self._probability_calibration = probability_calibration
         self._orthogonal_selection = orthogonal_selection
         # orthogonal_selection is only implemented for classification
-        if self._orthogonal_selection:
-            assert self._classifier
+        # if self._orthogonal_selection:
+        #     assert self._classifier
         self._extras = kwargs
         if self._time_limit is not None:
             self._logger.info('Time limit: %0.2f' % self._time_limit)
@@ -144,6 +144,11 @@ class EvoDAG(object):
     def clone(self):
         "Clone the class without the population"
         return self.__class__(**self.get_params())
+
+    @property
+    def classifier(self):
+        "Whether it is a classification problem or not"
+        return self._classifier
 
     @property
     def signature(self):
@@ -203,7 +208,7 @@ class EvoDAG(object):
     def y(self, v):
         if isinstance(v, np.ndarray):
             v = SparseArray.fromlist(v)
-        if self._classifier:
+        if self.classifier:
             self._multiple_outputs = True
             if self._labels is None:
                 self.nclasses(v)
@@ -258,7 +263,7 @@ class EvoDAG(object):
         except AttributeError:
             self._p = self._population_class(base=self,
                                              tournament_size=self._tournament_size,
-                                             classifier=self._classifier,
+                                             classifier=self.classifier,
                                              labels=self._labels,
                                              es_extra_test=self.es_extra_test,
                                              popsize=self._popsize,
@@ -328,8 +333,12 @@ class EvoDAG(object):
         vars = self.population.random()
         pop = self.population.population
         score = self._bagging_fitness.score
-        fit = [(k, score.accuracy(first, SparseArray.argmax(pop[x].hy),
-                                  self._mask_ts.index)[0]) for k, x in enumerate(vars)]
+        if self.classifier:
+            fit = [(k, score.accuracy(first, SparseArray.argmax(pop[x].hy),
+                                      self._mask_ts.index)[0]) for k, x in enumerate(vars)]
+        else:
+            fit = [(k, score.accuracy(first, pop[x].hy.sign() + 1,
+                                      self._mask.index)[0]) for k, x in enumerate(vars)]
         fit = min(fit, key=lambda x: x[1])
         index = fit[0]
         return vars[index]
@@ -337,7 +346,10 @@ class EvoDAG(object):
     def get_args_orthogonal(self, func):
         first = self.population.tournament()
         args = {first: 1}
-        first = SparseArray.argmax(self.population.population[first].hy)
+        if self.classifier:
+            first = SparseArray.argmax(self.population.population[first].hy)
+        else:
+            first = self.population.population[first].hy.sign() + 1.0
         res = []
         sel = self._get_args_orthogonal
         n_tries = self._number_tries_unique_args
@@ -456,7 +468,7 @@ class EvoDAG(object):
 
     def nclasses(self, v):
         "Number of classes of v, also sets the labes"
-        if not self._classifier:
+        if not self.classifier:
             return 0
         if isinstance(v, list):
             self._labels = np.arange(len(v))
@@ -485,7 +497,7 @@ class EvoDAG(object):
         if isinstance(test_set, str) and test_set == 'shuffle':
             test_set = self.shuffle_tr2ts()
         nclasses = self.nclasses(y)
-        if self._classifier and self._multiple_outputs:
+        if self.classifier and self._multiple_outputs:
             pass
         elif nclasses > 2:
             assert False
