@@ -41,7 +41,7 @@ class BaggingFitness(object):
             return self._nclasses
         except AttributeError:
             if self._base.classifier:
-                self._nclasses = self._base_._labels.shape[0]
+                self._nclasses = self._base._labels.shape[0]
             elif self._base._orthogonal_selection:
                 self._nclasses = 3
         return self._nclasses
