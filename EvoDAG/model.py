@@ -201,6 +201,10 @@ class Model(object):
             if isinstance(n, Function):
                 done[k] = 1
                 name = n.__class__.__name__
+                if n.height == 0:
+                    cdn = "n{0} [label=\"{1}\" fillcolor=red style=filled];\n"
+                    fpt.write(cdn.format(k, name))
+                    continue
                 color = int(np.round(n.height * m + b))
                 extra = "colorscheme=blues9 style=filled color={0}".format(color)
                 if k == last:

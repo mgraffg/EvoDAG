@@ -259,7 +259,8 @@ class BasePopulation(object):
             node.normalize()
             X = np.array([x.full_array() for x in node.hy]).T
             y = np.array(self._base._y_klass.full_array())
-            mask = np.array(self._base._mask_ts.index)
+            mask = np.ones(X.shape[0], dtype=np.bool)
+            mask[np.array(self._base._mask_ts.index)] = False
             ins = self._base._probability_calibration().fit(X[mask], y[mask])
         if self._classifier:
             nclasses = self._labels.shape[0]
@@ -316,8 +317,8 @@ class BasePopulation(object):
     def tournament(self, negative=False):
         """Tournament selection and when negative is True it performs negative
         tournament selection"""
-        if self.generation <= self._random_generations:
-            return self.random_selection(negative=negative)
+        if self.generation <= self._random_generations and not negative:
+            return self.random_selection()
         vars = self.random()
         fit = [(k, self.population[x].fitness) for k, x in enumerate(vars)]
         if negative:

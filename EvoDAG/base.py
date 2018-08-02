@@ -48,7 +48,7 @@ class EvoDAG(object):
                  number_tries_feasible_ind=30, time_limit=None,
                  unique_individuals=True, classifier=True,
                  labels=None, all_inputs=False, random_generations=0,
-                 fitness_function='BER',
+                 fitness_function='BER', orthogonal_selection=False,
                  min_density=0.8, multiple_outputs=False, function_selection=True,
                  fs_tournament_size=2, finite=True, pr_variable=0.33,
                  share_inputs=False, input_functions=None, F1_index=-1,
@@ -107,6 +107,10 @@ class EvoDAG(object):
         self._F1_index = F1_index
         self._use_all_vars_input_functions = use_all_vars_input_functions
         self._probability_calibration = probability_calibration
+        self._orthogonal_selection = orthogonal_selection
+        # orthogonal_selection is only implemented for classification
+        # if self._orthogonal_selection:
+        #     assert self._classifier
         self._extras = kwargs
         if self._time_limit is not None:
             self._logger.info('Time limit: %0.2f' % self._time_limit)
@@ -140,6 +144,11 @@ class EvoDAG(object):
     def clone(self):
         "Clone the class without the population"
         return self.__class__(**self.get_params())
+
+    @property
+    def classifier(self):
+        "Whether it is a classification problem or not"
+        return self._classifier
 
     @property
     def signature(self):
@@ -199,7 +208,7 @@ class EvoDAG(object):
     def y(self, v):
         if isinstance(v, np.ndarray):
             v = SparseArray.fromlist(v)
-        if self._classifier:
+        if self.classifier:
             self._multiple_outputs = True
             if self._labels is None:
                 self.nclasses(v)
@@ -254,7 +263,7 @@ class EvoDAG(object):
         except AttributeError:
             self._p = self._population_class(base=self,
                                              tournament_size=self._tournament_size,
-                                             classifier=self._classifier,
+                                             classifier=self.classifier,
                                              labels=self._labels,
                                              es_extra_test=self.es_extra_test,
                                              popsize=self._popsize,
@@ -320,6 +329,43 @@ class EvoDAG(object):
             return self.unfeasible_offspring()
         return f
 
+    def _get_args_orthogonal(self, first):
+        vars = self.population.random()
+        pop = self.population.population
+        score = self._bagging_fitness.score
+        if self.classifier:
+            fit = [(k, score.accuracy(first, SparseArray.argmax(pop[x].hy),
+                                      self._mask_ts.index)[0]) for k, x in enumerate(vars)]
+        else:
+            fit = [(k, score.accuracy(first, pop[x].hy.sign() + 1,
+                                      self._mask.index)[0]) for k, x in enumerate(vars)]
+        fit = min(fit, key=lambda x: x[1])
+        index = fit[0]
+        return vars[index]
+
+    def get_args_orthogonal(self, func):
+        first = self.population.tournament()
+        args = {first: 1}
+        if self.classifier:
+            first = SparseArray.argmax(self.population.population[first].hy)
+        else:
+            first = self.population.population[first].hy.sign() + 1.0
+        res = []
+        sel = self._get_args_orthogonal
+        n_tries = self._number_tries_unique_args
+        for j in range(func.nargs - 1):
+            k = sel(first)
+            for _ in range(n_tries):
+                if k not in args:
+                    args[k] = 1
+                    res.append(k)
+                    break
+                else:
+                    k = sel(first)
+        if len(res) < func.min_nargs:
+            return None
+        return res
+
     def get_unique_args(self, func):
         args = {}
         res = []
@@ -340,19 +386,22 @@ class EvoDAG(object):
 
     def get_args(self, func):
         args = []
+        if self._orthogonal_selection and func.orthogonal_selection:
+            return self.get_args_orthogonal(func)
         if func.unique_args:
             return self.get_unique_args(func)
         try:
             min_nargs = func.min_nargs
         except AttributeError:
             min_nargs = func.nargs
+        p_tournament = self.population.tournament
         for j in range(func.nargs):
-            k = self.population.tournament()
+            k = p_tournament()
             for _ in range(self._number_tries_unique_args):
                 if k not in args:
                     break
                 else:
-                    k = self.population.tournament()
+                    k = p_tournament()
             args.append(k)
         if len(args) < min_nargs:
             return None
@@ -419,7 +468,7 @@ class EvoDAG(object):
 
     def nclasses(self, v):
         "Number of classes of v, also sets the labes"
-        if not self._classifier:
+        if not self.classifier:
             return 0
         if isinstance(v, list):
             self._labels = np.arange(len(v))
@@ -448,7 +497,7 @@ class EvoDAG(object):
         if isinstance(test_set, str) and test_set == 'shuffle':
             test_set = self.shuffle_tr2ts()
         nclasses = self.nclasses(y)
-        if self._classifier and self._multiple_outputs:
+        if self.classifier and self._multiple_outputs:
             pass
         elif nclasses > 2:
             assert False
