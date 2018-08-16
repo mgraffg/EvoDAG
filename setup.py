@@ -66,7 +66,7 @@ setup(
                                   'default_parameters.json',
                                   'default_parameters_r.json'],
                   '': ['*.pxd']},
-    install_requires=['numpy', 'SparseArray'],
+    install_requires=['numpy', 'Cython', 'SparseArray'],
     entry_points={
         'console_scripts': ['EvoDAG-params=EvoDAG.command_line:params',
                             'EvoDAG-train=EvoDAG.command_line:train',
