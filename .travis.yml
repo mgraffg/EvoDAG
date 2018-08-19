@@ -6,10 +6,10 @@ language: generic
 
 env:
   matrix:
-    - python=2.7  CONDA_PY=27
     - python=3.4  CONDA_PY=34    
     - python=3.5  CONDA_PY=35
     - python=3.6  CONDA_PY=36
+    - python=3.7  CONDA_PY=37
 
   global:
     - secure: "MOXTAb0t9z513Rn66D/k72Bj+8ahaawGj9gVSy3e7XZo4laA4x7gXFlKWykxN04tZtJk+98s7NjRIsZHFplqasSq2nNGqOIt99q2QNf3S0JEdUWAP98uyRELEz+jdujebN5Zo4LaxydebxH6TknHvniwqZ3tEiytcpGj391d0VBSckqTEvoyHHtZZcp19C7yDpIp0Qs/bbM+5klnHEHRLqQxh5YUzuidj2VoTYOG4XBYyQv4kf8hAXAIzvs3hEc2bXmN0C6HfAEzNtf9xoGvW9qmClVqZT1IlAaTDHwkK5smrfC/pdrsNiXAs8vak2erOBRG56e6m4k1qP9FuXUeAuWdPHDE/vJDp+9V8n61VNUxsZWFOe/340qHwkVDMwdqpDPVV424irdoK+sci2+pMsgOBi5/pDB+QXgcQxNQ4FA3z17UGg7SHsB9xNWr0kzqv61McFvUDkiNlb7orv5cCvcqvIbAjmdSupspbFqiKj95k82Cuw1z9qd84CEIA2bbyiCTZY4i6fe143T49eDgCNmU1fOM8edbdqPaeAhiIkjWtmpfnSon2CJ6JCgaUoqx2Wsdy9jS6stpllfR2quf7M/uuqFSLuq6HoWji/NIHMxdIeMN7MpYRgunYRS5Rxv0r9o+ggRG0pCJGGeTihg2TQEr2pfQjLxA2DkCXB1RrLQ="
@@ -37,14 +37,15 @@ script:
   - which python
   - python --version
   - which coverage
-  - if [ $python = 2.7 ]; then nosetests --verbose -exe EvoDAG; fi
   - if [ $python = 3.4 ]; then nosetests --verbose -exe EvoDAG; fi  
   - if [ $python = 3.5 ]; then nosetests --verbose -exe EvoDAG; fi
+  - if [ $python = 3.7 ]; then nosetests --verbose -exe EvoDAG; fi
   - if [ $python = 3.6 ]; then coverage run setup.py nosetests; fi
 
 after_success:
   - if [ $python = 3.6 ]; then coveralls || echo "Coveralls upload failed"; fi
-  - if [ $TRAVIS_BRANCH = "master" -a $python = 3.6 ]; then python setup.py sdist; pip install twine; twine upload -u mgraffg -p $TWINE dist/*.tar.gz; fi  
+  - if [ $TRAVIS_BRANCH = "master" -a $python = 3.6 ]; then python setup.py sdist; pip install twine; twine upload -u mgraffg -p $TWINE dist/*.tar.gz; fi
+  - if [ $TRAVIS_BRANCH = "master" ]; then python setup.py bdist_wheel; pip install twine; twine upload -u mgraffg -p $TWINE dist/*.whl; fi  
   - if [ $TRAVIS_BRANCH = "master" ]; then source deactivate; conda install --yes pip conda-build jinja2 anaconda-client; conda build conda-recipe --quiet; fi
   - python continuous-integration/move-conda-package.py conda-recipe  
   - which binstar
