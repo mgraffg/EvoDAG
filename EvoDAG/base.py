@@ -491,9 +491,11 @@ class EvoDAG(object):
         return np.array(L).T
 
     def fit(self, X, y, test_set=None):
-        "Evolutive process"
+        """Evolutive process"""
         self._init_time = time.time()
         self.X = X
+        if self._popsize == "nvar":
+            self._popsize = self.nvar + len(self._input_functions)
         if isinstance(test_set, str) and test_set == 'shuffle':
             test_set = self.shuffle_tr2ts()
         nclasses = self.nclasses(y)
