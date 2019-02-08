@@ -47,13 +47,16 @@ class EvoDAG(object):
                  tr_fraction=0.5, population_class=SteadyState,
                  number_tries_feasible_ind=30, time_limit=None,
                  unique_individuals=True, classifier=True,
-                 labels=None, all_inputs=False, random_generations=0,
+                 labels=None, all_inputs=False, random_generations=0, random_negative_generations=0,
                  fitness_function='BER', orthogonal_selection=False,
                  min_density=0.8, multiple_outputs=False, function_selection=True,
                  fs_tournament_size=2, finite=True, pr_variable=0.33,
                  share_inputs=False, input_functions=None, F1_index=-1,
                  use_all_vars_input_functions=False, remove_raw_inputs=True,
-                 probability_calibration=None, **kwargs):
+                 probability_calibration=None,
+                 tournament='fit', # fit, des, ort, orta,
+                 **kwargs):
+        self._tournament = tournament
         self._remove_raw_inputs = remove_raw_inputs
         self._fitness_function = fitness_function
         self._bagging_fitness = BaggingFitness(base=self)
@@ -90,6 +93,7 @@ class EvoDAG(object):
         self._time_limit = time_limit
         self._init_time = time.time()
         self._random_generations = random_generations
+        self._random_negative_generations = random_negative_generations
         if not inspect.isclass(population_class):
             pop = importlib.import_module('EvoDAG.population')
             population_class = getattr(pop, population_class)
@@ -267,6 +271,7 @@ class EvoDAG(object):
                                              labels=self._labels,
                                              es_extra_test=self.es_extra_test,
                                              popsize=self._popsize,
+                                             random_negative_generations = self._random_negative_generations,
                                              random_generations=self._random_generations)
             return self._p
 
@@ -365,7 +370,131 @@ class EvoDAG(object):
         if len(res) < func.min_nargs:
             return None
         return res
+    
+    def _get_args_orthogonal_dot(self, first):    
+        vars = self.population.random()
+        pop = self.population.population
+        mask = SparseArray.ones_positionnozero
+        
+        if self._classifier:
+            prod = [(k,SparseArray.dot(pop[x].hy[0].mul(mask(self._mask_ts)),first)) for k,x in enumerate(vars)]
+        else:
+            prod = [(k,SparseArray.dot(pop[x].hy[0].mul(mask(self._mask)),first)) for k,x in enumerate(vars)]
+        
+        prod = min(prod, key=lambda x: x[1])
+        index = prod[0]
+        return vars[index]
+    
+    def get_args_orthogonal_dot(self, func):
+        first = self.population.tournament()
+        args = {first: 1}
+        mask = SparseArray.ones_positionnozero
+        if self.classifier:
+            first = self.population.population[first].hy[0].mul(mask(self._mask_ts))
+        else:
+            first = self.population.population[first].hy[0].mul(mask(self._mask))
+        res = []
+        sel = self._get_args_orthogonal_dot
+        n_tries = self._number_tries_unique_args
+        for j in range(func.nargs - 1):
+            k = sel(first)
+            for _ in range(n_tries):
+                if k not in args:
+                    args[k] = 1
+                    res.append(k)
+                    break
+                else:
+                    k = sel(first)
+        try:
+            min_nargs = func.min_nargs
+        except AttributeError:
+            min_nargs = func.nargs
+        if len(res) < min_nargs:
+            return None
+        return res
+    
+    def _get_args_desired_calculate_desired(self,func,target,hy):
+        if isinstance(target,list):
+            desired = []
+            for i in range(len(target)):
+                if func.symbol == '+':
+                    desired.append(SparseArray.sub(target[i],hy[i]))
+                elif func.symbol == '*':
+                    desired.append(SparseArray.div(target[i],hy[i]))
+                elif func.symbol == '/':
+                    desired.append(SparseArray.div(hy[i],target[i]))
+                elif func.symbol == '-':
+                    desired.append(SparseArray.sub(hy[i],target[i]))
+        else:
+            if func.symbol == '+':
+                desired = SparseArray.sub(target,hy)
+            elif func.symbol == '*':
+                desired = SparseArray.div(target,hy)
+            elif func.symbol == '/':
+                desired = SparseArray.div(hy,target)
+            elif func.symbol == '-':
+                desired = SparseArray.sub(hy,target)
+        return desired
 
+    def _get_args_desired_calculate_semantic_difference(self,semantics1,semantics2):
+        dif = 0
+        if isinstance(semantics1,list):
+            for i in range(len(semantics1)):
+                if self._classifier:
+                    s1 = semantics1[i].mul(SparseArray.ones_positionnozero(self._mask_ts))
+                    s2 = semantics2[i].mul(SparseArray.ones_positionnozero(self._mask_ts))
+                else:
+                    s1 = semantics1[i].mul(SparseArray.ones_positionnozero(self._mask))
+                    s2 = semantics2[i].mul(SparseArray.ones_positionnozero(self._mask))
+                dif += s1.cosine_distance(s2)
+        else:
+            if self._classifier:
+                s1 = semantics1.mul(self._mask_ts)
+                s2 = semantics2.mul(self._mask_ts)
+            else:
+                s1 = semantics1.mul(self._mask)
+                s2 = semantics2.mul(self._mask)
+            dif = s1.cosine_distance(s2) 
+        return dif
+    
+    def _get_args_desired(self, func, desired_semantics):
+        vars = self.population.random()
+        pop = self.population.population
+        
+        sdif = self._get_args_desired_calculate_semantic_difference
+        dif = [(k,sdif(self.population.population[x].hy,desired_semantics)) for k,x in enumerate(vars)]
+                 
+        dif = min(dif, key=lambda x: x[1])
+        index = dif[0]
+        return vars[index]
+    
+    def get_args_desired(self, func):
+        first = self.population.tournament()
+        args = {first: 1}
+        individual = self.population.population[first]
+        desired_semantics = self._get_args_desired_calculate_desired(func,self.y,individual.hy)
+        
+        res = []
+        sel = self._get_args_desired
+        n_tries = self._number_tries_unique_args
+        for j in range(func.nargs - 1):
+            k = sel(func,desired_semantics)
+            for _ in range(n_tries):
+                if k not in args:
+                    args[k] = 1
+                    res.append(k)
+                    break
+                else:
+                    k = sel(func,desired_semantics)
+        try:
+            min_nargs = func.min_nargs
+        except AttributeError:
+            min_nargs = func.nargs
+            
+        if len(res) < func.min_nargs:
+            return None
+        return res
+    
     def get_unique_args(self, func):
         args = {}
         res = []
@@ -386,8 +515,13 @@ class EvoDAG(object):
 
     def get_args(self, func):
         args = []
-        if self._orthogonal_selection and func.orthogonal_selection:
+        if self._tournament == 'des' and (func.symbol == '+' or func.symbol=='-' or func.symbol == '*' or func.symbol == '/'):
+            return self.get_args_desired(func)
+        elif self._tournament == 'ort' and (func.symbol == '+' or func.symbol=='-' or func.symbol=='NB' or func.symbol == 'MN' ):
+            return self.get_args_orthogonal_dot(func)
+        elif self._tournament == 'orta' and (func.symbol == '+' or func.symbol=='-' or func.symbol=='NB' or func.symbol == 'MN' ):
             return self.get_args_orthogonal(func)
+        
         if func.unique_args:
             return self.get_unique_args(func)
         try:
