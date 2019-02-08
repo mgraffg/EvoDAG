@@ -515,13 +515,12 @@ class EvoDAG(object):
 
     def get_args(self, func):
         args = []
+        if self._tournament == 'orta' and (func.symbol == '+' or func.symbol=='-' or func.symbol=='NB' or func.symbol == 'MN' ):
+            return self.get_args_orthogonal(func)
         if self._tournament == 'des' and (func.symbol == '+' or func.symbol=='-' or func.symbol == '*' or func.symbol == '/'):
             return self.get_args_desired(func)
-        elif self._tournament == 'ort' and (func.symbol == '+' or func.symbol=='-' or func.symbol=='NB' or func.symbol == 'MN' ):
+        if self._tournament == 'ort' and (func.symbol == '+' or func.symbol=='-' or func.symbol=='NB' or func.symbol == 'MN' ):
             return self.get_args_orthogonal_dot(func)
-        elif self._tournament == 'orta' and (func.symbol == '+' or func.symbol=='-' or func.symbol=='NB' or func.symbol == 'MN' ):
-            return self.get_args_orthogonal(func)
-        
         if func.unique_args:
             return self.get_unique_args(func)
         try:
