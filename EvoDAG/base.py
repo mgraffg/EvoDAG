@@ -45,6 +45,7 @@ class EvoDAG(object):
                                Expm1, Log, Log2, Log10, Lgamma, Sign,
                                Ceil, Floor, NaiveBayes, NaiveBayesMN, Centroid],
                  tr_fraction=0.5, population_class=SteadyState,
+                 negative_selection=True,
                  number_tries_feasible_ind=30, time_limit=None,
                  unique_individuals=True, classifier=True,
                  labels=None, all_inputs=False, random_generations=0,
@@ -66,6 +67,7 @@ class EvoDAG(object):
         self._classifier = classifier
         self._number_tries_feasible_ind = number_tries_feasible_ind
         self._unfeasible_counter = 0
+        self._negative_selection = negative_selection
         self._number_tries_unique_args = 3
         self._tr_fraction = tr_fraction
         if early_stopping_rounds is not None and early_stopping_rounds < 0:
@@ -267,7 +269,8 @@ class EvoDAG(object):
                                              labels=self._labels,
                                              es_extra_test=self.es_extra_test,
                                              popsize=self._popsize,
-                                             random_generations=self._random_generations)
+                                             random_generations=self._random_generations,
+                                             negative_selection=self._negative_selection)
             return self._p
 
     @property
