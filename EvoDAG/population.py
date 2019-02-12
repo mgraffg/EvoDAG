@@ -133,8 +133,8 @@ class BasePopulation(object):
                  classifier=True,
                  labels=None,
                  popsize=10000,
-                 random_generations=0,
-                 random_negative_generations=0,
+                 random_tournament=True,
+                 random_negative_tournament=True,
                  es_extra_test=lambda x: True):
         self._base = base
         self._p = []
@@ -152,8 +152,8 @@ class BasePopulation(object):
         self._popsize = popsize
         self._inds_replace = 0
         self.generation = 1
-        self._random_generations = random_generations
-        self._random_negative_generations = random_negative_generations
+        self._random_tournament = random_tournament
+        self._random_negative_tournament = random_negative_tournament
         self._density = 0.0
 
     @property
@@ -319,9 +319,9 @@ class BasePopulation(object):
     def tournament(self, negative=False):
         """Tournament selection and when negative is True it performs negative
         tournament selection"""
-        if negative and self.generation <= self._random_negative_generations:
+        if negative and self._random_negative_tournament:
             return self.random_selection()
-        if not negative and self.generation <= self._random_generations:
+        if not negative and self._random_tournament:
             return self.random_selection()
         vars = self.random()
         fit = [(k, self.population[x].fitness) for k, x in enumerate(vars)]
