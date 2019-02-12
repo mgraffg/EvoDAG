@@ -47,7 +47,7 @@ class EvoDAG(object):
                  tr_fraction=0.5, population_class=SteadyState,
                  number_tries_feasible_ind=30, time_limit=None,
                  unique_individuals=True, classifier=True,
-                 labels=None, all_inputs=False, random_generations=0, random_negative_generations=0,
+                 labels=None, all_inputs=False, random_tournament=True, random_negative_tournament=True,
                  fitness_function='BER', orthogonal_selection=False,
                  min_density=0.8, multiple_outputs=False, function_selection=True,
                  fs_tournament_size=2, finite=True, pr_variable=0.33,
@@ -92,8 +92,8 @@ class EvoDAG(object):
         self._function_selection_ins.min_density = self._min_density
         self._time_limit = time_limit
         self._init_time = time.time()
-        self._random_generations = random_generations
-        self._random_negative_generations = random_negative_generations
+        self._random_tournament = random_tournament
+        self._random_negative_tournament = random_negative_tournament
         if not inspect.isclass(population_class):
             pop = importlib.import_module('EvoDAG.population')
             population_class = getattr(pop, population_class)
@@ -271,8 +271,8 @@ class EvoDAG(object):
                                              labels=self._labels,
                                              es_extra_test=self.es_extra_test,
                                              popsize=self._popsize,
-                                             random_negative_generations = self._random_negative_generations,
-                                             random_generations=self._random_generations)
+                                             random_tournament = self._random_tournament,
+                                             random_negative_tournament=self._random_negative_tournament)
             return self._p
 
     @property
