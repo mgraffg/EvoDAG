@@ -491,7 +491,7 @@ class EvoDAG(object):
         except AttributeError:
             min_nargs = func.nargs
             
-        if len(res) < func.min_nargs:
+        if len(res) < min_nargs:
             return None
         return res
     
