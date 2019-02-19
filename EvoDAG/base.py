@@ -373,13 +373,7 @@ class EvoDAG(object):
     def _get_args_orthogonal_dot(self, first):    
         vars = self.population.random()
         pop = self.population.population
-        mask = SparseArray.ones_positionnozero
-        
-        if self._classifier:
-            prod = [(k,SparseArray.dot(pop[x].hy[0].mul(mask(self._mask_ts)),first)) for k,x in enumerate(vars)]
-        else:
-            prod = [(k,SparseArray.dot(pop[x].hy[0].mul(mask(self._mask)),first)) for k,x in enumerate(vars)]
-        
+        prod = [(k,SparseArray.dot(pop[x].hy[0].mul(self._training_mask),first)) for k,x in enumerate(vars)]
         prod = min(prod, key=lambda x: x[1])
         index = prod[0]
         return vars[index]
@@ -388,10 +382,7 @@ class EvoDAG(object):
         first = self.population.tournament()
         args = {first: 1}
         mask = SparseArray.ones_positionnozero
-        if self.classifier:
-            first = self.population.population[first].hy[0].mul(mask(self._mask_ts))
-        else:
-            first = self.population.population[first].hy[0].mul(mask(self._mask))
+        first = self.population.population[first].hy[0].mul(self._training_mask)
         res = []
         sel = self._get_args_orthogonal_dot
         n_tries = self._number_tries_unique_args
@@ -556,6 +547,12 @@ class EvoDAG(object):
         self.y = y
         if test_set is not None:
             self.Xtest = test_set
+        if self.classifier:
+            self._training_mask = self._mask_ts.copy()
+        else:
+            self._training_mask = self._mask.copy()
+        for i in range(self._training_mask.non_zero):
+            self._training_mask.data[i] = 1.0
         for _ in range(self._number_tries_feasible_ind):
             self._logger.info("Starting evolution")
             try:
