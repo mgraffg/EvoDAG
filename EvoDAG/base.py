@@ -381,7 +381,6 @@ class EvoDAG(object):
     def get_args_orthogonal_dot(self, func):
         first = self.population.tournament()
         args = {first: 1}
-        mask = SparseArray.ones_positionnozero
         first = self.population.population[first].hy[0].mul(self._training_mask)
         res = []
         sel = self._get_args_orthogonal_dot
