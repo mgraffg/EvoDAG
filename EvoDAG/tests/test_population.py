@@ -477,3 +477,13 @@ def test_input_functions():
     for a, b in zip(input_functions, gp.population.hist[:3]):
         print(b, a)
         assert isinstance(b, a)
+
+
+def test_popsize_nvar():
+    from EvoDAG import EvoDAG
+    y = cl.copy()
+    gp = EvoDAG.init(popsize='nvar', time_limit=5)
+    print(X.shape)
+    gp.fit(X, y)
+    default_nargs()
+    assert gp.population._popsize == (X.shape[1] + len(gp._input_functions))

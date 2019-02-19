@@ -1341,3 +1341,33 @@ def test_orthogonal_selection_regression():
     args = m.get_args_orthogonal(Add)
     assert len(args)
     print(args)
+
+
+def test_negative_selection_false():
+    from EvoDAG import EvoDAG
+    from EvoDAG.population import SteadyState
+    import numpy as np
+
+    class P(SteadyState):
+        def random_selection(self, negative=False):
+            if negative:
+                self._llamo = True
+            return np.random.randint(self.popsize)
+    
+    Xt = X.copy()
+    y = cl.copy()
+    m = EvoDAG.init(seed=11, popsize=10, orthogonal_selection=True,
+                    negative_selection=False, population_class=P,
+                    classifier=False, early_stopping_rounds=10).fit(Xt, y)
+    assert not m._negative_selection
+    assert not m._p._negative_selection
+    assert m._p._llamo
+    m = EvoDAG.init(seed=11, popsize=10, orthogonal_selection=True,
+                    negative_selection=True, population_class=P,
+                    classifier=False, early_stopping_rounds=10).fit(Xt, y)
+    try:
+        m._p._llamo
+    except AttributeError:
+        return
+    assert False
+    
