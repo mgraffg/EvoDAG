@@ -49,7 +49,7 @@ class EvoDAG(object):
                  number_tries_feasible_ind=30, time_limit=None,
                  unique_individuals=True, classifier=True,
                  labels=None, all_inputs=False, random_generations=0,
-                 fitness_function='BER', orthogonal_selection=False,
+                 fitness_function='BER', orthogonal_selection=False, orthogonal_dot_selection=False,
                  min_density=0.8, multiple_outputs=False, function_selection=True,
                  fs_tournament_size=2, finite=True, pr_variable=0.33,
                  share_inputs=False, input_functions=None, F1_index=-1,
@@ -110,6 +110,7 @@ class EvoDAG(object):
         self._use_all_vars_input_functions = use_all_vars_input_functions
         self._probability_calibration = probability_calibration
         self._orthogonal_selection = orthogonal_selection
+        self._orthogonal_dot_selection = orthogonal_dot_selection
         # orthogonal_selection is only implemented for classification
         # if self._orthogonal_selection:
         #     assert self._classifier
@@ -369,6 +370,44 @@ class EvoDAG(object):
             return None
         return res
 
+    def _get_args_orthogonal_dot(self, first):    
+        vars = self.population.random()
+        pop = self.population.population
+        if self.classifier:
+            prod = [(k,SparseArray.dot(pop[x].hy[0].mul(self._mask_ts),first)) for k,x in enumerate(vars)]
+        else:
+            prod = [(k,SparseArray.dot(pop[x].hy[0].mul(self._mask),first)) for k,x in enumerate(vars)]
+        prod = min(prod, key=lambda x: x[1])
+        index = prod[0]
+        return vars[index]
+    
+    def get_args_orthogonal_dot(self, func):
+        first = self.population.tournament()
+        args = {first: 1}
+        if self.classifier:
+            first = self.population.population[first].hy[0].mul(self._mask_ts)
+        else:
+            first = self.population.population[first].hy[0].mul(self._mask)
+        res = []
+        sel = self._get_args_orthogonal_dot
+        n_tries = self._number_tries_unique_args
+        for j in range(func.nargs - 1):
+            k = sel(first)
+            for _ in range(n_tries):
+                if k not in args:
+                    args[k] = 1
+                    res.append(k)
+                    break
+                else:
+                    k = sel(first)
+        try:
+            min_nargs = func.min_nargs
+        except AttributeError:
+            min_nargs = func.nargs
+        if len(res) < min_nargs:
+            return None
+        return res
+    
     def get_unique_args(self, func):
         args = {}
         res = []
@@ -391,6 +430,8 @@ class EvoDAG(object):
         args = []
         if self._orthogonal_selection and func.orthogonal_selection:
             return self.get_args_orthogonal(func)
+        if self._orthogonal_dot_selection and func.orthogonal_selection:
+            return self.get_args_orthogonal_dot(func)
         if func.unique_args:
             return self.get_unique_args(func)
         try:
