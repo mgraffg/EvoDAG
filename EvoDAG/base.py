@@ -403,9 +403,9 @@ class EvoDAG(object):
                     first_hy.append( self.population.population[first].hy[i].mul(self._mask) )
         else:
             if self.classifier:
-                    first_hy = self.population.population[first].hy.mul(self._mask_ts)
-                else:
-                    first_hy = self.population.population[first].hy.mul(self._mask) 
+                first_hy = self.population.population[first].hy.mul(self._mask_ts)
+            else:
+                first_hy = self.population.population[first].hy.mul(self._mask) 
         res = []
         sel = self._get_args_orthogonal_dot
         n_tries = self._number_tries_unique_args
