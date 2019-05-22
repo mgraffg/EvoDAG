@@ -370,13 +370,24 @@ class EvoDAG(object):
             return None
         return res
 
-    def _get_args_orthogonal_dot(self, first):    
+    def _get_args_orthogonal_dot(self, first_hy):    
         vars = self.population.random()
         pop = self.population.population
         if self.classifier:
-            prod = [(k,SparseArray.dot(pop[x].hy[0].mul(self._mask_ts),first)) for k,x in enumerate(vars)]
+            mask = self._mask_ts
         else:
-            prod = [(k,SparseArray.dot(pop[x].hy[0].mul(self._mask),first)) for k,x in enumerate(vars)]
+            mask = self._mask
+            
+        if isinstance(first_hy,list):
+            prod = []
+            for k,x in enumerate(vars):  
+                pvalue = 0
+                for i in range(len(first_hy)):
+                    pvalue+= SparseArray.dot(pop[x].hy[i].mul(mask),first_hy[i])
+                prod.append( (k,pvalue) )
+        else:
+            prod = [(k,SparseArray.dot(pop[x].hy.mul(mask),first_hy)) for k,x in enumerate(vars)]
+        
         prod = min(prod, key=lambda x: x[1])
         index = prod[0]
         return vars[index]
@@ -385,21 +396,28 @@ class EvoDAG(object):
         first = self.population.tournament()
         args = {first: 1}
         if self.classifier:
-            first = self.population.population[first].hy[0].mul(self._mask_ts)
+            mask = self._mask_ts
         else:
-            first = self.population.population[first].hy[0].mul(self._mask)
+            mask = self._mask
+        if isinstance(self.population.population[first].hy,list):
+            first_hy = []
+            for i in range(len(self.population.population[first].hy)):
+                first_hy.append( self.population.population[first].hy[i].mul(mask) )
+        else:
+            first_hy = self.population.population[first].hy.mul(mask)
+            
         res = []
         sel = self._get_args_orthogonal_dot
         n_tries = self._number_tries_unique_args
         for j in range(func.nargs - 1):
-            k = sel(first)
+            k = sel(first_hy)
             for _ in range(n_tries):
                 if k not in args:
                     args[k] = 1
                     res.append(k)
                     break
                 else:
-                    k = sel(first)
+                    k = sel(first_hy)
         try:
             min_nargs = func.min_nargs
         except AttributeError:

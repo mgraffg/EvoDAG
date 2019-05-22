@@ -1352,6 +1352,18 @@ def test_orthogonal_selection_regression():
     args = m.get_args_orthogonal(Add)
     assert len(args)
     print(args)
+    
+def test_orthogonal_dot_selection_regression():
+    from EvoDAG import EvoDAG
+    from EvoDAG.node import Add
+    Xt = X.copy()
+    y = cl.copy()
+    m = EvoDAG.init(seed=11, popsize=10, orthogonal_dot_selection=True,
+                    classifier=False, early_stopping_rounds=10).fit(Xt, y)
+    assert m._orthogonal_dot_selection
+    args = m.get_args_orthogonal_dot(Add)
+    assert len(args)
+    print(args)
 
 
 def test_negative_selection_false():
