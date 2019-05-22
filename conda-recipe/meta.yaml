@@ -1,6 +1,6 @@
 package:
   name: evodag
-  version: "0.15"
+  version: "0.16.0"
 
 requirements:
   build:
