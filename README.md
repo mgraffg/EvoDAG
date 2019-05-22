@@ -29,8 +29,7 @@ pp 1-6. A pre-print version can be download from [here](http://ws.ingeotec.mx/~m
 
 ## Quick Start ##
 
-There are two options to use EvoDAG, one is as a library
-and the other is using the command line interface.
+There are two options to use EvoDAG, one is as a library and the other is using the command line interface.
 
 ### Using EvoDAG as library
 
