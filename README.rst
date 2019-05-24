@@ -10,8 +10,8 @@ EvoDAG
 .. image:: https://coveralls.io/repos/github/mgraffg/EvoDAG/badge.svg?branch=master		    
 	   :target: https://coveralls.io/github/mgraffg/EvoDAG?branch=master
 
-.. image:: https://anaconda.org/ingeotec/evodag/badges/version.svg)
-	   :target: https://anaconda.org/ingeotec/evodag
+.. image:: https://anaconda.org/ingeotec/evodag/badges/version.svg
+	   :target: https://anaconda.org/ingeotec/evodag		    
 
 .. image:: https://badge.fury.io/py/EvoDAG.svg		    
 	   :target: https://badge.fury.io/py/EvoDAG
@@ -20,4 +20,4 @@ EvoDAG
 Evolving Directed Acyclic Graph (EvoDAG) is a steady-state Genetic
 Programming system with tournament selection.
 
-More information can be found on `http://github.com/mgraffg/EvoDAG`_.
+More information can be found on `EvoDAG <http://github.com/mgraffg/EvoDAG>`_.
