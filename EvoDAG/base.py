@@ -355,7 +355,7 @@ class EvoDAG(object):
         else:
             first = self.population.population[first].hy.sign() + 1.0
         res = []
-        sel = self._get_args_orthogonal
+        sel = self._get_args_accuracy
         n_tries = self._number_tries_unique_args
         for j in range(func.nargs - 1):
             k = sel(first)
