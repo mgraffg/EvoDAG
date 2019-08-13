@@ -32,6 +32,7 @@ from .bagging_fitness import BaggingFitness
 import time
 import importlib
 import inspect
+import math
 
 
 class EvoDAG(object):
@@ -49,7 +50,7 @@ class EvoDAG(object):
                  number_tries_feasible_ind=30, time_limit=None,
                  unique_individuals=True, classifier=True,
                  labels=None, all_inputs=False, random_generations=0,
-                 fitness_function='BER', orthogonal_selection=False, orthogonal_dot_selection=False,
+                 fitness_function='BER', selection = 'accuracy', #'simcosine' 'pearson' 'angledriven' 'noveltysearch'
                  min_density=0.8, multiple_outputs=False, function_selection=True,
                  fs_tournament_size=2, finite=True, pr_variable=0.33,
                  share_inputs=False, input_functions=None, F1_index=-1,
@@ -109,8 +110,7 @@ class EvoDAG(object):
         self._F1_index = F1_index
         self._use_all_vars_input_functions = use_all_vars_input_functions
         self._probability_calibration = probability_calibration
-        self._orthogonal_selection = orthogonal_selection
-        self._orthogonal_dot_selection = orthogonal_dot_selection
+        self._selection = selection
         # orthogonal_selection is only implemented for classification
         # if self._orthogonal_selection:
         #     assert self._classifier
@@ -333,7 +333,7 @@ class EvoDAG(object):
             return self.unfeasible_offspring()
         return f
 
-    def _get_args_orthogonal(self, first):
+    def _get_args_accuracy(self, first):
         vars = self.population.random()
         pop = self.population.population
         score = self._bagging_fitness.score
@@ -347,7 +347,7 @@ class EvoDAG(object):
         index = fit[0]
         return vars[index]
 
-    def get_args_orthogonal(self, func):
+    def get_args_accuracy(self, func):
         first = self.population.tournament()
         args = {first: 1}
         if self.classifier:
@@ -370,29 +370,105 @@ class EvoDAG(object):
             return None
         return res
 
-    def _get_args_orthogonal_dot(self, first_hy):    
+    def _get_args_simcosine(self, first_hy,first_norm):    
         vars = self.population.random()
         pop = self.population.population
-        if self.classifier:
-            mask = self._mask_ts
-        else:
-            mask = self._mask
+        mask = self._mask_ts if self.classifier else self._mask
             
         if isinstance(first_hy,list):
             prod = []
             for k,x in enumerate(vars):  
                 pvalue = 0
+                counter = 0
                 for i in range(len(first_hy)):
-                    pvalue+= SparseArray.dot(pop[x].hy[i].mul(mask),first_hy[i])
+                    hy_aux = pop[x].hy[i].mul(mask)
+                    norm_aux = math.sqrt(hy_aux.dot(hy_aux)) 
+                    if first_norm[i]!=0 and norm_aux!=0:
+                        pvalue+= math.fabs(hy_aux.dot(first_hy[i])/(first_norm[i]*norm_aux))
+                    else:
+                        counter += 1
+                if counter==len(first_hy):
+                    pvalue = 99
                 prod.append( (k,pvalue) )
         else:
-            prod = [(k,SparseArray.dot(pop[x].hy.mul(mask),first_hy)) for k,x in enumerate(vars)]
-        
+            prod = []
+            for k,x in enumerate(vars):
+                hy_aux = pop[x].hy.mul(mask)
+                norm_aux = math.sqrt(hy_aux.dot(hy_aux))
+                if first_norm!=0 and norm_aux!=0:
+                    pvalue = math.fabs(hy_aux.dot(first_hy)/(first_norm*norm_aux))
+                else:
+                    pvalue = 99
+                prod.append( (k,pvalue) )
+            
         prod = min(prod, key=lambda x: x[1])
         index = prod[0]
         return vars[index]
     
-    def get_args_orthogonal_dot(self, func):
+    def get_args_simcosine(self, func):
+        first = self.population.tournament()
+        args = {first: 1}
+        mask = self._mask_ts if self.classifier else self._mask
+
+        if isinstance(self.population.population[first].hy,list):
+            first_hy = []
+            first_norm = []
+            for i in range(len(self.population.population[first].hy)):
+                hy_aux = self.population.population[first].hy[i].mul(mask)
+                norm_aux = math.sqrt(hy_aux.dot(hy_aux))
+                first_hy.append( hy_aux )
+                first_norm.append( norm_aux)
+        else:
+            first_hy = self.population.population[first].hy.mul(mask)
+            first_norm = math.sqrt(first_hy.dot(first_hy))
+            
+        res = []
+        sel = self._get_args_simcosine
+        n_tries = self._number_tries_unique_args
+        for j in range(func.nargs - 1):
+            k = sel(first_hy,first_norm)
+            for _ in range(n_tries):
+                if k not in args:
+                    args[k] = 1
+                    res.append(k)
+                    break
+                else:
+                    k = sel(first_hy,first_norm)
+        try:
+            min_nargs = func.min_nargs
+        except AttributeError:
+            min_nargs = func.nargs
+        if len(res) < min_nargs:
+            return None
+        return res
+
+    def _get_args_pearson(self, first_hy):
+        vars = self.population.random()
+        pop = self.population.population
+        mask = self._mask_ts if self.classifier else self._mask
+
+        if isinstance(first_hy,list):
+            prod = []
+            for k,x in enumerate(vars):
+                pvalue = 0
+                for i in range(len(first_hy)):
+                    u = pop[x].hy[i].mul(mask)
+                    v = first_hy[i]
+                    pvalue+= math.fabs(u.pearson_coefficient(v))
+                prod.append( (k,pvalue) )
+        else:
+            prod = []
+            for k,x in enumerate(vars):
+                u = pop[x].hy.mul(mask)
+                v = first_hy
+                pvalue+= math.fabs(u.pearson_coefficient(v))
+                prod.append( (k,pvalue) )
+
+        prod = min(prod, key=lambda x: x[1])
+        index = prod[0]
+        return vars[index]
+
+    def get_args_pearson(self, func):
         first = self.population.tournament()
         args = {first: 1}
         if self.classifier:
@@ -402,12 +478,13 @@ class EvoDAG(object):
         if isinstance(self.population.population[first].hy,list):
             first_hy = []
             for i in range(len(self.population.population[first].hy)):
-                first_hy.append( self.population.population[first].hy[i].mul(mask) )
+                hy_aux = self.population.population[first].hy[i].mul(mask)
+                first_hy.append( hy_aux )
         else:
             first_hy = self.population.population[first].hy.mul(mask)
-            
+
         res = []
-        sel = self._get_args_orthogonal_dot
+        sel = self._get_args_pearson
         n_tries = self._number_tries_unique_args
         for j in range(func.nargs - 1):
             k = sel(first_hy)
@@ -425,6 +502,89 @@ class EvoDAG(object):
         if len(res) < min_nargs:
             return None
         return res
+
+    def tournament_fitness(self):
+        vars = self.population.random()
+        fit = [(k, self.population.population[x].fitness) for k, x in enumerate(vars)]
+        fit = max(fit, key=lambda x: x[1])
+        index = fit[0]
+        return vars[index]
+
+    def _get_args_angledriven(self, first_norm): 
+        pop = self.population.population
+        mask = self._mask_ts if self.classifier else self._mask
+            
+        if isinstance(first_hy,list):
+            prod = []
+            for k in range(10):  
+                x = self.tournament_fitness()
+                pvalue = 0
+                for i in range(len(first_norm)):
+                    target = self.y[i].mul(mask)
+                    p = self.population.population[x].hy[i].mul(mask)
+                    t_p = SparseArray.sub(target,p)
+                    norm_t_p = math.sqrt(t_p.dot(t_p))
+                    t_p = t_p.mul2(1.0/norm_t_p)
+                    pvalue+= math.acos(t_p.dot(first_norm[i])) 
+                prod.append( (k,pvalue) )
+        else:
+            prod = []
+            for k in range(10):  
+                x = self.tournament_fitness()
+                target = self.y.mul(mask)
+                p = self.population.population[x].hy.mul(mask)
+                t_p = SparseArray.sub(target,p)
+                norm_t_p = math.sqrt(t_p.dot(t_p))
+                t_p = t_p.mul2(1.0/norm_t_p)
+                pvalue+= math.acos(t_p.dot(first_norm)) 
+                prod.append( (k,pvalue) )
+            
+        prod = max(prod, key=lambda x: x[1])
+        index = prod[0]
+        return vars[index]
+
+    def get_args_angledriven(self,func):
+        first = self.tournament_fitness()
+        args = {first: 1}
+        if self.classifier:
+            mask = self._mask_ts
+        else:
+            mask = self._mask
+        if isinstance(self.population.population[first].hy,list):
+            first_norm = []
+            for i in range(len(self.population.population[first].hy)):
+                target = self.y[i].mul(mask)
+                p = self.population.population[first].hy[i].mul(mask)
+                t_p = SparseArray.sub(target,p)
+                norm_t_p = math.sqrt(t_p.dot(t_p))
+                first_norm.append( t_p.mul2(1.0/norm_t_p) )
+        else:
+            target = self.y.mul(mask)
+            p = self.population.population[first].hy.mul(mask)
+            t_p = SparseArray.sub(target,p)
+            norm_t_p = math.sqrt(t_p.dot(t_p))
+            first_norm = t_p.mul2(1.0/norm_t_p)    
+
+        res = []
+        sel = self._get_args_angledriven
+        n_tries = self._number_tries_unique_args
+        for j in range(func.nargs - 1):
+            k = sel(first_norm)
+            for _ in range(n_tries):
+                if k not in args:
+                    args[k] = 1
+                    res.append(k)
+                    break
+                else:
+                    k = sel(first_norm)
+        try:
+            min_nargs = func.min_nargs
+        except AttributeError:
+            min_nargs = func.nargs
+        if len(res) < min_nargs:
+            return None
+        return res
+
     
     def get_unique_args(self, func):
         args = {}
@@ -446,10 +606,18 @@ class EvoDAG(object):
 
     def get_args(self, func):
         args = []
-        if self._orthogonal_selection and func.orthogonal_selection:
-            return self.get_args_orthogonal(func)
-        if self._orthogonal_dot_selection and func.orthogonal_selection:
-            return self.get_args_orthogonal_dot(func)
+
+        if self._selection == 'accuracy' and func.orthogonal_selection:
+            return self.get_args_accuracy(func)
+        if self._selection == 'simcosine' and func.orthogonal_selection:
+            return self.get_args_simcosine(func)
+        if self._selection == 'pearson' and func.orthogonal_selection:
+            return self.get_args_pearson(func)
+        if self._selection == 'angledriven' and func.orthogonal_selection:
+            return self.get_args_angledriven(func)
+        if self._selection == 'noveltysearch' and func.orthogonal_selection:
+            return self.get_args_noveltysearch(func)
+
         if func.unique_args:
             return self.get_unique_args(func)
         try:
