@@ -1302,31 +1302,6 @@ def test_bug_naive_bayes():
     print(X.shape, len(m.X))
     assert len(m.X) == 4
 
-
-def test_orthogonal_selection():
-    from EvoDAG import EvoDAG
-    from EvoDAG.node import Add
-    Xt = X.copy()
-    y = cl.copy()
-    m = EvoDAG.init(seed=11, popsize=10, orthogonal_selection=True,
-                    fitness_function='macro-F1',
-                    early_stopping_rounds=10).fit(Xt, y)
-    assert m._orthogonal_selection
-    args = m.get_args_orthogonal(Add)
-    assert len(args)
-
-def test_orthogonal_dot_selection():
-    from EvoDAG import EvoDAG
-    from EvoDAG.node import Add
-    Xt = X.copy()
-    y = cl.copy()
-    m = EvoDAG.init(seed=11, popsize=10, orthogonal_dot_selection=True, 
-                    fitness_function='macro-F1',
-                    early_stopping_rounds=10).fit(Xt, y)
-    assert m._orthogonal_dot_selection
-    args = m.get_args_orthogonal_dot(Add)
-    assert len(args)
-
 def test_tojson():
     from EvoDAG import EvoDAG
     Xt = X.copy()
@@ -1340,31 +1315,102 @@ def test_tojson():
         print(i.tojson())
     print(len(model._hist))
 
-
-def test_orthogonal_selection_regression():
+def test_selection_accuracy():
     from EvoDAG import EvoDAG
     from EvoDAG.node import Add
     Xt = X.copy()
     y = cl.copy()
-    m = EvoDAG.init(seed=11, popsize=10, orthogonal_selection=True,
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'accuracy',
+                    fitness_function='macro-F1',
+                    early_stopping_rounds=10).fit(Xt, y)
+    assert m._selection == 'accuracy'
+    args = m.get_args_accuracy(Add)
+    assert len(args)
+
+def test_selection_simcosine():
+    from EvoDAG import EvoDAG
+    from EvoDAG.node import Add
+    Xt = X.copy()
+    y = cl.copy()
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'simcosine', 
+                    fitness_function='macro-F1',
+                    early_stopping_rounds=10).fit(Xt, y)
+    assert m._selection == 'simcosine'
+    args = m.get_args_simcosine(Add)
+    assert len(args)
+
+def test_selection_pearson():
+    from EvoDAG import EvoDAG
+    from EvoDAG.node import Add
+    Xt = X.copy()
+    y = cl.copy()
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'pearson', 
+                    fitness_function='macro-F1',
+                    early_stopping_rounds=10).fit(Xt, y)
+    assert m._selection == 'pearson'
+    args = m.get_args_pearson(Add)
+    assert len(args)
+
+def test_selection_angledriven():
+    from EvoDAG import EvoDAG
+    from EvoDAG.node import Add
+    Xt = X.copy()
+    y = cl.copy()
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'angledriven', 
+                    fitness_function='macro-F1',
+                    early_stopping_rounds=10).fit(Xt, y)
+    assert m._selection == 'angledriven'
+    args = m.get_args_angledriven(Add)
+    assert len(args)
+
+
+def test_selection_accuracy_regression():
+    from EvoDAG import EvoDAG
+    from EvoDAG.node import Add
+    Xt = X.copy()
+    y = cl.copy()
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'accuracy',
                     classifier=False, early_stopping_rounds=10).fit(Xt, y)
-    assert m._orthogonal_selection
-    args = m.get_args_orthogonal(Add)
+    assert m._selection == 'accuracy'
+    args = m.get_args_accuracy(Add)
     assert len(args)
     print(args)
     
-def test_orthogonal_dot_selection_regression():
+def test_selection_simcosine_regression():
     from EvoDAG import EvoDAG
     from EvoDAG.node import Add
     Xt = X.copy()
     y = cl.copy()
-    m = EvoDAG.init(seed=11, popsize=10, orthogonal_dot_selection=True,
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'simcosine',
                     classifier=False, early_stopping_rounds=10).fit(Xt, y)
-    assert m._orthogonal_dot_selection
-    args = m.get_args_orthogonal_dot(Add)
+    assert m._selection == 'simcosine'
+    args = m.get_args_simcosine(Add)
     assert len(args)
     print(args)
 
+def test_selection_pearson_regression():
+    from EvoDAG import EvoDAG
+    from EvoDAG.node import Add
+    Xt = X.copy()
+    y = cl.copy()
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'pearson',
+                    classifier=False, early_stopping_rounds=10).fit(Xt, y)
+    assert m._selection == 'pearson'
+    args = m.get_args_pearson(Add)
+    assert len(args)
+    print(args)
+
+def test_selection_angledriven_regression():
+    from EvoDAG import EvoDAG
+    from EvoDAG.node import Add
+    Xt = X.copy()
+    y = cl.copy()
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'angledriven',
+                    classifier=False, early_stopping_rounds=10).fit(Xt, y)
+    assert m._selection == 'angledriven'
+    args = m.get_args_angledriven(Add)
+    assert len(args)
+    print(args)
 
 def test_negative_selection_false():
     from EvoDAG import EvoDAG
