@@ -42,7 +42,7 @@ class BaggingFitness(object):
         except AttributeError:
             if self._base.classifier:
                 self._nclasses = self._base._labels.shape[0]
-            elif self._base._orthogonal_selection:
+            elif self._base._selection=='accuracy':
                 self._nclasses = 3
         return self._nclasses
 
