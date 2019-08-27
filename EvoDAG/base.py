@@ -454,14 +454,25 @@ class EvoDAG(object):
                 for i in range(len(first_hy)):
                     u = pop[x].hy[i].mul(mask)
                     v = first_hy[i]
-                    pvalue+= math.fabs(u.pearson_coefficient(v))
+                    nu = u.dot(u)
+                    nv = v.dot(v)
+                    if nu==0 or nv==0:
+                        pvalue+= 99
+                    else:
+                        pvalue+= math.fabs(u.pearson_coefficient(v))
                 prod.append( (k,pvalue) )
         else:
             prod = []
+            pvalue = 0
             for k,x in enumerate(vars):
                 u = pop[x].hy.mul(mask)
                 v = first_hy
-                pvalue+= math.fabs(u.pearson_coefficient(v))
+                nu = u.dot(u)
+                nv = v.dot(v)
+                if nu==0 or nv==0:
+                    pvalue= 99
+                else:
+                    pvalue= math.fabs(u.pearson_coefficient(v))
                 prod.append( (k,pvalue) )
 
         prod = min(prod, key=lambda x: x[1])
@@ -514,7 +525,7 @@ class EvoDAG(object):
         pop = self.population.population
         mask = self._mask_ts if self.classifier else self._mask
             
-        if isinstance(first_hy,list):
+        if isinstance(first_norm,list):
             prod = []
             for k in range(10):  
                 x = self.tournament_fitness()
