@@ -120,38 +120,6 @@ def test_all_init_popsize():
     gp.create_population()
     assert gp.init_popsize == gp.popsize
 
-
-def test_random_generations():
-    from EvoDAG import EvoDAG
-    from EvoDAG.population import SteadyState
-
-    class P(SteadyState):
-        def random_selection(self, negative=False):
-            raise RuntimeError('!')
-    y = cl.copy()
-    y[y != 1] = -1
-    for pop in ['SteadyState', 'Generational', P]:
-        gp = EvoDAG(population_class=pop, classifier=False,
-                    all_inputs=True, random_generations=1,
-                    early_stopping_rounds=1, popsize=2)
-        gp.X = X
-        gp.y = y
-        gp.create_population()
-        print(gp.population._random_generations)
-        assert gp.population._random_generations == 1
-        if pop == P:
-            try:
-                ind = gp.random_offspring()
-                gp.replace(ind)
-                assert False
-            except RuntimeError:
-                pass
-        else:
-            for i in range(3):
-                gp.replace(gp.random_offspring())
-            assert gp.population.generation == 2
-
-
 def test_SteadyState_generation():
     from EvoDAG import EvoDAG
     y = cl.copy()
