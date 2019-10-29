@@ -300,7 +300,7 @@ class BasePopulation(object):
         v.y = None
         v.hy = None
 
-    def random_selection(self, negative=False):
+    def random_selection(self):
         return np.random.randint(self.popsize)
 
     def random(self):
@@ -319,10 +319,6 @@ class BasePopulation(object):
     def tournament(self, negative=False):
         """Tournament selection and when negative is True it performs negative
         tournament selection"""
-        if self.generation <= self._random_generations and not negative:
-            return self.random_selection()
-        if not self._negative_selection and negative:
-            return self.random_selection(negative=negative)
         vars = self.random()
         fit = [(k, self.population[x].fitness) for k, x in enumerate(vars)]
         if negative:
