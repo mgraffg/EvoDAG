@@ -46,11 +46,13 @@ class EvoDAG(object):
                                Expm1, Log, Log2, Log10, Lgamma, Sign,
                                Ceil, Floor, NaiveBayes, NaiveBayesMN, Centroid],
                  tr_fraction=0.5, population_class=SteadyState,
-                 negative_selection=True,
                  number_tries_feasible_ind=30, time_limit=None,
                  unique_individuals=True, classifier=True,
                  labels=None, all_inputs=False, random_generations=0,
-                 fitness_function='BER', selection = 'accuracy', #'simcosine' 'pearson' 'angledriven' 'noveltysearch'
+                 fitness_function='BER', 
+                 selection = 'fitness', # 'random' 'accuracy' 'simcosine' 'pearson' 'angledriven' 'noveltysearch'
+                 negative_selection='fitness', # 'random'
+                 first_individual_selection = 'fitness', # 'random'
                  min_density=0.8, multiple_outputs=False, function_selection=True,
                  fs_tournament_size=2, finite=True, pr_variable=0.33,
                  share_inputs=False, input_functions=None, F1_index=-1,
@@ -68,7 +70,6 @@ class EvoDAG(object):
         self._classifier = classifier
         self._number_tries_feasible_ind = number_tries_feasible_ind
         self._unfeasible_counter = 0
-        self._negative_selection = negative_selection
         self._number_tries_unique_args = 3
         self._tr_fraction = tr_fraction
         if early_stopping_rounds is not None and early_stopping_rounds < 0:
@@ -111,9 +112,8 @@ class EvoDAG(object):
         self._use_all_vars_input_functions = use_all_vars_input_functions
         self._probability_calibration = probability_calibration
         self._selection = selection
-        # orthogonal_selection is only implemented for classification
-        # if self._orthogonal_selection:
-        #     assert self._classifier
+        self._negative_selection = negative_selection
+        self._first_individual_selection = first_individual_selection  
         self._extras = kwargs
         if self._time_limit is not None:
             self._logger.info('Time limit: %0.2f' % self._time_limit)
@@ -270,7 +270,6 @@ class EvoDAG(object):
                                              labels=self._labels,
                                              es_extra_test=self.es_extra_test,
                                              popsize=self._popsize,
-                                             random_generations=self._random_generations,
                                              negative_selection=self._negative_selection)
             return self._p
 
@@ -348,7 +347,7 @@ class EvoDAG(object):
         return vars[index]
 
     def get_args_accuracy(self, func):
-        first = self.population.tournament()
+        first = self.population.tournament() if self._first_individual_selection == 'fitness' else self.population.random_selection()
         args = {first: 1}
         if self.classifier:
             first = SparseArray.argmax(self.population.population[first].hy)
@@ -406,7 +405,7 @@ class EvoDAG(object):
         return vars[index]
     
     def get_args_simcosine(self, func):
-        first = self.population.tournament()
+        first = self.population.tournament() if self._first_individual_selection == 'fitness' else self.population.random_selection()
         args = {first: 1}
         mask = self._mask_ts if self.classifier else self._mask
 
@@ -480,7 +479,7 @@ class EvoDAG(object):
         return vars[index]
 
     def get_args_pearson(self, func):
-        first = self.population.tournament()
+        first = self.population.tournament() if self._first_individual_selection == 'fitness' else self.population.random_selection()
         args = {first: 1}
         if self.classifier:
             mask = self._mask_ts
@@ -513,13 +512,6 @@ class EvoDAG(object):
         if len(res) < min_nargs:
             return None
         return res
-
-    def tournament_fitness(self):
-        vars = self.population.random()
-        fit = [(k, self.population.population[x].fitness) for k, x in enumerate(vars)]
-        fit = max(fit, key=lambda x: x[1])
-        index = fit[0]
-        return vars[index]
 
     def _get_args_angledriven(self, first_norm): 
         pop = self.population.population
@@ -554,8 +546,8 @@ class EvoDAG(object):
         index = prod[0]
         return vars[index]
 
-    def get_args_angledriven(self,func):
-        first = self.tournament_fitness()
+    def get_args_angledriven(self,func):        
+        first = self.population.tournament() if self._first_individual_selection == 'fitness' else self.population.random_selection()
         args = {first: 1}
         if self.classifier:
             mask = self._mask_ts
@@ -596,11 +588,10 @@ class EvoDAG(object):
             return None
         return res
 
-    
     def get_unique_args(self, func):
         args = {}
         res = []
-        p_tournament = self.population.tournament
+        p_tournament = self.population.tournament if self._selection == 'fitness' else self.population.random_selection
         n_tries = self._number_tries_unique_args
         for j in range(func.nargs):
             k = p_tournament()
@@ -628,14 +619,16 @@ class EvoDAG(object):
             return self.get_args_angledriven(func)
         if self._selection == 'noveltysearch' and func.orthogonal_selection:
             return self.get_args_noveltysearch(func)
-
+        
+        p_tournament = self.population.tournament if self._selection == 'fitness' else self.population.random_selection
+            
         if func.unique_args:
             return self.get_unique_args(func)
         try:
             min_nargs = func.min_nargs
         except AttributeError:
             min_nargs = func.nargs
-        p_tournament = self.population.tournament
+        
         for j in range(func.nargs):
             k = p_tournament()
             for _ in range(self._number_tries_unique_args):
