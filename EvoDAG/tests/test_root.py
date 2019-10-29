@@ -1548,7 +1548,7 @@ def test_negative_selection_random():
     assert m._p._negative_selection=='random'
     assert m._p._llamo
 
-    m = EvoDAG.init(seed=11, popsize=10, orthogonal_selection=True,
+    m = EvoDAG.init(seed=11, popsize=10, selection='simcosine',
                     negative_selection='fitness', population_class=P,
                     classifier=False, early_stopping_rounds=10).fit(Xt, y)
     assert m._negative_selection=='fitness'
