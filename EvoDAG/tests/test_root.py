@@ -1306,7 +1306,7 @@ def test_tojson():
     from EvoDAG import EvoDAG
     Xt = X.copy()
     y = cl.copy()
-    m = EvoDAG.init(seed=0, popsize=10, orthogonal_selection=True,
+    m = EvoDAG.init(seed=0, popsize=10,
                     fitness_function='macro-F1',
                     early_stopping_rounds=10).fit(Xt, y)
     model = m.model()
@@ -1321,11 +1321,26 @@ def test_selection_accuracy():
     Xt = X.copy()
     y = cl.copy()
     m = EvoDAG.init(seed=11, popsize=10, selection = 'accuracy',
+                    negative_selection='fitness', first_individual_selection='fitness',  
                     fitness_function='macro-F1',
                     early_stopping_rounds=10).fit(Xt, y)
     assert m._selection == 'accuracy'
     args = m.get_args_accuracy(Add)
     assert len(args)
+    assert m._negative_selection=='fitness'
+    assert m._p._negative_selection=='fitness'
+    assert m._first_individual_selection=='fitness'
+    
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'accuracy',
+                    negative_selection='random', first_individual_selection='random',                    
+                    fitness_function='macro-F1',
+                    early_stopping_rounds=10).fit(Xt, y)
+    assert m._selection == 'accuracy'
+    args = m.get_args_accuracy(Add)
+    assert len(args)
+    assert m._negative_selection=='random'
+    assert m._p._negative_selection=='random'
+    assert m._first_individual_selection=='random'
 
 def test_selection_simcosine():
     from EvoDAG import EvoDAG
@@ -1333,11 +1348,26 @@ def test_selection_simcosine():
     Xt = X.copy()
     y = cl.copy()
     m = EvoDAG.init(seed=11, popsize=10, selection = 'simcosine', 
+                    negative_selection='random', first_individual_selection='random', 
                     fitness_function='macro-F1',
                     early_stopping_rounds=10).fit(Xt, y)
     assert m._selection == 'simcosine'
     args = m.get_args_simcosine(Add)
     assert len(args)
+    assert m._negative_selection=='random'
+    assert m._p._negative_selection=='random'
+    assert m._first_individual_selection=='random'
+    
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'simcosine', 
+                    negative_selection='fitness', first_individual_selection='fitness', 
+                    fitness_function='macro-F1',
+                    early_stopping_rounds=10).fit(Xt, y)
+    assert m._selection == 'simcosine'
+    args = m.get_args_simcosine(Add)
+    assert len(args)
+    assert m._negative_selection=='fitness'
+    assert m._p._negative_selection=='fitness'
+    assert m._first_individual_selection=='fitness'
 
 def test_selection_pearson():
     from EvoDAG import EvoDAG
@@ -1345,11 +1375,26 @@ def test_selection_pearson():
     Xt = X.copy()
     y = cl.copy()
     m = EvoDAG.init(seed=11, popsize=10, selection = 'pearson', 
+                    negative_selection='fitness', first_individual_selection='fitness', 
                     fitness_function='macro-F1',
                     early_stopping_rounds=10).fit(Xt, y)
     assert m._selection == 'pearson'
     args = m.get_args_pearson(Add)
     assert len(args)
+    assert m._negative_selection=='fitness'
+    assert m._p._negative_selection=='fitness'
+    assert m._first_individual_selection=='fitness'
+    
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'pearson', 
+                    negative_selection='random', first_individual_selection='random', 
+                    fitness_function='macro-F1',
+                    early_stopping_rounds=10).fit(Xt, y)
+    assert m._selection == 'pearson'
+    args = m.get_args_pearson(Add)
+    assert len(args)
+    assert m._negative_selection=='random'
+    assert m._p._negative_selection=='random'
+    assert m._first_individual_selection=='random'
 
 def test_selection_angledriven():
     from EvoDAG import EvoDAG
@@ -1357,11 +1402,26 @@ def test_selection_angledriven():
     Xt = X.copy()
     y = cl.copy()
     m = EvoDAG.init(seed=11, popsize=10, selection = 'angledriven', 
+                    negative_selection='random', first_individual_selection='random', 
                     fitness_function='macro-F1',
                     early_stopping_rounds=10).fit(Xt, y)
     assert m._selection == 'angledriven'
     args = m.get_args_angledriven(Add)
     assert len(args)
+    assert m._negative_selection=='random'
+    assert m._p._negative_selection=='random'
+    assert m._first_individual_selection=='random'
+    
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'angledriven', 
+                    negative_selection='fitness', first_individual_selection='fitness', 
+                    fitness_function='macro-F1',
+                    early_stopping_rounds=10).fit(Xt, y)
+    assert m._selection == 'angledriven'
+    args = m.get_args_angledriven(Add)
+    assert len(args)
+    assert m._negative_selection=='fitness'
+    assert m._p._negative_selection=='fitness'
+    assert m._first_individual_selection=='fitness'
 
 
 def test_selection_accuracy_regression():
@@ -1370,11 +1430,24 @@ def test_selection_accuracy_regression():
     Xt = X.copy()
     y = cl.copy()
     m = EvoDAG.init(seed=11, popsize=10, selection = 'accuracy',
+                    negative_selection='fitness', first_individual_selection='fitness',
                     classifier=False, early_stopping_rounds=10).fit(Xt, y)
     assert m._selection == 'accuracy'
     args = m.get_args_accuracy(Add)
     assert len(args)
-    print(args)
+    assert m._negative_selection=='fitness'
+    assert m._p._negative_selection=='fitness'
+    assert m._first_individual_selection=='fitness'
+    
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'accuracy',
+                    negative_selection='random', first_individual_selection='random',
+                    classifier=False, early_stopping_rounds=10).fit(Xt, y)
+    assert m._selection == 'accuracy'
+    args = m.get_args_accuracy(Add)
+    assert len(args)    
+    assert m._negative_selection=='random'
+    assert m._p._negative_selection=='random'
+    assert m._first_individual_selection=='random'
     
 def test_selection_simcosine_regression():
     from EvoDAG import EvoDAG
@@ -1382,11 +1455,24 @@ def test_selection_simcosine_regression():
     Xt = X.copy()
     y = cl.copy()
     m = EvoDAG.init(seed=11, popsize=10, selection = 'simcosine',
+                    negative_selection='random', first_individual_selection='random',
                     classifier=False, early_stopping_rounds=10).fit(Xt, y)
     assert m._selection == 'simcosine'
     args = m.get_args_simcosine(Add)
     assert len(args)
-    print(args)
+    assert m._negative_selection=='random'
+    assert m._p._negative_selection=='random'
+    assert m._first_individual_selection=='random'
+    
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'simcosine',
+                    negative_selection='fitness', first_individual_selection='fitness',
+                    classifier=False, early_stopping_rounds=10).fit(Xt, y)
+    assert m._selection == 'simcosine'
+    args = m.get_args_simcosine(Add)
+    assert len(args)
+    assert m._negative_selection=='fitness'
+    assert m._p._negative_selection=='fitness'
+    assert m._first_individual_selection=='fitness'
 
 def test_selection_pearson_regression():
     from EvoDAG import EvoDAG
@@ -1394,11 +1480,24 @@ def test_selection_pearson_regression():
     Xt = X.copy()
     y = cl.copy()
     m = EvoDAG.init(seed=11, popsize=10, selection = 'pearson',
+                    negative_selection='fitness', first_individual_selection='fitness',
                     classifier=False, early_stopping_rounds=10).fit(Xt, y)
     assert m._selection == 'pearson'
     args = m.get_args_pearson(Add)
     assert len(args)
-    print(args)
+    assert m._negative_selection=='fitness'
+    assert m._p._negative_selection=='fitness'
+    assert m._first_individual_selection=='fitness'
+    
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'pearson',
+                    negative_selection='random', first_individual_selection='random',
+                    classifier=False, early_stopping_rounds=10).fit(Xt, y)
+    assert m._selection == 'pearson'
+    args = m.get_args_pearson(Add)
+    assert len(args)
+    assert m._negative_selection=='random'
+    assert m._p._negative_selection=='random'
+    assert m._first_individual_selection=='random'
 
 def test_selection_angledriven_regression():
     from EvoDAG import EvoDAG
@@ -1406,37 +1505,55 @@ def test_selection_angledriven_regression():
     Xt = X.copy()
     y = cl.copy()
     m = EvoDAG.init(seed=11, popsize=10, selection = 'angledriven',
+                    negative_selection='random', first_individual_selection='random',
                     classifier=False, early_stopping_rounds=10).fit(Xt, y)
     assert m._selection == 'angledriven'
     args = m.get_args_angledriven(Add)
     assert len(args)
-    print(args)
+    assert m._negative_selection=='random'
+    assert m._p._negative_selection=='random'
+    assert m._first_individual_selection=='random'
+    
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'angledriven',
+                    negative_selection='fitness', first_individual_selection='fitness',
+                    classifier=False, early_stopping_rounds=10).fit(Xt, y)
+    assert m._selection == 'angledriven'
+    args = m.get_args_angledriven(Add)
+    assert len(args)
+    assert m._negative_selection=='fitness'
+    assert m._p._negative_selection=='fitness'
+    assert m._first_individual_selection=='fitness'
 
-def test_negative_selection_false():
+def test_negative_selection_random():
     from EvoDAG import EvoDAG
     from EvoDAG.population import SteadyState
     import numpy as np
 
     class P(SteadyState):
-        def random_selection(self, negative=False):
-            if negative:
-                self._llamo = True
+        def random_selection(self):
+            self._llamo = True
             return np.random.randint(self.popsize)
+
+        def tournament(self,negative=False):
+        	if negative:
+        		self._llamo = False
+        	return np.random.randint(self.popsize)
     
     Xt = X.copy()
     y = cl.copy()
-    m = EvoDAG.init(seed=11, popsize=10, orthogonal_selection=True,
-                    negative_selection=False, population_class=P,
+    m = EvoDAG.init(seed=11, popsize=10, selection='simcosine',
+                    negative_selection='random', population_class=P,
                     classifier=False, early_stopping_rounds=10).fit(Xt, y)
-    assert not m._negative_selection
-    assert not m._p._negative_selection
+    assert m._negative_selection=='random'
+    assert m._p._negative_selection=='random'
     assert m._p._llamo
+
     m = EvoDAG.init(seed=11, popsize=10, orthogonal_selection=True,
-                    negative_selection=True, population_class=P,
+                    negative_selection='fitness', population_class=P,
                     classifier=False, early_stopping_rounds=10).fit(Xt, y)
-    try:
-        m._p._llamo
-    except AttributeError:
-        return
-    assert False
+    assert m._negative_selection=='fitness'
+    assert m._p._negative_selection=='fitness'
+    assert not m._p._llamo
+    
+   
     
