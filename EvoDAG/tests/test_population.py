@@ -280,7 +280,7 @@ def test_multiple_variables():
     for a, b in zip(coef, v.weight[0]):
         assert_almost_equals(a, b)
 
-
+'''
 def test_inputs_func_argument():
     from EvoDAG import EvoDAG
 
@@ -315,7 +315,7 @@ def test_inputs_func_argument():
                popsize=5, share_inputs=True).fit(X, y)
     except AttributeError:
         pass
-
+'''
 
 def test_restrictions():
     from EvoDAG.population import Inputs
