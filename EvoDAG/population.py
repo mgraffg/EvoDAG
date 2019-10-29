@@ -129,13 +129,12 @@ class Inputs(object):
 
 class BasePopulation(object):
     def __init__(self, base=None,
+                 negative_selection='fitness', # 'fitness' 'random'
                  tournament_size=2,
                  classifier=True,
                  labels=None,
                  popsize=10000,
-                 random_generations=0,
-                 es_extra_test=lambda x: True,
-                 negative_selection=True):
+                 es_extra_test=lambda x: True):
         self._base = base
         self._p = []
         self._hist = []
@@ -152,7 +151,6 @@ class BasePopulation(object):
         self._popsize = popsize
         self._inds_replace = 0
         self.generation = 1
-        self._random_generations = random_generations
         self._density = 0.0
         self._negative_selection = negative_selection
 
@@ -400,7 +398,10 @@ class BasePopulation(object):
         individual v"""
         if self.popsize < self._popsize:
             return self.add(v)
-        k = self.tournament(negative=True)
+        if self._negative_selection == 'fitness':
+            k = self.tournament(negative=True)
+        else:
+            k = self.random_selection()
         self.clean(self.population[k])
         self.population[k] = v
         v.position = len(self._hist)
