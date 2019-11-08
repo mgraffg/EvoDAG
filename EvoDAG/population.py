@@ -312,6 +312,8 @@ class BasePopulation(object):
                 k = randint(popsize)
             done[k] = 1
             res.append(k)
+            if len(res)>=popsize:
+                break
         return res
 
     def tournament(self, negative=False):
