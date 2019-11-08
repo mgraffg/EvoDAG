@@ -791,24 +791,24 @@ def test_get_clone():
     assert gp._seed == gp1._seed
 
 
-def test_labels():
-    from EvoDAG import RootGP
-    y = cl.copy()
-    mask = y == 0
-    y[mask] = 1
-    gp = RootGP(generations=np.inf,
-                tournament_size=2,
-                early_stopping_rounds=-1,
-                multiple_outputs=True,
-                seed=0,
-                popsize=100).fit(X, y, test_set=X)
-    m = gp.model()
-    hy = m.predict(X=X)
-    print(np.unique(hy), np.unique(y))
-    print(np.array([1, 2]))
-    for k in np.unique(hy):
-        assert k in [1, 2]
-    # assert np.all(np.unique(hy) == np.array([1, 2]))
+#def test_labels():
+#    from EvoDAG import RootGP
+#    y = cl.copy()
+#    mask = y == 0
+#    y[mask] = 1
+#    gp = RootGP(generations=np.inf,
+#                tournament_size=2,
+#                early_stopping_rounds=-1,
+#                multiple_outputs=True,
+#                seed=0,
+#                popsize=100).fit(X, y, test_set=X)
+#    m = gp.model()
+#    hy = m.predict(X=X)
+#    print(np.unique(hy), np.unique(y))
+#    print(np.array([1, 2]))
+#    for k in np.unique(hy):
+#        assert k in [1, 2]
+#    # assert np.all(np.unique(hy) == np.array([1, 2]))
 
 
 def test_height():
