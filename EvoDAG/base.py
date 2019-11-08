@@ -53,6 +53,7 @@ class EvoDAG(object):
                  selection = 'fitness', # 'random' 'accuracy' 'simcosine' 'pearson' 'angledriven' 'noveltysearch'
                  negative_selection='fitness', # 'random'
                  first_individual_selection = 'fitness', # 'random'
+                 heuristic_functions = 'tailored', # 'all'
                  min_density=0.8, multiple_outputs=False, function_selection=True,
                  fs_tournament_size=2, finite=True, pr_variable=0.33,
                  share_inputs=False, input_functions=None, F1_index=-1,
@@ -114,6 +115,7 @@ class EvoDAG(object):
         self._selection = selection
         self._negative_selection = negative_selection
         self._first_individual_selection = first_individual_selection  
+        self._heuristic_functions = heuristic_functions
         self._extras = kwargs
         if self._time_limit is not None:
             self._logger.info('Time limit: %0.2f' % self._time_limit)
@@ -616,15 +618,15 @@ class EvoDAG(object):
     def get_args(self, func):
         args = []
 
-        if self._selection == 'accuracy' and func.orthogonal_selection:
+        if self._selection == 'accuracy' and (func.orthogonal_selection or (self._heuristic_functions=='all' and func.narg>1)):
             return self.get_args_accuracy(func)
-        if self._selection == 'simcosine' and func.orthogonal_selection:
+        if self._selection == 'simcosine' and (func.orthogonal_selection or (self._heuristic_functions=='all' and func.narg>1)):
             return self.get_args_simcosine(func)
-        if self._selection == 'pearson' and func.orthogonal_selection:
+        if self._selection == 'pearson' and (func.orthogonal_selection or (self._heuristic_functions=='all' and func.narg>1)):
             return self.get_args_pearson(func)
-        if self._selection == 'angledriven' and func.orthogonal_selection:
+        if self._selection == 'angledriven' and (func.orthogonal_selection or (self._heuristic_functions=='all' and func.narg>1)):
             return self.get_args_angledriven(func)
-        if self._selection == 'noveltysearch' and func.orthogonal_selection:
+        if self._selection == 'noveltysearch':
             return self.get_args_noveltysearch(func)
         
         p_tournament = self.population.tournament if self._selection == 'fitness' else self.population.random_selection
