@@ -516,11 +516,12 @@ class EvoDAG(object):
     def _get_args_angledriven(self, first_norm): 
         pop = self.population.population
         mask = self._mask_ts if self.classifier else self._mask
+        p_tournament = self.population.tournament if self._first_individual_selection == 'fitness' else self.population.random_selection
             
         if isinstance(first_norm,list):
             prod = []
-            for k in range(10):  
-                x = self.tournament_fitness()
+            for k in range(10):
+                x = p_tournament()
                 pvalue = 0
                 for i in range(len(first_norm)):
                     target = self.y[i].mul(mask)
@@ -528,23 +529,29 @@ class EvoDAG(object):
                     t_p = SparseArray.sub(target,p)
                     norm_t_p = math.sqrt(t_p.dot(t_p))
                     t_p = t_p.mul2(1.0/norm_t_p)
-                    pvalue+= math.acos(t_p.dot(first_norm[i])) 
-                prod.append( (k,pvalue) )
+                    v = t_p.dot(first_norm[i])
+                    v = v if v<=1.0 else 1.0
+                    v = v if v>=-1.0 else -1.0
+                    pvalue+= math.acos(v)
+                prod.append( (x,pvalue) )
         else:
             prod = []
-            for k in range(10):  
-                x = self.tournament_fitness()
+            for k in range(10):
+                x = p_tournament()
                 target = self.y.mul(mask)
                 p = self.population.population[x].hy.mul(mask)
                 t_p = SparseArray.sub(target,p)
                 norm_t_p = math.sqrt(t_p.dot(t_p))
                 t_p = t_p.mul2(1.0/norm_t_p)
-                pvalue+= math.acos(t_p.dot(first_norm)) 
-                prod.append( (k,pvalue) )
+                v = t_p.dot(first_norm)
+                v = v if v<=1.0 else 1.0
+                v = v if v>=-1.0 else -1.0
+                pvalue = math.acos(v)
+                prod.append( (x,pvalue) )
             
         prod = max(prod, key=lambda x: x[1])
         index = prod[0]
-        return vars[index]
+        return index
 
     def get_args_angledriven(self,func):        
         first = self.population.tournament() if self._first_individual_selection == 'fitness' else self.population.random_selection()
