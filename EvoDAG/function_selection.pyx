@@ -82,7 +82,8 @@ cdef class FunctionSelection:
     cpdef int tournament(self) except -1:
         cdef int best, comp
         cdef double best_fit, comp_fit
-        cdef unsigned int *nargs = self.nargs.data.as_uints
+        cdef array.array naargs = self.nargs
+        cdef unsigned int *nargs = naargs.data.as_uints
         if self.nfunctions == 1:
             return 0
         best = self.random_function()
