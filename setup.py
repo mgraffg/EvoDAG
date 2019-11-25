@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from setuptools import setup
+import sys
 from Cython.Build import cythonize
 from setuptools import Extension
 from os.path import join
@@ -58,7 +59,8 @@ setup(
     include_package_data=True,
     zip_safe=False,
     ext_modules=cythonize(extension,
-                          compiler_directives={'profile': False,
+                          compiler_directives={'language_level': sys.version_info[0],
+                                               'profile': False,
                                                'nonecheck': False,
                                                'boundscheck': False}),
 
