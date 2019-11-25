@@ -6,10 +6,10 @@ language: generic
 
 env:
   matrix:
-    - python=3.4  CONDA_PY=34    
     - python=3.5  CONDA_PY=35
     - python=3.6  CONDA_PY=36
     - python=3.7  CONDA_PY=37
+    - python=3.8  CONDA_PY=38    
 
   global:
     - secure: "pnOW4x9Pmt3HnTv4Hy8fmcKeOx/JTw0EFdjsHMX5zor1bs/+qfdtXo0KryzCzg5MrsRI6PDe/olnLeoi989xpIdjidU5vT8PrC/0JpepZX97DxvoqwFpDai+8LTZvIqsWJWTBoNwqeTOkYTH5oj69+B3uYUAmhKbusEgwzkzAD7tAmoDbXSFPwEvKiZz3coPt7p4mqAln5u/zDNKr6GBNFFc47on8d4aoXMsldpjXnn+UVUeiCqmcuZeJ4diIFqxReH38Cmtp4ngK8yPHcdvuMtv3A2okVysOQeROs37Hsr/ckrAjX+ldlGvZm71ziVZyLDmEqyuknaPnH0mfpNwDwOvRXhAi7HGAxr+VFMQhiwyGjyxUX/0fIj+J9bO0FeRBTnx3Vtf6WvlWMocs2ue9R7Mun7NHwfmS8VoYp22+YuKPjWpbbV+k1fNC+784T6nxYBzAfVUC8YoGYXULGFkod75M3V4dhdFL3JIOOw+EFBENDqZGGyYq1zO8uTajYH2DgPoW4afGtKK35zIctq/pOg/cqLZCXTLaj6QqGDOKeWJ2emV6eODyhVTNA0lpygY03KSAN1Jys8TUPCRKy1DxxmaR7TySAppAMe8DskrGzlgWtgDh6mPdQ+2pEwhfYoaTP5o7m78NEaVb4HQOWErmvugRJqwJYC/BTKvVNmhf50="
