@@ -530,11 +530,12 @@ class EvoDAG(object):
                     p = self.population.population[x].hy[i].mul(mask)
                     t_p = SparseArray.sub(target,p)
                     norm_t_p = math.sqrt(t_p.dot(t_p))
-                    t_p = t_p.mul2(1.0/norm_t_p)
-                    v = t_p.dot(first_norm[i])
-                    v = v if v<=1.0 else 1.0
-                    v = v if v>=-1.0 else -1.0
-                    pvalue+= math.acos(v)
+                    if norm_t_p > 0.0:
+                        t_p = t_p.mul2(1.0/norm_t_p)
+                        v = t_p.dot(first_norm[i])
+                        v = v if v<=1.0 else 1.0
+                        v = v if v>=-1.0 else -1.0
+                        pvalue+= math.acos(v)
                 prod.append( (x,pvalue) )
         else:
             prod = []
@@ -544,12 +545,15 @@ class EvoDAG(object):
                 p = self.population.population[x].hy.mul(mask)
                 t_p = SparseArray.sub(target,p)
                 norm_t_p = math.sqrt(t_p.dot(t_p))
-                t_p = t_p.mul2(1.0/norm_t_p)
-                v = t_p.dot(first_norm)
-                v = v if v<=1.0 else 1.0
-                v = v if v>=-1.0 else -1.0
-                pvalue = math.acos(v)
-                prod.append( (x,pvalue) )
+                if norm_t_p > 0.0:
+                   t_p = t_p.mul2(1.0/norm_t_p)
+                   v = t_p.dot(first_norm)
+                   v = v if v<=1.0 else 1.0
+                   v = v if v>=-1.0 else -1.0
+                   pvalue = math.acos(v)
+                   prod.append( (x,pvalue) )
+                else:
+                   prod.append( (x,0))
             
         prod = max(prod, key=lambda x: x[1])
         index = prod[0]
@@ -569,12 +573,16 @@ class EvoDAG(object):
                 p = self.population.population[first].hy[i].mul(mask)
                 t_p = SparseArray.sub(target,p)
                 norm_t_p = math.sqrt(t_p.dot(t_p))
+                if norm_t_p <= 0.0000001:
+                    return self.get_unique_args(func)
                 first_norm.append( t_p.mul2(1.0/norm_t_p) )
         else:
             target = self.y.mul(mask)
             p = self.population.population[first].hy.mul(mask)
             t_p = SparseArray.sub(target,p)
             norm_t_p = math.sqrt(t_p.dot(t_p))
+            if norm_t_p <= 0.0000001:
+                return self.get_unique_args(func)
             first_norm = t_p.mul2(1.0/norm_t_p)    
 
         res = []
@@ -611,22 +619,26 @@ class EvoDAG(object):
                     break
                 else:
                     k = p_tournament()
-        if len(res) < func.min_nargs:
+        try:
+            min_nargs = func.min_args
+        except AttributeError:
+            min_nargs = func.nargs
+        if len(res) < min_nargs:
             return None
         return res
 
     def get_args(self, func):
         args = []
 
-        if self._selection == 'accuracy' and (func.orthogonal_selection or (self._heuristic_functions=='all' and func.narg>1)):
+        if self._selection == 'accuracy' and (func.orthogonal_selection or (self._heuristic_functions=='all' and func.nargs>1)):
             return self.get_args_accuracy(func)
-        if self._selection == 'simcosine' and (func.orthogonal_selection or (self._heuristic_functions=='all' and func.narg>1)):
+        if self._selection == 'simcosine' and (func.orthogonal_selection or (self._heuristic_functions=='all' and func.nargs>1)):
             return self.get_args_simcosine(func)
-        if self._selection == 'pearson' and (func.orthogonal_selection or (self._heuristic_functions=='all' and func.narg>1)):
+        if self._selection == 'pearson' and (func.orthogonal_selection or (self._heuristic_functions=='all' and func.nargs>1)):
             return self.get_args_pearson(func)
-        if self._selection == 'angledriven' and (func.orthogonal_selection or (self._heuristic_functions=='all' and func.narg>1)):
+        if self._selection == 'angledriven' and (func.orthogonal_selection or (self._heuristic_functions=='all' and func.nargs>1)):
             return self.get_args_angledriven(func)
-        if self._selection == 'noveltysearch':
+        if self._selection == 'noveltysearch' and (func.orthogonal_selection or (self._heuristic_functions=='all' and func.nargs>1)):
             return self.get_args_noveltysearch(func)
         
         p_tournament = self.population.tournament if self._selection == 'fitness' else self.population.random_selection
@@ -649,7 +661,7 @@ class EvoDAG(object):
         if len(args) < min_nargs:
             return None
         return args
-
+   
     def random_offspring(self):
         "Returns an offspring with the associated weight(s)"
         function_set = self.function_set
