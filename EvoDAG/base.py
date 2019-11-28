@@ -620,7 +620,7 @@ class EvoDAG(object):
                 else:
                     k = p_tournament()
         try:
-            min_nargs = func.min_args
+            min_nargs = func.min_nargs
         except AttributeError:
             min_nargs = func.nargs
         if len(res) < min_nargs:
