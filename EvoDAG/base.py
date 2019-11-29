@@ -605,6 +605,69 @@ class EvoDAG(object):
             return None
         return res
 
+    def _tournament_novelty_search(self,B,probabilities):
+        from scipy.stats import norm
+        vars = self.population.random()
+        nind,nsamples = B.shape
+        fit = []
+        for k,x in enumerate(vars):
+            ind = B[x,:]
+            fit_ind = 0
+            for i in range(nsamples):
+                if self.classifier:
+                    prob = probabilities[i][ind[i]]
+                else:
+                    prob = norm.pdf( ind[i], loc=probabilities[i,0],scale=probabilities[i,1] )
+                fit_ind += 1/(prob + 1e-5)
+            fit.append((k,fit_ind))
+        fit = max(fit, key=lambda x: x[1])
+        index = fit[0]
+        return vars[index]
+
+    def get_args_noveltysearch(self, func):
+        mask = self._mask_ts if self.classifier else self._mask
+        mask = np.array(mask.index)
+        B = np.zeros((self.population.popsize,len(mask)))
+        if self.classifier:
+            for i in range(self.population.popsize):
+                ind = np.array(SparseArray.argmax(self.population.population[i].hy).add2(1000).data)
+                B[i,:] = ind[mask]
+            classes = np.unique(B)
+            probabilities = []
+            for i in range(len(mask)):
+                s = {}
+                for u in classes:
+                    s[u] = np.sum(B[:,i]==u) / len(mask)
+                probabilities.append(s)
+        else:
+            for i in range(self.population.popsize): 
+                ind = np.array(self.population.population[i].hy.add2(1000).data)
+                B[i,:] = ind[mask]
+            probabilities = np.zeros((len(mask),2))
+            for i in range(len(mask)):
+                probabilities[i,0] = np.mean(B[:,i])
+                probabilities[i,1] = np.std(B[:,i])
+
+        args = {}
+        res = []
+        n_tries = self._number_tries_unique_args
+        for j in range(func.nargs):
+            k = self._tournament_novelty_search(B,probabilities)
+            for _ in range(n_tries):
+                if k not in args:
+                    args[k] = 1
+                    res.append(k)
+                    break
+                else:
+                    k = self._tournament_novelty_search(B,probabilities)
+        try:
+            min_nargs = func.min_nargs
+        except AttributeError:
+            min_nargs = func.nargs
+        if len(res) < min_nargs:
+            return None
+        return res
+    
     def get_unique_args(self, func):
         args = {}
         res = []
