@@ -605,6 +605,12 @@ class EvoDAG(object):
             return None
         return res
 
+    def _normpdf(self,x,mean,std):
+        var = std**2
+        denom = (2*np.pi*var)**.5
+        num = np.exp(-(x-mean)**2/(2*var))
+        return num/denom
+
     def _tournament_novelty_search(self,B,probabilities):
         from scipy.stats import norm
         vars = self.population.random()
@@ -612,13 +618,14 @@ class EvoDAG(object):
         fit = []
         for k,x in enumerate(vars):
             ind = B[x,:]
-            fit_ind = 0
-            for i in range(nsamples):
-                if self.classifier:
+            if self.classifier:
+                fit_ind = 0
+                for i in range(nsamples):
                     prob = probabilities[i][ind[i]]
-                else:
-                    prob = norm.pdf( ind[i], loc=probabilities[i,0],scale=probabilities[i,1] )
-                fit_ind += 1/(prob + 1e-5)
+                    fit_ind += 1/(prob + 1e-5)
+            else:
+                pdf = self._normpdf(ind,probabilities[:,0],probabilities[:,1])
+                fit_ind = np.sum(1/(pdf+1e-5))
             fit.append((k,fit_ind))
         fit = max(fit, key=lambda x: x[1])
         index = fit[0]
