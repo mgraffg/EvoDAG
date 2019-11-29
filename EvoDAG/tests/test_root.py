@@ -1423,6 +1423,32 @@ def test_selection_angledriven():
     assert m._p._negative_selection=='fitness'
     assert m._first_individual_selection=='fitness'
 
+def test_selection_noveltysearch():
+    from EvoDAG import EvoDAG
+    from EvoDAG.node import Add
+    Xt = X.copy()
+    y = cl.copy()
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'noveltysearch', 
+                    negative_selection='random', first_individual_selection='random', 
+                    fitness_function='macro-F1',
+                    early_stopping_rounds=10).fit(Xt, y)
+    assert m._selection == 'noveltysearch'
+    args = m.get_args_noveltysearch(Add)
+    assert len(args)
+    assert m._negative_selection=='random'
+    assert m._p._negative_selection=='random'
+    assert m._first_individual_selection=='random'
+    
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'noveltysearch', 
+                    negative_selection='fitness', first_individual_selection='fitness', 
+                    fitness_function='macro-F1',
+                    early_stopping_rounds=10).fit(Xt, y)
+    assert m._selection == 'noveltysearch'
+    args = m.get_args_noveltysearch(Add)
+    assert len(args)
+    assert m._negative_selection=='fitness'
+    assert m._p._negative_selection=='fitness'
+    assert m._first_individual_selection=='fitness'
 
 def test_selection_accuracy_regression():
     from EvoDAG import EvoDAG
@@ -1524,6 +1550,31 @@ def test_selection_angledriven_regression():
     assert m._p._negative_selection=='fitness'
     assert m._first_individual_selection=='fitness'
 
+def test_selection_noveltysearch_regression():
+    from EvoDAG import EvoDAG
+    from EvoDAG.node import Add
+    Xt = X.copy()
+    y = cl.copy()
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'noveltysearch',
+                    negative_selection='random', first_individual_selection='random',
+                    classifier=False, early_stopping_rounds=10).fit(Xt, y)
+    assert m._selection == 'noveltysearch'
+    args = m.get_args_noveltysearch(Add)
+    assert len(args)
+    assert m._negative_selection=='random'
+    assert m._p._negative_selection=='random'
+    assert m._first_individual_selection=='random'
+    
+    m = EvoDAG.init(seed=11, popsize=10, selection = 'noveltysearch',
+                    negative_selection='fitness', first_individual_selection='fitness',
+                    classifier=False, early_stopping_rounds=10).fit(Xt, y)
+    assert m._selection == 'noveltysearch'
+    args = m.get_args_noveltysearch(Add)
+    assert len(args)
+    assert m._negative_selection=='fitness'
+    assert m._p._negative_selection=='fitness'
+    assert m._first_individual_selection=='fitness'
+    
 def test_negative_selection_random():
     from EvoDAG import EvoDAG
     from EvoDAG.population import SteadyState
