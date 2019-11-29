@@ -612,7 +612,6 @@ class EvoDAG(object):
         return num/denom
 
     def _tournament_novelty_search(self,B,probabilities):
-        from scipy.stats import norm
         vars = self.population.random()
         nind,nsamples = B.shape
         fit = []
