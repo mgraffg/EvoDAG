@@ -632,27 +632,7 @@ class EvoDAG(object):
 
     def get_args_noveltysearch(self, func):
         mask = self._mask_ts if self.classifier else self._mask
-        mask = np.array(mask.index)
-        B = np.zeros((self.population.popsize,len(mask)))
-        if self.classifier:
-            for i in range(self.population.popsize):
-                ind = np.array(SparseArray.argmax(self.population.population[i].hy).add2(1000).data)
-                B[i,:] = ind[mask]
-            classes = np.unique(B)
-            probabilities = []
-            for i in range(len(mask)):
-                s = {}
-                for u in classes:
-                    s[u] = np.sum(B[:,i]==u) / len(mask)
-                probabilities.append(s)
-        else:
-            for i in range(self.population.popsize): 
-                ind = np.array(self.population.population[i].hy.add2(1000).data)
-                B[i,:] = ind[mask]
-            probabilities = np.zeros((len(mask),2))
-            for i in range(len(mask)):
-                probabilities[i,0] = np.mean(B[:,i])
-                probabilities[i,1] = np.std(B[:,i])
+        B,probabilities = self.population.noveltysearch_get_B_probabilities(self.classifier,mask,self.y)
 
         args = {}
         res = []

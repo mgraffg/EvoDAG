@@ -17,7 +17,8 @@ from .node import Function, NaiveBayes, NaiveBayesMN, MultipleVariables, Centroi
 from .model import Model
 from .cython_utils import SelectNumbers
 import gc
-
+import math
+from SparseArray import SparseArray
 
 class Inputs(object):
     def __init__(self, base, vars, functions=None):
@@ -384,6 +385,80 @@ class BasePopulation(object):
                 v = base.random_offspring()
                 self.generation = gen
             self.add(v)
+    
+    def noveltysearch_get_B_probabilities(self,classifier,mask,y):
+        if hasattr(self,'_noveltysearch_B') and self._noveltysearch_B is not None:
+            return self._noveltysearch_B, self._noveltysearch_probabilities
+        else:
+            mask = np.array(mask.index)
+            B = np.zeros((self.popsize,len(mask))) 
+            if classifier:
+                classes = np.unique(np.array(SparseArray.argmax(y).add2(1000).data))
+                for i in range(self.popsize):
+                    ind = np.array(SparseArray.argmax(self.population[i].hy).add2(1000).data)
+                    B[i,:] = ind[mask]
+                probabilities = []
+                counts = []
+                for i in range(len(mask)):
+                    s = {}
+                    c = {}
+                    for u in classes:
+                        c[u] = np.sum(B[:,i]==u)
+                        s[u] = c[u] / len(mask)
+                    counts.append(c)
+                    probabilities.append(s)
+                self._noveltysearch_counts = counts
+            else:
+                for i in range(self.popsize): 
+                    ind = np.array(self.population[i].hy.add2(1000).data)
+                    B[i,:] = ind[mask]
+                probabilities = np.zeros((len(mask),2))
+                for i in range(len(mask)):
+                    probabilities[i,0] = np.mean(B[:,i])
+                    probabilities[i,1] = math.sqrt( np.mean( np.abs( B[:,i]-probabilities[i,0])**2 ) )
+            self._noveltysearch_classifier = classifier
+            self._noveltysearch_B = B
+            self._noveltysearch_probabilities = probabilities
+            self._noveltysearch_mask = mask
+            return self._noveltysearch_B, self._noveltysearch_probabilities
+
+    def _noveltysearch_add_B_probabilities(self):
+        if self._noveltysearch_classifier:
+            ind = np.array(SparseArray.argmax(self.population[-1].hy).add2(1000).data)[self._noveltysearch_mask]
+            self._noveltysearch_B = np.append(self._noveltysearch_B,[ind],axis=0)
+            _,nsamples = self._noveltysearch_B.shape
+            for i in range(nsamples):
+                self._noveltysearch_counts[i][ind[i]] = self._noveltysearch_counts[i][ ind[i] ]+1
+                for k in self._noveltysearch_probabilities[i].keys():
+                    self._noveltysearch_probabilities[i][k] = self._noveltysearch_counts[i][k] / nsamples
+        else:
+            ind = np.array(self.population[-1].hy.add2(1000).data)[self._noveltysearch_mask]
+            self._noveltysearch_B = np.append(self._noveltysearch_B,[ind],axis=0)
+            for i in range(nsamples):
+                self._noveltysearch_probabilities[i,0] = (self._noveltysearch_probabilities[i,0]*(nsamples-1) + ind[i])/nsamples
+                self._noveltysearch_probabilities[i,1] = math.sqrt( np.mean( np.abs( B[:,i]-probabilities[i,0])**2 ) )
+
+    def _noveltysearch_replace_B_probabilities(self,k):
+        ind_ = np.copy(self._noveltysearch_B[k,:])
+        _,nsamples = self._noveltysearch_B.shape
+        if self._noveltysearch_classifier:
+            ind = np.array(SparseArray.argmax(self.population[k].hy).add2(1000).data)[self._noveltysearch_mask].astype(int)
+            ind_ = ind_.astype(int)
+            self._noveltysearch_B[k,:] = ind
+
+            for i in range(nsamples):
+                self._noveltysearch_counts[i][ind_[i]] = self._noveltysearch_counts[i][ ind_[i] ]-1
+                self._noveltysearch_counts[i][ind[i]] = self._noveltysearch_counts[i][ ind[i] ]+1
+                for k in [ind_[i],ind[i]]:
+                    self._noveltysearch_probabilities[i][k] = self._noveltysearch_counts[i][k] / nsamples
+        else:
+            B = self._noveltysearch_B
+            probabilities = self._noveltysearch_probabilities
+            ind = np.array(self.population[k].hy.add2(1000).data)[self._noveltysearch_mask]
+            B[k,:] = ind
+            for i in range(nsamples):
+                probabilities[i,0] = (probabilities[i,0]*nsamples - ind_[i] + ind[i]) / nsamples
+                probabilities[i,1] = math.sqrt( np.mean( np.abs( B[:,i]-probabilities[i,0])**2 ) ) 
 
     def add(self, v):
         "Add an individual to the population"
@@ -394,6 +469,8 @@ class BasePopulation(object):
         self.bsf = v
         self.estopping = v
         self._density += self.get_density(v)
+        if hasattr(self,'_noveltysearch_B') and self._noveltysearch_B is not None:
+            self._noveltysearch_add_B_probabilities()
 
     def replace(self, v):
         """Replace an individual selected by negative tournament selection with
@@ -416,7 +493,8 @@ class BasePopulation(object):
             self._inds_replace = 0
             self.generation += 1
             gc.collect()
-
+        if hasattr(self,'_noveltysearch_B') and self._noveltysearch_B is not None:
+            self._noveltysearch_replace_B_probabilities(k)
 
 class SteadyState(BasePopulation):
     def create_population(self):
