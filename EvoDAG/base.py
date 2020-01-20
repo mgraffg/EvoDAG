@@ -51,6 +51,7 @@ class EvoDAG(object):
                  labels=None, all_inputs=False, random_generations=0,
                  fitness_function='BER', 
                  selection = 'fitness', # 'random' 'accuracy' 'simcosine' 'pearson' 'angledriven' 'noveltysearch'
+                                        # 'accuracy_threshold', 'simcosine_threshold', 'pearson_threshold'
                  negative_selection='fitness', # 'random'
                  first_individual_selection = 'fitness', # 'random'
                  heuristic_functions = 'tailored', # 'all'
@@ -334,6 +335,208 @@ class EvoDAG(object):
             return self.unfeasible_offspring()
         return f
 
+    def _get_args_accuracy_threshold(self, first):
+        p_tournament = self.population.tournament if self._first_individual_selection == 'fitness' else self.population.random_selection
+        pop = self.population.population
+        score = self._bagging_fitness.score
+
+        fit = []
+        for k in range(10):
+            x = p_tournament()
+            if self.classifier:
+                acc = score.accuracy(first, SparseArray.argmax(pop[x].hy),self._mask_ts.index)[0]
+            else:
+                acc = score.accuracy(first, pop[x].hy.sign() + 1,self._mask.index)[0]
+            if acc<=0.3:
+                return x
+            fit.append( (x,acc) )
+        
+        fit = min(fit, key=lambda x: x[1])
+        index = fit[0]
+        return index
+
+    def get_args_accuracy_threshold(self, func):
+        first = self.population.tournament() if self._first_individual_selection == 'fitness' else self.population.random_selection()
+        args = {first: 1}
+        if self.classifier:
+            first = SparseArray.argmax(self.population.population[first].hy)
+        else:
+            first = self.population.population[first].hy.sign() + 1.0
+        res = []
+        sel = self._get_args_accuracy_threshold
+        n_tries = self._number_tries_unique_args
+        for j in range(func.nargs - 1):
+            k = sel(first)
+            for _ in range(n_tries):
+                if k not in args:
+                    args[k] = 1
+                    res.append(k)
+                    break
+                else:
+                    k = sel(first)
+        if len(res) < func.min_nargs:
+            return None
+        return res
+
+    def _get_args_simcosine_threshold(self, first_hy,first_norm):  
+        p_tournament = self.population.tournament if self._first_individual_selection == 'fitness' else self.population.random_selection  
+        pop = self.population.population
+        mask = self._mask_ts if self.classifier else self._mask
+            
+        if isinstance(first_hy,list):
+            prod = []
+            for k in range(10):  
+                x = p_tournament()
+                pvalue = 0
+                counter = 0
+                for i in range(len(first_hy)):
+                    hy_aux = pop[x].hy[i].mul(mask)
+                    norm_aux = math.sqrt(hy_aux.dot(hy_aux)) 
+                    if first_norm[i]!=0 and norm_aux!=0:
+                        pvalue+= math.fabs(hy_aux.dot(first_hy[i])/(first_norm[i]*norm_aux))
+                    else:
+                        counter += 1
+                if counter==len(first_hy):
+                    pvalue = 99
+                pvalue = pvalue/len(first_hy)
+                if pvalue <= 0.3:
+                    return x
+                prod.append( (x,pvalue) )
+        else:
+            prod = []
+            for k in range(10):
+                x = p_tournament()
+                hy_aux = pop[x].hy.mul(mask)
+                norm_aux = math.sqrt(hy_aux.dot(hy_aux))
+                if first_norm!=0 and norm_aux!=0:
+                    pvalue = math.fabs(hy_aux.dot(first_hy)/(first_norm*norm_aux))
+                else:
+                    pvalue = 99
+
+                if pvalue <= 0.3:
+                    return x
+                prod.append( (x,pvalue) )
+            
+        prod = min(prod, key=lambda x: x[1])
+        index = prod[0]
+        return index
+    
+    def get_args_simcosine_threshold(self, func):
+        first = self.population.tournament() if self._first_individual_selection == 'fitness' else self.population.random_selection()
+        args = {first: 1}
+        mask = self._mask_ts if self.classifier else self._mask
+
+        if isinstance(self.population.population[first].hy,list):
+            first_hy = []
+            first_norm = []
+            for i in range(len(self.population.population[first].hy)):
+                hy_aux = self.population.population[first].hy[i].mul(mask)
+                norm_aux = math.sqrt(hy_aux.dot(hy_aux))
+                first_hy.append( hy_aux )
+                first_norm.append( norm_aux)
+        else:
+            first_hy = self.population.population[first].hy.mul(mask)
+            first_norm = math.sqrt(first_hy.dot(first_hy))
+            
+        res = []
+        sel = self._get_args_simcosine_threshold
+        n_tries = self._number_tries_unique_args
+        for j in range(func.nargs - 1):
+            k = sel(first_hy,first_norm)
+            for _ in range(n_tries):
+                if k not in args:
+                    args[k] = 1
+                    res.append(k)
+                    break
+                else:
+                    k = sel(first_hy,first_norm)
+        try:
+            min_nargs = func.min_nargs
+        except AttributeError:
+            min_nargs = func.nargs
+        if len(res) < min_nargs:
+            return None
+        return res
+
+    def _get_args_pearson_threshold(self, first_hy):
+        p_tournament = self.population.tournament if self._first_individual_selection == 'fitness' else self.population.random_selection
+        pop = self.population.population
+        mask = self._mask_ts if self.classifier else self._mask
+
+        if isinstance(first_hy,list):
+            prod = []
+            for k in range(10):
+                x = p_tournament()
+                pvalue = 0
+                for i in range(len(first_hy)):
+                    u = pop[x].hy[i].mul(mask)
+                    v = first_hy[i]
+                    nu = u.dot(u)
+                    nv = v.dot(v)
+                    if nu==0 or nv==0:
+                        pvalue+= 99
+                    else:
+                        pvalue+= math.fabs(u.pearson_coefficient(v))
+                pvalue = pvalue/len(first_hy)
+                if pvalue <= 0.3:
+                    return x
+                prod.append( (x,pvalue) )
+        else:
+            prod = []
+            pvalue = 0
+            for k in range(10):
+                x = p_tournament()
+                u = pop[x].hy.mul(mask)
+                v = first_hy
+                nu = u.dot(u)
+                nv = v.dot(v)
+                if nu==0 or nv==0:
+                    pvalue= 99
+                else:
+                    pvalue= math.fabs(u.pearson_coefficient(v))
+                if pvalue <= 0.3:
+                    return x
+                prod.append( (x,pvalue) )
+
+        prod = min(prod, key=lambda x: x[1])
+        index = prod[0]
+        return index
+
+    def get_args_pearson_threshold(self, func):
+        first = self.population.tournament() if self._first_individual_selection == 'fitness' else self.population.random_selection()
+        args = {first: 1}
+        if self.classifier:
+            mask = self._mask_ts
+        else:
+            mask = self._mask
+        if isinstance(self.population.population[first].hy,list):
+            first_hy = []
+            for i in range(len(self.population.population[first].hy)):
+                hy_aux = self.population.population[first].hy[i].mul(mask)
+                first_hy.append( hy_aux )
+        else:
+            first_hy = self.population.population[first].hy.mul(mask)
+
+        res = []
+        sel = self._get_args_pearson_threshold
+        n_tries = self._number_tries_unique_args
+        for j in range(func.nargs - 1):
+            k = sel(first_hy)
+            for _ in range(n_tries):
+                if k not in args:
+                    args[k] = 1
+                    res.append(k)
+                    break
+                else:
+                    k = sel(first_hy)
+        try:
+            min_nargs = func.min_nargs
+        except AttributeError:
+            min_nargs = func.nargs
+        if len(res) < min_nargs:
+            return None
+        return res
+    
     def _get_args_accuracy(self, first):
         vars = self.population.random()
         pop = self.population.population
@@ -678,7 +881,12 @@ class EvoDAG(object):
 
     def get_args(self, func):
         args = []
-
+        if self._selection == 'accuracy_threshold' and (func.orthogonal_selection or (self._heuristic_functions=='all' and func.nargs>1)):
+            return self.get_args_accuracy_threshold(func)
+        if self._selection == 'simcosine_threshold' and (func.orthogonal_selection or (self._heuristic_functions=='all' and func.nargs>1)):
+            return self.get_args_simcosine_threshold(func)
+        if self._selection == 'pearson_threshold' and (func.orthogonal_selection or (self._heuristic_functions=='all' and func.nargs>1)):
+            return self.get_args_pearson_threshold(func)
         if self._selection == 'accuracy' and (func.orthogonal_selection or (self._heuristic_functions=='all' and func.nargs>1)):
             return self.get_args_accuracy(func)
         if self._selection == 'simcosine' and (func.orthogonal_selection or (self._heuristic_functions=='all' and func.nargs>1)):
