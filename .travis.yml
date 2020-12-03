@@ -39,6 +39,7 @@ script:
   - which coverage
   - if [ $python = 3.5 ]; then nosetests --verbose -exe EvoDAG; fi
   - if [ $python = 3.7 ]; then nosetests --verbose -exe EvoDAG; fi
+  - if [ $python = 3.8 ]; then nosetests --verbose -exe EvoDAG; fi  
   - if [ $python = 3.6 ]; then coverage run setup.py nosetests; fi
 
 after_success:
