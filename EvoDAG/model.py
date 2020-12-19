@@ -54,7 +54,15 @@ def fit(X_y_evodag):
     except KeyError:
         pass
     try:
+        max_training_size = evodag.get("max_training_size", None)
         evodag = EvoDAG(**evodag)
+        if max_training_size is not None:
+            X = np.atleast_2d(X)
+            y = np.atleast_1d(y)
+            index = np.arange(X.shape[0])
+            np.random.shuffle(index)
+            X = X[index[:max_training_size]]
+            y = y[index[:max_training_size]]
         evodag.fit(X, y, test_set=test_set)
     except RuntimeError:
         return None

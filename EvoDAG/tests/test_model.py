@@ -411,3 +411,19 @@ def test_regression_multiple_outputs():
     y = [SparseArray.fromlist(cl), SparseArray.fromlist(cl*-1), SparseArray.fromlist(cl*-1 + 0.5)]
     m = EvoDAGE(time_limit=4, multiple_outputs=True, classifier=False).fit(X, y)
     assert m
+
+
+def test_max_training_size():
+    from EvoDAG.model import EvoDAGE
+    import time
+    local = time.time()
+    try:
+        EvoDAGE(n_estimators=30, n_jobs=2, time_limit=4,
+                max_training_size="hola").fit(X, cl)
+    except TypeError:
+        default_nargs()
+        t = time.time() - local
+        print(t)
+        assert t <= 6
+        return
+    assert False        
