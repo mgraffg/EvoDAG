@@ -54,15 +54,7 @@ def fit(X_y_evodag):
     except KeyError:
         pass
     try:
-        max_training_size = evodag.get("max_training_size", None)
         evodag = EvoDAG(**evodag)
-        if max_training_size is not None:
-            X = np.atleast_2d(X)
-            y = np.atleast_1d(y)
-            index = np.arange(X.shape[0])
-            np.random.shuffle(index)
-            X = X[index[:max_training_size]]
-            y = y[index[:max_training_size]]
         evodag.fit(X, y, test_set=test_set)
     except RuntimeError:
         return None
@@ -279,6 +271,23 @@ class Ensemble(object):
         if models is not None:
             self._init()
 
+    def training_size(self, args):
+        X, y, test_set, evodag, self._tmpdir, init_time = args[0]
+        max_training_size = evodag.get("max_training_size", None)
+        if max_training_size is None:
+            return args
+        R = []
+        for arg in args:
+            X, y, test_set, evodag, self._tmpdir, init_time = arg
+            X = np.atleast_2d(X)
+            y = np.atleast_1d(y)
+            index = np.arange(X.shape[0])
+            np.random.shuffle(index)
+            X = X[index[:max_training_size]]
+            y = y[index[:max_training_size]]
+            R.append((X, y, test_set, evodag, self._tmpdir, init_time))
+        return R
+
     def fit(self, X, y, test_set=None):
         evodags = self._evodags
         init_time = time()
@@ -295,6 +304,7 @@ class Ensemble(object):
         else:
             p = Pool(self._n_jobs, maxtasksperchild=1)
             self._models = []
+            args = self.training_size(args)
             for x in tqdm(p.imap_unordered(fit, args),
                           total=len(args)):
                 if x is not None:
