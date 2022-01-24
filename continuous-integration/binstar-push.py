@@ -6,10 +6,7 @@ from binstar_client.scripts import cli
 
 
 def get_token():
-    token = None
-    if os.environ.get('TRAVIS_BRANCH', None) == 'master' or os.environ.get('APPVEYOR_REPO_BRANCH', None) == 'master':
-        token = os.environ.get('BINSTAR_TOKEN', None)
-    return token
+    return os.environ.get('ANACONDA', None)
 
 
 token = get_token()
