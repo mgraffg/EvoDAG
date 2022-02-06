@@ -40,7 +40,7 @@ jobs:
         which python
         python --version
         which coverage
-        coverage run setup.py nosetests --with-doctest
+        coverage run setup.py nosetests
     - name: Tests on macOS and Windows
       if: ${{ runner.os != 'Linux' }}
       run: |
