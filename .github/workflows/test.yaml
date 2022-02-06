@@ -34,20 +34,6 @@ jobs:
         pip install coveralls
         conda install --yes numpy nose sparsearray cython
         python setup.py build_ext --inplace
-    - name: Tests on Linux
-      if: ${{ runner.os == 'Linux' }}
-      run: |
-        which python
-        python --version
-        which coverage
-        coverage run setup.py nosetests --with-doctest
-    - name: Tests on macOS and Windows
-      if: ${{ runner.os != 'Linux' }}
+    - name: Tests
       run: |
         nosetests --verbose EvoDAG/tests
-    - name: coveralls
-      if: ${{ runner.os == 'Linux' }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        coveralls --service=github

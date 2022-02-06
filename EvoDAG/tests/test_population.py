@@ -397,52 +397,52 @@ def test_inputs_func_argument_regression():
         pass
 
 
-def get_remote_data():
-    import os
-    import subprocess
-    if not os.path.isfile('evodag.params'):
-        subprocess.call(['curl', '-O', 'http://ws.ingeotec.mx/~mgraffg/evodag_data/evodag.params'])
-    if not os.path.isfile('train.sp'):
-        subprocess.call(['curl', '-O', 'http://ws.ingeotec.mx/~mgraffg/evodag_data/train.sp'])
+# def get_remote_data():
+#     import os
+#     import subprocess
+#     if not os.path.isfile('evodag.params'):
+#         subprocess.call(['curl', '-O', 'http://ws.ingeotec.mx/~mgraffg/evodag_data/evodag.params'])
+#     if not os.path.isfile('train.sp'):
+#         subprocess.call(['curl', '-O', 'http://ws.ingeotec.mx/~mgraffg/evodag_data/train.sp'])
 
 
-def test_HGeneration():
-    import json
-    import gzip
-    import pickle
-    from EvoDAG.utils import RandomParameterSearch
-    from EvoDAG import EvoDAG
+# def test_HGeneration():
+#     import json
+#     import gzip
+#     import pickle
+#     from EvoDAG.utils import RandomParameterSearch
+#     from EvoDAG import EvoDAG
+# 
+#     get_remote_data()
+#     params = json.loads(open('evodag.params').read())
+#     try:
+#         with gzip.open('train.sp') as fpt:
+#             X = pickle.load(fpt)
+#             y = pickle.load(fpt)
+#     except ValueError:
+#         return
+#     params['population_class'] = 'HGenerational'
+#     params['pr_variable'] = 0.1
+#     kw = RandomParameterSearch.process_params(params)
+#     gp = EvoDAG(**kw).fit(X, y)
+#     assert gp
 
-    get_remote_data()
-    params = json.loads(open('evodag.params').read())
-    try:
-        with gzip.open('train.sp') as fpt:
-            X = pickle.load(fpt)
-            y = pickle.load(fpt)
-    except ValueError:
-        return
-    params['population_class'] = 'HGenerational'
-    params['pr_variable'] = 0.1
-    kw = RandomParameterSearch.process_params(params)
-    gp = EvoDAG(**kw).fit(X, y)
-    assert gp
 
-
-def test_HGeneration_pr_variable():
-    import json
-    from EvoDAG.utils import RandomParameterSearch
-    from EvoDAG import EvoDAG
-    get_remote_data()
-    params = json.loads(open('evodag.params').read())
-    params['population_class'] = 'HGenerational'
-    params['pr_variable'] = 1.0
-    kw = RandomParameterSearch.process_params(params)
-    y = cl.copy()
-    try:
-        EvoDAG(**kw).fit(X, y)
-    except AssertionError:
-        return
-    assert False
+# def test_HGeneration_pr_variable():
+#     import json
+#     from EvoDAG.utils import RandomParameterSearch
+#     from EvoDAG import EvoDAG
+#     get_remote_data()
+#     params = json.loads(open('evodag.params').read())
+#     params['population_class'] = 'HGenerational'
+#     params['pr_variable'] = 1.0
+#     kw = RandomParameterSearch.process_params(params)
+#     y = cl.copy()
+#     try:
+#         EvoDAG(**kw).fit(X, y)
+#     except AssertionError:
+#         return
+#     assert False
 
 
 def test_all_variables_inputs():
