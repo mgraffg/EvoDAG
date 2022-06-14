@@ -1,14 +1,8 @@
-[![Build Status](https://travis-ci.org/mgraffg/EvoDAG.svg?branch=master)](https://travis-ci.org/mgraffg/EvoDAG)
-[![Build Status](https://travis-ci.org/mgraffg/EvoDAG.svg?branch=develop)](https://travis-ci.org/mgraffg/EvoDAG)
-[![Build status](https://ci.appveyor.com/api/projects/status/vx09qqgluff3ko5e?svg=true)](https://ci.appveyor.com/project/mgraffg/evodag)
-[![Build status](https://ci.appveyor.com/api/projects/status/vx09qqgluff3ko5e/branch/master?svg=true)](https://ci.appveyor.com/project/mgraffg/evodag/branch/master)
-[![Coverage Status](https://coveralls.io/repos/github/mgraffg/EvoDAG/badge.svg?branch=master)](https://coveralls.io/github/mgraffg/EvoDAG?branch=master)
-[![Anaconda-Server Badge](https://anaconda.org/ingeotec/evodag/badges/version.svg)](https://anaconda.org/ingeotec/evodag)
-[![Anaconda-Server Badge](https://anaconda.org/ingeotec/evodag/badges/latest_release_date.svg)](https://anaconda.org/ingeotec/evodag)
-[![Anaconda-Server Badge](https://anaconda.org/ingeotec/evodag/badges/platforms.svg)](https://anaconda.org/ingeotec/evodag)
-[![Anaconda-Server Badge](https://anaconda.org/ingeotec/evodag/badges/installer/conda.svg)](https://conda.anaconda.org/ingeotec)
-[![PyPI version](https://badge.fury.io/py/EvoDAG.svg)](https://badge.fury.io/py/EvoDAG)
-[![Anaconda-Server Badge](https://anaconda.org/ingeotec/evodag/badges/license.svg)](https://anaconda.org/ingeotec/evodag)
+[![Tests](https://github.com/mgraffg/EvoDAG/actions/workflows/test.yaml/badge.svg)](https://github.com/mgraffg/EvoDAG/actions/workflows/test.yaml)
+[![Coverage Status](https://coveralls.io/repos/github/mgraffg/EvoDAG/badge.svg?branch=develop)](https://coveralls.io/github/mgraffg/EvoDAG?branch=develop)
+[![PyPI version](https://badge.fury.io/py/evodag.svg)](https://badge.fury.io/py/evodag)
+[![Conda Version](https://img.shields.io/conda/vn/conda-forge/evodag.svg)](https://anaconda.org/conda-forge/evodag) 
+[![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/evodag.svg)](https://anaconda.org/conda-forge/evodag) 
 
 # EvoDAG #
 
@@ -350,12 +344,17 @@ Iris-setosa
 
 # Install EvoDAG #
 
-* Install using [conda](https://www.continuum.io)  
-```bash   
-conda install -c ingeotec evodag
+* Installing `evodag` from the `conda-forge` channel can be achieved by adding `conda-forge` to your channels with: 
+```bash
+conda config --add channels conda-forge
+conda config --set channel_priority strict   
+conda install evodag
 ```
-Currently, EvoDAG is available for Python 3.4, 3.5, and 3.6 for
-windows-32, windows-64, linux-64 and osx-64
+or with `mamba`:
+
+```
+mamba install evodag
+```
 
 * Install using pip  
 ```bash   
