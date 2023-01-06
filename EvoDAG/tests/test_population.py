@@ -305,7 +305,7 @@ def test_multiple_variables():
     inputs._nfunc = 1
     v = inputs.input()
     assert v is not None
-    mask = np.array(gp._mask[0].full_array(), dtype=np.bool)
+    mask = np.array(gp._mask[0].full_array(), dtype=bool)
     D = np.array([x.hy.full_array() for x in gp.X]).T
     b = np.array(gp._ytr[0].full_array())
     coef = np.linalg.lstsq(D[mask], b[mask])[0]

@@ -337,7 +337,7 @@ def test_random_leaf():
     randint = np.random.randint
     mock = MagicMock(return_value=0)
     np.random.randint = mock
-    mask = tonparray(gp._mask).astype(np.bool)
+    mask = tonparray(gp._mask).astype(bool)
     weight = np.linalg.lstsq(X[mask, 0][:, np.newaxis], y[mask])[0][0]
     var = gp.random_leaf()
     assert isinstance(var, Variable)
@@ -422,7 +422,7 @@ def test_mask_vs():
     y = cl.copy()
     gp.nclasses(y)
     gp.y = y
-    m = np.sign(tonparray(gp._mask_vs)).astype(np.bool)
+    m = np.sign(tonparray(gp._mask_vs)).astype(bool)
     v = gp.random_leaf()
     v1 = gp.random_leaf()
     v1 = gp.random_leaf()
@@ -445,7 +445,7 @@ def test_BER():
     y = cl.copy()
     gp.nclasses(y)
     gp.y = y
-    m = np.sign(tonparray(gp._mask_ts)).astype(np.bool)
+    m = np.sign(tonparray(gp._mask_ts)).astype(bool)
     v = gp.random_leaf()
     v1 = gp.random_leaf()
     v1 = gp.random_leaf()
@@ -1291,7 +1291,7 @@ def test_bug_naive_bayes():
     from test_command_line import default_nargs
     Xt = X.copy()
     y = cl.copy()
-    mask = np.zeros(y.shape[0], dtype=np.bool)
+    mask = np.zeros(y.shape[0], dtype=bool)
     mask[y == 0] = True
     mask[y == 1] = True
     mask[np.where(y == 2)[0][:2]] = True
