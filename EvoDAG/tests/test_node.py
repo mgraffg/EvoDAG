@@ -598,7 +598,7 @@ def test_centroid_variable():
     gp.random_leaf()
     X = np.array([x.hy.full_array() for x in gp.X]).T
     index = np.array(gp.naive_bayes._mask)
-    cl = np.array(gp._y_klass.full_array(), dtype=np.int)[index]
+    cl = np.array(gp._y_klass.full_array(), dtype=int)[index]
     Xt = X[index]
     coef = [-np.mean(Xt[x == cl], axis=0) for x in range(3)]
     naive_bayes = gp.naive_bayes
