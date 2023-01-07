@@ -177,7 +177,7 @@ class Model(object):
         hy = self.decision_function(X, **kwargs)
         if self._classifier:
             [x.finite(inplace=True) for x in hy]
-            hy = np.array(SparseArray.argmax(hy).full_array(), dtype=np.int)
+            hy = np.array(SparseArray.argmax(hy).full_array(), dtype=int)
             if self._labels is not None:
                 hy = self._labels[hy]
         else:
@@ -421,7 +421,7 @@ class Ensemble(object):
         hy = self._decision_function_raw(X, cpu_cores=self._n_jobs)
         minlength = len(hy[0])
         hy = [SparseArray.argmax(x) for x in hy]
-        hy = np.array([x.full_array() for x in hy], dtype=np.int).T
+        hy = np.array([x.full_array() for x in hy], dtype=int).T
         hy = [np.bincount(x, minlength=minlength) for x in hy]
         return np.array([x / float(x.sum()) for x in hy])
 
@@ -447,7 +447,7 @@ class Ensemble(object):
         cpu_cores = max(cpu_cores, self._n_jobs)
         hy = [SparseArray.argmax(x) for x in
               self._decision_function_raw(X, cpu_cores=cpu_cores)]
-        hy = np.array([x.full_array() for x in hy], dtype=np.int).T
+        hy = np.array([x.full_array() for x in hy], dtype=int).T
         hy = [np.bincount(x).argmax() for x in hy]
         if self._labels is not None:
             hy = self._labels[hy]
