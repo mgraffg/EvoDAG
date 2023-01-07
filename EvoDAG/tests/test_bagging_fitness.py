@@ -105,7 +105,7 @@ def test_multiple_outputs_BER_vs():
     gp.create_population()
     a = gp.random_offspring()
     hy = np.array(SparseArray.argmax(a.hy).full_array())
-    mask = np.array(gp._mask_vs.full_array()).astype(np.bool)
+    mask = np.array(gp._mask_vs.full_array()).astype(bool)
     assert_almost_equals(-a.fitness_vs * 100, BER(y[:-1][mask], hy[mask]))
 
 
@@ -130,7 +130,7 @@ def test_multiple_outputs_BER_ts():
     hys = SparseArray.argmax(a.hy)
     hy = np.array(hys.full_array())
     print(((hys - gp._y_klass).sign().fabs() * gp._mask_ts).sum())
-    mask = np.array(gp._mask_ts.full_array()).astype(np.bool)
+    mask = np.array(gp._mask_ts.full_array()).astype(bool)
     assert_almost_equals(-a.fitness * 100, BER(y[:-1][mask], hy[mask]))
 
 
@@ -155,7 +155,7 @@ def test_multiple_outputs_error_rate_ts():
     hys = SparseArray.argmax(a.hy)
     hy = np.array(hys.full_array())
     # print(((hys - gp._y_klass).sign().fabs() * gp._mask_ts).sum())
-    mask = np.array(gp._mask_ts.full_array()).astype(np.bool)
+    mask = np.array(gp._mask_ts.full_array()).astype(bool)
     # print((y[:-1][mask] != hy[mask]).mean())
     print(-a.fitness, (y[:-1][mask] != hy[mask]).mean())
     assert_almost_equals(-a.fitness, (y[:-1][mask] != hy[mask]).mean())
@@ -180,7 +180,7 @@ def test_multiple_outputs_ER_vs():
     gp.create_population()
     a = gp.random_offspring()
     hy = np.array(SparseArray.argmax(a.hy).full_array())
-    # mask = np.array(gp._mask_vs.full_array()).astype(np.bool)
+    # mask = np.array(gp._mask_vs.full_array()).astype(bool)
     mask = np.array(gp._mask_ts.full_array()) == 0
     print(mask)
     assert_almost_equals(-a.fitness_vs, (y[:-1][mask] != hy[mask]).mean())

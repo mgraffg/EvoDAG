@@ -35,7 +35,7 @@ def test_mean_std_pk():
     import numpy as np
     from EvoDAG.naive_bayes import NaiveBayes
     gp, args = create_problem_node2(nargs=5, seed=0)
-    mask = np.array(gp._mask_ts.sign().full_array(), dtype=np.bool)
+    mask = np.array(gp._mask_ts.sign().full_array(), dtype=bool)
     klass = np.array(gp._y_klass.full_array())[mask]
     unique_klass = np.unique(klass)
     naive_bayes = NaiveBayes(mask=gp._mask_ts, klass=gp._y_klass,
@@ -58,7 +58,7 @@ def test_MN_Nc_pk():
     import numpy as np
     from EvoDAG.naive_bayes import NaiveBayes
     gp, args = create_problem_node2(nargs=5, seed=0)
-    mask = np.array(gp._mask_ts.sign().full_array(), dtype=np.bool)
+    mask = np.array(gp._mask_ts.sign().full_array(), dtype=bool)
     klass = np.array(gp._y_klass.full_array())[mask]
     unique_klass = np.unique(klass)
     naive_bayes = NaiveBayes(mask=gp._mask_ts, klass=gp._y_klass,

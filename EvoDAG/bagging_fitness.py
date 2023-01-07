@@ -73,7 +73,7 @@ class BaggingFitness(object):
         cnt = int(np.floor(cnt))
         if cnt == 0:
             cnt = 1
-        mask = np.ones_like(k, dtype=np.bool)
+        mask = np.ones_like(k, dtype=bool)
         mask_ts = np.zeros(k.shape[0])
         for i in klass:
             index = np.where(k == i)[0]
@@ -96,7 +96,7 @@ class BaggingFitness(object):
         cnt = int(np.floor(cnt))
         if cnt == 0:
             cnt = 1
-        mask = np.ones_like(k, dtype=np.bool)
+        mask = np.ones_like(k, dtype=bool)
         mask_ts = np.zeros(k.shape[0])
         index = np.arange(k.shape[0])
         nklass = np.unique(k).shape[0]
