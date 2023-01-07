@@ -477,7 +477,7 @@ def test_naive_bayes():
     naive_bayes = NaiveBayes(range(len(vars)), ytr=gp._ytr, naive_bayes=gp._naive_bayes,
                              mask=gp._mask, finite=True)
     naive_bayes.eval(vars)
-    mask = np.array(gp._mask_ts.sign().full_array(), dtype=np.bool)
+    mask = np.array(gp._mask_ts.sign().full_array(), dtype=bool)
     klass = np.array(gp._y_klass.full_array())[mask]
     unique_klass = np.unique(klass)
     mean = []
