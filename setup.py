@@ -17,6 +17,12 @@ from Cython.Build import cythonize
 from setuptools import Extension
 from os.path import join
 import numpy as np
+from os.path import dirname
+import SparseArray
+
+# Directory that contains the SparseArray package, so Cython finds its .pxd
+# files even when SparseArray is an editable install (import-hook based).
+SPARSEARRAY_INCLUDE = dirname(dirname(SparseArray.__file__))
 
 with open('README.rst') as fpt:
     long_desc = fpt.read()
@@ -59,6 +65,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     ext_modules=cythonize(extension,
+                          include_path=[SPARSEARRAY_INCLUDE],
                           compiler_directives={'language_level': sys.version_info[0],
                                                'profile': False,
                                                'nonecheck': False,
