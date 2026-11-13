@@ -1,0 +1,93 @@
+[build-system]
+# Building against numpy >= 2 produces extensions that also run on numpy 1.x.
+# SparseArray is cimported by the .pyx files, so its .pxd must be at build time.
+requires = ["setuptools>=61.0", "Cython>=3.0", "numpy>=2.0", "SparseArray"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "EvoDAG"
+description = "Evolving Directed Acyclic Graph"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+authors = [{ name = "Mario Graff", email = "mgraffg@ieee.org" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Cython",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = ["numpy", "SparseArray"]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+test = ["pytest>=7.0"]
+
+[project.urls]
+Homepage = "https://github.com/mgraffg/EvoDAG"
+Source = "https://github.com/mgraffg/EvoDAG"
+Issues = "https://github.com/mgraffg/EvoDAG/issues"
+
+[project.scripts]
+EvoDAG-params = "EvoDAG.command_line:params"
+EvoDAG-train = "EvoDAG.command_line:train"
+EvoDAG-predict = "EvoDAG.command_line:predict"
+EvoDAG-utils = "EvoDAG.command_line:utils"
+
+[tool.setuptools]
+# MANIFEST.in only controls the sdist; the wheel ships exactly package-data
+# (the tests are in the sdist but not in the wheel).
+include-package-data = false
+
+[tool.setuptools.packages.find]
+include = ["EvoDAG", "EvoDAG.*"]
+# EvoDAG/tests has no __init__.py: with namespaces on (the pyproject default)
+# it would be shipped as a package.
+namespaces = false
+
+[tool.setuptools.package-data]
+EvoDAG = ["conf/*.json", "*.pxd", "*.pyx"]
+
+[tool.setuptools.dynamic]
+# setuptools reads the literal statically; it does not import the package.
+version = { attr = "EvoDAG.__version__" }
+
+[tool.uv]
+# The version is dynamic (read from EvoDAG/__init__.py) and the extensions are
+# compiled from the .pyx files; without these cache keys uv would not rebuild
+# the editable install when either changes.
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "setup.py" },
+    { file = "EvoDAG/__init__.py" },
+    { file = "EvoDAG/*.pyx" },
+]
+
+# SparseArray 0.8.16 has no wheel for Python >= 3.10 on Linux and its sdist
+# imports Cython and numpy in setup.py without declaring them, so uv needs to
+# be told what it takes to build it. (pip has no equivalent: the CI workflows
+# install these first and pass --no-build-isolation.)
+[tool.uv.extra-build-dependencies]
+sparsearray = ["Cython>=3.0", "numpy>=2.0", "setuptools", "wheel"]
+
+[tool.cibuildwheel]
+build = "cp310-* cp311-* cp312-* cp313-*"
+skip = "*-musllinux_* *-win32 *-manylinux_i686"
+# SparseArray is built from its sdist (no wheel for these Pythons), which
+# cannot be done in an isolated environment: install it, and the tools EvoDAG
+# is built with, into the build environment and build without isolation.
+before-build = "pip install setuptools wheel \"Cython>=3.0\" \"numpy>=2.0\" && pip install --no-build-isolation SparseArray"
+build-frontend = { name = "pip", args = ["--no-build-isolation"] }
+# The same for the SparseArray that the wheel's own dependency needs in the
+# test environment.
+before-test = "pip install setuptools wheel \"Cython>=3.0\" numpy && pip install --no-build-isolation SparseArray"
+test-requires = "pytest"
+test-command = "pytest {project}/EvoDAG/tests -q"

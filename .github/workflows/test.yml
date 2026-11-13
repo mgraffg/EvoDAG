@@ -1,0 +1,46 @@
+name: Tests
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      # SparseArray has no wheel for these Python versions and its sdist
+      # cannot be built in an isolated environment (its setup.py imports
+      # Cython and numpy without declaring them), and EvoDAG cimports it, so
+      # the build tools go in first and the builds run without isolation.
+      - name: Install build tools and SparseArray
+        run: |
+          pip install setuptools wheel "Cython>=3.0" numpy
+          pip install --no-build-isolation SparseArray
+      - name: Install package and test dependencies
+        run: pip install --no-build-isolation -e ".[test]"
+      - name: Run tests
+        run: python -m pytest -q EvoDAG/tests
+
+  # Hard gate on the single-step-ahead rule: __version__ may not jump more
+  # than one release past what is published on PyPI.
+  check-package-versions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install checker dependencies
+        run: pip install packaging
+      - name: Check package versions against PyPI
+        run: python scripts/check_package_versions.py

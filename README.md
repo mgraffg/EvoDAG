@@ -1,4 +1,4 @@
-[![Tests](https://github.com/mgraffg/EvoDAG/actions/workflows/test.yaml/badge.svg)](https://github.com/mgraffg/EvoDAG/actions/workflows/test.yaml)
+[![Tests](https://github.com/mgraffg/EvoDAG/actions/workflows/test.yml/badge.svg)](https://github.com/mgraffg/EvoDAG/actions/workflows/test.yml)
 [![Coverage Status](https://coveralls.io/repos/github/mgraffg/EvoDAG/badge.svg?branch=develop)](https://coveralls.io/github/mgraffg/EvoDAG?branch=develop)
 [![PyPI version](https://badge.fury.io/py/evodag.svg)](https://badge.fury.io/py/evodag)
 [![azure](https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/evodag-feedstock?branchName=main)](https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=16226&branchName=main)

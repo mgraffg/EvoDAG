@@ -1,0 +1,94 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+concurrency:
+  group: publish-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  # Tags are the release trigger, so a stale tag (forgot to bump __version__)
+  # must fail loudly instead of re-publishing the previous version under a new
+  # tag name. `version` is declared `dynamic` in pyproject.toml, so it is read
+  # the same way check_package_versions.py reads it.
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install version-check dependencies
+        run: pip install packaging
+      - name: Verify tag matches the package version
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          pkg_version=$(python -c "import sys; sys.path.insert(0, 'scripts'); from check_package_versions import local_version; from pathlib import Path; print(local_version(Path('.')))")
+          if [ "$tag_version" != "$pkg_version" ]; then
+            echo "Tag version $tag_version does not match the package version $pkg_version" >&2
+            exit 1
+          fi
+
+  wheels:
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.23.3
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: wheelhouse/*.whl
+
+  sdist:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build the sdist
+        run: |
+          # The sdist build runs setup.py, which imports Cython and numpy and
+          # cimports SparseArray (whose own sdist cannot build in isolation),
+          # so the build tools go in first and the build runs without isolation.
+          pip install build setuptools wheel "Cython>=3.0" numpy
+          pip install --no-build-isolation SparseArray
+          python -m build --sdist --no-isolation
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz
+
+  publish:
+    needs: [wheels, sdist]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Check package metadata
+        run: |
+          pip install twine
+          twine check dist/*
+      # `TWINE` is a PyPI API token stored as a repository/organization secret.
+      - name: Upload to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.TWINE }}
+        run: twine upload --skip-existing dist/*

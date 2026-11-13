@@ -1,7 +1,10 @@
-include VERSION
 include LICENSE
+include README.md
 include EvoDAG/conf/parameter_values.json
 include EvoDAG/conf/default_parameters.json
 include EvoDAG/conf/default_parameters_r.json
 include EvoDAG/*.pyx
 include EvoDAG/*.pxd
+recursive-include EvoDAG/tests *.py
+prune EvoDAG/tests/__pycache__
+global-exclude *.c *.so *.pyc
