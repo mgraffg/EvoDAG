@@ -14,7 +14,7 @@
 
 
 from EvoDAG.function_selection import FunctionSelection
-from nose.tools import assert_almost_equals
+from numpy.testing import assert_almost_equal as assert_almost_equals
 
 
 def test_seed():

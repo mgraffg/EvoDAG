@@ -31,9 +31,15 @@ jobs:
       run: |
         conda install --yes pip
         pip install twine
-        conda install --yes numpy nose sparsearray cython
+        conda install --yes numpy pytest sparsearray cython
+        python setup.py build_ext --inplace
+    - name: Tests
+      run: |
+        python -m pytest -v EvoDAG/tests
+    - name: Build
+      run: |
         python setup.py sdist
-        python setup.py bdist_wheel        
+        python setup.py bdist_wheel
     - name: Pip
       if: ${{ runner.os == 'Linux' }}
       env:

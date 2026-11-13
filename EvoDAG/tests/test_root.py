@@ -14,7 +14,7 @@
 
 
 import numpy as np
-from nose.tools import assert_almost_equals
+from numpy.testing import assert_almost_equal as assert_almost_equals
 try:
     from mock import MagicMock
 except ImportError:

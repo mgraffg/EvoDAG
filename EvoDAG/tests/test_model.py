@@ -18,7 +18,7 @@ from test_root import X
 from SparseArray import SparseArray
 import numpy as np
 from test_command_line import default_nargs
-from nose.tools import assert_almost_equals
+from numpy.testing import assert_almost_equal as assert_almost_equals
 
 
 def test_pickle_model():

@@ -18,7 +18,7 @@ from EvoDAG.node import Add
 from EvoDAG.base import tonparray
 from SparseArray import SparseArray
 import numpy as np
-from nose.tools import assert_almost_equals
+from numpy.testing import assert_almost_equal as assert_almost_equals
 from test_command_line import default_nargs
 
 
@@ -212,7 +212,7 @@ def test_node_min():
     gp, args = create_problem_node(nargs=3)
     r = args[0].hy.min(args[1].hy).min(args[2].hy)
     n = Min(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
-    coef = n.compute_weight([r])
+    coef = n.compute_weight([r])[0]
     assert n.eval(args)
     r = r * coef
     assert n.hy.SSE(r) == 0
@@ -225,7 +225,7 @@ def test_node_max():
     gp, args = create_problem_node(nargs=3)
     r = args[0].hy.max(args[1].hy).max(args[2].hy)
     n = Max(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
-    coef = n.compute_weight([r])
+    coef = n.compute_weight([r])[0]
     assert n.eval(args)
     r = r * coef
     assert n.hy.SSE(r) == 0
@@ -550,10 +550,13 @@ def test_naive_bayes_MN():
     coef = [(k, x[0]) for k, x in enumerate(coef) if np.all(np.isfinite(np.array(x[0])))]
     R = []
     for k, p in enumerate(p_klass):
-        r = p
+        # numpy float + SparseArray is unsupported (no __radd__), so the
+        # scalar is added on the SparseArray side
+        r = None
         for v, w in coef:
-            r += (l[v] * w[k])
-        R.append(r)
+            t = l[v] * w[k]
+            r = t if r is None else r + t
+        R.append(r + float(p))
     naive_bayes = NaiveBayesMN(range(len(vars)), ytr=gp._ytr, naive_bayes=gp._naive_bayes,
                                mask=gp._mask, finite=True)
     naive_bayes.eval(vars)

@@ -15,7 +15,7 @@
 from test_root import X, cl
 import numpy as np
 from SparseArray import SparseArray
-from nose.tools import assert_almost_equals
+from numpy.testing import assert_almost_equal as assert_almost_equals
 
 
 def test_transform_to_mo():

@@ -14,7 +14,7 @@
 
 
 from test_root import X, cl
-from nose.tools import assert_almost_equals
+from numpy.testing import assert_almost_equal as assert_almost_equals
 from test_command_line import default_nargs
 
 

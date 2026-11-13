@@ -19,7 +19,7 @@ from EvoDAG.utils import tonparray
 from EvoDAG.model import Model
 from EvoDAG.node import Variable, Add, Mul, Sin
 from EvoDAG.gp import Individual
-from nose.tools import assert_almost_equals
+from numpy.testing import assert_almost_equal as assert_almost_equals
 import numpy as np
 
 

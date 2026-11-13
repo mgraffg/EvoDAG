@@ -158,6 +158,10 @@ class Variable(object):
         return True
 
     def _mul(self, a, w):
+        if isinstance(w, np.ndarray) and w.size == 1:
+            # numpy >= 2 does not convert a size-1 array with ndim > 0
+            # to a Python scalar, which SparseArray.__mul__ requires
+            w = w.item()
         if not isinstance(w, list):
             return a * w
         if not isinstance(a, list):
