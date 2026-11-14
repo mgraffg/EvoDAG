@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import math
+import sys
 import numpy as np
 from EvoDAG import array_utils as au
 
@@ -67,6 +68,15 @@ def test_lgamma():
             assert math.isclose(w, math.lgamma(v), rel_tol=1e-13, abs_tol=1e-15)
 
 
+def same_as_math(r, expected):
+    """Bit for bit where python's math module wraps the C library. On Windows
+    some versions of python implement a few of these functions (asinh, log2,
+    ...) themselves, so there the last bits can differ."""
+    if sys.platform == 'win32':
+        return np.allclose(r, expected, rtol=1e-13, atol=1e-15)
+    return np.array_equal(r, expected)
+
+
 def test_unary_math_is_libm():
     "The C library's functions, as the sparse vectors used (numpy's can differ)"
     rs = np.random.RandomState(1)
@@ -76,11 +86,11 @@ def test_unary_math_is_libm():
              'asinh': 'asinh', 'exp': 'exp', 'expm1': 'expm1'}
     for name, mname in names.items():
         r = getattr(au, name)(x)
-        assert np.array_equal(r, [getattr(math, mname)(v) for v in x]), name
+        assert same_as_math(r, [getattr(math, mname)(v) for v in x]), name
     pos = np.abs(x) + 0.01
     for name in ['log', 'log2', 'log10', 'log1p', 'sqrt']:
         r = getattr(au, name)(pos)
-        assert np.array_equal(r, [getattr(math, name)(v) for v in pos]), name
+        assert same_as_math(r, [getattr(math, name)(v) for v in pos]), name
 
 
 def test_unary_out_of_domain():

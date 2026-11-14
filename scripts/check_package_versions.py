@@ -26,12 +26,16 @@ import argparse
 import ast
 import json
 import sys
-import tomllib
 import urllib.error
 import urllib.request
 from pathlib import Path
 
 from packaging.version import Version
+
+try:
+    import tomllib
+except ImportError:  # Python 3.10
+    import tomli as tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 
