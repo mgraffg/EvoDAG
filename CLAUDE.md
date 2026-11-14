@@ -46,7 +46,10 @@ Modules in the order the data flows; each is documented in the developer referen
   fit **one** model (`model_`, a `Model`); `random_state` is the engine `seed`, and the predictions
   equal those of `EvoDAG.model.EvoDAG` with the same parameters and seed. scikit-learn is the optional
   extra `EvoDAG[sklearn]`: the module is imported lazily by `EvoDAG/__init__.py` (the two names are not
-  in `__all__`) and nothing else in the package imports it.
+  in `__all__`) and nothing else in the package imports it. `EnsembleClassifier` and
+  `EnsembleRegressor` in the same module clone any estimator `n_estimators` times with
+  `random_state + i` and combine the members as `Ensemble` does (majority vote, median), so
+  `EnsembleClassifier(EvoDAGClassifier())` gives the predictions of `EvoDAGE`.
 - **`EvoDAG/utils.py` and `EvoDAG/command_line.py`.** The CSV/JSON readers, the error measures
   and `RandomParameterSearch`; the four console commands `EvoDAG-params`, `EvoDAG-train`,
   `EvoDAG-predict` and `EvoDAG-utils`. Models are stored as gzip pickles.
