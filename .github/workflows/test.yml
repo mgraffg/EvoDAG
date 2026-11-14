@@ -23,6 +23,26 @@ jobs:
       - name: Run tests
         run: python -m pytest -q tests
 
+  # Sphinx gate: a strict HTML build (any broken cross-reference or other
+  # warning fails it) plus the doctests of the docstrings and the pages. The
+  # package is installed with pip, which compiles the Cython extensions that
+  # autodoc imports.
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install docs requirements and the package
+        run: |
+          pip install -r docs/requirements.txt
+          pip install -e .
+      - name: Build the docs strictly
+        run: python -m sphinx -n -W --keep-going -b html docs/source docs/build/html
+      - name: Run the documentation's doctest examples
+        run: python -m sphinx -b doctest docs/source docs/build/doctest
+
   # Hard gate on the single-step-ahead rule: __version__ may not jump more
   # than one release past what is published on PyPI.
   check-package-versions:

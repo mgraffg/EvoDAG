@@ -14,15 +14,22 @@
 """Tests that keep the website (``website/``) honest: its examples run, its
 command line and parameter pages name everything the code has, and its
 navigation and figures point at files that exist."""
+import importlib
 import importlib.util
+import inspect
 import json
 import re
 import subprocess
+import sys
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 WEBSITE = ROOT / "website"
 PAGES = WEBSITE / "pages"
+DOCS = ROOT / "docs" / "source"
+PACKAGE = ROOT / "EvoDAG"
 
 
 def python_blocks(path):
@@ -154,3 +161,113 @@ def test_no_local_paths():
         if needle in text:
             found.append(str(path.relative_to(ROOT)))
     assert not found, "absolute local paths in %s" % found
+
+
+def package_modules():
+    "Names of the modules of the package, Python and Cython, but ``__init__``"
+    names = {p.stem for p in PACKAGE.glob("*.py")}
+    names |= {p.stem for p in PACKAGE.glob("*.pyx")}
+    names.discard("__init__")
+    return sorted("EvoDAG.%s" % n for n in names)
+
+
+def test_every_module_is_documented_exactly_once():
+    modules = package_modules()
+    assert "EvoDAG.base" in modules and "EvoDAG.cython_utils" in modules
+    text = "\n".join(p.read_text(encoding="utf8")
+                     for p in DOCS.rglob("*.rst"))
+    documented = re.findall(r"^\.\.\s+automodule::\s+(\S+)\s*$", text,
+                            flags=re.MULTILINE)
+    for name in modules:
+        assert documented.count(name) == 1, (name, documented.count(name))
+    assert set(documented) <= set(modules)
+
+
+def public_members(module):
+    """The public classes and functions defined in ``module``, and the public
+    methods and properties defined in those classes: ``(name, object)``"""
+    seen = set()
+    for name, obj in vars(module).items():
+        if name.startswith("_") or id(obj) in seen:
+            continue
+        if getattr(obj, "__module__", None) != module.__name__:
+            continue
+        if inspect.isclass(obj):
+            seen.add(id(obj))
+            yield name, obj
+            for mname, member in vars(obj).items():
+                if mname.startswith("_"):
+                    continue
+                if isinstance(member, (classmethod, staticmethod)):
+                    member = member.__func__
+                if isinstance(member, property):
+                    member = member.fget
+                if callable(member):
+                    yield "%s.%s" % (name, mname), member
+        elif callable(obj):
+            seen.add(id(obj))
+            yield name, obj
+
+
+def test_public_names_have_docstrings():
+    missing = []
+    total = 0
+    for modname in package_modules():
+        module = importlib.import_module(modname)
+        for name, obj in public_members(module):
+            total += 1
+            if not (obj.__doc__ or "").strip():
+                missing.append("%s.%s" % (modname, name))
+    assert total > 300
+    assert not missing, "no docstring: %s" % missing
+
+
+def test_engine_parameters_are_documented():
+    from EvoDAG import EvoDAG
+    doc = inspect.getdoc(EvoDAG)
+    parameters = inspect.signature(EvoDAG.__init__).parameters
+    missing = []
+    for name, parameter in parameters.items():
+        if name == "self":
+            continue
+        if parameter.kind is inspect.Parameter.VAR_KEYWORD:
+            pattern = r"^\*\*%s$" % name
+        else:
+            pattern = r"^%s : " % re.escape(name)
+        if not re.search(pattern, doc, flags=re.MULTILINE):
+            missing.append(name)
+    assert not missing, "not described in the docstring: %s" % missing
+
+
+def sphinx_available():
+    try:
+        import sphinx  # noqa: F401
+        import furo  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+needs_sphinx = pytest.mark.skipif(
+    not sphinx_available(), reason="Sphinx or furo is not installed")
+
+
+def run_sphinx(builder, output, extra=()):
+    command = [sys.executable, "-m", "sphinx", *extra, "-b", builder,
+               str(DOCS), str(output)]
+    return subprocess.run(command, cwd=ROOT, stdout=subprocess.PIPE,
+                          stderr=subprocess.STDOUT, text=True)
+
+
+@needs_sphinx
+def test_sphinx_strict_build(tmp_path):
+    result = run_sphinx("html", tmp_path / "html",
+                        extra=("-n", "-W", "--keep-going"))
+    assert result.returncode == 0, result.stdout[-4000:]
+
+
+@needs_sphinx
+def test_sphinx_doctest(tmp_path):
+    result = run_sphinx("doctest", tmp_path / "doctest")
+    assert result.returncode == 0, result.stdout[-4000:]
+    assert " 0 failures in tests" in result.stdout

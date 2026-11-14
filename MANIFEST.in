@@ -8,6 +8,8 @@ include EvoDAG/*.pxd
 recursive-include tests *.py *.json *.npz
 recursive-include website *.qmd *.yml *.scss *.svg *.py
 prune website/_site
+recursive-include docs *.rst *.py *.txt Makefile
+prune docs/build
 prune website/.quarto
 prune tests/__pycache__
 global-exclude *.c *.so *.pyc

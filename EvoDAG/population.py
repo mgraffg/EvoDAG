@@ -21,6 +21,7 @@ import gc
 
 
 class Inputs(object):
+    """Builds the nodes that combine input variables with the naive Bayes style functions (NaiveBayes, NaiveBayesMN, MultipleVariables, Centroid)."""
     def __init__(self, base, vars, functions=None):
         self._base = base
         self._vars = vars
@@ -37,9 +38,11 @@ class Inputs(object):
         self._all_variables_index = 0
 
     def use_all_variables(self):
+        """Whether the next node should be built on all the variables of the input."""
         return self._base._use_all_vars_input_functions and self._base.nvar > 1 and self._all_variables_index < self._nfunc
 
     def all_variables(self):
+        """Create the next function over all the input variables; None if the node is not feasible."""
         f = self._func[self._all_variables_index]
         self._all_variables_index += 1
         base = self._base
@@ -59,6 +62,7 @@ class Inputs(object):
         return v
 
     def functions(self):
+        """Select the functions to use, dropping those not safe for sparse data when the density is low."""
         base = self._base
         density = sum([au.density(x.hy) for x in base.X]) / base.nvar
         # func = [x for x in self._funcs if x.nargs > 0]
@@ -73,6 +77,7 @@ class Inputs(object):
         self._func = func
 
     def function(self):
+        """Return the selected functions in a random order."""
         if self._nfunc == 1:
             return self._func
         elif self._nfunc == 2:
@@ -93,6 +98,7 @@ class Inputs(object):
             return func
 
     def input(self):
+        """Create a feasible node from the next unused variables with one of the functions; None if there is none."""
         base = self._base
         unique_individuals = self._unique_individuals
         vars = self._vars
@@ -129,6 +135,7 @@ class Inputs(object):
 
 
 class BasePopulation(object):
+    """Population of an evolutionary run: keeps the individuals, history, best so far and early stopping individual."""
     def __init__(self, base=None,
                  tournament_size=2,
                  classifier=True,
@@ -159,6 +166,7 @@ class BasePopulation(object):
 
     @property
     def popsize(self):
+        """Current number of individuals in the population."""
         return self._current_popsize
 
     @property
@@ -173,9 +181,11 @@ class BasePopulation(object):
 
     @property
     def density(self):
+        """Average density of the individuals in the population."""
         return self._density / self.popsize
 
     def get_density(self, v):
+        """Return the density of the individual v."""
         return v.density
 
     @property
@@ -292,6 +302,7 @@ class BasePopulation(object):
                 self._trace(self.hist[n.variable], trace_map)
 
     def clean(self, v):
+        """Remove the density of the individual v and free its outputs unless it is the early stopping individual."""
         self._density -= self.get_density(v)
         if self.estopping is not None and v == self.estopping:
             return
@@ -299,9 +310,11 @@ class BasePopulation(object):
         v.hy = None
 
     def random_selection(self, negative=False):
+        """Return the index of an individual selected uniformly at random."""
         return np.random.randint(self.popsize)
 
     def random(self):
+        """Return the indices of as many different random individuals as the tournament size."""
         res = []
         done = {}
         randint = np.random.randint
@@ -331,6 +344,7 @@ class BasePopulation(object):
         return vars[index]
 
     def variable_input(self, used_inputs):
+        """Create a terminal node from the next unused input in used_inputs; None if there is none."""
         base = self._base
         for _ in range(base._number_tries_feasible_ind):
             if used_inputs.empty():
@@ -418,7 +432,9 @@ class BasePopulation(object):
 
 
 class SteadyState(BasePopulation):
+    """Steady-state population: an individual replaces another one as soon as it is created."""
     def create_population(self):
+        """Create the initial population and keep only the best individuals if it exceeds the population size."""
         super(SteadyState, self).create_population()
         if self.popsize > self._popsize:
             self.population.sort(key=lambda x: x.fitness, reverse=True)
@@ -433,6 +449,7 @@ class Generational(BasePopulation):
         super(Generational, self).__init__(*args, **kwargs)
 
     def replace(self, v):
+        """Add the individual v to the next generation, which replaces the population once it is full."""
         if self.popsize < self._popsize:
             return self.add(v)
         v.position = len(self._hist)
@@ -449,7 +466,9 @@ class Generational(BasePopulation):
 
 
 class HGenerational(Generational):
+    """Generational population whose initial individuals are first built from the input and then from functions."""
     def input(self, vars):
+        """Create an individual with a function chosen by the function selection, using arguments from vars."""
         base = self._base
         function_set = base.function_set
         function_selection = base._function_selection_ins
@@ -479,6 +498,7 @@ class HGenerational(Generational):
         return None
 
     def extra_inputs(self):
+        """Add individuals built with functions over the initial ones and keep the best up to the population size."""
         base = self._base
         if self.popsize <= self._popsize:
             base._init_popsize = self.popsize
@@ -506,6 +526,7 @@ class HGenerational(Generational):
             self.population = self.population[:self._popsize]
 
     def create_population(self):
+        """Create the initial population from the input variables, then extend it with extra_inputs."""
         base = self._base
         random = np.random.random
         pr_variable = base._pr_variable

@@ -94,3 +94,6 @@ ENV/
 # Quarto website build output
 website/_site/
 website/.quarto/
+
+# Sphinx build output
+docs/build/

@@ -1,0 +1,5 @@
+# Build-time dependencies of the Sphinx developer reference. EvoDAG itself is
+# installed (which compiles its extensions) by the workflows that build the
+# docs, so only Sphinx and its theme belong here.
+sphinx>=7
+furo

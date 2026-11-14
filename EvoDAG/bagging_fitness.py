@@ -27,11 +27,13 @@ def mask_mul(a, mask):
 
 
 class BaggingFitness(object):
+    """Computes the fitness on the training and validation sets of the nodes created by an EvoDAG object."""
     def __init__(self, base=None):
         self._base = base
         self.assert_fitness_function()
 
     def assert_fitness_function(self):
+        """Check that the fitness function of the base object is one of the supported ones."""
         base = self._base
         assert base._fitness_function in ['ER', 'macro-F1', 'BER', 'macro-Precision',
                                           'DotF1', 'DotRecall', 'DotPrecision',
@@ -44,6 +46,7 @@ class BaggingFitness(object):
 
     @property
     def nclasses(self):
+        """Number of classes (3 for orthogonal selection in regression)."""
         try:
             return self._nclasses
         except AttributeError:
@@ -55,6 +58,7 @@ class BaggingFitness(object):
 
     @property
     def score(self):
+        """Score object used to compute the classification measures, created on first use."""
         try:
             return self._score
         except AttributeError:
@@ -63,6 +67,7 @@ class BaggingFitness(object):
 
     @property
     def min_class(self):
+        """Index of the least frequent class, computed on first use."""
         try:
             return self._min_class
         except AttributeError:
@@ -72,6 +77,7 @@ class BaggingFitness(object):
         return self._min_class
 
     def mask_fitness_BER(self, k):
+        """Return the training mask that keeps the same number of validation examples in each class."""
         base = self._base
         k = k.argmax(axis=1)
         base._y_klass = k.astype(float)
@@ -92,6 +98,7 @@ class BaggingFitness(object):
         return mask
 
     def mask_fitness_function(self, k):
+        """Return the training mask for the classes k, which depends on the fitness function."""
         base = self._base
         if base._fitness_function == 'BER':
             return self.mask_fitness_BER(k)
@@ -138,6 +145,7 @@ class BaggingFitness(object):
         return np.array(v, dtype=float)
 
     def transform_to_mo(self, v):
+        """Convert the labels v into a matrix with one column per class, with 1 for the class and -1 otherwise."""
         base = self._base
         klass = base._labels
         y = np.empty((v.shape[0], klass.shape[0]))
@@ -148,6 +156,7 @@ class BaggingFitness(object):
         return y
 
     def multiple_outputs_cl(self, v):
+        """Set the targets, masks and labels of the base object for a classification with multiple outputs."""
         base = self._base
         if isinstance(v, list):
             assert len(v) == base._labels.shape[0]
@@ -189,6 +198,7 @@ class BaggingFitness(object):
         return b != 0
 
     def multiple_outputs_regression(self, v):
+        """Set the targets and masks of the base object for a regression with multiple outputs."""
         base = self._base
         assert isinstance(v, list)
         v = np.array([tonparray(x) for x in v]).T
@@ -214,6 +224,7 @@ class BaggingFitness(object):
         base._mask = mask
 
     def del_error(self, v):
+        """Remove the temporary validation error stored in the node v, if any."""
         try:
             delattr(v, '_error')
         except AttributeError:

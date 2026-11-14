@@ -38,6 +38,10 @@ except ImportError:
 
 
 def init_evodag(seed_args_X_y_test):
+    """Fit and return the model of one seed; the argument is ``(seed, args, X, y, test, dirname)``.
+
+    A model already stored in ``dirname`` is loaded instead of trained.
+    """
     seed, args, X, y, test, dirname = seed_args_X_y_test
     if dirname is not None:
         output = os.path.join(dirname, '%s.evodag' % seed)
@@ -57,6 +61,12 @@ def init_evodag(seed_args_X_y_test):
 
 
 def rs_evodag(args_X_y):
+    """Evaluate one configuration of the parameter search; the argument is ``(args, X, y)``.
+
+    It trains with seeds 0, 1 and 2 and returns ``(fitness, args)``, the
+    three validation fitness values (minus infinity for a failed run) and
+    the configuration with the time used in ``_time``.
+    """
     args, X, y = args_X_y
     rs = RandomParameterSearch
     fit = []
@@ -74,19 +84,30 @@ def rs_evodag(args_X_y):
 
 
 def get_model_fitness(fname):
+    """Load the model stored in the gzip file ``fname`` and return ``(fname, fitness_vs)``."""
     with gzip.open(fname) as fpt:
         _ = pickle.load(fpt)
         return (fname, _.fitness_vs)
 
 
 class CommandLine(object):
+    """Base class of the four command line tools.
+
+    It adds the arguments that the tools share to an ``argparse`` parser,
+    reads the data files and, in ``parse_args``, parses ``sys.argv`` and
+    calls ``main``, which each tool defines. The classes are the
+    implementation of the console commands, which are the functions
+    ``params``, ``train``, ``predict`` and ``utils``.
+    """
     def version(self):
+        """Add the options ``--version`` and ``--verbose``."""
         pa = self.parser.add_argument
         pa('--version',
            action='version', version='EvoDAG %s' % evodag.__version__)
         pa('--verbose', dest='verbose', default=logging.NOTSET, type=int)
 
     def output_file(self):
+        """Add the option ``-o``/``--output-file``."""
         self.parser.add_argument('-o', '--output-file',
                                  help='File to store the test set',
                                  dest='output_file',
@@ -94,6 +115,7 @@ class CommandLine(object):
                                  type=str)
 
     def ensemble(self):
+        """Add the option ``-n``/``--ensemble-size``."""
         self.parser.add_argument('-n', '--ensemble-size',
                                  help='Ensemble size',
                                  dest='ensemble_size',
@@ -101,6 +123,7 @@ class CommandLine(object):
                                  type=int)
 
     def cores(self):
+        """Add the option ``-u``/``--cpu-cores``."""
         self.parser.add_argument('-u', '--cpu-cores',
                                  help='Number of cores',
                                  dest='cpu_cores',
@@ -108,12 +131,14 @@ class CommandLine(object):
                                  type=int)
 
     def test_set(self):
+        """Add the option ``-t``/``--test_set``."""
         cdn = 'File containing the test set on csv.'
         self.parser.add_argument('-t', '--test_set',
                                  default=None, type=str,
                                  help=cdn)
 
     def init_params(self):
+        """Add the task (``-C``/``-R``) and the options that fix a parameter of the search."""
         pa = self.parser.add_argument
         g = self.parser.add_mutually_exclusive_group(required=True)
         g.add_argument('-C', '--classifier', dest='classifier',
@@ -139,6 +164,7 @@ class CommandLine(object):
            help='Time limit in seconds', type=int)
 
     def training_set(self):
+        """Add the positional argument with the training file."""
         cdn = 'File containing the training set on csv.'
         self.parser.add_argument('training_set',
                                  nargs='?',
@@ -146,6 +172,7 @@ class CommandLine(object):
                                  help=cdn)
 
     def parse_args(self):
+        """Parse ``sys.argv``, set the logging level and run ``main``."""
         self.data = self.parser.parse_args()
         if hasattr(self.data, 'regressor') and self.data.regressor:
             self.data.classifier = False
@@ -157,6 +184,7 @@ class CommandLine(object):
         self.main()
 
     def read_training_set(self):
+        """Read the training file (CSV or, with ``--json``, JSON) into ``X`` and ``y``."""
         if self.data.training_set is None:
             return
         if not self.data.json:
@@ -167,6 +195,7 @@ class CommandLine(object):
             return True
 
     def read_test_set(self):
+        """Read the test file (inputs only) into ``Xtest``; return whether there is one."""
         if self.data.test_set is None:
             return False
         if not self.data.json:
@@ -177,12 +206,14 @@ class CommandLine(object):
             return True
 
     def get_model_file(self):
+        """Name of the model file; by default the training file up to its first dot plus ``.evodag.gz``."""
         if self.data.model_file is None:
             a = self.data.training_set.split('.')[0]
             self.data.model_file = a + '.evodag.gz'
         return self.data.model_file
 
     def get_output_file(self):
+        """Name of the output file; by default the test file plus ``.evodag.csv``."""
         if self.data.output_file is None:
             self.data.output_file = self.data.test_set + '.evodag.csv'
             # if self.data.json:
@@ -192,6 +223,7 @@ class CommandLine(object):
         return self.data.output_file
 
     def id2label(self, x):
+        """Translate predicted classes back to the labels of the training file."""
         if not self.data.classifier:
             return x
         if len(self.label2id) == 0:
@@ -200,10 +232,12 @@ class CommandLine(object):
         return [i2w[int(i)] for i in x]
 
     def main(self):
+        """Run the tool; each command overrides it."""
         pass
 
 
 class CommandLineParams(CommandLine):
+    """Implementation of ``EvoDAG-params``: random search on the parameter space."""
     def __init__(self):
         self.Xtest = None
         self.inputs = Inputs()
@@ -217,6 +251,7 @@ class CommandLineParams(CommandLine):
         self.version()
 
     def optimize_parameters(self):
+        """Add the options of the search: ``-r``, ``-P``, ``--parameters-values``, ``--output-dim`` and ``--only-paramsfiles``."""
         cdn = '''Optimize parameters sampling
         N (734 by default) points from the parameter space'''
         self.parser.add_argument('-r', '--optimize-parameters',
@@ -245,6 +280,7 @@ class CommandLineParams(CommandLine):
                                  default=False)
 
     def fs_type_constraint(self, params):
+        """Remove from ``params`` the functions that do not apply to the task (classification or regression)."""
         fs_class = {}
         for x in EvoDAG()._function_set:
             fs_class[x.__name__] = x
@@ -264,6 +300,7 @@ class CommandLineParams(CommandLine):
             del params[x]
 
     def if_type_contraint(self, params):
+        """Keep, in ``params['input_functions']``, only the input functions that apply to the task."""
         import importlib
         unique = {}
         if 'input_functions' not in params:
@@ -291,6 +328,10 @@ class CommandLineParams(CommandLine):
         params['input_functions'] = R
 
     def evolve(self, kw):
+        """Sample the parameter space, evaluate each configuration and write them sorted by fitness.
+
+        ``kw`` maps parameters to values that are fixed during the search.
+        """
         if self.data.parameters_values:
             with open(self.data.parameters_values, 'r') as fpt:
                 params = json.loads(fpt.read())
@@ -346,6 +387,7 @@ class CommandLineParams(CommandLine):
                 fpt.write(res)
 
     def main(self):
+        """Read the training set and run the search."""
         self.read_training_set()
         kw = {}
         if self.data.classifier:
@@ -359,6 +401,7 @@ class CommandLineParams(CommandLine):
 
 
 class CommandLineTrain(CommandLine):
+    """Implementation of ``EvoDAG-train``: train a model or an ensemble and store it."""
     def __init__(self):
         self.Xtest = None
         self.inputs = Inputs()
@@ -374,6 +417,7 @@ class CommandLineTrain(CommandLine):
         self.version()
 
     def parameters(self):
+        """Add the task or parameters-file options (``-C``, ``-R``, ``-P``), ``--output-dim`` and ``--kw``."""
         cdn = 'File containing a list of parameters explored,\
         the first one being the best'
         g = self.parser.add_mutually_exclusive_group(required=True)
@@ -399,6 +443,7 @@ class CommandLineTrain(CommandLine):
            help='Parameters in json that overwrite default parameters')
 
     def model(self):
+        """Add the options ``-m``, ``-j`` and ``-s``."""
         cdn = 'File to store EvoDAG model'
         pa = self.parser.add_argument
         pa('-m', '--model',
@@ -415,6 +460,7 @@ class CommandLineTrain(CommandLine):
            default=-1, type=int, help='Seed')
 
     def main(self):
+        """Train a single model (``-n 1``) or an ensemble and write it, with the word and label maps, to a gzip file."""
         self.read_training_set()
         self.read_test_set()
         model_file = self.get_model_file()
@@ -441,6 +487,7 @@ class CommandLineTrain(CommandLine):
 
 
 class CommandLinePredict(CommandLine):
+    """Implementation of ``EvoDAG-predict``: load a model and predict a file."""
     def __init__(self):
         self.Xtest = None
         self.inputs = Inputs()
@@ -455,12 +502,14 @@ class CommandLinePredict(CommandLine):
         self.version()
 
     def test_set(self):
+        """Add the positional argument with the file to predict."""
         cdn = 'File containing the test set on csv.'
         self.parser.add_argument('test_set',
                                  default=None,
                                  help=cdn)
 
     def raw_outputs(self):
+        """Add the option ``--raw-outputs``."""
         cdn = 'Raw decision function.'
         self.parser.add_argument('--raw-outputs',
                                  default=False,
@@ -469,6 +518,7 @@ class CommandLinePredict(CommandLine):
                                  help=cdn)
 
     def model(self):
+        """Add the options ``-m``, ``-j``, ``--decision-function`` and ``--predict-proba``."""
         cdn = 'EvoDAG model'
         pa = self.parser.add_argument
         pa('-m', '--model',
@@ -487,6 +537,7 @@ class CommandLinePredict(CommandLine):
            help='Outputs the probability instead of the class')
 
     def main(self):
+        """Load the model, predict the file and write the classes, values or outputs, one line per example."""
         model_file = self.get_model_file()
         with gzip.open(model_file, 'r') as fpt:
             m = pickle.load(fpt)
@@ -515,6 +566,7 @@ class CommandLinePredict(CommandLine):
 
 
 class CommandLineUtils(CommandLine):
+    """Implementation of ``EvoDAG-utils``: inspect models and parameter files, and combine models."""
     def __init__(self):
         self.Xtest = None
         self.inputs = Inputs()
@@ -535,6 +587,7 @@ class CommandLineUtils(CommandLine):
         self.version()
 
     def create_ensemble_params(self):
+        """Add the options ``--create-ensemble``, ``--best-params-file`` and ``-n``."""
         self.parser.add_argument('--create-ensemble',
                                  help='Models to ensemble', dest='ensemble',
                                  default=False, action='store_true')
@@ -547,48 +600,56 @@ class CommandLineUtils(CommandLine):
                                  type=int)
 
     def used_inputs_number(self):
+        """Add the option ``--used-inputs-number``."""
         self.parser.add_argument('--used-inputs-number',
                                  help='Number of inputs used',
                                  dest='used_inputs_number',
                                  default=False, action='store_true')
 
     def remove_terminals(self):
+        """Add the option ``--remove-terminals``."""
         self.parser.add_argument('--remove-terminals',
                                  help='Do not display terminals',
                                  dest='remove_terminals',
                                  default=False, action='store_true')
 
     def height(self):
+        """Add the option ``--height``."""
         self.parser.add_argument('--height',
                                  help='Model height',
                                  dest='height',
                                  default=False, action='store_true')
 
     def size(self):
+        """Add the option ``--size``."""
         self.parser.add_argument('--size',
                                  help='Model size',
                                  dest='size',
                                  default=False, action='store_true')
 
     def fitness(self):
+        """Add the option ``--fitness``."""
         self.parser.add_argument('--fitness',
                                  help='Fitness in the validation set',
                                  dest='fitness',
                                  default=False, action='store_true')
 
     def graphviz(self):
+        """Add the option ``-G``/``--graphviz``."""
         self.parser.add_argument('-G', '--graphviz',
                                  help='Plot the model using dot language',
                                  dest='graphviz',
                                  default=False, action='store_true')
 
     def params_stats(self):
+        """Add the option ``-P``/``--params-stats``."""
         self.parser.add_argument('-P', '--params-stats',
                                  help='Parameters statistics',
                                  dest='params_stats',
                                  default=False, action='store_true')
 
     def output_file(self):
+        """Add the option ``-o``/``--output-file``."""
         self.parser.add_argument('-o', '--output-file',
                                  help='File / directory to store the result(s)',
                                  dest='output_file',
@@ -596,6 +657,7 @@ class CommandLineUtils(CommandLine):
                                  type=str)
 
     def model(self):
+        """Add the positional argument ``model_file``."""
         cdn = 'File containing the model/params.'
         self.parser.add_argument('model_file',
                                  default=None,
@@ -603,6 +665,7 @@ class CommandLineUtils(CommandLine):
                                  help=cdn)
 
     def read_params(self, parameters):
+        """Read a JSON file of parameters (``.gz`` files are read compressed)."""
         if parameters.endswith('.gz'):
             with gzip.open(parameters, 'rb') as fpt:
                 try:
@@ -615,6 +678,7 @@ class CommandLineUtils(CommandLine):
                 return json.loads(fpt.read())
 
     def create_ensemble(self, model_file):
+        """Combine the model files (space separated patterns) into one ensemble written to ``-o``."""
         from glob import glob
         models = []
         flag = False
@@ -641,6 +705,7 @@ class CommandLineUtils(CommandLine):
             pickle.dump(self.label2id, fpt)
 
     def get_best_params(self, model_file):
+        """Find, in a directory of ``K_*.model`` files, the configuration ``K`` with the best median fitness."""
         from glob import glob
         h = {}
         args = glob('%s/*.model' % model_file)
@@ -662,6 +727,7 @@ class CommandLineUtils(CommandLine):
         self.best_params = b[0] + '_params.json'
 
     def main(self):
+        """Run the utility selected by the flags."""
         def most_common(K, a):
             try:
                 str_type = unicode
@@ -735,7 +801,27 @@ class CommandLineUtils(CommandLine):
 
 
 def params(output=False):
-    "EvoDAG-params command line"
+    """Entry point of the ``EvoDAG-params`` console command.
+
+    It samples configurations from the space of parameters
+    (``parameter_values.json``), trains EvoDAG three times with each one
+    on the training file and writes the configurations, sorted by the
+    median validation fitness, as a JSON list. The arguments are read from
+    ``sys.argv``; run ``EvoDAG-params -h`` for them.
+
+    Parameters
+    ----------
+    output : bool, optional
+        If true return the ``CommandLineParams`` instance.
+
+    Notes
+    -----
+    It reads files and ``sys.argv``, so there is no doctest here. The
+    behaviour is verified by ``test_params``, ``test_parameters_values``,
+    ``test_optimize_parameters`` and ``test_params_files`` in
+    ``tests/test_command_line.py``. See the Command line page of the user
+    guide for every option.
+    """
     c = CommandLineParams()
     c.parse_args()
     if output:
@@ -743,7 +829,25 @@ def params(output=False):
 
 
 def train(output=False):
-    "EvoDAG-params command line"
+    """Entry point of the ``EvoDAG-train`` console command.
+
+    It trains a model (``-n 1``) or an ensemble of ``-n`` models, with the
+    default parameters or those of a file written by ``EvoDAG-params``, and
+    stores it in a gzip file. The arguments are read from ``sys.argv``; run
+    ``EvoDAG-train -h`` for them.
+
+    Parameters
+    ----------
+    output : bool, optional
+        If true return the ``CommandLineTrain`` instance.
+
+    Notes
+    -----
+    It reads files and ``sys.argv``, so there is no doctest here. The
+    behaviour is verified by ``test_train``, ``test_train_default_params``,
+    ``test_train_kw`` and ``test_train_inner_model`` in
+    ``tests/test_command_line.py``.
+    """
     c = CommandLineTrain()
     c.parse_args()
     if output:
@@ -751,13 +855,46 @@ def train(output=False):
 
 
 def predict():
-    "EvoDAG-params command line"
+    """Entry point of the ``EvoDAG-predict`` console command.
+
+    It loads a model written by ``EvoDAG-train`` and writes the predictions
+    of a file, or with the options the probabilities, the decision
+    function or the outputs of every model, one line per example. The
+    arguments are read from ``sys.argv``; run ``EvoDAG-predict -h`` for
+    them.
+
+    Notes
+    -----
+    It reads files and ``sys.argv``, so there is no doctest here. The
+    behaviour is verified by ``test_predict``, ``test_predict_proba``,
+    ``test_decision_function`` and ``test_raw_outputs_classification`` in
+    ``tests/test_command_line.py``.
+    """
     c = CommandLinePredict()
     c.parse_args()
 
 
 def utils(output=False):
-    "EvoDAG-utils command line"
+    """Entry point of the ``EvoDAG-utils`` console command.
+
+    A set of tools over models and parameter files: draw a model with
+    Graphviz, summarise a parameters file, print the fitness, size, height
+    or number of inputs used by a model, and combine models into an
+    ensemble. The arguments are read from ``sys.argv``; run
+    ``EvoDAG-utils -h`` for them.
+
+    Parameters
+    ----------
+    output : bool, optional
+        If true return the ``CommandLineUtils`` instance.
+
+    Notes
+    -----
+    It reads files and ``sys.argv``, so there is no doctest here. The
+    behaviour is verified by ``test_utils_graphviz``,
+    ``test_utils_params_stats``, ``test_model_size``, ``test_create_ensemble``
+    and ``test_get_best_params_files`` in ``tests/test_command_line.py``.
+    """
     c = CommandLineUtils()
     c.parse_args()
     if output:

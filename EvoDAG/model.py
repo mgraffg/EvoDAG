@@ -34,6 +34,12 @@ LOGGER = logging.getLogger('EvoDAG')
 
 
 def fit(X_y_evodag):
+    """Fit one member of an ensemble; the argument is a tuple (used with ``Pool.imap_unordered``).
+
+    The tuple is ``(X, y, test_set, parameters, tmpdir, init_time)``. It
+    returns the fitted ``Model``, or ``None`` when there is no time left or
+    the evolution fails. A model already stored in ``tmpdir`` is reused.
+    """
     X, y, test_set, evodag, tmpdir, init_time = X_y_evodag
     if tmpdir is not None:
         seed = evodag['seed']
@@ -67,18 +73,65 @@ def fit(X_y_evodag):
 
 
 def decision_function(model_X):
+    """Evaluate the decision function of one model; the argument is ``(k, model, X)``.
+
+    It returns ``[k, decision_function]`` so that results can be sorted
+    after a parallel map.
+    """
     k, model, X = model_X
     return [k, model.decision_function(X)]
 
 
 def predict_proba(model_X):
+    """Evaluate ``predict_proba`` of one model; the argument is ``(k, model, X)``.
+
+    It returns ``[k, probabilities]`` so that results can be sorted after a
+    parallel map.
+    """
     k, model, X = model_X
     return [k, model.predict_proba(X)]
 
 
 class Model(object):
-    """Object to store the necesary elements to make predictions
-    based on an individual"""
+    """A fitted model: the nodes needed to predict, with their coefficients.
+
+    It is built from an individual (usually the early stopping individual)
+    keeping only the nodes that individual depends on, in the order in which
+    they are evaluated. A model is obtained with ``EvoDAG.EvoDAG.model``, as
+    ``single_model.model`` after ``EvoDAG.model.EvoDAG.fit``, or as the
+    elements of ``Ensemble.models``; it is not normally created directly.
+    Use ``predict`` and ``decision_function`` with new inputs.
+
+    Parameters
+    ----------
+    trace : list of int
+        Positions in ``hist`` of the nodes that belong to the model.
+    hist : list
+        History of all the individuals created by the evolution.
+    nvar : int, optional
+        Number of inputs of the training data.
+    classifier : bool, optional
+        Classification (default) or regression.
+    labels : numpy.ndarray, optional
+        The class labels, used to translate the predictions.
+    probability_calibration : object, optional
+        Fitted object with ``predict_proba`` used by ``predict_proba``.
+    nclasses : int, optional
+        Number of classes.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from EvoDAG import RGP
+    >>> rng = np.random.RandomState(0)
+    >>> X = rng.randn(100, 3)
+    >>> y = (X[:, 0] > 0).astype(int)
+    >>> model = RGP.init(popsize=50, early_stopping_rounds=50, seed=0).fit(X, y).model()
+    >>> model.nvar, model.nclasses, model.classifier
+    (3, 2, True)
+    >>> model.predict(X).shape
+    (100,)
+    """
     def __init__(self, trace, hist, nvar=None, classifier=True, labels=None,
                  probability_calibration=None, nclasses=None):
         self._classifier = classifier
@@ -97,14 +150,17 @@ class Model(object):
         
     @property
     def nclasses(self):
+        "Number of classes (``None`` in regression)"
         return self._nclasses
 
     @property
     def nvar(self):
+        "Number of inputs of the training data"
         return self._nvar
 
     @property
     def multiple_outputs(self):
+        "Whether the nodes have several outputs (one per class in classification)"
         return self._hist[0]._multiple_outputs
 
     @property
@@ -114,18 +170,33 @@ class Model(object):
 
     @property
     def fitness_vs(self):
-        "Fitness in the validation set"
+        "Fitness in the validation set; it is minus the error, so zero is perfect"
         return self._hist[-1].fitness_vs
 
     @property
     def size(self):
+        "Number of nodes of the model"
         return len(self._hist)
 
     @property
     def height(self):
+        "Height of the last node, the longest path down to an input"
         return self._hist[-1].height
 
     def inputs(self, counter=None):
+        """Count how many times each input variable is used by the model.
+
+        Parameters
+        ----------
+        counter : collections.Counter, optional
+            Counter to update; a new one is created by default.
+
+        Returns
+        -------
+        collections.Counter
+            Maps the index of an input (a column of ``X``) to the number of
+            nodes that read it.
+        """
         from collections import Counter
         if counter is None:
             counter = Counter()
@@ -139,6 +210,7 @@ class Model(object):
         return counter
 
     def transform(self, v):
+        """Replace, in node ``v``, positions in the history by positions in the model."""
         if v.height == 0:
             return v
         if v.nargs == 1:
@@ -148,6 +220,17 @@ class Model(object):
         return v
 
     def predict_proba(self, X, **kwargs):
+        """Probabilities of each class, calibrated on the validation split.
+
+        It needs the ``probability_calibration`` parameter at training time;
+        without it this raises ``AttributeError``. Use ``EvoDAGE`` for the
+        fraction of votes of an ensemble.
+
+        Parameters
+        ----------
+        X : array_like
+            Inputs, one row per example.
+        """
         X = self.decision_function(X, **kwargs)
         return self._probability_calibration.predict_proba(X)
 
@@ -175,6 +258,30 @@ class Model(object):
         return r
 
     def predict(self, X, **kwargs):
+        """Predict ``X``: the class with the largest output, or the value in regression.
+
+        Parameters
+        ----------
+        X : array_like
+            Inputs, one row per example.
+
+        Returns
+        -------
+        numpy.ndarray
+            One element per example, in the labels of the training data.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from EvoDAG import RGP
+        >>> rng = np.random.RandomState(0)
+        >>> X = rng.randn(100, 3)
+        >>> y = (X[:, 0] > 0).astype(int)
+        >>> model = RGP.init(popsize=50, early_stopping_rounds=50, seed=0).fit(X, y).model()
+        >>> hy = model.predict(X)
+        >>> hy.shape, bool((hy == y).mean() > 0.8)
+        ((100,), True)
+        """
         hy = self.decision_function(X, **kwargs)
         if self._classifier:
             [au.finite(x) for x in hy]
@@ -186,6 +293,29 @@ class Model(object):
         return hy
 
     def graphviz(self, fpt, terminals=True):
+        """Write the model in the dot language of Graphviz.
+
+        Parameters
+        ----------
+        fpt : str or file-like
+            File name, or an object with a ``write`` method.
+        terminals : bool, optional
+            Include the input variables in the graph (default true).
+
+        Examples
+        --------
+        >>> import io
+        >>> import numpy as np
+        >>> from EvoDAG import RGP
+        >>> rng = np.random.RandomState(0)
+        >>> X = rng.randn(100, 3)
+        >>> y = (X[:, 0] > 0).astype(int)
+        >>> model = RGP.init(popsize=50, early_stopping_rounds=50, seed=0).fit(X, y).model()
+        >>> out = io.StringIO()
+        >>> model.graphviz(out)
+        >>> out.getvalue().startswith("digraph EvoDAG {")
+        True
+        """
         flag = False
         if isinstance(fpt, str):
             flag = True
@@ -229,6 +359,7 @@ class Model(object):
 
     @staticmethod
     def convert_features(v):
+        """Convert inputs (rows are examples) into the list of ``Variable`` nodes used to evaluate a model."""
         if v is None:
             return None
         if isinstance(v[0], Variable):
@@ -248,6 +379,7 @@ class Model(object):
 
     @staticmethod
     def convert_features_test_set(vars, v):
+        """Store the test inputs ``v`` as the test set of the ``Variable`` nodes ``vars``."""
         if isinstance(v, np.ndarray):
             X = v.T
         else:
@@ -257,7 +389,38 @@ class Model(object):
 
 
 class Ensemble(object):
-    "Ensemble that predicts using the average"
+    """Fitted ensemble: the models obtained with different seeds and how they are combined.
+
+    Classification predicts the class that most models choose and the
+    decision function is the median of the models' outputs; in regression
+    the prediction is that median. It is what ``EvoDAGE.fit`` returns and
+    is not normally created directly: ``Ensemble.init`` creates an unfitted
+    one that ``fit`` trains.
+
+    Parameters
+    ----------
+    models : list of Model or None
+        Fitted models; ``None`` for an ensemble to be trained with ``fit``.
+    n_jobs : int, optional
+        Processes used to train and to evaluate the models (default 1).
+    evodags : list of dict, optional
+        Parameters of each member, used by ``fit``.
+    tmpdir : str, optional
+        Directory where finished members are stored; ``fit`` removes it at
+        the end.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from EvoDAG import EvoDAGE
+    >>> rng = np.random.RandomState(0)
+    >>> X = rng.randn(100, 3)
+    >>> y = (X[:, 0] > 0).astype(int)
+    >>> ensemble = EvoDAGE(n_estimators=3, popsize=50, early_stopping_rounds=50,
+    ...                    seed=0).fit(X, y)
+    >>> type(ensemble).__name__, len(ensemble.models)
+    ('Ensemble', 3)
+    """
     def __init__(self, models, n_jobs=1, evodags=None, tmpdir=None):
         self._models = models
         self._n_jobs = n_jobs
@@ -267,6 +430,11 @@ class Ensemble(object):
             self._init()
 
     def training_size(self, args):
+        """Subsample the training set of each member when ``max_training_size`` is given.
+
+        ``args`` is the list of tuples that ``fit`` maps; the same list is
+        returned when the parameter is not set.
+        """
         X, y, test_set, evodag, self._tmpdir, init_time = args[0]
         max_training_size = evodag.get("max_training_size", None)
         if max_training_size is None:
@@ -284,6 +452,23 @@ class Ensemble(object):
         return R
 
     def fit(self, X, y, test_set=None):
+        """Train the members, in parallel when ``n_jobs`` is greater than one.
+
+        Parameters
+        ----------
+        X : array_like
+            Inputs, one row per example.
+        y : array_like
+            Classes (numbers) or real targets.
+        test_set : array_like, optional
+            Inputs evaluated along the evolution of each member.
+
+        Returns
+        -------
+        Ensemble
+            The ensemble itself; members that could not be trained in the
+            time limit are left out.
+        """
         evodags = self._evodags
         init_time = time()
         args = [(X, y, test_set, evodag, self._tmpdir, init_time) for evodag in evodags]
@@ -325,10 +510,12 @@ class Ensemble(object):
 
     @property
     def nclasses(self):
+        "Number of classes"
         return self.models[0].nclasses
 
     @property
     def probability_calibration(self):
+        "Whether the models have a probability calibration"
         return self.models[0]._probability_calibration is not None
 
     @property
@@ -338,10 +525,12 @@ class Ensemble(object):
 
     @property
     def multiple_outputs(self):
+        "Whether the models have several outputs"
         return self.models[0].multiple_outputs
 
     @property
     def classifier(self):
+        "Whether this is classification or regression"
         return self._classifier
 
     @property
@@ -352,15 +541,21 @@ class Ensemble(object):
 
     @property
     def size(self):
+        "Median number of nodes of the models"
         l = [x.size for x in self.models]
         return np.median(l)
 
     @property
     def height(self):
+        "Median height of the models"
         l = [x.height for x in self.models]
         return np.median(l)
 
     def inputs(self, counter=None):
+        """Count how many times each input variable is used by all the models.
+
+        See ``Model.inputs``; the counts of the models are added.
+        """
         from collections import Counter
         if counter is None:
             counter = Counter()
@@ -383,6 +578,14 @@ class Ensemble(object):
         return r
 
     def raw_decision_function(self, X):
+        """Outputs of every model side by side.
+
+        Returns
+        -------
+        numpy.ndarray
+            One row per example and, for each model in turn, one column per
+            class (a classifier) or per output.
+        """
         hy = self._decision_function_raw(X, cpu_cores=self._n_jobs)
         if isinstance(hy[0], list):
             _ = []
@@ -407,6 +610,18 @@ class Ensemble(object):
         return r
 
     def predict_proba(self, X):
+        """Probability of each class.
+
+        Without calibration it is the fraction of the models that predict
+        the class; with ``probability_calibration`` it is the average of
+        the calibrated probabilities.
+
+        Returns
+        -------
+        numpy.ndarray
+            One row per example, one column per class, in the order of the
+            sorted labels.
+        """
         if self.probability_calibration:
             proba = np.array(self._predict_proba_raw(X, cpu_cores=self._n_jobs))
             proba = np.mean(proba, axis=0)
@@ -421,6 +636,21 @@ class Ensemble(object):
         return np.array([x / float(x.sum()) for x in hy])
 
     def decision_function(self, X, cpu_cores=1):
+        """Median, over the models, of their outputs.
+
+        Parameters
+        ----------
+        X : array_like
+            Inputs, one row per example.
+        cpu_cores : int, optional
+            Processes used to evaluate the models; the larger of this and
+            ``n_jobs`` is used.
+
+        Returns
+        -------
+        numpy.ndarray
+            One row per example and one column per class (classification).
+        """
         cpu_cores = max(cpu_cores, self._n_jobs)
         r = self._decision_function_raw(X, cpu_cores=cpu_cores)
         if isinstance(r[0], np.ndarray):
@@ -433,12 +663,27 @@ class Ensemble(object):
         return r.T
 
     def predict(self, X, cpu_cores=1):
+        """Predict ``X``: the class chosen by most models, or the median in regression.
+
+        Parameters
+        ----------
+        X : array_like
+            Inputs, one row per example.
+        cpu_cores : int, optional
+            Processes used to evaluate the models.
+
+        Returns
+        -------
+        numpy.ndarray
+            One element per example, in the labels of the training data.
+        """
         cpu_cores = max(cpu_cores, self._n_jobs)
         if self.classifier:
             return self.predict_cl(X, cpu_cores=cpu_cores)
         return self.decision_function(X, cpu_cores=cpu_cores)
 
     def predict_cl(self, X, cpu_cores=1):
+        """Classes of ``X`` by majority vote of the models; ``predict`` uses it in classification."""
         cpu_cores = max(cpu_cores, self._n_jobs)
         hy = [au.argmax(x) for x in
               self._decision_function_raw(X, cpu_cores=cpu_cores)]
@@ -459,6 +704,25 @@ class Ensemble(object):
 
     @classmethod
     def init(cls, n_estimators=30, n_jobs=1, tmpdir=None, **kwargs):
+        """Create an ensemble that is ready to be trained with ``fit``.
+
+        Parameters
+        ----------
+        n_estimators : int, optional
+            Number of members (default 30). Member ``i`` uses seed
+            ``seed + i``.
+        n_jobs : int, optional
+            Processes used to train and to evaluate the members.
+        tmpdir : str, optional
+            Directory where finished members are stored.
+        **kwargs
+            Parameters of every member (see ``EvoDAG.EvoDAG``).
+
+        Returns
+        -------
+        Ensemble
+            An ensemble without models.
+        """
         try:
             init_seed = kwargs['seed']
             del kwargs['seed']
@@ -474,9 +738,54 @@ class Ensemble(object):
 
 
 class EvoDAGE(object):
-    """Ensemble of EvoDAG models with a scikit-learn-like interface
-    (``fit``, ``predict``, ``decision_function``, ``predict_proba``).
-    It is exported by the top-level package: ``from EvoDAG import EvoDAGE``."""
+    """Ensemble of EvoDAG models with a scikit-learn-like interface.
+
+    It is exported by the top-level package: ``from EvoDAG import EvoDAGE``.
+    ``n_estimators`` runs are trained with consecutive seeds; each one
+    learns from its own random split of the training data. The default
+    parameters are those of ``EvoDAG/conf/default_parameters.json`` (or
+    ``default_parameters_r.json`` when ``classifier=False``). Note that
+    ``fit`` returns an ``Ensemble``, not the ``EvoDAGE`` instance.
+
+    Parameters
+    ----------
+    time_limit : float, optional
+        Seconds for the whole ensemble (default ``None``, no limit). It
+        replaces the ``time_limit`` of the parameters file.
+    n_estimators : int, optional
+        Number of members (default 30).
+    n_jobs : int, optional
+        Processes used to train and to evaluate the members (default 1).
+    tmpdir : str, optional
+        Directory where finished members are stored, so that an interrupted
+        fit can be resumed.
+    seed : int, optional
+        Seed of the first member (default 0).
+    params_fname : str, optional
+        JSON file with parameters, see ``EvoDAG.EvoDAG.init``.
+    **kwargs
+        Any parameter of the engine, see ``EvoDAG.EvoDAG``: ``popsize``,
+        ``early_stopping_rounds``, ``classifier``, the function names...
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from EvoDAG import EvoDAGE
+    >>> rng = np.random.RandomState(0)
+    >>> X = rng.randn(100, 3)
+    >>> y = (X[:, 0] > 0).astype(int)
+    >>> ensemble = EvoDAGE(n_estimators=3, popsize=50, early_stopping_rounds=50,
+    ...                    seed=0).fit(X, y)
+    >>> hy = ensemble.predict(X)
+    >>> hy.shape, bool((hy == y).mean() > 0.8)
+    ((100,), True)
+    >>> ensemble.predict_proba(X).shape
+    (100, 2)
+    >>> ensemble.decision_function(X).shape
+    (100, 2)
+    >>> ensemble.raw_decision_function(X).shape
+    (100, 6)
+    """
 
     def __init__(self, time_limit=None, **kwargs):
         self._m = Ensemble.init(time_limit=time_limit, **kwargs)
@@ -484,6 +793,7 @@ class EvoDAGE(object):
 
     @property
     def time_limit(self):
+        "Seconds for the whole ensemble (``None``: no limit); it can be set"
         return self._time_limit
 
     @time_limit.setter
@@ -493,36 +803,91 @@ class EvoDAGE(object):
             x['time_limit'] = self._time_limit
 
     def fit(self, *args, **kwargs):
+        """Train the members; see ``Ensemble.fit`` (arguments ``X``, ``y``, ``test_set``).
+
+        Returns
+        -------
+        Ensemble
+            The fitted ensemble (not this ``EvoDAGE`` instance), which has
+            the ``predict`` family of methods and ``models``.
+        """
         return self._m.fit(*args, **kwargs)
 
     def predict(self, *args, **kwargs):
+        "Predict the inputs; see ``Ensemble.predict``"
         return self._m.predict(*args, **kwargs)
 
     def decision_function(self, *args, **kwargs):
+        "Median of the outputs of the models; see ``Ensemble.decision_function``"
         return self._m.decision_function(*args, **kwargs)
 
     def raw_decision_function(self, *args, **kwargs):
+        "Outputs of every model side by side; see ``Ensemble.raw_decision_function``"
         return self._m.raw_decision_function(*args, **kwargs)
 
     def predict_proba(self, *args, **kwargs):
+        "Probability of each class; see ``Ensemble.predict_proba``"
         return self._m.predict_proba(*args, **kwargs)
 
 
 class EvoDAG(EvoDAGE):
-    """A single fitted model with the scikit-learn-like ``fit/predict``
-    interface. It is **not** the class exported as ``EvoDAG.EvoDAG`` (that
-    one, ``EvoDAG.base.EvoDAG``, is the search engine, also available as
-    ``RGP`` and ``RootGP``); this one is reached as ``EvoDAG.model.EvoDAG``."""
+    """A single model with the scikit-learn-like ``fit``/``predict`` interface.
+
+    It is **not** the class exported as ``EvoDAG.EvoDAG`` (that one,
+    ``EvoDAG.base.EvoDAG``, is the search engine, also available as ``RGP``
+    and ``RootGP``); this one is reached as ``EvoDAG.model.EvoDAG``. It
+    inherits ``predict``, ``decision_function`` and the other methods of
+    ``EvoDAGE``, which after ``fit`` work on the fitted ``Model``; in
+    classification ``decision_function`` returns a list with one array per
+    class.
+
+    Parameters
+    ----------
+    **kwargs
+        Parameters of the engine (see ``EvoDAG.EvoDAG`` and
+        ``EvoDAG.EvoDAG.init``), including ``params_fname``, ``seed`` and
+        ``classifier``.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from EvoDAG.model import EvoDAG as SingleEvoDAG
+    >>> rng = np.random.RandomState(0)
+    >>> X = rng.randn(100, 3)
+    >>> y = (X[:, 0] > 0).astype(int)
+    >>> single = SingleEvoDAG(popsize=50, early_stopping_rounds=50, seed=0).fit(X, y)
+    >>> single.predict(X).shape
+    (100,)
+    >>> type(single.model).__name__
+    'Model'
+    """
 
     def __init__(self, **kwargs):
         from .base import EvoDAG as evodag
         self._m = evodag.init(**kwargs)
 
     def fit(self, *args, **kwargs):
+        """Run the evolution and keep the model of the early stopping individual.
+
+        Parameters
+        ----------
+        X : array_like
+            Inputs, one row per example.
+        y : array_like
+            Classes (numbers) or real targets.
+        test_set : array_like, optional
+            Inputs evaluated along the evolution.
+
+        Returns
+        -------
+        EvoDAG
+            This instance, whose ``model`` is now the fitted ``Model``.
+        """
         self._m.fit(*args, **kwargs)
         self._m = self._m.model()
         return self
 
     @property
     def model(self):
+        "The engine before ``fit`` and the fitted ``Model`` after it"
         return self._m

@@ -59,74 +59,92 @@ cdef object apply1(const double[::1] a, one_argument func):
 
 
 def acos(const double[::1] a):
+    """Element-wise arc cosine of ``a`` using the C library, returns a new array."""
     return apply1(a, math.acos)
 
 
 def asin(const double[::1] a):
+    """Element-wise arc sine of ``a`` using the C library, returns a new array."""
     return apply1(a, math.asin)
 
 
 def atan(const double[::1] a):
+    """Element-wise arc tangent of ``a`` using the C library, returns a new array."""
     return apply1(a, math.atan)
 
 
 def cos(const double[::1] a):
+    """Element-wise cosine of ``a`` using the C library, returns a new array."""
     return apply1(a, math.cos)
 
 
 def sin(const double[::1] a):
+    """Element-wise sine of ``a`` using the C library, returns a new array."""
     return apply1(a, math.sin)
 
 
 def tan(const double[::1] a):
+    """Element-wise tangent of ``a`` using the C library, returns a new array."""
     return apply1(a, math.tan)
 
 
 def cosh(const double[::1] a):
+    """Element-wise hyperbolic cosine of ``a`` using the C library, returns a new array."""
     return apply1(a, math.cosh)
 
 
 def sinh(const double[::1] a):
+    """Element-wise hyperbolic sine of ``a`` using the C library, returns a new array."""
     return apply1(a, math.sinh)
 
 
 def tanh(const double[::1] a):
+    """Element-wise hyperbolic tangent of ``a`` using the C library, returns a new array."""
     return apply1(a, math.tanh)
 
 
 def acosh(const double[::1] a):
+    """Element-wise inverse hyperbolic cosine of ``a`` using the C library, returns a new array."""
     return apply1(a, math.acosh)
 
 
 def asinh(const double[::1] a):
+    """Element-wise inverse hyperbolic sine of ``a`` using the C library, returns a new array."""
     return apply1(a, math.asinh)
 
 
 def atanh(const double[::1] a):
+    """Element-wise inverse hyperbolic tangent of ``a`` using the C library, returns a new array."""
     return apply1(a, math.atanh)
 
 
 def exp(const double[::1] a):
+    """Element-wise exponential of ``a`` using the C library, returns a new array."""
     return apply1(a, math.exp)
 
 
 def expm1(const double[::1] a):
+    """Element-wise exponential minus one of ``a`` using the C library, returns a new array."""
     return apply1(a, math.expm1)
 
 
 def log(const double[::1] a):
+    """Element-wise natural logarithm of ``a`` using the C library, returns a new array."""
     return apply1(a, math.log)
 
 
 def log2(const double[::1] a):
+    """Element-wise base 2 logarithm of ``a`` using the C library, returns a new array."""
     return apply1(a, math.log2)
 
 
 def log10(const double[::1] a):
+    """Element-wise base 10 logarithm of ``a`` using the C library, returns a new array."""
     return apply1(a, math.log10)
 
 
 def log1p(const double[::1] a):
+    """Element-wise natural logarithm of one plus the value of ``a`` using the C library, returns a new array."""
     return apply1(a, math.log1p)
 
 
@@ -136,10 +154,12 @@ def lgamma(const double[::1] a):
 
 
 def sqrt(const double[::1] a):
+    """Element-wise square root of ``a`` using the C library, returns a new array."""
     return apply1(a, math.sqrt)
 
 
 def sq(const double[::1] a):
+    """Element-wise square of ``a`` using the C library, returns a new array."""
     return apply1(a, sq_op)
 
 
@@ -149,14 +169,17 @@ def sign(const double[::1] a):
 
 
 def fabs(const double[::1] a):
+    """Element-wise absolute value of ``a`` using the C library, returns a new array."""
     return apply1(a, math.fabs)
 
 
 def ceil(const double[::1] a):
+    """Element-wise ceiling of ``a`` using the C library, returns a new array."""
     return apply1(a, math.ceil)
 
 
 def floor(const double[::1] a):
+    """Element-wise floor of ``a`` using the C library, returns a new array."""
     return apply1(a, math.floor)
 
 
@@ -240,6 +263,7 @@ def div(const double[::1] a, const double[::1] b):
 
 
 def atan2(const double[::1] a, const double[::1] b):
+    """Element-wise arc tangent of ``a / b`` using the quadrant, a zero (also -0.0) in either operand is taken as +0.0."""
     cdef Py_ssize_t i, n = a.shape[0]
     cdef double x, y
     res = np.empty(n)
@@ -253,6 +277,7 @@ def atan2(const double[::1] a, const double[::1] b):
 
 
 def hypot(const double[::1] a, const double[::1] b):
+    """Element-wise Euclidean norm of ``a`` and ``b``, i.e. the square root of ``a * a + b * b``."""
     cdef Py_ssize_t i, n = a.shape[0]
     res = np.empty(n)
     cdef double[::1] out = res
@@ -311,6 +336,7 @@ def sq_sum(const double[::1] a):
 
 
 def cumsum(list lst):
+    """Sum of the vectors in ``lst`` (at least two) added in order, returns a new array."""
     if len(lst) < 2:
         raise IndexError('cumsum needs at least two vectors')
     a = lst[0] + lst[1]
@@ -320,6 +346,7 @@ def cumsum(list lst):
 
 
 def cummul(list lst):
+    """Product of the vectors in ``lst`` (at least two) with the semantics of ``mul``, returns a new array."""
     if len(lst) < 2:
         raise IndexError('cummul needs at least two vectors')
     a = mul(lst[0], lst[1])
@@ -329,6 +356,7 @@ def cummul(list lst):
 
 
 def cummin(list lst):
+    """Element-wise minimum of the vectors in ``lst`` (at least two) ignoring ``nan``, returns a new array."""
     if len(lst) < 2:
         raise IndexError('cummin needs at least two vectors')
     a = np.fmin(lst[0], lst[1])
@@ -338,6 +366,7 @@ def cummin(list lst):
 
 
 def cummax(list lst):
+    """Element-wise maximum of the vectors in ``lst`` (at least two) ignoring ``nan``, returns a new array."""
     if len(lst) < 2:
         raise IndexError('cummax needs at least two vectors')
     a = np.fmax(lst[0], lst[1])

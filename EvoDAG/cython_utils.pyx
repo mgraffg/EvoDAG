@@ -47,6 +47,7 @@ cdef object times_zero(double[::1] a):
 
 
 cpdef double fitness_SSE(list _ytr, list _hy, _mask):
+    """Negative sum of squared errors between each target in ``_ytr`` and the matching prediction in ``_hy`` times ``_mask``, averaged over the targets."""
     cdef double[::1] ytr, hy
     cdef double res = 0
     cdef Py_ssize_t i
@@ -59,6 +60,7 @@ cpdef double fitness_SSE(list _ytr, list _hy, _mask):
 
 
 cpdef double fitness_SAE(list _ytr, list _hy, list _mask):
+    """Negative sum of absolute errors between each target in ``_ytr`` and the matching prediction in ``_hy`` times its mask in ``_mask``, averaged over the targets."""
     cdef double res = 0
     for ytr, hy, mask in zip(_ytr, _hy, _mask):
         res += -array_utils.SAE(ytr, array_utils.mul(hy, mask))
@@ -66,6 +68,7 @@ cpdef double fitness_SAE(list _ytr, list _hy, list _mask):
 
 
 cpdef bint naive_bayes_isfinite(list coef, int nclass):
+    """Whether the variances and the class priors (positions 1 and 2 of ``coef``) are not zero for any of the ``nclass`` classes."""
     cdef Py_ssize_t i, j=0
     cdef double[::1] c
     for j in range(1, 3):
@@ -77,6 +80,7 @@ cpdef bint naive_bayes_isfinite(list coef, int nclass):
 
 
 cpdef bint naive_bayes_isfinite_MN(list coef, int nclass):
+    """Whether the first two vectors of ``coef`` are finite in each of the ``nclass`` classes."""
     cdef Py_ssize_t i, j=0
     cdef double[::1] c
     for j in range(2):
@@ -88,6 +92,7 @@ cpdef bint naive_bayes_isfinite_MN(list coef, int nclass):
 
 
 cpdef list naive_bayes_mean_std2(double[::1] var, unsigned int[::1] klass, unsigned int[::1] mask, int nclass):
+    """Per class mean and variance of ``var`` and the class frequency, computed on the positions in ``mask``, returned as a list of three arrays."""
     cdef unsigned int index
     cdef double tmp
     mean_num = np.zeros(nclass)
@@ -118,6 +123,7 @@ cpdef list naive_bayes_mean_std2(double[::1] var, unsigned int[::1] klass, unsig
 
 @cython.cdivision(True)
 cpdef list naive_bayes(list var, list coef, unsigned int nclass):
+    """Gaussian naive Bayes, for each class the log prior plus the log likelihood of the variables in ``var`` given the parameters in ``coef``, returned as a list with one array per class."""
     cdef Py_ssize_t i, j, k
     cdef list l = <list> PyList_GET_ITEM(coef, 0)
     cdef double[::1] p_klass = <object> PyList_GET_ITEM(l, 2), s_klass, m_klass
@@ -160,6 +166,7 @@ cpdef list naive_bayes(list var, list coef, unsigned int nclass):
 
 @cython.cdivision(True)
 cpdef list naive_bayes_Nc(double[::1] var, unsigned int[::1] klass, unsigned int[::1] mask, int nclass):
+    """Multinomial naive Bayes parameters of ``var`` on the positions in ``mask``, the log of the share of its positive mass in each class and the log of the class frequency."""
     cdef unsigned int index
     cdef double tmp, N=0
     mean_num = np.zeros(nclass)
@@ -224,6 +231,7 @@ cdef list _naive_bayes_MN(list var, list coef, unsigned int nclass, list counts)
 
 
 cpdef list naive_bayes_MN(list var, list coef, unsigned int nclass):
+    """Multinomial naive Bayes, for each class the exponential of the weighted sum of the variables in ``var`` plus the log prior, returned as a list with one array per class."""
     return _naive_bayes_MN(var, coef, nclass, None)
 
 
@@ -239,6 +247,7 @@ cpdef tuple _naive_bayes_MN_stored(list var, list coef, unsigned int nclass):
 
 
 cdef class SelectNumbers:
+    """Hands out the numbers of a list, shuffled, in consecutive groups without repeating any."""
     cdef array.array data
     cdef public Py_ssize_t pos
     cdef public Py_ssize_t size
@@ -249,6 +258,7 @@ cdef class SelectNumbers:
         self.pos = 0
 
     cpdef list get(self, Py_ssize_t k):
+        """Return the next ``k`` numbers that have not been handed out (fewer if there are not enough)."""
         cdef Py_ssize_t end = self.pos + k, i, pos = self.pos
         cdef list res = PyList_New(0)
         cdef array.array data = self.data
@@ -260,15 +270,18 @@ cdef class SelectNumbers:
         return res
 
     cpdef int get_one(self):
+        """Return the next number that has not been handed out."""
         cdef pos = self.pos
         self.pos += 1
         return self.data[pos]
     
     cpdef bint empty(self):
+        """Whether all the numbers have been handed out."""
         return self.pos == self.size
 
 
 cdef class Score:
+    """Per class precision and recall of a prediction, on the positions in an index and on the rest, and the scores built from them."""
     cdef public array.array precision
     cdef public array.array precision_den
     cdef public array.array recall
@@ -320,6 +333,7 @@ cdef class Score:
 
     def g_recall_precision(self, Py_ssize_t i, double[::1] y,
                            double[::1] hy, unsigned int[::1] index):
+        """Product of the precision and the recall of class ``i``, as a pair for the positions in ``index`` and for the rest."""
         self.count(y, hy, index)
         self.precision_recall()
         cdef double *precision = self.precision.data.as_doubles
@@ -333,6 +347,7 @@ cdef class Score:
     
     @cython.cdivision(True)    
     def F1(self, Py_ssize_t i, double[::1] y, double[::1] hy, unsigned int[::1] index):
+        """F1 of class ``i``, as a pair for the positions in ``index`` and for the rest."""
         self.count(y, hy, index)
         self.precision_recall()
         cdef double *precision = self.precision.data.as_doubles
@@ -350,6 +365,7 @@ cdef class Score:
 
     @cython.cdivision(True)    
     def macroRecallF1(self, double[::1] y, double[::1] hy, unsigned int[::1] index):
+        """Macro recall for the positions in ``index`` and macro F1 for the rest, as a pair, each averaged over the classes."""
         self.count(y, hy, index)
         self.precision_recall()
         cdef double *recall = self.recall.data.as_doubles
@@ -368,6 +384,7 @@ cdef class Score:
 
     @cython.cdivision(True)    
     def a_recall(self, double[::1] y, double[::1] hy, unsigned int[::1] index):
+        """Macro recall, the recall averaged over the classes, as a pair for the positions in ``index`` and for the rest."""
         self.count(y, hy, index)
         self.precision_recall()
         cdef double *recall = self.recall.data.as_doubles
@@ -383,6 +400,7 @@ cdef class Score:
 
     @cython.cdivision(True)    
     def a_precision(self, double[::1] y, double[::1] hy, unsigned int[::1] index):
+        """Macro precision, the precision averaged over the classes, as a pair for the positions in ``index`` and for the rest."""
         self.count(y, hy, index)
         self.precision_recall()
         cdef double *recall = self.precision.data.as_doubles
@@ -397,6 +415,7 @@ cdef class Score:
         return f1, f12
 
     def g_precision(self, double[::1] y, double[::1] hy, unsigned int[::1] index):
+        """Product over the classes of the precision, as a pair for the positions in ``index`` and for the rest."""
         self.count(y, hy, index)
         self.precision_recall()
         cdef double *recall = self.precision.data.as_doubles
@@ -409,6 +428,7 @@ cdef class Score:
         return f1, f12    
 
     def g_recall(self, double[::1] y, double[::1] hy, unsigned int[::1] index):
+        """Product over the classes of the recall, as a pair for the positions in ``index`` and for the rest."""
         self.count(y, hy, index)
         self.precision_recall()
         cdef double *recall = self.recall.data.as_doubles
@@ -437,12 +457,14 @@ cdef class Score:
         self._accuracy2 = self._accuracy2 / den2
 
     def accuracy(self, double[::1] y, double[::1] hy, unsigned int[::1] index):
+        """Accuracy, the fraction of hits, as a pair for the positions in ``index`` and for the rest."""
         self.count(y, hy, index)
         self.recall2accuracy()
         return self._accuracy, self._accuracy2
         
     @cython.cdivision(True)    
     def accDotMacroF1(self, double[::1] y, double[::1] hy, unsigned int[::1] index):
+        """Accuracy times macro F1, as a pair for the positions in ``index`` and for the rest."""
         cdef double *precision = self.precision.data.as_doubles
         cdef double *recall = self.recall.data.as_doubles
         cdef double *precision2 = self.precision2.data.as_doubles
@@ -464,6 +486,7 @@ cdef class Score:
         return f1 * self._accuracy, f12 * self._accuracy2
 
     def g_g_recall_precision(self, double[::1] y, double[::1] hy, unsigned int[::1] index):
+        """Product over the classes of the precision times the recall, as a pair for the positions in ``index`` and for the rest."""
         self.count(y, hy, index)
         self.precision_recall()
         cdef double *precision = self.precision.data.as_doubles
@@ -478,6 +501,7 @@ cdef class Score:
         return f1, f12
     
     def g_F1(self, double[::1] y, double[::1] hy, unsigned int[::1] index):
+        """Product over the classes of the F1, 0 if the F1 of a class is zero, as a pair for the positions in ``index`` and for the rest."""
         self.count(y, hy, index)
         self.precision_recall()
         cdef double *precision = self.precision.data.as_doubles
@@ -501,6 +525,7 @@ cdef class Score:
     
     @cython.cdivision(True)    
     def a_F1(self, double[::1] y, double[::1] hy, unsigned int[::1] index):
+        """Macro F1, the F1 averaged over the classes, as a pair for the positions in ``index`` and for the rest."""
         self.count(y, hy, index)
         self.precision_recall()
         cdef double *precision = self.precision.data.as_doubles
@@ -595,6 +620,7 @@ cdef class Score:
 
 @cython.cdivision(True)
 cpdef list centroid_coef(list vars, unsigned int[::1] klass, unsigned int[::1] mask, int nclass):
+    """Per class coefficients, minus the mean of each variable in ``vars`` over the class examples in ``mask``, as a list with one array per class."""
     cdef unsigned int index
     cdef Py_ssize_t i, j, k, nvars = PyList_GET_SIZE(vars), nmask = mask.shape[0]
     cdef list res = []
