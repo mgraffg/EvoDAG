@@ -120,6 +120,7 @@ under 5 to 10 percent. Times only compare on the same machine. The development e
   mask and reader groups still run.
 - **Performance claims need the benchmark**: run `benchmarks/bench.py` and compare it with the
   recorded results (`benchmarks/results-numpy.json`, `benchmarks/results-optimized.json`).
+  `benchmarks/raetsch.py` reproduces the Performance table; its full run is long and done by the author.
 - **Public names need a docstring and a verified example**, as `tests/test_docs.py` enforces:
   every public name has a docstring, every engine parameter is described, the Sphinx build is
   strict and its doctests run. Documentation changes must not change behaviour.

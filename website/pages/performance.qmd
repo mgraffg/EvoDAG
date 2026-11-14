@@ -18,9 +18,11 @@ Lower is better, and the best value of each column is in bold face where the
 authors marked it.
 
 The benchmark problems come from the collection of Gunnar Rätsch's benchmark
-data sets, which are available as
-[matlab](http://theoval.cmp.uea.ac.uk/matlab/benchmarks) files and as
-[text](http://ws.ingeotec.mx/~mgraffg/classification) files.
+data sets. The original hosts are no longer reachable; the same collection,
+with the same problems and the same training and test splits, is in the GitHub
+repository
+[tdiethe/gunnar_raetsch_benchmark_datasets](https://github.com/tdiethe/gunnar_raetsch_benchmark_datasets)
+(MIT license), as a single matlab file.
 
 ## EvoDAG against the classifiers of scikit-learn
 
@@ -115,6 +117,49 @@ for dataset in ['banana', 'thyroid', 'diabetis', 'heart',
         test = train.replace('_train_', '_test_')
         hy_alg = [predict(train, test, alg) for alg in ALG]
 ```
+
+## Reproducing the first table with this release
+
+The table above is a historical snapshot. The script `benchmarks/raetsch.py`
+of the repository reproduces it with this release: it trains
+`EnsembleClassifier(EvoDAGClassifier())` with every parameter at its default
+(see [Python](python.qmd)) and the sixteen classifiers of scikit-learn with
+their default parameters on the same splits, and measures the BER on the test
+part. It needs scipy and scikit-learn (`pip install scipy 'EvoDAG[sklearn]'`).
+
+```bash
+# train and evaluate everything; --n-jobs is the number of processes for the
+# 30 members of the EvoDAG ensemble and only changes the speed
+python benchmarks/raetsch.py --n-jobs 8
+
+# the same command resumes an interrupted run: every (problem, split,
+# algorithm) that is already in the results file is skipped
+python benchmarks/raetsch.py --n-jobs 8
+
+# a subset, for example the first five splits of two problems
+python benchmarks/raetsch.py --datasets heart thyroid --splits 0-4 --n-jobs 8
+
+# the Markdown table of this page, with the average rank, the mean BER per
+# problem and the published EvoDAG row for comparison
+python benchmarks/raetsch.py --summary
+```
+
+The data (`benchmarks.mat`, 8.9 MB) is downloaded once into `~/.cache/evodag`
+from a pinned commit of the repository above and its sha256 is verified; the
+results are appended, one JSON line per problem, split and algorithm, to
+`benchmarks/raetsch-results.jsonl`, which is not committed. `--quick` runs
+EvoDAG with tiny parameters (`popsize=50`, `early_stopping_rounds=50`, three
+members) only to test the pipeline; those lines are marked and are not results.
+
+**It is expensive.** With the default parameters (population of 4000
+individuals, 4000 rounds of early stopping, 30 members) one fit of the ensemble
+on one split of heart (170 training examples) had not finished after more than
+40 minutes on a machine with 12 cores. The whole table (nine problems, about
+820 splits, 30 members each) takes hundreds of CPU hours, so it is meant for a
+large machine, not for a laptop.
+
+The table above has not been re-run with this release. It will be replaced
+once the full run is done.
 
 ## EvoDAG against PSMS, auto-sklearn and SVM
 
