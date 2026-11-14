@@ -634,3 +634,42 @@ def test_centroid_json():
     centroid.height = 1
     centroid.eval(gp.X)
     assert isinstance(centroid.tojson(), str)
+
+
+def test_compute_weight_read_only_mask():
+    "The support of a read-only mask is remembered; a writable one is not"
+    gp, args = create_problem_node()
+    rs = np.random.RandomState(1)
+    hy = [x.hy for x in args]
+    mask = (rs.rand(len(gp._mask)) < 0.6).astype(np.float64)
+    n = Add(list(range(len(args))), ytr=gp._ytr, mask=mask)
+    expected = n.compute_weight(hy)
+    ro = mask.copy()
+    ro.flags.writeable = False
+    n = Add(list(range(len(args))), ytr=gp._ytr, mask=ro)
+    for _ in range(2):
+        assert_almost_equals(n.compute_weight(hy), expected)
+    # a writable mask changed in place must not use a stale support
+    other = mask.copy()
+    n = Add(list(range(len(args))), ytr=gp._ytr, mask=other)
+    first = n.compute_weight(hy)
+    other[:] = 0
+    other[::2] = 1
+    second = n.compute_weight(hy)
+    ref = Add(list(range(len(args))), ytr=gp._ytr, mask=other.copy())
+    assert_almost_equals(second, ref.compute_weight(hy))
+    assert np.max(np.abs(np.array(first) - np.array(second))) > 0
+
+
+def test_density_cache():
+    from EvoDAG.node import Variable
+    gp, args = create_problem_node()
+    v = Variable(0, ytr=gp._ytr, mask=gp._mask)
+    v.eval(args)
+    d = v.density
+    assert d == au.density(v.hy)
+    assert v.density == d
+    v.hy = np.zeros(len(v.hy))
+    assert v.density == 0
+    v.hy = [np.array([0.0, 1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0, 1.0])]
+    assert v.density == 0.5

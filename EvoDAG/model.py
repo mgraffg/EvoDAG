@@ -167,10 +167,11 @@ class Model(object):
                 node.eval(X)
         node.normalize()
         r = node.hy
+        # dropping the references frees the arrays; there are no cycles to
+        # collect (a gc.collect() here took a quarter of a small predict)
         for i in hist[:-1]:
             i.hy = None
             i.hy_test = None
-        gc.collect()
         return r
 
     def predict(self, X, **kwargs):

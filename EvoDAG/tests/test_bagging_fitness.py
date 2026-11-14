@@ -634,3 +634,30 @@ def test_g_g_recall_precision():
     score = np.prod([a * b for a, b in zip(recall, precision)]) - 1
     assert_almost_equals(score, off.fitness_vs)
     
+
+
+def test_score_count_matches_brute_force():
+    "Score.count (totals minus the masked counts) against numpy counts"
+    from EvoDAG.cython_utils import Score
+    rs = np.random.RandomState(0)
+    nclasses = 4
+    size = 200
+    y = rs.randint(nclasses, size=size).astype(np.float64)
+    hy = rs.randint(nclasses, size=size).astype(np.float64)
+    for index in [np.array([], dtype=np.uint32),
+                  np.sort(rs.choice(size, 70, replace=False)).astype(np.uint32),
+                  np.arange(size, dtype=np.uint32)]:
+        f1 = Score(nclasses)
+        f1.a_F1(y, hy, index)
+        inside = np.zeros(size, dtype=bool)
+        inside[index] = True
+        for flag, prec, rec in [(inside, f1.precision, f1.recall),
+                                (~inside, f1.precision2, f1.recall2)]:
+            yy, hh = y[flag], hy[flag]
+            for k in range(nclasses):
+                den = (hh == k).sum()
+                if den:
+                    assert_almost_equals(prec[k], ((yy == k) & (hh == k)).sum() / den)
+                den = (yy == k).sum()
+                if den:
+                    assert_almost_equals(rec[k], ((yy == k) & (hh == k)).sum() / den)
