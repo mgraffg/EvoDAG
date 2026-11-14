@@ -19,9 +19,10 @@ target vector. The genetic operator therefore acts at the root of the new
 individual, and only the examples (not the whole expression) are evaluated.
 The [How it works](pages/how-it-works.qmd) page walks through the method.
 
-You use it like any other estimator: `fit(X, y)` and `predict(X)`. A single
-run can overfit, so the usual way to use EvoDAG is an ensemble of
-independent runs, each one stopped early on its own validation split. A
+You use it like any scikit-learn estimator: `fit(X, y)`, `predict(X)` and
+`score(X, y)`, and it works in pipelines and in grid searches. A single run
+can overfit, so the usual way to use EvoDAG is an ensemble of independent
+runs, each one stopped early on its own validation split. A
 command line interface (`EvoDAG-params`, `EvoDAG-train`, `EvoDAG-predict`
 and `EvoDAG-utils`) covers the same ground for people who prefer to work
 with files.
@@ -29,22 +30,25 @@ with files.
 ## A first example
 
 The snippet below trains an ensemble of five models on a small synthetic
-problem and predicts the training set. It is deliberately tiny so that it
+problem and predicts the training set. `EnsembleClassifier(EvoDAGClassifier())`
+is EvoDAG's ensemble in scikit-learn form; `EvoDAGClassifier` alone is one
+model. They need scikit-learn, which is an optional dependency:
+`pip install 'EvoDAG[sklearn]'`. The example is deliberately tiny so that it
 runs in a few seconds; the real defaults use much larger populations (see
 [Parameters](pages/parameters.qmd)).
 
 ```python
 import numpy as np
-from EvoDAG import EvoDAGE
+from EvoDAG import EnsembleClassifier, EvoDAGClassifier
 
 rng = np.random.RandomState(0)
 X = rng.randn(200, 4)
 y = (X[:, 0] + X[:, 1] ** 2 > 1).astype(int)
 
-model = EvoDAGE(n_estimators=5, n_jobs=1, popsize=100,
-                early_stopping_rounds=100, seed=0).fit(X, y)
+tiny = EvoDAGClassifier(popsize=100, early_stopping_rounds=100)
+model = EnsembleClassifier(tiny, n_estimators=5, random_state=0).fit(X, y)
 hy = model.predict(X)
-print("accuracy on the training set:", (hy == y).mean())
+print("accuracy on the training set:", model.score(X, y))
 ```
 
 ## Where to go next
@@ -52,7 +56,8 @@ print("accuracy on the training set:", (hy == y).mean())
 | If you want to ... | read |
 |:---------------------------|:-------------------------------|
 | install the package | [Install](pages/install.qmd) |
-| use it from Python: classification, regression, ensembles | [Python](pages/python.qmd) |
+| use it from Python with the scikit-learn classes: classification, regression, ensembles | [Python](pages/python.qmd) |
+| use EvoDAG's own classes (`EvoDAGE`, the engine) | [Native API](pages/native-api.qmd) |
 | train and predict from the shell | [Command line](pages/cli.qmd) |
 | understand the method | [How it works](pages/how-it-works.qmd) |
 | know what the selection heuristics of the second paper are | [Selection](pages/selection.qmd) |

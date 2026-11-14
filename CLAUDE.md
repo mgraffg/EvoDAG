@@ -135,10 +135,12 @@ under 5 to 10 percent. Times only compare on the same machine. The development e
 Two halves of one GitHub Pages site, built by `.github/workflows/website.yml` (pull requests build
 it, pushes to `master` deploy it; Pages has to be enabled once with the source "GitHub Actions").
 
-- **User site** (Quarto, `website/`, served at the root): installing, the Python API, the command
-  line, how the method works, the selection heuristics, the parameters, performance, citing. Code
+- **User site** (Quarto, `website/`, served at the root): installing, the Python API, the native API, the command
+  line, how the method works, the selection heuristics, the parameters, performance, citing. The Python
+  page covers the scikit-learn classes and the Native API page covers `EvoDAGE` and the engine. Code
   is not executed when it renders; `tests/test_docs.py` runs the Python blocks of
-  `website/index.qmd`, `website/pages/python.qmd` and `website/pages/selection.qmd`, checks that
+  `website/index.qmd`, `website/pages/python.qmd`, `website/pages/native-api.qmd` and
+  `website/pages/selection.qmd`, checks that
   `website/pages/cli.qmd` names every option of the four commands and that
   `website/pages/parameters.qmd` names every key of the JSON files, and that the navbar and
   figures exist.

@@ -36,13 +36,20 @@ There are two options to use EvoDAG, one is as a library and the other is using 
 
 ### Using EvoDAG as library
 
+EvoDAG offers scikit-learn estimators, which need the optional dependency
+scikit-learn:
+
+```bash
+pip install 'EvoDAG[sklearn]'
+```
+
 Let us assume that `X` contains the inputs and `y` contains the
 classes. Then in order to train an ensemble of 30 EvoDAG and predict
 `X` one uses the following instructions:
 
 ```python
-# Importing EvoDAG ensemble
-from EvoDAG.model import EvoDAGE
+# Importing the EvoDAG ensemble (scikit-learn interface)
+from EvoDAG import EnsembleClassifier, EvoDAGClassifier
 # Importing iris dataset from sklearn
 from sklearn.datasets import load_iris
 
@@ -51,18 +58,18 @@ data = load_iris()
 X = data.data
 y = data.target
 
-#train the model
-m = EvoDAGE(n_estimators=30, n_jobs=4).fit(X, y)
+# train the model: 30 EvoDAG models, seeds 0 to 29
+m = EnsembleClassifier(EvoDAGClassifier(), n_estimators=30, n_jobs=4).fit(X, y)
 
-#predict X using the model
+# predict X using the model
 hy = m.predict(X)
 ```
 
-`EvoDAGE`, `Model` and `Ensemble` are importable from the top-level package.
-There are two classes called `EvoDAG`: `EvoDAG.EvoDAG` (also `RGP` and
-`RootGP`) is the search engine, whereas `EvoDAG.model.EvoDAG` is a single
-model with the `fit`/`predict` interface. The `EvoDAG.model.*` imports keep
-working.
+`EvoDAGClassifier` alone is one model, and `EvoDAGRegressor` and
+`EnsembleRegressor` are their counterparts for regression. EvoDAG's own
+classes (`EvoDAGE`, the search engine `EvoDAG.EvoDAG`, `Model` and `Ensemble`)
+keep working and do not need scikit-learn; they are described in the
+[Native API](https://mgraffg.github.io/EvoDAG/pages/native-api.html) page.
 
 ### Using EvoDAG from the command line
 

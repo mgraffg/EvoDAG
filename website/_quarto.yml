@@ -23,6 +23,8 @@ website:
         text: Install
       - href: pages/python.qmd
         text: Python
+      - href: pages/native-api.qmd
+        text: Native API
       - href: pages/cli.qmd
         text: Command line
       - href: pages/how-it-works.qmd
