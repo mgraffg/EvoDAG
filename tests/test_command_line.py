@@ -14,7 +14,15 @@
 
 import sys
 import os
+import pytest
 from test_root import X, cl
+
+
+@pytest.fixture(autouse=True)
+def scratch_dir(tmp_path, monkeypatch):
+    # The command line tools write their outputs (and these tests their
+    # inputs) with relative names: keep them out of the repository.
+    monkeypatch.chdir(tmp_path)
 
 
 def default_nargs():

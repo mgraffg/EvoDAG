@@ -48,8 +48,8 @@ include-package-data = false
 
 [tool.setuptools.packages.find]
 include = ["EvoDAG", "EvoDAG.*"]
-# EvoDAG/tests has no __init__.py: with namespaces on (the pyproject default)
-# it would be shipped as a package.
+# Keep the discovery limited to the package: tests/ and benchmarks/ have no
+# __init__.py and must not be shipped as namespace packages.
 namespaces = false
 
 [tool.setuptools.package-data]
@@ -74,4 +74,4 @@ cache-keys = [
 build = "cp310-* cp311-* cp312-* cp313-*"
 skip = "*-musllinux_* *-win32 *-manylinux_i686"
 test-requires = "pytest"
-test-command = "pytest {project}/EvoDAG/tests -q"
+test-command = "pytest {project}/tests -q"

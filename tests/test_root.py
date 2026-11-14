@@ -1252,7 +1252,7 @@ def test_init_evodag_params_dict():
     from test_command_line import default_nargs
     import os
     import json
-    kw = os.path.join(os.path.dirname(__file__), '..',
+    kw = os.path.join(os.path.dirname(__file__), '..', 'EvoDAG',
                       'conf', 'default_parameters.json')
     with open(kw) as fpt:
         kw = json.loads(fpt.read())

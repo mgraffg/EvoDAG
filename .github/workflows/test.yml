@@ -21,7 +21,7 @@ jobs:
       - name: Install package and test dependencies
         run: pip install -e ".[test]"
       - name: Run tests
-        run: python -m pytest -q EvoDAG/tests
+        run: python -m pytest -q tests
 
   # Hard gate on the single-step-ahead rule: __version__ may not jump more
   # than one release past what is published on PyPI.

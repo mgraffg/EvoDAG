@@ -16,8 +16,8 @@
 This module defines every golden case and regenerates the golden files that
 ``test_golden.py`` compares the library against::
 
-    python EvoDAG/tests/golden/record.py            # rewrite the golden files
-    python EvoDAG/tests/golden/record.py --output D # write them into D
+    python tests/golden/record.py            # rewrite the golden files
+    python tests/golden/record.py --output D # write them into D
 
 Each *group* (see ``GROUPS``) is stored as a pair of files:
 
