@@ -413,7 +413,7 @@ def test_functions_finite():
             # ytr = [gp._ytr, gp._ytr]
             ytr = gp._ytr
             # mask = [gp._mask, gp2._mask]
-            mask = gp._mask
+            mask = gp._mask.copy()  # the library's masks are read-only
             mask[0] = 1
             mask = np.array(mask)
             vars = [Variable(k, ytr=ytr, mask=mask, finite=flag)

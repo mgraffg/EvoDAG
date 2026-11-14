@@ -115,15 +115,36 @@ cdef double dot(double[::1] a, double[::1] b):
     return res
 
 
-cdef object masked(double[::1] a, Py_ssize_t[::1] index, double[::1] mask):
-    """``a * mask`` restricted to the positions in ``index`` (those where the
-    mask is not zero): a zero in either is a zero, as in ``array_utils.mul``.
-    Everything else is zero outside ``index``, which is why the products
-    between these vectors only need these positions"""
-    cdef Py_ssize_t k, n = index.shape[0]
+cdef dict support_cache = {}
+
+
+cdef tuple support(mask):
+    """Positions where the mask is not zero and the mask there. Masks made by
+    the library are read-only, which makes the result safe to remember: it
+    is asked for every node, with the same few masks."""
+    cdef bint cacheable = not mask.flags.writeable
+    if cacheable:
+        hit = support_cache.get(id(mask))
+        if hit is not None and hit[0] is mask:
+            return hit[1], hit[2]
+    index = np.flatnonzero(mask)
+    values = np.ascontiguousarray(mask[index])
+    if cacheable:
+        if len(support_cache) > 256:
+            support_cache.clear()
+        support_cache[id(mask)] = (mask, index, values)
+    return index, values
+
+
+cdef Py_ssize_t masked(double[::1] a, Py_ssize_t[::1] index, double[::1] mask,
+                       double[::1] out):
+    """``out = a * mask`` restricted to the positions in ``index`` (those
+    where the mask is not zero): a zero in either is a zero, as in
+    ``array_utils.mul``. Everything else is zero outside ``index``, which is
+    why the products between these vectors only need these positions.
+    Returns how many entries are not zero."""
+    cdef Py_ssize_t k, n = index.shape[0], nz = 0
     cdef double x, m
-    res = np.empty(n)
-    cdef double[::1] out = res
     for k in range(n):
         x = a[index[k]]
         m = mask[k]
@@ -131,20 +152,21 @@ cdef object masked(double[::1] a, Py_ssize_t[::1] index, double[::1] mask):
             out[k] = 0
         else:
             out[k] = x * m
-    return res
+            if out[k] != 0:
+                nz += 1
+    return nz
 
 
 cpdef compute_weight(list r, double[::1] ytr, mask):
     """Returns the weight (w) using OLS of r * w = gp._ytr """
     cdef Py_ssize_t i, j, size=PyList_GET_SIZE(r), k=0
-    cdef double[::1] ri, rj
+    cdef double[::1] ri, rj, rc
     cdef array.array data = array.array('d'), other, dependent
     cdef list X = [], R = [], var = []
     cdef double tmp, *dependent_value
     if not isinstance(mask, np.ndarray):
         mask = np.full(ytr.shape[0], float(mask))
-    index = np.flatnonzero(mask)
-    mask_support = np.ascontiguousarray(mask[index])
+    index, mask_support = support(mask)
     dependent = array.clone(data, size, False)
     dependent_value = dependent.data.as_doubles
     for i in range(size):
@@ -152,9 +174,10 @@ cpdef compute_weight(list r, double[::1] ytr, mask):
         tmp = dot(ytr, ri)
         if not math.isfinite(tmp):
             return None
-        rc = masked(ri, index, mask_support)
-        if np.count_nonzero(rc):
-            PyList_Append(R, rc)
+        rc_array = np.empty(len(index))
+        rc = rc_array
+        if masked(ri, index, mask_support, rc):
+            PyList_Append(R, rc_array)
             PyList_Append(var, i)
             dependent_value[k] = tmp
             k += 1

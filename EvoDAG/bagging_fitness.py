@@ -133,6 +133,8 @@ class BaggingFitness(object):
             np.random.shuffle(index)
             mask[index[:cnt]] = True
         base._mask = mask.astype(float)
+        # read-only: compute_weight remembers what it derives from a mask
+        base._mask.flags.writeable = False
         return np.array(v, dtype=float)
 
     def transform_to_mo(self, v):
@@ -176,6 +178,7 @@ class BaggingFitness(object):
         ones = np.ones(v.shape[0])
         ones[index[int(base._tr_fraction * v.shape[0]):]] = 0
         base._mask = ones
+        base._mask.flags.writeable = False
 
     def test_regression_mask(self, v):
         """Test whether the average prediction is different than zero"""

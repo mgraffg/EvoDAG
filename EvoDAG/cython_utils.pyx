@@ -551,8 +551,11 @@ cdef class Score:
         
     @cython.cdivision(True)
     cdef count(self, double[::1] y, double[::1] hy, unsigned int[::1] index):
+        """Counts on the positions in ``index`` (precision, recall) and on the
+        rest (precision2, recall2). The latter is counted over all the
+        positions and then the former is subtracted (integers, so exact),
+        which avoids testing the membership of every position."""
         self.clean()
-        cdef bint flag
         cdef unsigned int i = 0, size = y.shape[0]
         cdef unsigned int k = 0, end = index.shape[0]
         cdef double *precision = self.precision.data.as_doubles
@@ -567,23 +570,29 @@ cdef class Score:
         for i in range(size):
             _y = <int> y[i]
             _hy = <int> hy[i]
-            flag = False
-            if k < end:
-                if index[k] == i:
-                    flag = True
-                    k += 1
-            if flag:
-                precision_den[_hy] += 1
-                recall_den[_y] += 1
-                if _y == _hy:
-                    precision[_y] += 1
-                    recall[_y] += 1
-            else:
-                precision2_den[_hy] += 1
-                recall2_den[_y] += 1
-                if _y == _hy:
-                    precision2[_y] += 1
-                    recall2[_y] += 1
+            precision2_den[_hy] += 1
+            recall2_den[_y] += 1
+            if _y == _hy:
+                precision2[_y] += 1
+        for k in range(end):
+            i = index[k]
+            if i >= size:
+                continue
+            _y = <int> y[i]
+            _hy = <int> hy[i]
+            precision_den[_hy] += 1
+            recall_den[_y] += 1
+            precision2_den[_hy] -= 1
+            recall2_den[_y] -= 1
+            if _y == _hy:
+                precision[_y] += 1
+                precision2[_y] -= 1
+        for k in range(self.nclasses):
+            # the number of hits is the same for precision and recall
+            recall[k] = precision[k]
+            recall2[k] = precision2[k]
+
+
 @cython.cdivision(True)
 cpdef list centroid_coef(list vars, unsigned int[::1] klass, unsigned int[::1] mask, int nclass):
     cdef unsigned int index

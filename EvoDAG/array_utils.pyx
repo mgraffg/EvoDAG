@@ -49,7 +49,7 @@ cdef inline double sign_op(double a) noexcept nogil:
     return 0
 
 
-cdef object apply1(double[::1] a, one_argument func):
+cdef object apply1(const double[::1] a, one_argument func):
     cdef Py_ssize_t i, n = a.shape[0]
     res = np.empty(n)
     cdef double[::1] out = res
@@ -58,105 +58,105 @@ cdef object apply1(double[::1] a, one_argument func):
     return res
 
 
-def acos(double[::1] a):
+def acos(const double[::1] a):
     return apply1(a, math.acos)
 
 
-def asin(double[::1] a):
+def asin(const double[::1] a):
     return apply1(a, math.asin)
 
 
-def atan(double[::1] a):
+def atan(const double[::1] a):
     return apply1(a, math.atan)
 
 
-def cos(double[::1] a):
+def cos(const double[::1] a):
     return apply1(a, math.cos)
 
 
-def sin(double[::1] a):
+def sin(const double[::1] a):
     return apply1(a, math.sin)
 
 
-def tan(double[::1] a):
+def tan(const double[::1] a):
     return apply1(a, math.tan)
 
 
-def cosh(double[::1] a):
+def cosh(const double[::1] a):
     return apply1(a, math.cosh)
 
 
-def sinh(double[::1] a):
+def sinh(const double[::1] a):
     return apply1(a, math.sinh)
 
 
-def tanh(double[::1] a):
+def tanh(const double[::1] a):
     return apply1(a, math.tanh)
 
 
-def acosh(double[::1] a):
+def acosh(const double[::1] a):
     return apply1(a, math.acosh)
 
 
-def asinh(double[::1] a):
+def asinh(const double[::1] a):
     return apply1(a, math.asinh)
 
 
-def atanh(double[::1] a):
+def atanh(const double[::1] a):
     return apply1(a, math.atanh)
 
 
-def exp(double[::1] a):
+def exp(const double[::1] a):
     return apply1(a, math.exp)
 
 
-def expm1(double[::1] a):
+def expm1(const double[::1] a):
     return apply1(a, math.expm1)
 
 
-def log(double[::1] a):
+def log(const double[::1] a):
     return apply1(a, math.log)
 
 
-def log2(double[::1] a):
+def log2(const double[::1] a):
     return apply1(a, math.log2)
 
 
-def log10(double[::1] a):
+def log10(const double[::1] a):
     return apply1(a, math.log10)
 
 
-def log1p(double[::1] a):
+def log1p(const double[::1] a):
     return apply1(a, math.log1p)
 
 
-def lgamma(double[::1] a):
+def lgamma(const double[::1] a):
     "Log of the absolute value of gamma (the C library's, numpy has none)"
     return apply1(a, math.lgamma)
 
 
-def sqrt(double[::1] a):
+def sqrt(const double[::1] a):
     return apply1(a, math.sqrt)
 
 
-def sq(double[::1] a):
+def sq(const double[::1] a):
     return apply1(a, sq_op)
 
 
-def sign(double[::1] a):
+def sign(const double[::1] a):
     "-1, 0 or 1; ``nan`` gives 0"
     return apply1(a, sign_op)
 
 
-def fabs(double[::1] a):
+def fabs(const double[::1] a):
     return apply1(a, math.fabs)
 
 
-def ceil(double[::1] a):
+def ceil(const double[::1] a):
     return apply1(a, math.ceil)
 
 
-def floor(double[::1] a):
+def floor(const double[::1] a):
     return apply1(a, math.floor)
 
 
@@ -170,7 +170,7 @@ def finite(a):
     return a
 
 
-def isfinite(double[::1] a):
+def isfinite(const double[::1] a):
     "Whether every entry is finite"
     cdef Py_ssize_t i, n = a.shape[0]
     for i in range(n):
@@ -184,7 +184,7 @@ def density(a):
     return np.count_nonzero(a) / float(len(a))
 
 
-def mul(double[::1] a, double[::1] b):
+def mul(const double[::1] a, const double[::1] b):
     "``a * b``; it is 0 wherever one of them is, also if the other is inf"
     cdef Py_ssize_t i, n = a.shape[0]
     cdef double x, y
@@ -200,7 +200,7 @@ def mul(double[::1] a, double[::1] b):
     return res
 
 
-def mul_scalar(double[::1] a, double w):
+def mul_scalar(const double[::1] a, double w):
     "``a * w``; zeros stay zero, also if ``w`` is not finite"
     cdef Py_ssize_t i, n = a.shape[0]
     cdef double x
@@ -217,7 +217,7 @@ def mul_scalar(double[::1] a, double w):
     return res
 
 
-def div(double[::1] a, double[::1] b):
+def div(const double[::1] a, const double[::1] b):
     """``a / b`` where ``b`` is zero: infinity if ``a`` is not zero and
     ``nan`` if it is; where ``a`` is zero and ``b`` is not: 0"""
     cdef Py_ssize_t i, n = a.shape[0]
@@ -239,7 +239,7 @@ def div(double[::1] a, double[::1] b):
     return res
 
 
-def atan2(double[::1] a, double[::1] b):
+def atan2(const double[::1] a, const double[::1] b):
     cdef Py_ssize_t i, n = a.shape[0]
     cdef double x, y
     res = np.empty(n)
@@ -252,7 +252,7 @@ def atan2(double[::1] a, double[::1] b):
     return res
 
 
-def hypot(double[::1] a, double[::1] b):
+def hypot(const double[::1] a, const double[::1] b):
     cdef Py_ssize_t i, n = a.shape[0]
     res = np.empty(n)
     cdef double[::1] out = res
@@ -261,7 +261,7 @@ def hypot(double[::1] a, double[::1] b):
     return res
 
 
-def dot(double[::1] a, double[::1] b):
+def dot(const double[::1] a, const double[::1] b):
     "Sum of the products of the positions where both are not zero, in order"
     cdef Py_ssize_t i, n = a.shape[0]
     cdef double x, y, res = 0
@@ -273,7 +273,7 @@ def dot(double[::1] a, double[::1] b):
     return res
 
 
-def SSE(double[::1] a, double[::1] b):
+def SSE(const double[::1] a, const double[::1] b):
     "Sum of squared errors, adding in order"
     cdef Py_ssize_t i, n = a.shape[0]
     cdef double d, res = 0
@@ -283,7 +283,7 @@ def SSE(double[::1] a, double[::1] b):
     return res
 
 
-def SAE(double[::1] a, double[::1] b):
+def SAE(const double[::1] a, const double[::1] b):
     "Sum of absolute errors, adding in order"
     cdef Py_ssize_t i, n = a.shape[0]
     cdef double res = 0
@@ -292,7 +292,7 @@ def SAE(double[::1] a, double[::1] b):
     return res
 
 
-def sum(double[::1] a):
+def sum(const double[::1] a):
     "Sum adding in order"
     cdef Py_ssize_t i, n = a.shape[0]
     cdef double res = 0
@@ -301,7 +301,7 @@ def sum(double[::1] a):
     return res
 
 
-def sq_sum(double[::1] a):
+def sq_sum(const double[::1] a):
     "Sum of the squares, adding in order"
     cdef Py_ssize_t i, n = a.shape[0]
     cdef double res = 0
@@ -351,7 +351,7 @@ def argmax(list lst):
     if len(lst) == 0:
         raise IndexError('argmax of no vectors')
     cdef Py_ssize_t i, j, n
-    cdef double[::1] first = lst[0], comp
+    cdef const double[::1] first = lst[0], comp
     n = first.shape[0]
     best = np.array(first)
     index = np.zeros(n)
@@ -370,7 +370,7 @@ def argmin(list lst):
     if len(lst) == 0:
         raise IndexError('argmin of no vectors')
     cdef Py_ssize_t i, j, n
-    cdef double[::1] first = lst[0], comp
+    cdef const double[::1] first = lst[0], comp
     n = first.shape[0]
     best = np.array(first)
     index = np.zeros(n)

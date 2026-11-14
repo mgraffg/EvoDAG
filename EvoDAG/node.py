@@ -223,6 +223,7 @@ class Variable(object):
     # set by the nodes whose output stores entries that are zero (see
     # cython_utils._naive_bayes_MN_stored)
     _stored_density = None
+    _density_cache = None
 
     @property
     def density(self):
@@ -231,9 +232,16 @@ class Variable(object):
         if self._stored_density is not None:
             return sum(self._stored_density) / len(self._stored_density)
         hy = self.hy
+        cache = self._density_cache
+        if cache is not None and cache[0] is hy:
+            return cache[1]
         if isinstance(hy, list):
-            return sum([au.density(x) for x in hy]) / len(hy)
-        return au.density(hy)
+            density = sum([au.density(x) for x in hy]) / len(hy)
+        else:
+            density = au.density(hy)
+        # the population asks twice (when the node enters and when it leaves)
+        self._density_cache = (hy, density)
+        return density
 
     @property
     def hy_test(self):
