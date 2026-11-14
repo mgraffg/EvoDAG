@@ -34,10 +34,20 @@ that *build* library inputs are ``vec`` and ``kernel_index``.
 
 Training is deterministic for a fixed seed, so the end to end cases do not
 depend on ``PYTHONHASHSEED``.
+
+They do depend on the platform. An evolutionary run amplifies a difference in
+the last bit of ``tan`` or ``lgamma`` into a different model, so the groups in
+``PLATFORM_GROUPS`` are reproducible only where floating point arithmetic gives
+the same bits as on the machine that recorded them. ``platform.json`` keeps
+the ``fingerprint`` of that machine; ``test_golden.py`` runs those groups when
+the fingerprint matches and skips them, saying so, when it does not. The other
+groups (nodes, kernels, masks, readers) are compared everywhere.
 """
 import argparse
 import array
+import hashlib
 import json
+import math
 import os
 import random
 import tempfile
@@ -850,6 +860,53 @@ GROUPS = {
     'readers': build_readers}
 
 
+# Groups whose result is a whole evolutionary run: reproducible bit for bit
+# only on a platform with the arithmetic of the recording machine.
+PLATFORM_GROUPS = frozenset(g for g in GROUPS
+                            if g.startswith('endtoend_') or g == 'density')
+PLATFORM_FILE = 'platform.json'
+
+
+def fingerprint():
+    """Hash of the bits that this platform's floating point functions return
+    on fixed inputs. It does not use EvoDAG, so a change in the library never
+    changes it: only the math library, numpy's kernels or the CPU do."""
+    x = np.linspace(-20, 20, 20001)
+    pos = np.linspace(1e-3, 50, 20001)
+    unit = np.linspace(-1, 1, 20001)
+    with np.errstate(all='ignore'):
+        parts = [np.sin(x), np.cos(x), np.tan(x), np.arctan(x), np.tanh(x),
+                 np.sinh(x), np.cosh(x), np.arcsinh(x), np.exp(x),
+                 np.expm1(x), np.hypot(x, pos), np.arctan2(x, pos),
+                 np.log(pos), np.log2(pos), np.log10(pos), np.log1p(pos),
+                 np.sqrt(pos), np.arccosh(pos + 1), np.arcsin(unit),
+                 np.arccos(unit), np.arctanh(unit * 0.999),
+                 np.array([math.lgamma(v) for v in pos[::20]]),
+                 np.array([math.tan(v) for v in x[::20]]),
+                 np.array([math.exp(v) for v in x[::20]])]
+        a = np.vander(np.linspace(0.5, 1.5, 8), 8) + np.eye(8)
+        parts.append(np.linalg.solve(a, np.sin(np.arange(8.0))))
+        parts.append(np.dot(a, a))
+    digest = hashlib.sha256()
+    for part in parts:
+        digest.update(np.ascontiguousarray(part, dtype='<f8').tobytes())
+    return digest.hexdigest()
+
+
+def recorded_fingerprint(directory=GOLDEN_DIR):
+    "Fingerprint of the machine that recorded the platform dependent groups"
+    with open(Path(directory) / PLATFORM_FILE) as fpt:
+        return json.load(fpt)['fingerprint']
+
+
+def write_fingerprint(directory=GOLDEN_DIR):
+    fname = Path(directory) / PLATFORM_FILE
+    with open(fname, 'w') as fpt:
+        json.dump({'fingerprint': fingerprint()}, fpt, sort_keys=True)
+        fpt.write('\n')
+    return fname
+
+
 def build(group):
     "Recomputes a group: returns ``(arrays, meta)``"
     arrays, meta = GROUPS[group]()
@@ -886,11 +943,13 @@ def roundtrip_meta(meta):
     return json.loads(json.dumps(meta, sort_keys=True))
 
 
-def compare(group, directory=GOLDEN_DIR, atol=1e-6):
+def compare(group, directory=GOLDEN_DIR, atol=1e-6, rtol=1e-9):
     """Compares the recomputed group with the stored one. Returns the list
     of differences (empty when they agree): structure must be identical,
-    numbers must agree within ``atol`` and non finite values must be in the
-    same places."""
+    numbers must agree within ``atol + rtol * |golden|`` and non finite
+    values must be in the same places. The relative term only matters for
+    huge values (some node outputs reach 1e281), where an absolute bound
+    cannot hold across platforms."""
     arrays, meta = build(group)
     ref_arrays, ref_meta = load(group, directory)
     meta = roundtrip_meta(meta)
@@ -921,7 +980,7 @@ def compare(group, directory=GOLDEN_DIR, atol=1e-6):
                 problems.append('array %s: non finite values differ' % key)
                 continue
             fin = np.isfinite(a)
-            if not np.allclose(a[fin], b[fin], rtol=0, atol=atol):
+            if not np.allclose(a[fin], b[fin], rtol=rtol, atol=atol):
                 problems.append('array %s: max |diff| %g' % (
                     key, np.max(np.abs(a[fin] - b[fin]))))
     return problems
@@ -937,6 +996,8 @@ def main():
     for group in args.groups or GROUPS:
         npz, js = write(group, args.output)
         print(npz, os.path.getsize(npz))
+    if PLATFORM_GROUPS.intersection(args.groups or GROUPS):
+        print(write_fingerprint(args.output))
 
 
 if __name__ == '__main__':

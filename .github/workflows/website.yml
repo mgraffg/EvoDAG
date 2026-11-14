@@ -31,7 +31,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Pull requests only build the site, so they must not need Pages to
+      # be enabled on the repository.
       - uses: actions/configure-pages@v5
+        if: github.event_name != 'pull_request'
 
       - uses: quarto-dev/quarto-actions/setup@v2
         with:

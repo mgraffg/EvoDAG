@@ -16,7 +16,12 @@
 The cases and the way they are compared are defined in ``golden/record.py``,
 which also regenerates the golden files. Structure (class names, variables,
 which evaluations succeed) must be identical, numbers must agree within
-``1e-6`` (absolute) and non finite values must be in the same places.
+``1e-6`` (absolute, plus ``1e-9`` relative for huge values) and non finite
+values must be in the same places.
+
+The groups that are a whole evolutionary run (``record.PLATFORM_GROUPS``) are
+reproducible only where floating point arithmetic gives the same bits as on
+the machine that recorded them; elsewhere they are skipped.
 """
 import inspect
 import random
@@ -55,6 +60,10 @@ def preserve_global_state():
 
 @pytest.mark.parametrize('group', list(record.GROUPS))
 def test_golden(group):
+    if (group in record.PLATFORM_GROUPS and
+            record.fingerprint() != record.recorded_fingerprint()):
+        pytest.skip('an evolutionary run is reproducible only on a platform '
+                    'with the arithmetic of the one that recorded it')
     problems = record.compare(group)
     assert not problems, '\n'.join(problems[:20])
 
@@ -101,3 +110,12 @@ def test_every_kernel_is_covered():
     missing = [m for m in methods
                if not any(('.%s' % m) in k or k.endswith(m) for k in keys)]
     assert not missing
+
+
+def test_fingerprint_is_stable_and_platform_groups_exist():
+    assert record.fingerprint() == record.fingerprint()
+    assert len(record.recorded_fingerprint()) == 64
+    assert 'endtoend_classifier' in record.PLATFORM_GROUPS
+    assert 'density' in record.PLATFORM_GROUPS
+    assert not {'nodes_single', 'nodes_multiple', 'kernels', 'masks',
+                'readers'} & record.PLATFORM_GROUPS

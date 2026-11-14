@@ -29,6 +29,7 @@ try:
     from tqdm import tqdm
 except ImportError:
     def tqdm(x, **kwargs):
+        """Stand-in used when tqdm is not installed: return ``x`` unchanged."""
         return x
 LOGGER = logging.getLogger('EvoDAG')
 

@@ -102,9 +102,13 @@ under 5 to 10 percent. Times only compare on the same machine. The development e
   which random numbers are drawn, the defaults of the JSON files or the model format without a
   deliberate decision.
 - **Golden files** (`tests/golden/`) are the reference outputs of the library; `tests/test_golden.py`
-  compares against them (numbers within 1e-6). Never edit a golden file, loosen the tolerance,
-  skip a case or delete a test to get green. If behaviour has to change on purpose, say so and
-  re-record with `tests/golden/record.py` in the commit that explains why.
+  compares against them (numbers within 1e-6, plus 1e-9 relative for huge values). Never edit a
+  golden file, loosen the tolerance, skip a case or delete a test to get green. If behaviour has
+  to change on purpose, say so and re-record with `tests/golden/record.py` in the commit that
+  explains why. The groups that are a whole evolutionary run are reproducible only on a platform
+  whose floating point arithmetic matches the recording machine (`tests/golden/platform.json`
+  holds its fingerprint); elsewhere, CI included, those groups are skipped and the node, kernel,
+  mask and reader groups still run.
 - **Performance claims need the benchmark**: run `benchmarks/bench.py` and compare it with the
   recorded results (`benchmarks/results-numpy.json`, `benchmarks/results-optimized.json`).
 - **Public names need a docstring and a verified example**, as `tests/test_docs.py` enforces:

@@ -313,7 +313,9 @@ def test_raw_decision_function():
 
 def test_normalize_naive():
     from EvoDAG import EvoDAG as evodag
-    m = evodag.init(time_limit=4)
+    # negative tournament: the random replacement of the default
+    # configuration can free the outputs of this input node
+    m = evodag.init(time_limit=4, negative_selection=True)
     m.fit(X, cl)
     hy = [x for x in m.population.hist[0].hy]
     naive = m.model(v=m.population.hist[0])
@@ -328,7 +330,9 @@ def test_normalize_naive():
 
 def test_normalize_naiveMN():
     from EvoDAG import EvoDAG as evodag
-    m = evodag.init(time_limit=4)
+    # negative tournament: the random replacement of the default
+    # configuration can free the outputs of this input node
+    m = evodag.init(time_limit=4, negative_selection=True)
     m.fit(X, cl)
     hy = [x for x in m.population.hist[1].hy]
     naive = m.model(v=m.population.hist[1])
