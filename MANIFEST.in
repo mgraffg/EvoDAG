@@ -1,5 +1,6 @@
 include LICENSE
 include README.md
+include CITATION.cff
 include EvoDAG/conf/parameter_values.json
 include EvoDAG/conf/default_parameters.json
 include EvoDAG/conf/default_parameters_r.json

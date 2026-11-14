@@ -69,7 +69,8 @@ Modules in the order the data flows; each is documented in the developer referen
 - `benchmarks/`: `benchmarks/bench.py` and its recorded results. `scripts/`: the PyPI version check.
 - `.github/workflows/`: `.github/workflows/test.yml`, `.github/workflows/website.yml`,
   `.github/workflows/publish-pypi.yml`. `.issue-pilot.json`: the
-  test command and the base branch.
+  test command and the base branch. `CITATION.cff`: the citation metadata (the Evolutionary Computation
+  article is the preferred citation; `website/pages/citing.qmd` and the README keep the same order).
 
 ## Commands
 

@@ -31,7 +31,9 @@ dynamic = ["version"]
 test = ["pytest>=7.0", "tomli; python_version < '3.11'"]
 
 [project.urls]
-Homepage = "https://github.com/mgraffg/EvoDAG"
+Homepage = "https://mgraffg.github.io/EvoDAG/"
+Documentation = "https://mgraffg.github.io/EvoDAG/"
+"Developer reference" = "https://mgraffg.github.io/EvoDAG/dev/"
 Source = "https://github.com/mgraffg/EvoDAG"
 Issues = "https://github.com/mgraffg/EvoDAG/issues"
 
