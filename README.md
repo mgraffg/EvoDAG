@@ -50,6 +50,12 @@ m = EvoDAGE(n_estimators=30, n_jobs=4).fit(X, y)
 hy = m.predict(X)
 ```
 
+`EvoDAGE`, `Model` and `Ensemble` are importable from the top-level package.
+There are two classes called `EvoDAG`: `EvoDAG.EvoDAG` (also `RGP` and
+`RootGP`) is the search engine, whereas `EvoDAG.model.EvoDAG` is a single
+model with the `fit`/`predict` interface. The `EvoDAG.model.*` imports keep
+working.
+
 ### Using EvoDAG from the command line
 
 Let us assume one wants to create a classifier of iris dataset. The

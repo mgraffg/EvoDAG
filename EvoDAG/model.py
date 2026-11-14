@@ -474,6 +474,10 @@ class Ensemble(object):
 
 
 class EvoDAGE(object):
+    """Ensemble of EvoDAG models with a scikit-learn-like interface
+    (``fit``, ``predict``, ``decision_function``, ``predict_proba``).
+    It is exported by the top-level package: ``from EvoDAG import EvoDAGE``."""
+
     def __init__(self, time_limit=None, **kwargs):
         self._m = Ensemble.init(time_limit=time_limit, **kwargs)
         self._time_limit = time_limit
@@ -505,8 +509,13 @@ class EvoDAGE(object):
 
 
 class EvoDAG(EvoDAGE):
+    """A single fitted model with the scikit-learn-like ``fit/predict``
+    interface. It is **not** the class exported as ``EvoDAG.EvoDAG`` (that
+    one, ``EvoDAG.base.EvoDAG``, is the search engine, also available as
+    ``RGP`` and ``RootGP``); this one is reached as ``EvoDAG.model.EvoDAG``."""
+
     def __init__(self, **kwargs):
-        from EvoDAG import EvoDAG as evodag
+        from .base import EvoDAG as evodag
         self._m = evodag.init(**kwargs)
 
     def fit(self, *args, **kwargs):

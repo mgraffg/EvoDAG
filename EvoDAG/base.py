@@ -35,6 +35,11 @@ import inspect
 
 
 class EvoDAG(object):
+    """The EvoDAG search engine, also exported as ``RGP`` and ``RootGP``.
+    After ``fit`` call ``model()`` to obtain the fitted model. The class
+    with the scikit-learn-like interface that wraps a single model is
+    ``EvoDAG.model.EvoDAG``, and the ensemble is ``EvoDAG.EvoDAGE``."""
+
     def __init__(self, generations=np.inf, popsize=10000,
                  seed=0, tournament_size=2,
                  early_stopping_rounds=-1,
