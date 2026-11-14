@@ -11,6 +11,13 @@ larger (see [Parameters](parameters.qmd)).
 The blocks share state: each one builds on the variables of the previous
 one, so you can paste the whole page into a script.
 
+What the defaults are, and how they differ from the paper's setup, is explained
+at the beginning of [Parameters](parameters.qmd). In particular, in
+classification the arguments of the sum and of the classifiers are chosen by
+agreement and the individual that an offspring replaces is chosen at random;
+`orthogonal_selection=False, negative_selection=True` gives the selection that
+earlier releases used.
+
 ## Which class do I use?
 
 There are three entry points, and the name `EvoDAG` is used by two of them.
@@ -120,7 +127,10 @@ is perfect and lower values are worse.
 ## Regression
 
 Pass `classifier=False`. The defaults for regression come from a different
-file, `default_parameters_r.json`, and `predict` returns the real values.
+file, `default_parameters_r.json`, and `predict` returns the real values. That
+file has the ordinary selections (a tournament on fitness for the arguments and
+a negative tournament for the individual that leaves), not the agreement
+selection that is the default of classification.
 
 ```python
 yr = 2 * X[:, 0] + X[:, 1] ** 2 + 0.1 * rng.randn(200)

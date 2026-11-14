@@ -96,7 +96,9 @@ configurations sorted by the median fitness on the validation part, best
 first. The output is a JSON list; each element is a full set of parameters
 plus its `fitness` (the three values obtained) and the time that it took.
 The space that is sampled is `parameter_values.json`, described in
-[Parameters](parameters.qmd).
+[Parameters](parameters.qmd). For classification every configuration has the
+agreement selection and the random choice of the individual that leaves; with
+`-R` those two keys are left out.
 
 ```bash
 EvoDAG-params [-C | -R] [-r N] [-P FILE] [options] training_set
@@ -132,8 +134,8 @@ EvoDAG-train (-C | -R | -P FILE) [-n N] [-m FILE] [options] training_set
 | Option | Meaning |
 |:--------------------------------|:--------------------------------------------------|
 | `training_set` | the training file (positional) |
-| `-C`, `--classifier` | classification with the default parameters (`default_parameters.json`) |
-| `-R`, `--regressor` | regression with the default parameters (`default_parameters_r.json`) |
+| `-C`, `--classifier` | classification with the default parameters (`default_parameters.json`, described in [Parameters](parameters.qmd): they include the agreement selection and the random choice of the individual that leaves) |
+| `-R`, `--regressor` | regression with the default parameters (`default_parameters_r.json`, the ordinary selections) |
 | `-P FILE`, `--parameters FILE` | use the parameters of a file written by `EvoDAG-params`; the first configuration (the best) is used. The task is read from the file; `-C`, `-R` and `-P` are mutually exclusive, and one of them is required |
 | `--kw JSON` | a JSON object with parameters that override the defaults, for instance `--kw '{"popsize": 500}'` |
 | `-n N`, `--ensemble-size N` | number of models in the ensemble; 30 by default. With `-n 1` a single model is trained |

@@ -342,6 +342,12 @@ class CommandLineParams(CommandLine):
                 if k in params and v is not None:
                     params[k] = [v]
         self.fs_type_constraint(params)
+        if not self.data.classifier and not self.data.parameters_values:
+            # Review fix-1: the agreement selection (and the random negative
+            # selection) are the defaults of classification only; regression
+            # keeps its previous behaviour and the search must not sample them.
+            params.pop('orthogonal_selection', None)
+            params.pop('negative_selection', None)
         self.if_type_contraint(params)
         parameters = self.data.parameters
         if parameters is None:

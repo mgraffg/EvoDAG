@@ -52,8 +52,8 @@ def test_python_page_examples_run():
     run_page_examples(PAGES / "python.qmd", WEBSITE / "index.qmd")
 
 
-def test_selection_page_examples_run():
-    run_page_examples(PAGES / "selection.qmd")
+def test_selection_and_parameters_page_examples_run():
+    run_page_examples(PAGES / "selection.qmd", PAGES / "parameters.qmd")
 
 
 def test_cli_page_names_every_option():
@@ -307,3 +307,25 @@ def test_claude_md_names_the_test_command():
     with open(ROOT / ".issue-pilot.json") as fpt:
         command = json.load(fpt)["test_command"]
     assert command in (ROOT / "CLAUDE.md").read_text(encoding="utf8")
+
+
+def test_parameters_page_gives_the_selection_defaults():
+    "The page says, for both keys, the value that the files have (review fix-1)"
+    page = (PAGES / "parameters.qmd").read_text(encoding="utf8")
+    with open(ROOT / "EvoDAG" / "conf" / "default_parameters.json") as fpt:
+        classification = json.load(fpt)
+    with open(ROOT / "EvoDAG" / "conf" / "default_parameters_r.json") as fpt:
+        regression = json.load(fpt)
+    for key in ("orthogonal_selection", "negative_selection"):
+        assert key in classification and key not in regression
+        value = str(classification[key]).lower()
+        # the row of the table of the parameters of the evolution
+        row = re.search(r"^\| `%s` \| (\w+) " % key, page, flags=re.MULTILINE)
+        assert row, key
+        assert row.group(1) == value, (key, row.group(1), value)
+        # and the row of the table of the search space
+        space = re.search(r"^\| `%s` \| (\w+) \|$" % key, page,
+                          flags=re.MULTILINE)
+        assert space, key
+        with open(ROOT / "EvoDAG" / "conf" / "parameter_values.json") as fpt:
+            assert [space.group(1) == "true"] == json.load(fpt)[key]

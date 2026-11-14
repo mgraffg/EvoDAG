@@ -325,7 +325,7 @@ class Model(object):
         height = self._hist[-1].height
         try:
             b, m = np.linalg.solve([[0, height-1], [1, 1]], [9, 1])
-        except np.linalg.linalg.LinAlgError:
+        except np.linalg.LinAlgError:  # review fix-1: numpy 2 has no np.linalg.linalg
             b, m = 0, 1
         done = {}
         for k, n in enumerate(self._hist):
@@ -744,7 +744,10 @@ class EvoDAGE(object):
     ``n_estimators`` runs are trained with consecutive seeds; each one
     learns from its own random split of the training data. The default
     parameters are those of ``EvoDAG/conf/default_parameters.json`` (or
-    ``default_parameters_r.json`` when ``classifier=False``). Note that
+    ``default_parameters_r.json`` when ``classifier=False``); in classification
+    they include the agreement selection of the parents and the random choice
+    of the individual that leaves (``orthogonal_selection=True``,
+    ``negative_selection=False``). Note that
     ``fit`` returns an ``Ensemble``, not the ``EvoDAGE`` instance.
 
     Parameters

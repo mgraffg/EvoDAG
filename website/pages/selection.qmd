@@ -23,10 +23,10 @@ profit from varied inputs:
 
 Because of that, the paper applies the heuristics **only when the function
 that is being built is the sum, Naive Bayes (both variants) or Nearest
-Centroid**; for every other function the parents are chosen as usual. The
-first parent is picked first, without the heuristic; each remaining
-argument is the winner of a small tournament in which the *lowest* value of
-the similarity to the first parent wins.
+Centroid**; for every other function the paper chooses the parents at
+random. The first parent is picked at random, without the heuristic; each
+remaining argument is the winner of a small tournament in which the *lowest*
+value of the similarity to the first parent wins.
 
 ## The three similarity measures
 
@@ -62,13 +62,18 @@ approximately. This is read from `EvoDAG/base.py`
 
 | Heuristic of the paper | Constructor parameter | Status in the code |
 |:------------------------|:--------------------------------|:------------------------------------|
-| Agreement | `orthogonal_selection=True` | implemented |
+| Agreement | `orthogonal_selection=True` | implemented; **the default of classification** |
 | Cosine similarity | `orthogonal_dot_selection=True` | **only an approximation**: it uses the dot product, see below |
 | Pearson's correlation | none | **not available in the released code** |
-| Random choice of the individual that leaves | `negative_selection=False` | implemented (the default, `True`, is the negative tournament on fitness) |
+| Random choice of the individual that leaves | `negative_selection=False` | implemented; **the default of classification** (`True` is the negative tournament on fitness) |
 
-Both selection parameters are `False` unless you set them, and they are not
-part of `default_parameters.json`.
+The classification defaults are the two settings in the first and the last row,
+the paper's best-ranked configuration, which it calls `agr-rnd`: they are in
+`EvoDAG/conf/default_parameters.json`. The regression defaults
+(`EvoDAG/conf/default_parameters_r.json`) have neither, so regression uses the
+ordinary selections, and so do the engine's keyword defaults when its class is
+called directly (see [Parameters](parameters.qmd)). Releases before this change
+used the ordinary selections for classification too.
 
 ### Agreement: `orthogonal_selection`
 
@@ -83,16 +88,21 @@ For a function that supports it (the sum, `NaiveBayes`, `NaiveBayesMN` and
    the **smallest agreement** with the first argument, computed on the
    training part of the data, wins.
 
-For the other functions the ordinary selection is used. If both
+For the other functions the ordinary selection, a tournament on fitness, is
+used; the paper uses random selection for them (see below). If both
 `orthogonal_selection` and `orthogonal_dot_selection` are on, the agreement
-takes precedence.
+takes precedence; to get the dot-product heuristic you have to turn the
+agreement off with `orthogonal_selection=False`.
 
 The paper picks the first argument at random. In the code it is
 chosen by the usual tournament, except during the first `random_generations`
 generations, when every tournament that is not a negative one is random
 (`random_generations` is 1 in the default configuration). There is no switch that makes only the first argument random: a very large
-`random_generations` does make it random, but it also makes random the
-parents of every function that does not use the heuristic.
+`random_generations` does make it random, and it also makes random the
+parents of every function that does not use the heuristic. That would also
+bring the code closer to the paper in the other point where they differ: the
+paper selects at random the arguments of the functions to which the heuristic
+does not apply, whereas the code uses the tournament on fitness for them.
 
 The code also has a branch for regression, which compares the signs of the
 outputs. The paper defines the agreement only for classification and does not
@@ -133,7 +143,9 @@ that does not go through a heuristic random.
 
 ## Example
 
-The parameters are given to the constructors as any other:
+The agreement is on by default in classification, so the first call below
+only says it explicitly. The parameters are given to the constructors as any
+other:
 
 ```python
 import numpy as np
@@ -144,21 +156,30 @@ X = rng.randn(200, 5)
 y = (X[:, 0] + X[:, 1] ** 2 > 1).astype(int) + (X[:, 2] > 1.0)
 
 # agreement for the parents, random choice of the individual that leaves
+# (the defaults of classification, written out)
 agreement = EvoDAGE(n_estimators=3, popsize=100, early_stopping_rounds=100,
                     orthogonal_selection=True, negative_selection=False,
                     seed=0).fit(X, y)
 print((agreement.predict(X) == y).mean())
 
-# the dot-product relative of the cosine heuristic
+# the dot-product relative of the cosine heuristic: the agreement, which has
+# precedence and is on by default, has to be turned off
 dot = EvoDAGE(n_estimators=3, popsize=100, early_stopping_rounds=100,
-              orthogonal_dot_selection=True, seed=0).fit(X, y)
+              orthogonal_selection=False, orthogonal_dot_selection=True,
+              seed=0).fit(X, y)
 print((dot.predict(X) == y).mean())
+
+# the selection of the releases before the default changed
+classic = EvoDAGE(n_estimators=3, popsize=100, early_stopping_rounds=100,
+                  orthogonal_selection=False, negative_selection=True,
+                  seed=0).fit(X, y)
+print((classic.predict(X) == y).mean())
 ```
 
 From the command line the same parameters are passed with `--kw`:
 
 ```bash
-EvoDAG-train -C -n 30 --kw '{"orthogonal_selection": true, "negative_selection": false}' -m model.evodag train.csv
+EvoDAG-train -C -n 30 --kw '{"orthogonal_selection": false, "negative_selection": true}' -m model.evodag train.csv
 ```
 
 ## What the paper reports

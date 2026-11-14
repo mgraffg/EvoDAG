@@ -8,7 +8,9 @@
 # EvoDAG #
 
 Evolving Directed Acyclic Graph (EvoDAG) is a steady-state Genetic Programming system
-with tournament selection. The main characteristic of EvoDAG is that
+with tournament selection (for classification, the default parameters choose the
+arguments of the sum and of the classifiers by agreement and the individual that
+leaves at random; see the documentation). The main characteristic of EvoDAG is that
 the genetic operation is performed at the root. EvoDAG was inspired
 by the geometric semantic crossover proposed by 
 [Alberto Moraglio](https://scholar.google.com.mx/citations?user=0y4XRI0AAAAJ&hl=en&oi=ao)

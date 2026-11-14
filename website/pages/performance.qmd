@@ -6,7 +6,11 @@ This page collects the benchmark results that have been published with
 EvoDAG. They were obtained with earlier versions of the library (the version
 is given for each table) and are **not** re-run when the site is built:
 treat them as a snapshot of what the method achieved at the time, not as a
-measurement of the code in this release.
+measurement of the code in this release. In particular, the library's default
+parameters changed after those versions: since this release classification uses
+the agreement selection and a random choice of the individual that leaves (see
+[Parameters](parameters.qmd)), whereas the versions in the tables used fitness
+tournaments for both.
 
 The measure is the balance error rate (BER) in percent: the average, over the
 classes, of the proportion of examples of the class that are misclassified.
@@ -186,4 +190,9 @@ than the classical selection by fitness, and that it is better than two
 state-of-the-art selection schemes it compares with; and, against eighteen
 classifiers including two automatic machine learning systems, that this
 configuration obtains the second best average rank in macro-F1, behind TPOT,
-with a difference that is not statistically significant.
+with a difference that is not statistically significant. The paper's setup
+differs from the default configuration of this release in the fitness (macro-F1
+there, the balanced error rate here), in the choice of the first argument and in
+the selection for the functions without a heuristic (see
+[Parameters](parameters.qmd)), so its numbers are not those of the code's
+defaults.

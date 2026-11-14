@@ -115,15 +115,21 @@ sparse (the ones marked `density_safe` in the code) are drawn.
 
 The arguments of a function are chosen by *tournament selection*: draw
 `tournament_size` individuals at random (2 by default) and keep the one with the best
-fitness. For the first `random_generations` generations (1 in the default
-configuration) the arguments are drawn uniformly instead, which diversifies
-the early population. The sum, `Min`, `Max` and the three classifiers need
+fitness. In the default configuration for classification this applies to the
+functions other than the sum, `NaiveBayes`, `NaiveBayesMN` and `Centroid`; for
+those four the first argument is chosen this way and each of the others is the
+one, among `tournament_size` individuals drawn at random, that agrees least with
+the first on the labels it predicts (`orthogonal_selection`, see
+[Selection](selection.qmd)). Regression uses the tournament on fitness for every
+function. For the first `random_generations` generations (1 in the default
+configuration) the tournaments that choose arguments are replaced by uniform
+draws, which diversifies the early population. The sum, `Min`, `Max` and the three classifiers need
 distinct arguments: when a draw repeats one they retry a few times, and the
 candidate is dropped if fewer than two distinct arguments are left. The
 other functions retry as well but accept a repeated argument in the end.
 
-The [Selection](selection.qmd) page describes the alternatives that
-replace the fitness in this tournament.
+The [Selection](selection.qmd) page describes the heuristics that replace the
+fitness in this tournament, and which of them are in the code.
 
 ## Initial population
 
@@ -141,7 +147,9 @@ is still not full, the rest is made by the offspring procedure above.
 After the initial population EvoDAG is *steady state*: every step creates
 one offspring and inserts it in place of one existing individual, chosen by a
 *negative* tournament that returns the worst of `tournament_size` random
-individuals (`negative_selection=False` picks the victim at random instead).
+individuals when `negative_selection` is true. The default configuration for
+classification sets it to false, and then the victim is chosen at random; the
+default for regression is the negative tournament.
 An alternative `population_class`, `Generational`, builds
 `popsize` offspring and then replaces the whole population at once.
 
@@ -154,7 +162,9 @@ arguments.
 
 For classification the default fitness is the balanced error rate: the
 average over the classes of the recall of each class. The code stores the
-average recall minus one, so that larger is better and zero is perfect. For
+average recall minus one, so that larger is better and zero is perfect. (The
+second paper reports that it used the macro-F1 score as fitness; it is the
+option `fitness_function="macro-F1"`.) For
 regression the fitness on the training part is minus the sum of absolute
 errors. `fitness_function` selects other measures for classification
 (accuracy, macro F1, precision and recall variants).
@@ -186,13 +196,6 @@ The split is controlled by `tr_fraction` (0.5 by default):
 The split and the subsample are drawn at random from the seed, so two
 runs with different seeds learn from different views of the same data.
 
-::: {.callout-note}
-**Where the paper and the code differ.** The paper takes 20 % of the
-training data for validation; the code decides with `tr_fraction`, which is
-0.5 in the default configuration and means what is explained above. The
-paper's function set contains `if` and the sigmoid, which are not in the
-function set of this release.
-:::
 
 ## The model
 
@@ -226,12 +229,6 @@ The ensemble aggregates the members as follows:
   is the element-wise median of the members' outputs; `predict` for
   regression returns it.
 
-::: {.callout-note}
-**Where the paper and the code differ.** The paper says the class is
-the one given by the median of the members' decision functions. In the code the
-median is what `decision_function` returns, but `predict` takes a majority
-vote of the members' classes.
-:::
 
 ## Searching the parameter space
 
@@ -243,3 +240,23 @@ configuration with the best median validation fitness. This is what
 [Command line](cli.qmd). The paper justifies a plain random search with the
 result of Bergstra and Bengio that random search usually beats a hand-made
 grid.
+
+## Where the papers and the code differ
+
+This page follows the code. Compared with what the two papers (see
+[Citing](citing.qmd)) say, these are the differences. The default values the
+papers and the code share are listed in [Parameters](parameters.qmd).
+
+| Subject | The papers | The code of this release |
+|:--------------|:------------------------------|:------------------------------------------|
+| Validation set | The library paper holds out 20 % of the training data. The selection paper splits the training set in two halves, 50 % for training and the rest for validation. | `tr_fraction` (0.5): with the default fitness the validation set is `floor(m (1 - tr_fraction))` examples of each class, `m` being the size of the smallest class, which is half of the data only when the classes are balanced |
+| Where the coefficients are fitted | The selection paper says that the training set is used to compute the fitness and the coefficients. | The fitness uses the whole training part; the coefficients use a random subsample of it (see above) |
+| Fitness | The selection paper reports macro-F1. | `"BER"` by default; `"macro-F1"` is an option |
+| Function set | The library paper has `if`, `ln` and the sigmoid among its functions. | The default set has none of them: the function set of the selection paper, which is the default configuration. `if` and the sigmoid do not exist in this release. |
+| Output of the classifiers | The selection paper says the classifier nodes output the log-likelihood. | They do, and when the last node of a model is a classifier, `decision_function` rescales its outputs to the interval from -1 to 1 |
+| Several classes | The library paper returns a list of models, one per class, wrapped in one object. | One model whose nodes have one output per class, as the selection paper describes |
+| Prediction of the ensemble | The library paper takes the label from the median of the decision functions; the selection paper says the final prediction is the average of the models. | `predict` is the class that most models choose; `decision_function` is the median |
+| Bagging | The selection paper trains 30 models, each on a random 50 % of the examples with the rest for validation. | 30 models by default, each with its own split by seed; see the validation set above |
+| First argument of the heuristic | Chosen at random. | By the tournament on fitness, except in the first `random_generations` generations |
+| Arguments of the other functions | Chosen at random when the heuristic does not apply. | By the tournament on fitness |
+| Pearson and cosine heuristics | Both are proposed. | Not available as described; see [Selection](selection.qmd) |

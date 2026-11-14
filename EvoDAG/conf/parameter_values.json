@@ -198,6 +198,12 @@
     "multiple_outputs": [
         false
     ],
+    "negative_selection": [
+        false
+    ],
+    "orthogonal_selection": [
+        true
+    ],
     "popsize": [
 	100,
 	200,

@@ -88,7 +88,7 @@ def small_model():
     X = rng.randn(200, 4)
     y = (np.sin(X[:, 0]) * X[:, 1] + X[:, 2] ** 2 - 1
          + 0.3 * rng.randn(200) > 0).astype(int)
-    fitted = SingleModel(popsize=10, early_stopping_rounds=10, seed=1,
+    fitted = SingleModel(popsize=20, early_stopping_rounds=10, seed=1,
                          all_inputs=False).fit(X, y)
     return fitted.model
 

@@ -48,7 +48,13 @@ class EvoDAG(object):
     Most users create the engine with ``init``, which reads the default
     parameters from ``EvoDAG/conf/default_parameters.json`` (or
     ``default_parameters_r.json``), instead of calling the constructor, whose
-    own defaults differ from that file.
+    own defaults differ from that file. The defaults documented below are
+    those of the constructor; where the configuration file has another value
+    it is given as "Key ``name`` (value)". In particular the classification
+    file sets ``orthogonal_selection`` to true and ``negative_selection`` to
+    false (agreement for the parents and a random choice of the individual
+    that leaves, the best-ranked configuration of the selection paper),
+    whereas the constructor keeps the selection by fitness.
 
     Parameters
     ----------
@@ -84,7 +90,9 @@ class EvoDAG(object):
         ``population_class``.
     negative_selection : bool, optional
         If true (default) the individual replaced by an offspring is the
-        worst of a tournament; if false it is chosen at random.
+        worst of a tournament; if false it is chosen at random. Key
+        ``negative_selection`` (false in the classification file, true in
+        the regression one).
     number_tries_feasible_ind : int, optional
         Attempts to find a valid individual before giving up (default 30).
     time_limit : float, optional
@@ -112,11 +120,14 @@ class EvoDAG(object):
         regression. Key ``fitness_function``.
     orthogonal_selection : bool, optional
         Choose the arguments of the sum, Naive Bayes and Centroid by the
-        smallest agreement with the first argument (default false). Not in
-        the default parameters.
+        smallest agreement with the first argument (default false). Key
+        ``orthogonal_selection`` (true in the classification file, false in
+        the regression one).
     orthogonal_dot_selection : bool, optional
         Choose those arguments by the smallest dot product with the first
-        argument (default false). Not in the default parameters.
+        argument (default false). Not in the default parameters. It has
+        no effect while ``orthogonal_selection`` is true, which has
+        precedence.
     min_density : float, optional
         When the average fraction of non-zero values in the population is
         below it, only density safe functions are used (default 0.8). Key

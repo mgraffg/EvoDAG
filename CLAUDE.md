@@ -28,6 +28,8 @@ Modules in the order the data flows; each is documented in the developer referen
   `Generational`), tournament and negative selection, the early stopping individual, and the
   tournament that chooses a function. Parent selection by agreement or dot product is in
   `EvoDAG/base.py` (`orthogonal_selection`, `orthogonal_dot_selection`); there is no Pearson heuristic.
+  The classification defaults use agreement for the parents and random negative selection
+  (`orthogonal_selection` true, `negative_selection` false); regression uses the tournaments on fitness.
 - **`EvoDAG/node.py` and `EvoDAG/naive_bayes.py`.** An individual is a node: `Variable` or a
   `Function` subclass. A node stores the positions of its arguments in the history
   (`population.hist`), its `weight`, `height` and fitness. `hy` holds its values on the training
@@ -54,6 +56,9 @@ Modules in the order the data flows; each is documented in the developer referen
   `EvoDAG/conf/default_parameters_r.json` (regression) and `EvoDAG/conf/parameter_values.json`
   (the space of the random search). A key named like a function (`Add`, `Mul`, ...) switches it on (boolean) or sets its
   arity (integer, 0 removes it). `EvoDAG/gp.py` is legacy code that the engine does not use.
+  There are two layers of defaults: these files (read by `EvoDAGE`, `EvoDAG.model.EvoDAG`, `init`
+  and the command line) and the keyword defaults of the engine constructor in `EvoDAG/base.py`
+  (used only when the class is called directly); the Parameters page of the user site lists both.
 
 ## Layout
 
