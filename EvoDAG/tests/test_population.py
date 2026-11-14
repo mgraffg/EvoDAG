@@ -15,6 +15,7 @@
 
 from test_root import X, cl
 from numpy.testing import assert_almost_equal as assert_almost_equals
+import numpy as np
 from test_command_line import default_nargs
 
 
@@ -208,14 +209,14 @@ def test_density():
         gp.X = Xc
         gp.y = y
         gp.create_population()
-        d = sum([x.hy.density for x in gp.population.population]) / gp.popsize
+        d = sum([x.density for x in gp.population.population]) / gp.popsize
         print(d, gp.population.density, 'pop')
         assert gp.population.density == d
         for _ in range(3):
             a = gp.random_offspring()
-            print(a.hy.density)
+            print(a.density)
             gp.replace(a)
-            d = sum([x.hy.density for x in gp.population.population]) / gp.popsize
+            d = sum([x.density for x in gp.population.population]) / gp.popsize
             print(d, gp.population.density, 'replace')
             print(gp.population.density, d, '==')
             assert_almost_equals(gp.population.density, d)
@@ -292,12 +293,11 @@ def test_multiple_variables():
     from EvoDAG.population import Inputs
     from EvoDAG.cython_utils import SelectNumbers
     from EvoDAG import EvoDAG
-    from SparseArray import SparseArray
     y = cl.copy()
     gp = EvoDAG(classifier=True, multiple_outputs=True,
                 popsize=5, share_inputs=True)
     gp.X = X
-    gp.X[-1]._eval_tr = SparseArray.fromlist([0 for x in range(gp.X[-1].hy.size())])
+    gp.X[-1]._eval_tr = np.zeros(gp.X[-1].hy.shape[0])
     gp.nclasses(y)
     gp.y = y
     inputs = Inputs(gp, SelectNumbers([x for x in range(len(gp.X))]))
@@ -305,9 +305,9 @@ def test_multiple_variables():
     inputs._nfunc = 1
     v = inputs.input()
     assert v is not None
-    mask = np.array(gp._mask[0].full_array(), dtype=bool)
-    D = np.array([x.hy.full_array() for x in gp.X]).T
-    b = np.array(gp._ytr[0].full_array())
+    mask = np.array(gp._mask[0], dtype=bool)
+    D = np.array([x.hy for x in gp.X]).T
+    b = np.array(gp._ytr[0])
     coef = np.linalg.lstsq(D[mask], b[mask])[0]
     for a, b in zip(coef, v.weight[0]):
         assert_almost_equals(a, b)
@@ -353,12 +353,11 @@ def test_restrictions():
     from EvoDAG.population import Inputs
     from EvoDAG.cython_utils import SelectNumbers
     from EvoDAG import EvoDAG
-    from SparseArray import SparseArray
     y = cl.copy()
     gp = EvoDAG(classifier=True, multiple_outputs=True,
                 popsize=5, share_inputs=True)
     gp.X = X
-    gp.X[-1]._eval_tr = SparseArray.fromlist([0 for x in range(gp.X[-1].hy.size())])
+    gp.X[-1]._eval_tr = np.zeros(gp.X[-1].hy.shape[0])
     gp.nclasses(y)
     gp.y = y
     for c in [True, False]:

@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from .cython_utils import naive_bayes_mean_std2, naive_bayes_Nc
-import array
+import numpy as np
 
 
 class NaiveBayes(object):
     def __init__(self, mask=None, nclass=None, klass=None):
-        self._mask = mask.index
+        self._mask = np.flatnonzero(mask).astype(np.uint32)
         self._nclass = nclass
-        self._klass = array.array('I', [int(x) for x in klass.full_array()])
+        self._klass = np.asarray(klass).astype(np.uint32)
 
     def coef(self, var):
         return naive_bayes_mean_std2(var, self._klass, self._mask, self._nclass)

@@ -1,7 +1,6 @@
 [build-system]
 # Building against numpy >= 2 produces extensions that also run on numpy 1.x.
-# SparseArray is cimported by the .pyx files, so its .pxd must be at build time.
-requires = ["setuptools>=61.0", "Cython>=3.0", "numpy>=2.0", "SparseArray"]
+requires = ["setuptools>=61.0", "Cython>=3.0", "numpy>=2.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -25,7 +24,7 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-dependencies = ["numpy", "SparseArray"]
+dependencies = ["numpy"]
 dynamic = ["version"]
 
 [project.optional-dependencies]
@@ -71,23 +70,8 @@ cache-keys = [
     { file = "EvoDAG/*.pyx" },
 ]
 
-# SparseArray 0.8.16 has no wheel for Python >= 3.10 on Linux and its sdist
-# imports Cython and numpy in setup.py without declaring them, so uv needs to
-# be told what it takes to build it. (pip has no equivalent: the CI workflows
-# install these first and pass --no-build-isolation.)
-[tool.uv.extra-build-dependencies]
-sparsearray = ["Cython>=3.0", "numpy>=2.0", "setuptools", "wheel"]
-
 [tool.cibuildwheel]
 build = "cp310-* cp311-* cp312-* cp313-*"
 skip = "*-musllinux_* *-win32 *-manylinux_i686"
-# SparseArray is built from its sdist (no wheel for these Pythons), which
-# cannot be done in an isolated environment: install it, and the tools EvoDAG
-# is built with, into the build environment and build without isolation.
-before-build = "pip install setuptools wheel \"Cython>=3.0\" \"numpy>=2.0\" && pip install --no-build-isolation SparseArray"
-build-frontend = { name = "pip", args = ["--no-build-isolation"] }
-# The same for the SparseArray that the wheel's own dependency needs in the
-# test environment.
-before-test = "pip install setuptools wheel \"Cython>=3.0\" numpy && pip install --no-build-isolation SparseArray"
 test-requires = "pytest"
 test-command = "pytest {project}/EvoDAG/tests -q"

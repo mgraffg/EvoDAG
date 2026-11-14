@@ -35,13 +35,13 @@ def test_mean_std_pk():
     import numpy as np
     from EvoDAG.naive_bayes import NaiveBayes
     gp, args = create_problem_node2(nargs=5, seed=0)
-    mask = np.array(gp._mask_ts.sign().full_array(), dtype=bool)
-    klass = np.array(gp._y_klass.full_array())[mask]
+    mask = np.array(np.sign(gp._mask_ts), dtype=bool)
+    klass = np.array(gp._y_klass)[mask]
     unique_klass = np.unique(klass)
     naive_bayes = NaiveBayes(mask=gp._mask_ts, klass=gp._y_klass,
                              nclass=gp._labels.shape[0])
     for v in args:
-        var = np.array(v._eval_tr.full_array())[mask]
+        var = np.array(v._eval_tr)[mask]
         mean = [np.mean(var[k == klass]) for k in unique_klass]
         std2 = [np.var(var[k == klass]) for k in unique_klass]
         p_klass = [(k == klass).mean() for k in unique_klass]
@@ -58,13 +58,13 @@ def test_MN_Nc_pk():
     import numpy as np
     from EvoDAG.naive_bayes import NaiveBayes
     gp, args = create_problem_node2(nargs=5, seed=0)
-    mask = np.array(gp._mask_ts.sign().full_array(), dtype=bool)
-    klass = np.array(gp._y_klass.full_array())[mask]
+    mask = np.array(np.sign(gp._mask_ts), dtype=bool)
+    klass = np.array(gp._y_klass)[mask]
     unique_klass = np.unique(klass)
     naive_bayes = NaiveBayes(mask=gp._mask_ts, klass=gp._y_klass,
                              nclass=gp._labels.shape[0])
     for v in args:
-        var = np.array(v._eval_tr.full_array())[mask]
+        var = np.array(v._eval_tr)[mask]
         Nc = [np.sum([x for x in var[k == klass] if x > 0]) for k in
               unique_klass]
         if len(Nc) > len([x for x in Nc if x > 0]):

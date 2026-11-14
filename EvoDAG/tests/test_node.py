@@ -16,7 +16,7 @@
 from test_root import X, cl
 from EvoDAG.node import Add
 from EvoDAG.base import tonparray
-from SparseArray import SparseArray
+from EvoDAG import array_utils as au
 import numpy as np
 from numpy.testing import assert_almost_equal as assert_almost_equals
 from test_command_line import default_nargs
@@ -55,7 +55,7 @@ def test_node_pickle():
         pickle.dump(n, io)
         io.seek(0)
         n1 = pickle.load(io)
-        assert n1._mask.SSE(n._mask) == 0
+        assert au.SSE(n1._mask, n._mask) == 0
 
 
 def test_node_tostore():
@@ -73,7 +73,7 @@ def test_node_tostore():
 
 def test_compute_weight():
     gp, args = create_problem_node()
-    mask = SparseArray.fromlist(np.ones(len(gp._mask)))
+    mask = np.ones(len(gp._mask))
     n = Add(list(range(len(args))), ytr=gp._ytr, mask=mask)
     D = np.array([tonparray(i.hy) for i in args]).T
     coef = n.compute_weight([x.hy for x in args])
@@ -94,8 +94,8 @@ def test_node_add():
     print(tonparray(n.hy)[:4])
     print(tonparray(r)[:4])
     print(tonparray(gp._mask)[:4])
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
+    assert au.SSE(n.hy, r) == 0
+    assert au.SSE(n.hy_test, r) == 0
 
 
 def test_node_mul():
@@ -106,8 +106,8 @@ def test_node_mul():
     coef = n.compute_weight([r])[0]
     assert n.eval(args)
     r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
+    assert au.SSE(n.hy, r) == 0
+    assert au.SSE(n.hy_test, r) == 0
 
 
 def test_node_div():
@@ -119,117 +119,117 @@ def test_node_div():
     coef = n.compute_weight([r])[0]
     assert n.eval(args)
     r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
+    assert au.SSE(n.hy, r) == 0
+    assert au.SSE(n.hy_test, r) == 0
 
 
 def test_node_fabs():
     from EvoDAG.node import Fabs
     gp, args = create_problem_node(nargs=1)
-    r = args[0].hy.fabs()
+    r = np.fabs(args[0].hy)
     n = Fabs(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     coef = n.compute_weight([r])[0]
     assert n.eval(args)
     r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
+    assert au.SSE(n.hy, r) == 0
+    assert au.SSE(n.hy_test, r) == 0
 
 
 def test_node_exp():
     from EvoDAG.node import Exp
     gp, args = create_problem_node(nargs=1)
-    r = args[0].hy.exp()
+    r = au.exp(args[0].hy)
     n = Exp(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     coef = n.compute_weight([r])[0]
     assert n.eval(args)
     r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
+    assert au.SSE(n.hy, r) == 0
+    assert au.SSE(n.hy_test, r) == 0
 
 
 def test_node_sqrt():
     from EvoDAG.node import Sqrt
     gp, args = create_problem_node(nargs=1)
-    r = args[0].hy.sqrt()
+    r = np.sqrt(args[0].hy)
     n = Sqrt(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     coef = n.compute_weight([r])[0]
     assert n.eval(args)
     r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
+    assert au.SSE(n.hy, r) == 0
+    assert au.SSE(n.hy_test, r) == 0
 
 
 def test_node_sin():
     from EvoDAG.node import Sin
     gp, args = create_problem_node(nargs=1)
-    r = args[0].hy.sin()
+    r = np.sin(args[0].hy)
     n = Sin(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     coef = n.compute_weight([r])[0]
     assert n.eval(args)
     r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
+    assert au.SSE(n.hy, r) == 0
+    assert au.SSE(n.hy_test, r) == 0
 
 
 def test_node_cos():
     from EvoDAG.node import Cos
     gp, args = create_problem_node(nargs=1)
-    r = args[0].hy.cos()
+    r = np.cos(args[0].hy)
     n = Cos(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     coef = n.compute_weight([r])[0]
     assert n.eval(args)
     r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
+    assert au.SSE(n.hy, r) == 0
+    assert au.SSE(n.hy_test, r) == 0
 
 
 def test_node_ln():
     from EvoDAG.node import Log1p
     gp, args = create_problem_node(nargs=1)
-    r = args[0].hy.log1p()
+    r = au.log1p(args[0].hy)
     n = Log1p(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     coef = n.compute_weight([r])[0]
     assert n.eval(args)
     r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
+    assert au.SSE(n.hy, r) == 0
+    assert au.SSE(n.hy_test, r) == 0
 
 
 def test_node_sq():
     from EvoDAG.node import Sq
     gp, args = create_problem_node(nargs=1)
-    r = args[0].hy.sq()
+    r = np.square(args[0].hy)
     n = Sq(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     coef = n.compute_weight([r])[0]
     assert n.eval(args)
     r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
+    assert au.SSE(n.hy, r) == 0
+    assert au.SSE(n.hy_test, r) == 0
 
 
 def test_node_min():
     from EvoDAG.node import Min
     gp, args = create_problem_node(nargs=3)
-    r = args[0].hy.min(args[1].hy).min(args[2].hy)
+    r = np.fmin(np.fmin(args[0].hy, args[1].hy), args[2].hy)
     n = Min(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     coef = n.compute_weight([r])[0]
     assert n.eval(args)
     r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
+    assert au.SSE(n.hy, r) == 0
+    assert au.SSE(n.hy_test, r) == 0
     assert n.weight == coef
 
 
 def test_node_max():
     from EvoDAG.node import Max
     gp, args = create_problem_node(nargs=3)
-    r = args[0].hy.max(args[1].hy).max(args[2].hy)
+    r = np.fmax(np.fmax(args[0].hy, args[1].hy), args[2].hy)
     n = Max(list(range(len(args))), ytr=gp._ytr, mask=gp._mask)
     coef = n.compute_weight([r])[0]
     assert n.eval(args)
     r = r * coef
-    assert n.hy.SSE(r) == 0
-    assert n.hy_test.SSE(r) == 0
+    assert au.SSE(n.hy, r) == 0
+    assert au.SSE(n.hy_test, r) == 0
     assert n.weight == coef
 
 
@@ -298,8 +298,8 @@ def test_Add_multiple_output():
     [x.eval(args) for x in vars]
     add2 = Add(range(len(vars)), ytr=gp._ytr, mask=gp._mask)
     assert add2.eval(vars)
-    assert add2.hy.SSE(add.hy[0]) == 0
-    assert add2.hy_test.SSE(add.hy_test[0]) == 0
+    assert au.SSE(add2.hy, add.hy[0]) == 0
+    assert au.SSE(add2.hy_test, add.hy_test[0]) == 0
 
 
 def test_Add_multiple_output2():
@@ -318,7 +318,7 @@ def test_Add_multiple_output2():
     [x.eval(args) for x in vars]
     add2 = Add(range(len(vars)), ytr=gp._ytr, mask=gp._mask)
     assert add2.eval(vars)
-    assert add2.hy.SSE(add.hy[0]) == 0
+    assert au.SSE(add2.hy, add.hy[0]) == 0
     assert isinstance(add.weight, list) and len(add.weight) == 2
     assert isinstance(add2.weight, np.ndarray)
 
@@ -356,9 +356,9 @@ def test_one_multiple_output():
             assert isinstance(ff.weight, list) and len(ff.weight) == 2
             assert isinstance(ff2.weight, float)
             hy = ff.hy[0]
-            if hy.isfinite():
+            if au.isfinite(hy):
                 print('*', FF)
-                assert hy.SSE(ff2.hy) == 0
+                assert au.SSE(hy, ff2.hy) == 0
 
 
 def test_functions_w_multiple_output():
@@ -382,9 +382,9 @@ def test_functions_w_multiple_output():
             [x.eval(args) for x in vars]
             mul2 = ff(range(len(vars)), ytr=gp._ytr, mask=gp._mask)
             assert mul2.eval(vars)
-            assert mul2.hy.SSE(mul.hy[0]) == 0
+            assert au.SSE(mul2.hy, mul.hy[0]) == 0
             if mul.hy_test is not None:
-                assert mul2.hy_test.SSE(mul.hy_test[0]) == 0
+                assert au.SSE(mul2.hy_test, mul.hy_test[0]) == 0
             
 
 def test_density_safe():
@@ -400,12 +400,12 @@ def test_functions_finite():
         for flag in [False, True]:
             gp, args = create_problem_node(nargs=4, seed=0)
             for v in args:
-                _ = [x for x in v._eval_tr.full_array()]
+                _ = [x for x in v._eval_tr]
                 _[0] = float('inf')
                 _[1] = float('inf')
                 _[3] = 0
                 _[4] = 0
-                v._eval_tr = SparseArray.fromlist(_)
+                v._eval_tr = np.array(_)
             if flag:
                 for i in args:
                     i.hy_test = None
@@ -413,14 +413,14 @@ def test_functions_finite():
             # ytr = [gp._ytr, gp._ytr]
             ytr = gp._ytr
             # mask = [gp._mask, gp2._mask]
-            mask = gp._mask.full_array()
+            mask = gp._mask
             mask[0] = 1
-            mask = SparseArray.fromlist(mask)
+            mask = np.array(mask)
             vars = [Variable(k, ytr=ytr, mask=mask, finite=flag)
                     for k in range(len(args))]
             for x in vars:
                 _ = x.eval(args)
-                print(mask.full_array())
+                print(mask)
                 assert _ == flag
             if not flag:
                 continue
@@ -477,8 +477,8 @@ def test_naive_bayes():
     naive_bayes = NaiveBayes(range(len(vars)), ytr=gp._ytr, naive_bayes=gp._naive_bayes,
                              mask=gp._mask, finite=True)
     naive_bayes.eval(vars)
-    mask = np.array(gp._mask_ts.sign().full_array(), dtype=bool)
-    klass = np.array(gp._y_klass.full_array())[mask]
+    mask = np.array(np.sign(gp._mask_ts), dtype=bool)
+    klass = np.array(gp._y_klass)[mask]
     unique_klass = np.unique(klass)
     mean = []
     std2 = []
@@ -487,7 +487,7 @@ def test_naive_bayes():
     for v in vars:
         l += v.hy
     for v in l:
-        var = np.array(v.full_array())[mask]
+        var = np.array(v)[mask]
         mean.append([np.mean(var[k == klass]) for k in unique_klass])
         std2.append([np.var(var[k == klass]) for k in unique_klass])
         p_klass = [(k == klass).mean() for k in unique_klass]
@@ -498,11 +498,11 @@ def test_naive_bayes():
     for i in range(unique_klass.shape[0]):
         a = np.log(p_klass[i])
         b = - 0.5 * np.sum([np.log(2. * np.pi * s[i]) for s in std2])
-        _ = [(x + -m[i]).sq() * (1 / s[i]) for x, m, s in zip(l, mean, std2)]
-        _ = SparseArray.cumsum(_) * -0.5
+        _ = [np.square(x + -m[i]) * (1 / s[i]) for x, m, s in zip(l, mean, std2)]
+        _ = np.sum(_, axis=0) * -0.5
         likelihood.append(_ + b + a)
     for a, b in zip(likelihood, naive_bayes.hy):
-        [assert_almost_equals(v, w) for v, w in zip(a, b.data)]
+        [assert_almost_equals(v, w) for v, w in zip(a, b)]
 
 
 def test_naive_bayes_sklearn():
@@ -521,13 +521,13 @@ def test_naive_bayes_sklearn():
     m = GaussianNB().fit(X, cl)
     hy = m._joint_log_likelihood(X)
     # hy = m.predict_proba(X) * 2 - 1
-    vars = [Var(SparseArray.fromlist(x)) for x in X.T]
-    nb = NB(mask=SparseArray.fromlist([1 for _ in X[:, 0]]), klass=SparseArray.fromlist(cl),
+    vars = [Var(np.array(x)) for x in X.T]
+    nb = NB(mask=np.array([1 for _ in X[:, 0]]), klass=np.array(cl),
             nclass=3)
     naive_bayes = NaiveBayes([x for x in range(4)], naive_bayes=nb)
     naive_bayes.eval(vars)
     for a, b in zip(naive_bayes.hy, hy.T):
-        for a1, b1 in zip(a.full_array(), b):
+        for a1, b1 in zip(a, b):
             assert_almost_equals(a1, b1, 3)
 
 
@@ -550,8 +550,7 @@ def test_naive_bayes_MN():
     coef = [(k, x[0]) for k, x in enumerate(coef) if np.all(np.isfinite(np.array(x[0])))]
     R = []
     for k, p in enumerate(p_klass):
-        # numpy float + SparseArray is unsupported (no __radd__), so the
-        # scalar is added on the SparseArray side
+        # the scalar is added at the end
         r = None
         for v, w in coef:
             t = l[v] * w[k]
@@ -561,7 +560,7 @@ def test_naive_bayes_MN():
                                mask=gp._mask, finite=True)
     naive_bayes.eval(vars)
     for a, b in zip(R, naive_bayes.hy):
-        [assert_almost_equals(np.exp(v), w) for v, w in zip(a.data, b.data)]
+        [assert_almost_equals(np.exp(v), w) for v, w in zip(a, b)]
 
 
 def test_naive_bayes_MN_variable():
@@ -586,22 +585,22 @@ def test_multiple_variables():
     mv2 = MultipleVariables([x for x in range(len(gp.X))],
                             ytr=gp._ytr[0], mask=gp._mask[0], finite=True)
     mv2.eval(gp.X)
-    assert isinstance(mv2.hy, SparseArray)
-    assert mv2.hy.SSE(mv.hy[0]) == 0
+    assert isinstance(mv2.hy, np.ndarray)
+    assert au.SSE(mv2.hy, mv.hy[0]) == 0
     l = []
     for a, b in zip(gp.X, mv2.weight):
         l.append(a.hy * b)
-    r = SparseArray.cumsum(l)
-    assert mv2.hy.SSE(r) == 0
+    r = au.cumsum(l)
+    assert au.SSE(mv2.hy, r) == 0
 
 
 def test_centroid_variable():
     from EvoDAG.node import Centroid
     gp, args = create_problem_node2(nargs=3, seed=0)
     gp.random_leaf()
-    X = np.array([x.hy.full_array() for x in gp.X]).T
+    X = np.array([x.hy for x in gp.X]).T
     index = np.array(gp.naive_bayes._mask)
-    cl = np.array(gp._y_klass.full_array(), dtype=int)[index]
+    cl = np.array(gp._y_klass, dtype=int)[index]
     Xt = X[index]
     coef = [-np.mean(Xt[x == cl], axis=0) for x in range(3)]
     naive_bayes = gp.naive_bayes
@@ -612,7 +611,7 @@ def test_centroid_variable():
     [[assert_almost_equals(_v, _w) for _v, _w in zip(v, w)] for v, w
      in zip(coef, centroid.weight)]
     r = [- ((X + w)**2).sum(axis=1) for w in coef]
-    [[assert_almost_equals(_v, _w) for _v, _w in zip(v, w.full_array())] for v, w
+    [[assert_almost_equals(_v, _w) for _v, _w in zip(v, w)] for v, w
      in zip(r, centroid.hy)]
 
 

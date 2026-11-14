@@ -13,6 +13,7 @@
 # limitations under the License.
 import logging
 import numpy as np
+from . import array_utils as au
 from .node import Function, NaiveBayes, NaiveBayesMN, MultipleVariables, Centroid
 from .model import Model
 from .cython_utils import SelectNumbers
@@ -59,7 +60,7 @@ class Inputs(object):
 
     def functions(self):
         base = self._base
-        density = sum([x.hy.density for x in base.X]) / base.nvar
+        density = sum([au.density(x.hy) for x in base.X]) / base.nvar
         # func = [x for x in self._funcs if x.nargs > 0]
         func = self._funcs
         if not len(func):
@@ -175,10 +176,7 @@ class BasePopulation(object):
         return self._density / self.popsize
 
     def get_density(self, v):
-        try:
-            return v.hy.density
-        except AttributeError:
-            return sum([x.density for x in v.hy]) / len(v.hy)
+        return v.density
 
     @property
     def previous_estopping(self):
@@ -259,10 +257,10 @@ class BasePopulation(object):
         if self._base._probability_calibration is not None:
             node = hist[-1]
             node.normalize()
-            X = np.array([x.full_array() for x in node.hy]).T
-            y = np.array(self._base._y_klass.full_array())
+            X = np.array(node.hy).T
+            y = np.array(self._base._y_klass)
             mask = np.ones(X.shape[0], dtype=bool)
-            mask[np.array(self._base._mask_ts.index)] = False
+            mask[self._base._mask_ts_index] = False
             ins = self._base._probability_calibration().fit(X[mask], y[mask])
         if self._classifier:
             nclasses = self._labels.shape[0]

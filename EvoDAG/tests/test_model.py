@@ -15,7 +15,7 @@
 
 from test_root import cl
 from test_root import X
-from SparseArray import SparseArray
+from EvoDAG import array_utils as au
 import numpy as np
 from test_command_line import default_nargs
 from numpy.testing import assert_almost_equal as assert_almost_equals
@@ -39,7 +39,7 @@ def test_pickle_model():
     m1 = pickle.loads(pickle.dumps(m))
     hy1 = m1.decision_function(X=X[-10:])
     for a, b in zip(hy, hy1):
-        assert a.SSE(b) == 0
+        assert au.SSE(a, b) == 0
 
 
 def test_model_hist():
@@ -85,7 +85,7 @@ def test_ensemble():
            for seed in range(2, 5)]
     ens = Ensemble([gp.model() for gp in gps])
     res = [gp.model().decision_function(X) for gp in gps]
-    res = np.array([np.median([x[j].finite().full_array() for x in res], axis=0) for j in range(3)]).T
+    res = np.array([np.median([au.finite(x[j]) for x in res], axis=0) for j in range(3)]).T
     r2 = ens.decision_function(X)
     print(res, r2)
     assert np.fabs(res - r2).sum() == 0
@@ -109,7 +109,7 @@ def test_ensemble_model():
            for seed in range(3)]
     ens = Ensemble([gp.model for gp in gps])
     res = [gp.decision_function(X) for gp in gps]
-    res = np.median([x.finite().full_array() for x in res], axis=0)
+    res = np.median([au.finite(x) for x in res], axis=0)
     r2 = ens.decision_function(X)
     print(res, r2)
     assert np.fabs(res - r2).mean() == 0
@@ -123,13 +123,13 @@ def test_regression():
     gps = [evodag.init(classifier=False,
                        seed=seed,
                        popsize=10,
-                       generations=2).fit([SparseArray.fromlist(x)], y,
-                                          test_set=[SparseArray.fromlist(x)])
+                       generations=2).fit([np.array(x)], y,
+                                          test_set=[np.array(x)])
            for seed in range(3)]
     model = [_.model() for _ in gps]
     ens = Ensemble(model)
-    X = [SparseArray.fromlist(x)]
-    hy = np.median([m.decision_function(X).finite().full_array() for m in model], axis=0)
+    X = [np.array(x)]
+    hy = np.median([au.finite(m.decision_function(X)) for m in model], axis=0)
     hy1 = ens.predict(X)
     print(hy, hy1)
     assert np.all(hy == hy1)
@@ -198,7 +198,7 @@ def test_multiple_outputs_decision_function():
     hy = m.decision_function(X)
     assert len(hy) == 3
     for i in hy:
-        assert i.isfinite()
+        assert au.isfinite(i)
 
 
 def test_multiple_outputs_predict():
@@ -317,8 +317,8 @@ def test_normalize_naive():
     m.fit(X, cl)
     hy = [x for x in m.population.hist[0].hy]
     naive = m.model(v=m.population.hist[0])
-    df = np.array([x.full_array() for x in naive.decision_function(X)]).T
-    hy = np.array([x.full_array() for x in hy]).T
+    df = np.array([x for x in naive.decision_function(X)]).T
+    hy = np.array([x for x in hy]).T
     hy = np.exp(hy - np.atleast_2d(np.log(np.sum(np.exp(hy), axis=1))).T) * 2 - 1
     print(hy - df)
     for a, b in zip(hy, df):
@@ -332,8 +332,8 @@ def test_normalize_naiveMN():
     m.fit(X, cl)
     hy = [x for x in m.population.hist[1].hy]
     naive = m.model(v=m.population.hist[1])
-    df = np.array([x.full_array() for x in naive.decision_function(X)]).T
-    hy = np.array([x.full_array() for x in hy]).T
+    df = np.array([x for x in naive.decision_function(X)]).T
+    hy = np.array([x for x in hy]).T
     hy = hy / np.atleast_2d(hy.sum(axis=1)).T * 2 - 1
     for a, b in zip(hy, df):
         [assert_almost_equals(v, w) for v, w in zip(a, b)]
@@ -348,8 +348,8 @@ def test_normalize_Centroid():
         return
     hy = [x for x in m.population.hist[2].hy]
     naive = m.model(v=m.population.hist[2])
-    df = np.array([x.full_array() for x in naive.decision_function(X)]).T
-    hy = np.array([x.full_array() for x in hy]).T
+    df = np.array([x for x in naive.decision_function(X)]).T
+    hy = np.array([x for x in hy]).T
     hy = np.exp(hy) * 2 - 1
     print(df, hy)
     for a, b in zip(hy, df):
@@ -407,8 +407,8 @@ def test_probability_calibration_ensemble():
 
 def test_regression_multiple_outputs():
     from EvoDAG.model import EvoDAGE
-    from SparseArray import SparseArray
-    y = [SparseArray.fromlist(cl), SparseArray.fromlist(cl*-1), SparseArray.fromlist(cl*-1 + 0.5)]
+    from EvoDAG import array_utils as au
+    y = [np.array(cl), np.array(cl*-1), np.array(cl*-1 + 0.5)]
     m = EvoDAGE(time_limit=4, multiple_outputs=True, classifier=False).fit(X, y)
     assert m
 

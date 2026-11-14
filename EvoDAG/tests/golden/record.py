@@ -26,12 +26,11 @@ Each *group* (see ``GROUPS``) is stored as a pair of files:
   variables), booleans (did ``eval`` succeed?), the length of every list and
   the exceptions raised, if any.
 
-Everything the library returns goes through ``store`` which converts it to
-dense numpy, whether it is a ``SparseArray`` (anything with ``full_array``)
-or a plain ``np.ndarray``; the same recorder and the same tests therefore
-work with the SparseArray implementation and with a numpy one. The few
-places that must *build* library inputs are ``vec`` and ``kernel_index``;
-``vec`` follows the library (see ``USES_SPARSEARRAY``).
+Everything the library returns goes through ``store``, which converts it to
+dense numpy. The golden files were recorded with the implementation that kept
+its vectors as sparse objects (before issue #63); the library now uses numpy
+arrays and these same files and tests are the parity check. The few places
+that *build* library inputs are ``vec`` and ``kernel_index``.
 
 Training is deterministic for a fixed seed, so the end to end cases do not
 depend on ``PYTHONHASHSEED``.
@@ -57,10 +56,6 @@ from EvoDAG.node import (Variable, Function, Add, Mul, Div, Atan2, Hypot,
                          Centroid, MultipleVariables)
 
 GOLDEN_DIR = Path(__file__).resolve().parent
-
-# Whether the library still stores its vectors as SparseArray objects. The
-# only thing that depends on it is how ``vec`` builds library inputs.
-USES_SPARSEARRAY = hasattr(node_module, 'SparseArray')
 
 # ``nargs`` of every node class as defined in EvoDAG/node.py. Other tests, and
 # ``EvoDAG.init`` (through ``RandomParameterSearch.process_params``), change
@@ -110,12 +105,9 @@ def reset_nargs():
 # ---------------------------------------------------------------------------
 
 def vec(a):
-    """A library vector with the values of ``a`` (used to build inputs)."""
-    a = np.asarray(a, dtype=float)
-    if USES_SPARSEARRAY:
-        from SparseArray import SparseArray
-        return SparseArray.fromlist(a)
-    return a
+    """A library vector with the values of ``a`` (used to build inputs): a
+    1-D C-contiguous float64 array."""
+    return np.array(a, dtype=float)
 
 
 def kernel_index(index):
@@ -125,9 +117,7 @@ def kernel_index(index):
 
 
 def dense(x):
-    "Dense float numpy array of a library vector"
-    if hasattr(x, 'full_array'):
-        return np.array(x.full_array(), dtype=float)
+    "Dense numpy array of a library vector (or of any buffer)"
     return np.array(x)
 
 
@@ -138,6 +128,17 @@ def density_of(x):
     if hasattr(x, 'density'):
         return float(x.density)
     return float(np.mean(np.asarray(x) != 0))
+
+
+def node_density(node):
+    """Density of a node's output as the population counts it: the node's own
+    ``density`` when it has one, otherwise computed from its output. They
+    differ for ``NaiveBayesMN``: the sparse vectors of the recorded
+    implementation stored the entries that underflowed to zero in ``exp`` and
+    counted them."""
+    if hasattr(node, 'density'):
+        return float(node.density)
+    return density_of(node.hy)
 
 
 def jsonable(x):
@@ -740,7 +741,7 @@ def build_density():
         store(arrays, meta, name + '.population_density',
               gp.population.density)
         store(arrays, meta, name + '.node_density',
-              np.array([density_of(h.hy) for h in hist if h.hy is not None]))
+              np.array([node_density(h) for h in hist if h.hy is not None]))
     return arrays, meta
 
 

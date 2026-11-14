@@ -20,7 +20,7 @@ try:
 except ImportError:
     from unittest.mock import MagicMock
 from EvoDAG.node import Variable
-from SparseArray import SparseArray
+from EvoDAG import array_utils as au
 
 
 cl = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -186,7 +186,7 @@ X = np.array([[5.1, 3.5, 1.4, 0.2],
 
 
 def tonparray(a):
-    return np.array(a.full_array())
+    return np.array(a)
 
 
 def test_features():
@@ -196,9 +196,9 @@ def test_features():
     assert gp.nvar == 4
     print(gp.X)
     assert isinstance(gp.X[0], Variable)
-    assert isinstance(gp.X[0].hy, SparseArray)
+    assert isinstance(gp.X[0].hy, np.ndarray)
     gp.Xtest = X
-    assert gp.X[0].hy.SSE(gp.X[0].hy_test) == 0
+    assert au.SSE(gp.X[0].hy, gp.X[0].hy_test) == 0
 
 
 def test_create_population():
@@ -321,7 +321,7 @@ def test_variable():
     np.random.randint = mock
     var = gp.random_leaf()
     assert var.isfinite()
-    assert var.hy.isfinite()
+    assert au.isfinite(var.hy)
     np.random.randint = randint
 
 
@@ -349,7 +349,8 @@ def test_random_leaf():
 def test_random_leaf_inf():
     from EvoDAG import RootGP
     gp = RootGP(generations=1, classifier=False, popsize=4, tr_fraction=1)
-    Xc = [x for x in X]
+    # a list of 1-D arrays is a list of variables, so the samples go in a 2-D array
+    Xc = X.copy()
     Xc[0] = Xc[0] + np.inf
     gp.X = Xc
     y = cl.copy()
@@ -380,7 +381,7 @@ def test_classification_y():
     gp.y = y
     print(gp._ytr, gp.y)
     for a, b in zip(gp._ytr, gp.y):
-        assert a.SSE(b) > 0
+        assert au.SSE(a, b) > 0
         assert a.sum() == 0
         assert b.sum() < 0
 
@@ -391,11 +392,11 @@ def test_regression_y():
     assert not gp._classifier
     gp.X = X
     gp.y = cl.copy()
-    assert gp._ytr.SSE(gp.y) > 0
+    assert au.SSE(gp._ytr, gp.y) > 0
     gp = RootGP(generations=1, popsize=4, classifier=False, tr_fraction=1.0)
     gp.X = X
     gp.y = cl.copy()
-    assert gp._ytr.SSE(gp.y) == 0
+    assert au.SSE(gp._ytr, gp.y) == 0
 
 
 def test_fitness():
@@ -428,7 +429,7 @@ def test_mask_vs():
     v1 = gp.random_leaf()
     a = Add([0, 1], ytr=gp._ytr, mask=gp._mask)
     a.eval([v, v1])
-    hy = SparseArray.argmax(a.hy)
+    hy = au.argmax(a.hy)
     b = BER(y[m], tonparray(hy)[m])
     gp._bagging_fitness.set_fitness(a)
     print(b, a.fitness_vs * 100)
@@ -451,7 +452,7 @@ def test_BER():
     v1 = gp.random_leaf()
     a = Add([0, 1], ytr=gp._ytr, mask=gp._mask)
     a.eval([v, v1])
-    hy = SparseArray.argmax(a.hy)
+    hy = au.argmax(a.hy)
     b = BER(y[m], tonparray(hy)[m])
     gp._bagging_fitness.fitness(a)
     print(b, a.fitness * 100)
@@ -549,7 +550,7 @@ def test_X_sparse():
     gp = RootGP(generations=1,
                 tournament_size=2,
                 popsize=10)
-    X1 = list(map(SparseArray.fromlist, X.T))
+    X1 = list(map(np.array, X.T))
     gp.X = X1
 
 
@@ -619,7 +620,7 @@ def test_fit():
                 popsize=4).fit(X, y, test_set=X)
     assert np.isfinite(gp.population.estopping.fitness)
     assert np.isfinite(gp.population.estopping.fitness_vs)
-    assert gp.population.estopping.hy.isfinite()
+    assert au.isfinite(gp.population.estopping.hy)
     assert len(gp.population.hist) > 4
 
 
@@ -671,12 +672,12 @@ def test_predict():
                 seed=0,
                 popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])
     es = gp.population.estopping
-    assert gp.decision_function().SSE(es.hy_test) == 0
+    assert au.SSE(gp.decision_function(), es.hy_test) == 0
     hy_test = es.hy_test
-    assert gp.decision_function(X=X[-10:]).SSE(hy_test) == 0
+    assert au.SSE(gp.decision_function(X=X[-10:]), hy_test) == 0
     hy = gp.decision_function(X=X[-10:])
     _ = gp.predict(X=X[-10:])
-    assert SparseArray.fromlist(_).SSE(hy) == 0
+    assert au.SSE(np.array(_), hy) == 0
     assert len(gp.Xtest)
 
 
@@ -843,14 +844,13 @@ def test_regression():
     y = 4.3*x**2 + 3.2 * x - 3.2
     gp = evodag(classifier=False,
                 popsize=10,
-                generations=2).fit([SparseArray.fromlist(x)], y,
-                                   test_set=[SparseArray.fromlist(x)])
+                generations=2).fit([np.array(x)], y,
+                                   test_set=[np.array(x)])
     model = gp.model
-    yh = gp.predict([SparseArray.fromlist(x)])
+    yh = gp.predict([np.array(x)])
     assert not model._classifier
-    yh1 = model.predict(X=[SparseArray.fromlist(x)])
-    spf = SparseArray.fromlist
-    assert spf(yh).SSE(spf(yh1)) == 0
+    yh1 = model.predict(X=[np.array(x)])
+    assert au.SSE(np.array(yh), np.array(yh1)) == 0
 
 
 def test_unique():
@@ -882,13 +882,13 @@ def test_RSE():
     y[10:12] = 0
     gp = RootGP(classifier=False,
                 popsize=10,
-                generations=2).fit([SparseArray.fromlist(x)], y,
-                                   test_set=[SparseArray.fromlist(x)])
+                generations=2).fit([np.array(x)], y,
+                                   test_set=[np.array(x)])
     model = gp.model()
     yh = gp.predict()
     assert not model._classifier
-    model.predict(X=[SparseArray.fromlist(x)])
-    gp._mask = SparseArray.fromlist([2] * yh.shape[0])
+    model.predict(X=[np.array(x)])
+    gp._mask = np.array([2.0] * yh.shape[0])
     gp._bagging_fitness.fitness_vs(model._hist[-1])
     print(rse(y, yh), model._hist[-1].fitness_vs)
     assert_almost_equals(rse(y, yh),
@@ -908,12 +908,12 @@ def test_RSE_avg_zero():
 
         def set_regression_mask(self, v):
             base = self._base
-            mask = np.ones(v.size())
+            mask = np.ones(v.shape[0])
             if base._times == 0:
                 mask[10:12] = 0
             else:
                 mask[10:13] = 0
-            base._mask = SparseArray.fromlist(mask)
+            base._mask = np.array(mask)
             base._times += 1
 
     x = np.linspace(-1, 1, 100)
@@ -923,7 +923,7 @@ def test_RSE_avg_zero():
                 popsize=10,
                 generations=2)
     gp._bagging_fitness = B(base=gp)
-    gp.X = [SparseArray.fromlist(x)]
+    gp.X = [np.array(x)]
     gp.y = y
     print(gp._times)
     assert gp._times == 2
@@ -968,8 +968,8 @@ def test_es_extra_test():
     try:
         RootGP(classifier=False,
                popsize=10,
-               generations=2).fit([SparseArray.fromlist(x)], y,
-                                  test_set=[SparseArray.fromlist(x)])
+               generations=2).fit([np.array(x)], y,
+                                  test_set=[np.array(x)])
         assert False
     except ParticularException:
         RootGP.es_extra_test = es_extra_test
@@ -984,8 +984,8 @@ def test_fname():
     Add.nargs = 10
     gp = RootGP(classifier=False,
                 popsize=10,
-                generations=2).fit([SparseArray.fromlist(x)], y,
-                                   test_set=[SparseArray.fromlist(x)])
+                generations=2).fit([np.array(x)], y,
+                                   test_set=[np.array(x)])
     assert gp.signature.count('Ad10') == 1
     Centroid.nargs = 2
 
@@ -1161,7 +1161,7 @@ def test_classification_mo():
     gp.X = X
     gp.nclasses(y)
     y = gp._bagging_fitness.transform_to_mo(y)
-    gp.y = [SparseArray.fromlist(x) for x in y.T]
+    gp.y = [np.array(x) for x in y.T]
     assert isinstance(gp._mask, list)
     gp.create_population()
 
@@ -1177,7 +1177,7 @@ def test_classification_mo2():
     gp.X = X
     gp.nclasses(y)
     y = gp._bagging_fitness.transform_to_mo(y)
-    y = [SparseArray.fromlist(x) for x in y.T]
+    y = [np.array(x) for x in y.T]
     gp = EvoDAG(generations=np.inf, tournament_size=2,
                 early_stopping_rounds=10, time_limit=0.9,
                 multiple_outputs=True, all_inputs=True, seed=0,
@@ -1213,7 +1213,7 @@ def test_init():
     model = m.model()
     hy = model.predict(X)
     print(model.decision_function)
-    print([x.full_array() for x in model.decision_function(X)])
+    print([x for x in model.decision_function(X)])
     print((cl == hy).mean())
     print(hy, cl)
     assert (cl == hy).mean() > 0.9
@@ -1234,7 +1234,7 @@ def test_finite():
     evo.fit(X, cl)
     m = evo.model()
     hy = m.predict(X)
-    print((hy == cl).mean(), [x.full_array() for x in m.decision_function(np.array(X))])
+    print((hy == cl).mean(), [x for x in m.decision_function(np.array(X))])
     assert (hy == cl).mean() > 0.9
 
 

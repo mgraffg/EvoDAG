@@ -28,7 +28,7 @@ list of times (one per seed), their minimum, and the training accuracy
 Python, numpy and EvoDAG versions and the machine. Run it with nothing else
 heavy running: the times are only comparable on the same machine.
 
-It does not import SparseArray, so it works with any EvoDAG implementation.
+It uses only the public API, so it works with any EvoDAG implementation.
 """
 import argparse
 import json

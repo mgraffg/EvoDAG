@@ -15,7 +15,9 @@ from Cython.Build import cythonize
 from setuptools import Extension, setup
 import numpy as np
 
-extension = [Extension('EvoDAG.linalg_solve', ["EvoDAG/linalg_solve.pyx"],
+extension = [Extension('EvoDAG.array_utils', ["EvoDAG/array_utils.pyx"],
+                       include_dirs=[np.get_include()]),
+             Extension('EvoDAG.linalg_solve', ["EvoDAG/linalg_solve.pyx"],
                        include_dirs=[np.get_include()]),
              Extension('EvoDAG.function_selection', ["EvoDAG/function_selection.pyx"],
                        include_dirs=[np.get_include()]),

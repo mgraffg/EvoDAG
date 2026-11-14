@@ -14,7 +14,6 @@
 import argparse
 import numpy as np
 from .utils import RandomParameterSearch, PARAMS
-from SparseArray import SparseArray
 from .model import Ensemble, EvoDAG as model_EvoDAG, EvoDAGE
 import collections
 import os
@@ -308,7 +307,7 @@ class CommandLineParams(CommandLine):
             parameters = self.data.training_set + '.EvoDAGparams'
         npoints = self.data.optimize_parameters
         if isinstance(self.X, list):
-            training_size = self.X[0].size()
+            training_size = self.X[0].shape[0]
         else:
             training_size = self.X.shape[0]
         rs = RandomParameterSearch(params=params,

@@ -60,12 +60,8 @@ jobs:
           python-version: "3.12"
       - name: Build the sdist
         run: |
-          # The sdist build runs setup.py, which imports Cython and numpy and
-          # cimports SparseArray (whose own sdist cannot build in isolation),
-          # so the build tools go in first and the build runs without isolation.
-          pip install build setuptools wheel "Cython>=3.0" numpy
-          pip install --no-build-isolation SparseArray
-          python -m build --sdist --no-isolation
+          pip install build
+          python -m build --sdist
       - uses: actions/upload-artifact@v4
         with:
           name: sdist

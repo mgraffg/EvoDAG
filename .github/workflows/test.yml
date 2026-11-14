@@ -18,16 +18,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      # SparseArray has no wheel for these Python versions and its sdist
-      # cannot be built in an isolated environment (its setup.py imports
-      # Cython and numpy without declaring them), and EvoDAG cimports it, so
-      # the build tools go in first and the builds run without isolation.
-      - name: Install build tools and SparseArray
-        run: |
-          pip install setuptools wheel "Cython>=3.0" numpy
-          pip install --no-build-isolation SparseArray
       - name: Install package and test dependencies
-        run: pip install --no-build-isolation -e ".[test]"
+        run: pip install -e ".[test]"
       - name: Run tests
         run: python -m pytest -q EvoDAG/tests
 

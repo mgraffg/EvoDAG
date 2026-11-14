@@ -15,7 +15,7 @@
 
 import numpy as np
 cimport numpy as np
-from SparseArray.sparse_array cimport SparseArray
+from . import array_utils
 from libc cimport math
 from libc.float cimport DBL_EPSILON
 from cpython cimport array
@@ -102,23 +102,39 @@ cdef bint gauss_jordan(list m):
     return False
 
         
-cpdef compute_weight(list r, SparseArray ytr, mask):
+cdef double dot(double[::1] a, double[::1] b):
+    """Sum of the products of the positions where both are not zero, adding
+    in order (see array_utils.dot)"""
+    cdef Py_ssize_t i, n = a.shape[0]
+    cdef double x, y, res = 0
+    for i in range(n):
+        x = a[i]
+        y = b[i]
+        if x != 0 and y != 0:
+            res += x * y
+    return res
+
+
+cpdef compute_weight(list r, double[::1] ytr, mask):
     """Returns the weight (w) using OLS of r * w = gp._ytr """
     cdef Py_ssize_t i, j, size=PyList_GET_SIZE(r), k=0
-    cdef SparseArray ri, rj
+    cdef double[::1] ri, rj
     cdef array.array data = array.array('d'), other, dependent
     cdef list X = [], R = [], var = []
     cdef double tmp, *dependent_value
     dependent = array.clone(data, size, False)
     dependent_value = dependent.data.as_doubles
     for i in range(size):
-        ri = <SparseArray> PyList_GET_ITEM(r, i)
-        tmp = ytr.dot(ri)
+        ri = <object> PyList_GET_ITEM(r, i)
+        tmp = dot(ytr, ri)
         if not math.isfinite(tmp):
-            return None        
-        ri = ri * mask
-        if ri.non_zero:
-            PyList_Append(R, ri)
+            return None
+        if isinstance(mask, np.ndarray):
+            ri = array_utils.mul(ri, mask)
+        else:
+            ri = array_utils.mul_scalar(ri, mask)
+        if np.count_nonzero(ri):
+            PyList_Append(R, np.asarray(ri))
             PyList_Append(var, i)
             dependent_value[k] = tmp
             k += 1
@@ -126,11 +142,11 @@ cpdef compute_weight(list r, SparseArray ytr, mask):
     X = [array.clone(data, size+1, False) for i in range(size)]
     for i in range(size):
         data = <array.array> PyList_GET_ITEM(X, i)
-        ri = <SparseArray> PyList_GET_ITEM(R, i)
+        ri = <object> PyList_GET_ITEM(R, i)
         data.data.as_doubles[size] = dependent_value[i]
         for j in range(i, size):
-            rj = <SparseArray> PyList_GET_ITEM(R, j)
-            tmp = ri.dot(rj)
+            rj = <object> PyList_GET_ITEM(R, j)
+            tmp = dot(ri, rj)
             if not math.isfinite(tmp):
                 return None
             data.data.as_doubles[j] = tmp

@@ -14,7 +14,7 @@
 
 from test_root import X, cl
 import numpy as np
-from SparseArray import SparseArray
+from EvoDAG import array_utils as au
 from numpy.testing import assert_almost_equal as assert_almost_equals
 
 
@@ -104,8 +104,8 @@ def test_multiple_outputs_BER_vs():
     gp.y = y[:-1]
     gp.create_population()
     a = gp.random_offspring()
-    hy = np.array(SparseArray.argmax(a.hy).full_array())
-    mask = np.array(gp._mask_vs.full_array()).astype(bool)
+    hy = np.array(au.argmax(a.hy))
+    mask = np.array(gp._mask_vs).astype(bool)
     assert_almost_equals(-a.fitness_vs * 100, BER(y[:-1][mask], hy[mask]))
 
 
@@ -127,10 +127,10 @@ def test_multiple_outputs_BER_ts():
     gp.y = y[:-1]
     gp.create_population()
     a = gp.random_offspring()
-    hys = SparseArray.argmax(a.hy)
-    hy = np.array(hys.full_array())
-    print(((hys - gp._y_klass).sign().fabs() * gp._mask_ts).sum())
-    mask = np.array(gp._mask_ts.full_array()).astype(bool)
+    hys = au.argmax(a.hy)
+    hy = np.array(hys)
+    print((np.fabs(np.sign(hys - gp._y_klass)) * gp._mask_ts).sum())
+    mask = np.array(gp._mask_ts).astype(bool)
     assert_almost_equals(-a.fitness * 100, BER(y[:-1][mask], hy[mask]))
 
 
@@ -152,10 +152,10 @@ def test_multiple_outputs_error_rate_ts():
     gp.y = y[:-1]
     gp.create_population()
     a = gp.random_offspring()
-    hys = SparseArray.argmax(a.hy)
-    hy = np.array(hys.full_array())
-    # print(((hys - gp._y_klass).sign().fabs() * gp._mask_ts).sum())
-    mask = np.array(gp._mask_ts.full_array()).astype(bool)
+    hys = au.argmax(a.hy)
+    hy = np.array(hys)
+    # print((np.fabs(np.sign(hys - gp._y_klass)) * gp._mask_ts).sum())
+    mask = np.array(gp._mask_ts).astype(bool)
     # print((y[:-1][mask] != hy[mask]).mean())
     print(-a.fitness, (y[:-1][mask] != hy[mask]).mean())
     assert_almost_equals(-a.fitness, (y[:-1][mask] != hy[mask]).mean())
@@ -179,9 +179,9 @@ def test_multiple_outputs_ER_vs():
     gp.y = y[:-1]
     gp.create_population()
     a = gp.random_offspring()
-    hy = np.array(SparseArray.argmax(a.hy).full_array())
-    # mask = np.array(gp._mask_vs.full_array()).astype(bool)
-    mask = np.array(gp._mask_ts.full_array()) == 0
+    hy = np.array(au.argmax(a.hy))
+    # mask = np.array(gp._mask_vs).astype(bool)
+    mask = np.array(gp._mask_ts) == 0
     print(mask)
     assert_almost_equals(-a.fitness_vs, (y[:-1][mask] != hy[mask]).mean())
 
@@ -201,16 +201,16 @@ def test_macro_F1():
     gp.X = X
     gp.create_population()
     off = gp.random_offspring()
-    hy = SparseArray.argmax(off.hy)
-    index = np.array(gp._mask_ts.index)
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = np.array(hy.full_array())[index]
+    hy = au.argmax(off.hy)
+    index = np.array(gp._mask_ts_index)
+    y = np.array(gp._y_klass)[index]
+    hy = np.array(hy)[index]
     nclasses = gp._bagging_fitness.nclasses
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     print(precision, recall)
     f1 = Score(nclasses)
-    mf1, mf1_v = f1.a_F1(gp._y_klass, SparseArray.argmax(off.hy), gp._mask_ts.index)
+    mf1, mf1_v = f1.a_F1(gp._y_klass, au.argmax(off.hy), gp._mask_ts_index)
     for x, y in zip(precision, f1.precision):
         if not np.isfinite(x):
             continue
@@ -228,10 +228,10 @@ def test_macro_F1():
     gp._bagging_fitness.set_fitness(off)
     assert_almost_equals(off.fitness, mf1 - 1)
     assert_almost_equals(off.fitness_vs, mf1_v - 1)
-    index = np.array(gp._mask_ts.full_array()) == 0
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = SparseArray.argmax(off.hy)
-    hy = np.array(hy.full_array())[index]
+    index = np.array(gp._mask_ts) == 0
+    y = np.array(gp._y_klass)[index]
+    hy = au.argmax(off.hy)
+    hy = np.array(hy)[index]
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     _ = (2 * precision * recall) / (precision + recall)
@@ -255,18 +255,18 @@ def test_F1():
     gp.X = X
     gp.create_population()
     off = gp.random_offspring()
-    hy = SparseArray.argmax(off.hy)
-    index = np.array(gp._mask_ts.index)
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = np.array(hy.full_array())[index]
+    hy = au.argmax(off.hy)
+    index = np.array(gp._mask_ts_index)
+    y = np.array(gp._y_klass)[index]
+    hy = np.array(hy)[index]
     nclasses = gp._bagging_fitness.nclasses
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     f1 = Score(nclasses)
     assert gp._bagging_fitness.min_class >= 0 and gp._bagging_fitness.min_class < gp._bagging_fitness.nclasses
     mf1, mf1_v = f1.F1(gp._bagging_fitness.min_class,
-                       gp._y_klass, SparseArray.argmax(off.hy),
-                       gp._mask_ts.index)
+                       gp._y_klass, au.argmax(off.hy),
+                       gp._mask_ts_index)
 
     _ = (2 * precision * recall) / (precision + recall)
     m = ~ np.isfinite(_)
@@ -275,10 +275,10 @@ def test_F1():
     gp._fitness_function = 'F1'
     gp._bagging_fitness.set_fitness(off)
     assert_almost_equals(mf1 - 1, off.fitness)
-    index = np.array(gp._mask_ts.full_array()) == 0
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = SparseArray.argmax(off.hy)
-    hy = np.array(hy.full_array())[index]
+    index = np.array(gp._mask_ts) == 0
+    y = np.array(gp._y_klass)[index]
+    hy = au.argmax(off.hy)
+    hy = np.array(hy)[index]
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     _ = (2 * precision * recall) / (precision + recall)
@@ -315,8 +315,8 @@ def test_mask():
     gp.y = y
     gp.X = X
     gp.create_population()
-    ts = np.array(gp._mask_ts.full_array()) == 0
-    vs = np.array(gp._mask_vs.full_array()) == 1
+    ts = np.array(gp._mask_ts) == 0
+    vs = np.array(gp._mask_vs) == 1
     assert np.all(ts == vs)
 
 
@@ -335,24 +335,24 @@ def test_RecallF1():
     gp.X = X
     gp.create_population()
     off = gp.random_offspring()
-    hy = SparseArray.argmax(off.hy)
-    index = np.array(gp._mask_ts.index)
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = np.array(hy.full_array())[index]
+    hy = au.argmax(off.hy)
+    index = np.array(gp._mask_ts_index)
+    y = np.array(gp._y_klass)[index]
+    hy = np.array(hy)[index]
     nclasses = gp._bagging_fitness.nclasses
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     f1 = Score(nclasses)
-    mf1, mf1_v = f1.macroRecallF1(gp._y_klass, SparseArray.argmax(off.hy),
-                                  gp._mask_ts.index)
+    mf1, mf1_v = f1.macroRecallF1(gp._y_klass, au.argmax(off.hy),
+                                  gp._mask_ts_index)
     assert_almost_equals(np.mean(recall), mf1)
     gp._fitness_function = 'macro-RecallF1'
     gp._bagging_fitness.set_fitness(off)
     assert_almost_equals(mf1 - 1, off.fitness)
-    index = np.array(gp._mask_ts.full_array()) == 0
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = SparseArray.argmax(off.hy)
-    hy = np.array(hy.full_array())[index]
+    index = np.array(gp._mask_ts) == 0
+    y = np.array(gp._y_klass)[index]
+    hy = au.argmax(off.hy)
+    hy = np.array(hy)[index]
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     _ = (2 * precision * recall) / (precision + recall)
@@ -383,16 +383,16 @@ def test_AccdDotMacroF1():
     gp.X = X
     gp.create_population()
     off = gp.random_offspring()
-    hy = SparseArray.argmax(off.hy)
-    index = np.array(gp._mask_ts.index)
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = np.array(hy.full_array())[index]
+    hy = au.argmax(off.hy)
+    index = np.array(gp._mask_ts_index)
+    y = np.array(gp._y_klass)[index]
+    hy = np.array(hy)[index]
     nclasses = gp._bagging_fitness.nclasses
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     f1 = Score(nclasses)
-    mf1, mf1_v = f1.accDotMacroF1(gp._y_klass, SparseArray.argmax(off.hy),
-                                  gp._mask_ts.index)
+    mf1, mf1_v = f1.accDotMacroF1(gp._y_klass, au.argmax(off.hy),
+                                  gp._mask_ts_index)
     _ = (2 * precision * recall) / (precision + recall)
     m = ~ np.isfinite(_)
     _[m] = 0
@@ -401,10 +401,10 @@ def test_AccdDotMacroF1():
     gp._bagging_fitness.set_fitness(off)
     assert_almost_equals(off.fitness, mf1 - 1)
     assert_almost_equals(off.fitness_vs, mf1_v - 1)
-    index = np.array(gp._mask_ts.full_array()) == 0
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = SparseArray.argmax(off.hy)
-    hy = np.array(hy.full_array())[index]
+    index = np.array(gp._mask_ts) == 0
+    y = np.array(gp._y_klass)[index]
+    hy = au.argmax(off.hy)
+    hy = np.array(hy)[index]
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     _ = (2 * precision * recall) / (precision + recall)
@@ -429,23 +429,23 @@ def test_a_precision():
     gp.create_population()
     # off = gp.random_offspring()
     off = gp.population.bsf
-    hy = SparseArray.argmax(off.hy)
-    index = np.array(gp._mask_ts.index)
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = np.array(hy.full_array())[index]
+    hy = au.argmax(off.hy)
+    index = np.array(gp._mask_ts_index)
+    y = np.array(gp._y_klass)[index]
+    hy = np.array(hy)[index]
     nclasses = gp._bagging_fitness.nclasses
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     f1 = Score(nclasses)
-    mf1, mf1_v = f1.a_precision(gp._y_klass, SparseArray.argmax(off.hy),
-                                gp._mask_ts.index)
+    mf1, mf1_v = f1.a_precision(gp._y_klass, au.argmax(off.hy),
+                                gp._mask_ts_index)
     assert_almost_equals(np.mean(precision), mf1)
     gp._fitness_function = 'a_precision'
     gp._bagging_fitness.set_fitness(off)
     assert_almost_equals(mf1 - 1, off.fitness)
-    index = np.array(gp._mask_ts.full_array()) == 0
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = SparseArray.argmax(off.hy)
-    hy = np.array(hy.full_array())[index]
+    index = np.array(gp._mask_ts) == 0
+    y = np.array(gp._y_klass)[index]
+    hy = au.argmax(off.hy)
+    hy = np.array(hy)[index]
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     assert_almost_equals(np.mean(precision) - 1, off.fitness_vs)
 
@@ -464,10 +464,10 @@ def test_g_recall_precision():
     gp.X = X
     gp.create_population()
     off = gp.random_offspring()
-    hy = SparseArray.argmax(off.hy)
-    index = np.array(gp._mask_ts.index)
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = np.array(hy.full_array())[index]
+    hy = au.argmax(off.hy)
+    index = np.array(gp._mask_ts_index)
+    y = np.array(gp._y_klass)[index]
+    hy = np.array(hy)[index]
     nclasses = gp._bagging_fitness.nclasses
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
@@ -478,10 +478,10 @@ def test_g_recall_precision():
     if not np.isfinite(score):
         score = -1
     assert_almost_equals(score, off.fitness)
-    index = np.array(gp._mask_ts.full_array()) == 0
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = SparseArray.argmax(off.hy)
-    hy = np.array(hy.full_array())[index]
+    index = np.array(gp._mask_ts) == 0
+    y = np.array(gp._y_klass)[index]
+    hy = au.argmax(off.hy)
+    hy = np.array(hy)[index]
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     score = (precision[min_class] * recall[min_class]) - 1
@@ -504,20 +504,20 @@ def test_g_recall():
     gp.X = X
     gp.create_population()
     off = gp.random_offspring()
-    hy = SparseArray.argmax(off.hy)
-    index = np.array(gp._mask_ts.index)
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = np.array(hy.full_array())[index]
+    hy = au.argmax(off.hy)
+    index = np.array(gp._mask_ts_index)
+    y = np.array(gp._y_klass)[index]
+    hy = np.array(hy)[index]
     nclasses = gp._bagging_fitness.nclasses
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     score = np.prod(recall) - 1
     gp._fitness_function = 'g_recall'
     gp._bagging_fitness.set_fitness(off)
     assert_almost_equals(score, off.fitness)
-    index = np.array(gp._mask_ts.full_array()) == 0
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = SparseArray.argmax(off.hy)
-    hy = np.array(hy.full_array())[index]
+    index = np.array(gp._mask_ts) == 0
+    y = np.array(gp._y_klass)[index]
+    hy = au.argmax(off.hy)
+    hy = np.array(hy)[index]
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     score = np.prod(recall) - 1
     assert_almost_equals(score, off.fitness_vs)
@@ -535,10 +535,10 @@ def test_g_F1():
     gp.X = X
     gp.create_population()
     off = gp.random_offspring()
-    hy = SparseArray.argmax(off.hy)
-    index = np.array(gp._mask_ts.index)
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = np.array(hy.full_array())[index]
+    hy = au.argmax(off.hy)
+    index = np.array(gp._mask_ts_index)
+    y = np.array(gp._y_klass)[index]
+    hy = np.array(hy)[index]
     nclasses = gp._bagging_fitness.nclasses
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
@@ -550,10 +550,10 @@ def test_g_F1():
     gp._bagging_fitness.set_fitness(off)
     print(score, _)
     assert_almost_equals(score, off.fitness)
-    index = np.array(gp._mask_ts.full_array()) == 0
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = SparseArray.argmax(off.hy)
-    hy = np.array(hy.full_array())[index]
+    index = np.array(gp._mask_ts) == 0
+    y = np.array(gp._y_klass)[index]
+    hy = au.argmax(off.hy)
+    hy = np.array(hy)[index]
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     _ = (2 * precision * recall) / (precision + recall)
@@ -578,20 +578,20 @@ def test_g_precision():
     gp.create_population()
     # off = gp.random_offspring()
     off = gp.population.bsf
-    hy = SparseArray.argmax(off.hy)
-    index = np.array(gp._mask_ts.index)
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = np.array(hy.full_array())[index]
+    hy = au.argmax(off.hy)
+    index = np.array(gp._mask_ts_index)
+    y = np.array(gp._y_klass)[index]
+    hy = np.array(hy)[index]
     nclasses = gp._bagging_fitness.nclasses
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     score = np.prod(precision) - 1
     assert gp._fitness_function == 'g_precision'
     gp._bagging_fitness.set_fitness(off)
     assert_almost_equals(score, off.fitness)
-    index = np.array(gp._mask_ts.full_array()) == 0
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = SparseArray.argmax(off.hy)
-    hy = np.array(hy.full_array())[index]
+    index = np.array(gp._mask_ts) == 0
+    y = np.array(gp._y_klass)[index]
+    hy = au.argmax(off.hy)
+    hy = np.array(hy)[index]
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     score = np.prod(precision) - 1
     if np.isfinite(score) and np.isfinite(off.fitness_vs):
@@ -611,10 +611,10 @@ def test_g_g_recall_precision():
     gp.X = X
     gp.create_population()
     off = gp.random_offspring()
-    hy = SparseArray.argmax(off.hy)
-    index = np.array(gp._mask_ts.index)
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = np.array(hy.full_array())[index]
+    hy = au.argmax(off.hy)
+    index = np.array(gp._mask_ts_index)
+    y = np.array(gp._y_klass)[index]
+    hy = np.array(hy)[index]
     nclasses = gp._bagging_fitness.nclasses
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
@@ -624,10 +624,10 @@ def test_g_g_recall_precision():
     assert gp._fitness_function == 'g_g_recall_precision'
     gp._bagging_fitness.set_fitness(off)
     assert_almost_equals(score, off.fitness)
-    index = np.array(gp._mask_ts.full_array()) == 0
-    y = np.array(gp._y_klass.full_array())[index]
-    hy = SparseArray.argmax(off.hy)
-    hy = np.array(hy.full_array())[index]
+    index = np.array(gp._mask_ts) == 0
+    y = np.array(gp._y_klass)[index]
+    hy = au.argmax(off.hy)
+    hy = np.array(hy)[index]
     precision = np.array([(y[hy == k] == k).mean() for k in range(nclasses)])
     recall = np.array([(hy[y == k] == k).mean() for k in range(nclasses)])
     precision[~ np.isfinite(precision)] = 0

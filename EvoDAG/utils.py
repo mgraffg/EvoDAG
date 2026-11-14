@@ -14,7 +14,6 @@
 
 
 import numpy as np
-from SparseArray import SparseArray
 import json
 import os
 import gzip
@@ -54,7 +53,15 @@ def json_iterator(filename):
 
 
 def tonparray(a):
-    return np.array(a.full_array())
+    return np.array(a)
+
+
+def index_data(pairs, size):
+    "Dense vector of ``size`` with the value of each ``(position, value)``"
+    res = np.zeros(size)
+    if len(pairs):
+        res[[i for i, _ in pairs]] = [v for _, v in pairs]
+    return res
 
 
 def BER(y, yh):
@@ -143,7 +150,7 @@ class Inputs(object):
                 X.append([self.convert(i) for i in x[:-dim]])
                 y.append(x[-dim:])
             X = np.array(X)
-            y = [SparseArray.fromlist([float(x[i]) for x in y]) for i in range(dim)]
+            y = [np.array([float(x[i]) for x in y]) for i in range(dim)]
         elif dim == 1:
             for x in d:
                 X.append([self.convert(i) for i in x[:-1]])
@@ -176,7 +183,7 @@ class Inputs(object):
                     if k == dependent:
                         y.append(self.convert_label(v))
         num_rows = row + 1
-        X = [SparseArray.index_data(x, num_rows) for x in X]
+        X = [index_data(x, num_rows) for x in X]
         if len(y) == 0:
             y = None
         else:
@@ -209,7 +216,7 @@ class Inputs(object):
             except KeyError:
                 pass
         num_rows = row + 1
-        X = [SparseArray.index_data(x, num_rows) for x in X]
+        X = [index_data(x, num_rows) for x in X]
         if len(y) == 0:
             y = None
         else:

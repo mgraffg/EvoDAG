@@ -16,10 +16,14 @@
 import numpy as np
 from .linalg_solve import compute_weight
 from .cython_utils import naive_bayes as NB
-from .cython_utils import naive_bayes_MN as MN
+from .cython_utils import _naive_bayes_MN_stored as MN
 from .cython_utils import naive_bayes_isfinite, naive_bayes_isfinite_MN
 from .cython_utils import centroid_coef
-from SparseArray import SparseArray
+from . import array_utils as au
+
+
+def _unary(symbol):
+    return getattr(au, symbol)
 
 
 class Variable(object):
@@ -159,37 +163,36 @@ class Variable(object):
 
     def _mul(self, a, w):
         if isinstance(w, np.ndarray) and w.size == 1:
-            # numpy >= 2 does not convert a size-1 array with ndim > 0
-            # to a Python scalar, which SparseArray.__mul__ requires
+            # a size-1 array (ndim > 0) is not a scalar for au.mul_scalar
             w = w.item()
         if not isinstance(w, list):
-            return a * w
+            return au.mul_scalar(a, w)
         if not isinstance(a, list):
-            return [a * x for x in w]
-        return [x * y for x, y in zip(a, w)]
+            return [au.mul_scalar(a, x) for x in w]
+        return [au.mul_scalar(x, y) for x, y in zip(a, w)]
 
     def eval(self, X):
         r, hr = self.raw_outputs(X)
         if isinstance(r, list):
             if self._finite:
-                r = [x.finite(inplace=True) for x in r]
+                r = [au.finite(x) for x in r]
             else:
                 r = [x for x in r]
         else:
             if self._finite:
-                r = r.finite(inplace=True)
+                r = au.finite(r)
         if not self.set_weight(r):
             return False
         self.hy = self._mul(r, self.weight)
         if hr is not None:
             if isinstance(hr, list):
                 if self._finite:
-                    hr = [x.finite(inplace=True) for x in hr]
+                    hr = [au.finite(x) for x in hr]
                 else:
                     hr = [x for x in hr]
             else:
                 if self._finite:
-                    hr = hr.finite(inplace=True)
+                    hr = au.finite(hr)
             self.hy_test = self._mul(hr, self.weight)
         return True
 
@@ -197,13 +200,13 @@ class Variable(object):
         "Test whether the predicted values are finite"
         if self._multiple_outputs:
             if self.hy_test is not None:
-                r = [(hy.isfinite() and (hyt is None or hyt.isfinite()))
+                r = [(au.isfinite(hy) and (hyt is None or au.isfinite(hyt)))
                      for hy, hyt in zip(self.hy, self.hy_test)]
             else:
-                r = [hy.isfinite() for hy in self.hy]
+                r = [au.isfinite(hy) for hy in self.hy]
             return np.all(r)
-        return self.hy.isfinite() and (self.hy_test is None or
-                                       self.hy_test.isfinite())
+        return au.isfinite(self.hy) and (self.hy_test is None or
+                                         au.isfinite(self.hy_test))
 
     def normalize(self):
         pass
@@ -216,6 +219,21 @@ class Variable(object):
     @hy.setter
     def hy(self, v):
         self._eval_tr = v
+
+    # set by the nodes whose output stores entries that are zero (see
+    # cython_utils._naive_bayes_MN_stored)
+    _stored_density = None
+
+    @property
+    def density(self):
+        """Fraction of the entries of the predicted values that are not zero
+        (average over the outputs); it drives the choice of functions"""
+        if self._stored_density is not None:
+            return sum(self._stored_density) / len(self._stored_density)
+        hy = self.hy
+        if isinstance(hy, list):
+            return sum([au.density(x) for x in hy]) / len(hy)
+        return au.density(hy)
 
     @property
     def hy_test(self):
@@ -313,10 +331,11 @@ class Function1(Function):
     def _raw_outputs(self, X, func):
         X = X[self.variable]
         hy, hyt = self.hy2list(X)
-        r = [getattr(x, func)() for x in hy]
+        func = _unary(func)
+        r = [func(x) for x in hy]
         hr = None
         if hyt is not None:
-            hr = [getattr(x, func)() for x in hyt if x is not None]
+            hr = [func(x) for x in hyt if x is not None]
         return self.return_r_hr(r, hr)
 
     def raw_outputs(self, X):
@@ -337,7 +356,7 @@ class Add(Function):
 
     @staticmethod
     def cumsum(r):
-        return SparseArray.cumsum(r)
+        return au.cumsum(r)
 
     def set_weight(self, hy):
         if self.weight is not None:
@@ -373,9 +392,9 @@ class Add(Function):
             else:
                 hr = None
         else:
-            r = self.cumsum([x * w for x, w in zip(hy, self.weight)])
+            r = self.cumsum([au.mul_scalar(x, w) for x, w in zip(hy, self.weight)])
             if hyt is not None:
-                hr = self.cumsum([x * w for x, w in zip(hyt, self.weight)])
+                hr = self.cumsum([au.mul_scalar(x, w) for x, w in zip(hyt, self.weight)])
             else:
                 hr = None
         self.hy = r
@@ -393,7 +412,7 @@ class Mul(Function1):
 
     @staticmethod
     def cumprod(r):
-        return SparseArray.cummul(r)
+        return au.cummul(r)
 
     def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
@@ -419,13 +438,13 @@ class Div(Function1):
         hy, hyt = self.hy2listM(X)
         hr = None
         if self._multiple_outputs:
-            r = [x[0] / x[1] for x in hy]
+            r = [au.div(x[0], x[1]) for x in hy]
             if hyt is not None:
-                hr = [x[0] / x[1] for x in hyt]
+                hr = [au.div(x[0], x[1]) for x in hyt]
         else:
-            r = hy[0] / hy[1]
+            r = au.div(hy[0], hy[1])
             if hyt is not None:
-                hr = hyt[0] / hyt[1]
+                hr = au.div(hyt[0], hyt[1])
         return r, hr
 
 
@@ -438,13 +457,13 @@ class Atan2(Function1):
         hy, hyt = self.hy2listM(X)
         hr = None
         if self._multiple_outputs:
-            r = [x[0].atan2(x[1]) for x in hy]
+            r = [au.atan2(x[0], x[1]) for x in hy]
             if hyt is not None:
-                hr = [x[0].atan2(x[1]) for x in hyt]
+                hr = [au.atan2(x[0], x[1]) for x in hyt]
         else:
-            r = hy[0].atan2(hy[1])
+            r = au.atan2(hy[0], hy[1])
             if hyt is not None:
-                hr = hyt[0].atan2(hyt[1])
+                hr = au.atan2(hyt[0], hyt[1])
         return r, hr
 
 
@@ -457,13 +476,13 @@ class Hypot(Function1):
         hy, hyt = self.hy2listM(X)
         hr = None
         if self._multiple_outputs:
-            r = [x[0].hypot(x[1]) for x in hy]
+            r = [au.hypot(x[0], x[1]) for x in hy]
             if hyt is not None:
-                hr = [x[0].hypot(x[1]) for x in hyt]
+                hr = [au.hypot(x[0], x[1]) for x in hyt]
         else:
-            r = hy[0].hypot(hy[1])
+            r = au.hypot(hy[0], hy[1])
             if hyt is not None:
-                hr = hyt[0].hypot(hyt[1])
+                hr = au.hypot(hyt[0], hyt[1])
         return r, hr
 
 
@@ -609,7 +628,7 @@ class Min(Function1):
 
     @staticmethod
     def cummin(r):
-        return SparseArray.cummin(r)
+        return au.cummin(r)
 
     def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
@@ -639,7 +658,7 @@ class Max(Function1):
 
     @staticmethod
     def cummax(r):
-        return SparseArray.cummax(r)
+        return au.cummax(r)
 
     def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
@@ -665,7 +684,7 @@ class Argmax(Function1):
 
     @staticmethod
     def argop(r):
-        return SparseArray.argmax(r)
+        return au.argmax(r)
 
     def raw_outputs(self, X):
         X = [X[x] for x in self.variable]
@@ -691,7 +710,7 @@ class Argmin(Argmax):
 
     @staticmethod
     def argop(r):
-        return SparseArray.argmin(r)
+        return au.argmin(r)
 
 
 class NaiveBayes(Function):
@@ -773,14 +792,14 @@ class NaiveBayes(Function):
 
     @staticmethod
     def _normalize(hy):
-        hy = [x.exp() for x in hy]
-        den = SparseArray.cumsum(hy)
-        hy = [(x / den).mul2(2).add2(-1.0) for x in hy]
+        hy = [au.exp(x) for x in hy]
+        den = au.cumsum(hy)
+        hy = [au.mul_scalar(au.div(x, den), 2.0) - 1.0 for x in hy]
         return hy
 
     def normalize(self):
         self.hy = self._normalize(self.hy)
-        [x.finite(inplace=True) for x in self.hy]
+        [au.finite(x) for x in self.hy]
 
 
 class NaiveBayesMN(NaiveBayes):
@@ -813,15 +832,17 @@ class NaiveBayesMN(NaiveBayes):
         if not self.set_weight(hy):
             return False
         weight, var, nclass = self.weight
-        self.hy = MN([hy[x] for x in var], weight, nclass)
+        self.hy, stored = MN([hy[x] for x in var], weight, nclass)
+        size = float(len(self.hy[0]))
+        self._stored_density = [x / size for x in stored]
         if hyt is not None:
-            self.hy_test = MN([hyt[x] for x in var], weight, nclass)
+            self.hy_test = MN([hyt[x] for x in var], weight, nclass)[0]
         return True
 
     def normalize(self):
-        den = SparseArray.cumsum(self.hy)
-        hy = [(x / den).mul2(2).add2(-1.0) for x in self.hy]
-        [x.finite(inplace=True) for x in hy]
+        den = au.cumsum(self.hy)
+        hy = [au.mul_scalar(au.div(x, den), 2.0) - 1.0 for x in self.hy]
+        [au.finite(x) for x in hy]
         self.hy = hy
 
 
@@ -856,33 +877,34 @@ class MultipleVariables(Add):
         return True
 
     def _mul(self, a, w):
-        cumsum = SparseArray.cumsum
+        cumsum = au.cumsum
         if not isinstance(w, list):
-            return cumsum([x * y for x, y in zip(a, w)])
-        return [cumsum([x * y1 for x, y1 in zip(a, y)]) for y in w]
+            return cumsum([au.mul_scalar(x, y) for x, y in zip(a, w)])
+        return [cumsum([au.mul_scalar(x, y1) for x, y1 in zip(a, y)])
+                for y in w]
 
     def eval(self, X):
         r, hr = self.raw_outputs(X)
         if isinstance(r, list):
             if self._finite:
-                r = [x.finite(inplace=True) for x in r]
+                r = [au.finite(x) for x in r]
             else:
                 r = [x for x in r]
         else:
             if self._finite:
-                r = r.finite(inplace=True)
+                r = au.finite(r)
         if not self.set_weight(r):
             return False
         self.hy = self._mul(r, self.weight)
         if hr is not None:
             if isinstance(hr, list):
                 if self._finite:
-                    hr = [x.finite(inplace=True) for x in hr]
+                    hr = [au.finite(x) for x in hr]
                 else:
                     hr = [x for x in hr]
             else:
                 if self._finite:
-                    hr = hr.finite(inplace=True)
+                    hr = au.finite(hr)
             self.hy_test = self._mul(hr, self.weight)
         return True
 
@@ -910,22 +932,15 @@ class Centroid(NaiveBayes):
         if not self.set_weight(hy):
             return False
         weight = self.weight
-        self.hy = [SparseArray.cumsum([x.add2(_w).sq() for x, _w in
-                                       zip(hy, w)]).mul2(-1.0) for w in weight]
-        # if self.height == 0:
-        # else:
-        #     self.hy = [SparseArray.cumsum([x.add2(_w).sq() for x, _w in
-        #                                    zip(hy, w)]).mul2(-1.0).exp().mul2(2).add2(-1.0) for w in weight]
+        self.hy = [au.mul_scalar(au.cumsum([au.sq(x + _w) for x, _w in
+                                            zip(hy, w)]), -1.0) for w in weight]
         if hyt is not None:
-            self.hy_test = [SparseArray.cumsum([x.add2(_w).sq() for x,
-                                                _w in zip(hyt, w)]).mul2(-1.0) for w in weight]
-            # if self.height == 0:
-            # else:
-            #     self.hy_test = [SparseArray.cumsum([x.add2(_w).sq() for x,
-            #                                         _w in zip(hyt, w)]).mul2(-1.0).exp().mul2(2).add2(-1.0) for w in weight]
+            self.hy_test = [au.mul_scalar(au.cumsum([au.sq(x + _w) for x, _w
+                                                     in zip(hyt, w)]), -1.0)
+                            for w in weight]
         return True
 
     def normalize(self):
-        hy = [x.exp().mul2(2).add2(-1.0) for x in self.hy]
-        [x.finite(inplace=True) for x in hy]
+        hy = [au.mul_scalar(au.exp(x), 2.0) - 1.0 for x in self.hy]
+        [au.finite(x) for x in hy]
         self.hy = hy

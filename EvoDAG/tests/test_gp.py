@@ -21,6 +21,7 @@ from EvoDAG.node import Variable, Add, Mul, Sin
 from EvoDAG.gp import Individual
 from numpy.testing import assert_almost_equal as assert_almost_equals
 import numpy as np
+from EvoDAG import array_utils as au
 
 
 def test_indindividual_decision_function():
@@ -48,7 +49,7 @@ def test_indindividual_decision_function():
                       Add(range(2), weight=np.ones(2)),
                       vars[0], vars[1], vars[0], vars[2]])
     ind.decision_function(X)
-    # assert v.hy.SSE(v.hy_test) == 0
+    # assert au.SSE(v.hy, v.hy_test) == 0
     hy = tonparray(ind._ind[0].hy)
     [assert_almost_equals(a, b) for a, b in zip(hy, y)]
     default_nargs()
@@ -84,7 +85,7 @@ def test_gp_population_full():
     ind = Individual(ind)
     print(X.shape, ind.individual)
     hy = ind.decision_function(X)
-    assert hy.isfinite()
+    assert au.isfinite(hy)
     default_nargs()
 
 
@@ -126,7 +127,7 @@ def test_gp_population_grow():
     ind = Individual(ind)
     print(X.shape, ind.individual)
     hy = ind.decision_function(X)
-    assert hy.isfinite()
+    assert au.isfinite(hy)
     default_nargs()
 
 
@@ -141,5 +142,5 @@ def test_gp_create_population():
     pop = Population(fs, nterminals=X.shape[1])
     inds = pop.create_population(X=X)
     for i in inds:
-        assert i[0].hy.isfinite()
+        assert au.isfinite(i[0].hy)
     default_nargs()

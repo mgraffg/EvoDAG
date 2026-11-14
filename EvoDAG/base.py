@@ -15,7 +15,7 @@
 
 import numpy as np
 import logging
-from SparseArray import SparseArray
+from . import array_utils as au
 from .node import Variable
 from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Log1p
 from .node import Sq, Min, Max
@@ -28,7 +28,7 @@ from .population import SteadyState
 from .utils import tonparray
 from .function_selection import FunctionSelection
 from .naive_bayes import NaiveBayes as NB
-from .bagging_fitness import BaggingFitness
+from .bagging_fitness import BaggingFitness, mask_mul
 import time
 import importlib
 import inspect
@@ -210,7 +210,7 @@ class EvoDAG(object):
     @y.setter
     def y(self, v):
         if isinstance(v, np.ndarray):
-            v = SparseArray.fromlist(v)
+            v = np.array(v, dtype=float)
         if self.classifier:
             self._multiple_outputs = True
             if self._labels is None:
@@ -229,8 +229,18 @@ class EvoDAG(object):
                 raise RuntimeError(msg)
         else:
             self._mask = 1.0
-        self._ytr = v * self._mask
+        self._ytr = mask_mul(v, self._mask)
         self._y = v
+
+    @property
+    def _mask_ts(self):
+        "Mask of the training set (used by the metrics) and its positions"
+        return self.__mask_ts
+
+    @_mask_ts.setter
+    def _mask_ts(self, v):
+        self.__mask_ts = v
+        self._mask_ts_index = np.flatnonzero(v).astype(np.uint32)
 
     @property
     def function_set(self):
@@ -338,11 +348,12 @@ class EvoDAG(object):
         pop = self.population.population
         score = self._bagging_fitness.score
         if self.classifier:
-            fit = [(k, score.accuracy(first, SparseArray.argmax(pop[x].hy),
-                                      self._mask_ts.index)[0]) for k, x in enumerate(vars)]
+            fit = [(k, score.accuracy(first, au.argmax(pop[x].hy),
+                                      self._mask_ts_index)[0]) for k, x in enumerate(vars)]
         else:
-            fit = [(k, score.accuracy(first, pop[x].hy.sign() + 1,
-                                      self._mask.index)[0]) for k, x in enumerate(vars)]
+            index = np.flatnonzero(self._mask).astype(np.uint32)
+            fit = [(k, score.accuracy(first, au.sign(pop[x].hy) + 1,
+                                      index)[0]) for k, x in enumerate(vars)]
         fit = min(fit, key=lambda x: x[1])
         index = fit[0]
         return vars[index]
@@ -351,9 +362,9 @@ class EvoDAG(object):
         first = self.population.tournament()
         args = {first: 1}
         if self.classifier:
-            first = SparseArray.argmax(self.population.population[first].hy)
+            first = au.argmax(self.population.population[first].hy)
         else:
-            first = self.population.population[first].hy.sign() + 1.0
+            first = au.sign(self.population.population[first].hy) + 1.0
         res = []
         sel = self._get_args_orthogonal
         n_tries = self._number_tries_unique_args
@@ -383,10 +394,10 @@ class EvoDAG(object):
             for k,x in enumerate(vars):  
                 pvalue = 0
                 for i in range(len(first_hy)):
-                    pvalue+= SparseArray.dot(pop[x].hy[i].mul(mask),first_hy[i])
+                    pvalue+= au.dot(au.mul(pop[x].hy[i], mask), first_hy[i])
                 prod.append( (k,pvalue) )
         else:
-            prod = [(k,SparseArray.dot(pop[x].hy.mul(mask),first_hy)) for k,x in enumerate(vars)]
+            prod = [(k, au.dot(au.mul(pop[x].hy, mask), first_hy)) for k, x in enumerate(vars)]
         
         prod = min(prod, key=lambda x: x[1])
         index = prod[0]
@@ -402,9 +413,9 @@ class EvoDAG(object):
         if isinstance(self.population.population[first].hy,list):
             first_hy = []
             for i in range(len(self.population.population[first].hy)):
-                first_hy.append( self.population.population[first].hy[i].mul(mask) )
+                first_hy.append(au.mul(self.population.population[first].hy[i], mask))
         else:
-            first_hy = self.population.population[first].hy.mul(mask)
+            first_hy = au.mul(self.population.population[first].hy, mask)
             
         res = []
         sel = self._get_args_orthogonal_dot
@@ -547,7 +558,7 @@ class EvoDAG(object):
     def shuffle_tr2ts(self):
         L = []
         for x in self.X:
-            l = np.array(x.hy.full_array())
+            l = np.array(x.hy)
             np.random.shuffle(l)
             L.append(l)
         return np.array(L).T

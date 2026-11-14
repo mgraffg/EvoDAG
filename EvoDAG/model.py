@@ -14,7 +14,7 @@
 
 
 import numpy as np
-from SparseArray import SparseArray
+from . import array_utils as au
 from .node import Variable, Function
 from .utils import tonparray
 from multiprocessing import Pool
@@ -176,8 +176,8 @@ class Model(object):
     def predict(self, X, **kwargs):
         hy = self.decision_function(X, **kwargs)
         if self._classifier:
-            [x.finite(inplace=True) for x in hy]
-            hy = np.array(SparseArray.argmax(hy).full_array(), dtype=int)
+            [au.finite(x) for x in hy]
+            hy = np.array(au.argmax(hy), dtype=int)
             if self._labels is not None:
                 hy = self._labels[hy]
         else:
@@ -234,17 +234,14 @@ class Model(object):
             return v
         if isinstance(v, np.ndarray):
             X = v.T
-        elif isinstance(v[0], SparseArray):
+        elif isinstance(v[0], np.ndarray) and v[0].ndim == 1:
             X = v
         else:
             X = np.array(v).T
         lst = []
         for var, d in enumerate(X):
             v = Variable(var, 1)
-            if isinstance(d, SparseArray):
-                v._eval_tr = d
-            else:
-                v._eval_tr = SparseArray.fromlist(d)
+            v._eval_tr = np.array(d, dtype=float)
             lst.append(v)
         return lst
 
@@ -255,10 +252,7 @@ class Model(object):
         else:
             X = v
         for var, d in zip(vars, X):
-            if isinstance(d, SparseArray):
-                var._eval_ts = d
-            else:
-                var._eval_ts = SparseArray.fromlist(d)
+            var._eval_ts = np.array(d, dtype=float)
 
 
 class Ensemble(object):
@@ -394,7 +388,7 @@ class Ensemble(object):
             [[_.append(y) for y in x] for x in hy]
             hy = _
         if self.classifier:
-            [x.finite(inplace=True) for x in hy]
+            [au.finite(x) for x in hy]
         return np.array([tonparray(x) for x in hy]).T
 
     def _predict_proba_raw(self, X, cpu_cores=1):
@@ -420,19 +414,19 @@ class Ensemble(object):
             return proba
         hy = self._decision_function_raw(X, cpu_cores=self._n_jobs)
         minlength = len(hy[0])
-        hy = [SparseArray.argmax(x) for x in hy]
-        hy = np.array([x.full_array() for x in hy], dtype=int).T
+        hy = [au.argmax(x) for x in hy]
+        hy = np.array(hy, dtype=int).T
         hy = [np.bincount(x, minlength=minlength) for x in hy]
         return np.array([x / float(x.sum()) for x in hy])
 
     def decision_function(self, X, cpu_cores=1):
         cpu_cores = max(cpu_cores, self._n_jobs)
         r = self._decision_function_raw(X, cpu_cores=cpu_cores)
-        if isinstance(r[0], SparseArray):
-            r = np.array([tonparray(x) for x in r if x.isfinite()])
+        if isinstance(r[0], np.ndarray):
+            r = np.array([tonparray(x) for x in r if au.isfinite(x)])
             r = np.median(r, axis=0)
         else:
-            [[x.finite(inplace=True) for x in o] for o in r]
+            [[au.finite(x) for x in o] for o in r]
             r = np.array([[tonparray(y) for y in x] for x in r])
             r = np.median(r, axis=0)
         return r.T
@@ -445,9 +439,9 @@ class Ensemble(object):
 
     def predict_cl(self, X, cpu_cores=1):
         cpu_cores = max(cpu_cores, self._n_jobs)
-        hy = [SparseArray.argmax(x) for x in
+        hy = [au.argmax(x) for x in
               self._decision_function_raw(X, cpu_cores=cpu_cores)]
-        hy = np.array([x.full_array() for x in hy], dtype=int).T
+        hy = np.array(hy, dtype=int).T
         hy = [np.bincount(x).argmax() for x in hy]
         if self._labels is not None:
             hy = self._labels[hy]
