@@ -24,8 +24,23 @@ Public names:
 
 The single-model wrapper with the scikit-learn-like interface is a different
 class that is also called ``EvoDAG``: ``EvoDAG.model.EvoDAG``.
+
+Names that need the optional dependency scikit-learn (``pip install
+'EvoDAG[sklearn]'``) are loaded on first use and are not in ``__all__``:
+
+* ``EvoDAGClassifier`` and ``EvoDAGRegressor``: scikit-learn estimators, each
+  one fits a single model (``EvoDAG.estimators``).
 """
 from .base import EvoDAG, RGP, RootGP
 from .model import EvoDAGE, Model, Ensemble
 __all__ = ["EvoDAG", "RGP", "RootGP", "EvoDAGE", "Model", "Ensemble"]
 __version__ = '0.18.0'
+
+
+def __getattr__(name):
+    # PEP 562: the estimators import scikit-learn, an optional dependency, so
+    # they are imported on first access and not in ``__all__``.
+    if name in ("EvoDAGClassifier", "EvoDAGRegressor"):
+        from . import estimators
+        return getattr(estimators, name)
+    raise AttributeError("module %r has no attribute %r" % (__name__, name))

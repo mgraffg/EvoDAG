@@ -1,5 +1,8 @@
 # Build-time dependencies of the Sphinx developer reference. EvoDAG itself is
 # installed (which compiles its extensions) by the workflows that build the
-# docs, so only Sphinx and its theme belong here.
+# docs, so only Sphinx and its theme belong here, plus scikit-learn, which
+# autodoc needs to import EvoDAG.estimators (an optional dependency of the
+# package).
 sphinx>=7
 furo
+scikit-learn>=1.6

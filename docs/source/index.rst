@@ -35,6 +35,8 @@ The pages follow the way the data flows through the package:
 #. :doc:`fitness`: the fitness, the training and validation masks
    (:py:mod:`EvoDAG.bagging_fitness`).
 #. :doc:`model`: the fitted model and the ensemble (:py:mod:`EvoDAG.model`).
+#. :doc:`estimators`: the scikit-learn estimators that fit one model
+   (:py:mod:`EvoDAG.estimators`, needs the optional scikit-learn).
 #. :doc:`search`: reading the data files, the random search of parameters and
    the command line (:py:mod:`EvoDAG.utils`, :py:mod:`EvoDAG.command_line`).
 #. :doc:`extensions`: the compiled Cython modules and the legacy
@@ -120,5 +122,6 @@ outputs for ``decision_function``, and the fraction of votes for
    nodes
    fitness
    model
+   estimators
    search
    extensions

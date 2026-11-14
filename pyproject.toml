@@ -28,7 +28,8 @@ dependencies = ["numpy"]
 dynamic = ["version"]
 
 [project.optional-dependencies]
-test = ["pytest>=7.0", "tomli; python_version < '3.11'"]
+sklearn = ["scikit-learn>=1.6"]
+test = ["pytest>=7.0", "scikit-learn>=1.6", "tomli; python_version < '3.11'"]
 
 [project.urls]
 Homepage = "https://mgraffg.github.io/EvoDAG/"
@@ -75,5 +76,5 @@ cache-keys = [
 [tool.cibuildwheel]
 build = "cp310-* cp311-* cp312-* cp313-*"
 skip = "*-musllinux_* *-win32 *-manylinux_i686"
-test-requires = ["pytest", "tomli; python_version < '3.11'"]
+test-requires = ["pytest", "scikit-learn>=1.6", "tomli; python_version < '3.11'"]
 test-command = "pytest {project}/tests -q"

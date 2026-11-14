@@ -42,6 +42,11 @@ Modules in the order the data flows; each is documented in the developer referen
 - **`EvoDAG/model.py`.** `Model` (the nodes the early stopping individual depends on, with their
   weights), `Ensemble` and `EvoDAGE` (members with seeds `seed`, `seed + 1`, ...; classes by
   majority vote, median for `decision_function`). `EvoDAGE.fit` returns an `Ensemble`.
+- **`EvoDAG/estimators.py`.** `EvoDAGClassifier` and `EvoDAGRegressor`, scikit-learn estimators that
+  fit **one** model (`model_`, a `Model`); `random_state` is the engine `seed`, and the predictions
+  equal those of `EvoDAG.model.EvoDAG` with the same parameters and seed. scikit-learn is the optional
+  extra `EvoDAG[sklearn]`: the module is imported lazily by `EvoDAG/__init__.py` (the two names are not
+  in `__all__`) and nothing else in the package imports it.
 - **`EvoDAG/utils.py` and `EvoDAG/command_line.py`.** The CSV/JSON readers, the error measures
   and `RandomParameterSearch`; the four console commands `EvoDAG-params`, `EvoDAG-train`,
   `EvoDAG-predict` and `EvoDAG-utils`. Models are stored as gzip pickles.
@@ -116,6 +121,7 @@ under 5 to 10 percent. Times only compare on the same machine. The development e
   every public name has a docstring, every engine parameter is described, the Sphinx build is
   strict and its doctests run. Documentation changes must not change behaviour.
 - **No new runtime dependency** without discussion: the only one is NumPy (`pyproject.toml`).
+  scikit-learn is allowed only as the optional `sklearn` extra, imported by `EvoDAG/estimators.py` alone.
   Build requirements are Cython and NumPy.
 - Keep the Cython extensions and the density mechanism. Scratch files go in `tmp_path`, never in
   the repository root; do not commit build output (the generated C files and shared libraries,
