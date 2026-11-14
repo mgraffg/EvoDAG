@@ -1,0 +1,54 @@
+project:
+  type: website
+  output-dir: _site
+
+lang: en
+
+# The Python examples of the site are checked by the test suite
+# (tests/test_docs.py), so rendering does not execute any code and needs no
+# Python environment.
+execute:
+  enabled: false
+
+website:
+  title: "EvoDAG"
+  site-url: https://mgraffg.github.io/EvoDAG/
+  repo-url: https://github.com/mgraffg/EvoDAG
+  navbar:
+    background: "#f9f8f4"
+    left:
+      - href: index.qmd
+        text: Home
+      - href: pages/install.qmd
+        text: Install
+      - href: pages/python.qmd
+        text: Python
+      - href: pages/cli.qmd
+        text: Command line
+      - href: pages/how-it-works.qmd
+        text: How it works
+      - href: pages/selection.qmd
+        text: Selection
+      - href: pages/parameters.qmd
+        text: Parameters
+      - href: pages/performance.qmd
+        text: Performance
+      - href: pages/citing.qmd
+        text: Citing
+      # The link to the developer reference (/dev/) is added together with the
+      # Sphinx build.
+    right:
+      - icon: github
+        href: https://github.com/mgraffg/EvoDAG
+        aria-label: GitHub
+  page-footer:
+    center: >
+      EvoDAG · [mgraffg](https://github.com/mgraffg) ·
+      Code under the Apache 2.0 license
+
+format:
+  html:
+    theme: [litera, style.scss]
+    toc: true
+    number-sections: false
+    link-external-newwindow: true

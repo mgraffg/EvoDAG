@@ -1,0 +1,155 @@
+---
+title: "Parameters"
+---
+
+EvoDAG is configured with keyword arguments: to `EvoDAGE`, to
+`EvoDAG.model.EvoDAG`, to `RGP.init`, and, as a JSON object, to
+`EvoDAG-train --kw`. This page lists them, what they do and the value they
+have in the default configuration. For the meaning of terms such as the
+validation split or the early stopping individual see
+[How it works](how-it-works.qmd).
+
+## Where the values come from
+
+When you create a model, its parameters are taken from three places, each one
+overriding the previous:
+
+1. the default configuration, a JSON file inside the package:
+   `default_parameters.json` for classification and `default_parameters_r.json`
+   for regression (`classifier=False`);
+2. a JSON file of your own, if you pass `params_fname` (or `-P` on the command
+   line). It can be a single object, or a list of objects as the one written
+   by `EvoDAG-params`, in which case the first one is used;
+3. the keyword arguments of the call.
+
+Keep in mind two exceptions. `EvoDAGE` has its own `time_limit` argument,
+which is `None` (no limit) unless you set it, and which replaces the
+`time_limit` of the file; a single model uses the one in the file. And the
+function parameters (below) are not passed one by one to the engine: they are
+converted into its function set.
+
+The values below are those of `default_parameters.json`, the classification
+configuration. Where `default_parameters_r.json` differs it is said.
+
+## The function set
+
+There is one parameter for every function that EvoDAG can use to build an
+individual. They are written with the name of the function, capitalised. A
+boolean switches the function on or off; an integer gives the number of
+arguments that the function takes (a function that takes several arguments
+uses *up to* that many) and `0` switches it off.
+
+| Function | Meaning | Default |
+|:-------------|:-----------------------------------------|:-------------------|
+| `Add` | sum of its arguments, with least-squares coefficients | 60 arguments |
+| `Mul` | product of its arguments | 20 |
+| `Min`, `Max` | element-wise minimum, maximum of the arguments | 5 each |
+| `Hypot` | $\sqrt{a^2 + b^2}$ of two arguments | 2 |
+| `Atan2`, `Div` | arctangent of the quotient, and quotient, of two arguments | `Atan2` 0, `Div` false |
+| `NaiveBayes`, `NaiveBayesMN` | Gaussian and multinomial Naive Bayes over the arguments (classification only) | 5 each |
+| `Centroid` | nearest centroid over the arguments (classification only) | 2 (0 in regression) |
+| `Atan`, `Fabs`, `Sin`, `Sqrt`, `Tan`, `Tanh` | one-argument functions | true |
+| `Acos`, `Acosh`, `Asin`, `Asinh`, `Atanh`, `Ceil`, `Cos`, `Cosh`, `Exp`, `Expm1`, `Floor`, `Lgamma`, `Log`, `Log10`, `Log1p`, `Log2`, `Sign`, `Sinh`, `Sq` | one-argument functions | false |
+| `Argmax`, `Argmin` | present in the file with value 0, but not part of the engine's function set, so a value has no effect | 0 |
+
+In regression `NaiveBayes`, `NaiveBayesMN` and `Centroid` are not used, and in
+the regression configuration they are 0.
+
+## Parameters of the evolution
+
+| Parameter | Default | What it does |
+|:-----------------------|:------------|:------------------------------------------------|
+| `popsize` | 4000 | number of individuals in the population |
+| `population_class` | `"SteadyState"` | `"SteadyState"` replaces one individual per step; `"Generational"` replaces the whole population every `popsize` offspring |
+| `early_stopping_rounds` | 4000 | the run stops when this many offspring have been created without improving the early stopping individual; a negative value means `popsize` |
+| `generations` | `null` | maximum number of generations (a generation is `popsize` offspring); `null` means no limit, and then the early stopping or the time limit ends the run |
+| `time_limit` | 3600 | seconds. In an ensemble the limit is shared by all members: a member that finds less than two seconds left is not trained |
+| `seed` | 0 | seed of the pseudo-random numbers; the members of an ensemble use `seed`, `seed + 1`, and so on |
+| `tournament_size` | 2 | individuals drawn in each tournament, both when selecting arguments and when selecting the one that leaves |
+| `random_generations` | 1 | number of generations in which arguments are drawn uniformly instead of by tournament on fitness |
+| `unique_individuals` | false | when true an offspring that repeats a function applied to the same arguments is rejected |
+| `function_selection` | true | when true the function of each offspring is chosen by a tournament on the average fitness its offspring obtained; when false, uniformly at random |
+| `fs_tournament_size` | 2 | size of that tournament over functions |
+| `min_density` | 0.8 | when the average fraction of non-zero values in the population is below it, only the functions that keep sparse data sparse are used |
+
+## Parameters of the data and the fitness
+
+| Parameter | Default | What it does |
+|:-----------------------|:------------|:------------------------------------------------|
+| `classifier` | true | classification when true, regression when false |
+| `fitness_function` | `"BER"` (`"ER"` in regression, where it has no effect) | measure of the fitness in classification; see below |
+| `multiple_outputs` | true | whether the individuals have several outputs. It is always on in classification, where there is one output per class; in regression it is for problems with several targets, and the default configuration for regression turns it off |
+| `tr_fraction` | 0.5 | proportion used for training when the data are split into the training and the validation part; see [How it works](how-it-works.qmd#early-stopping-and-the-validation-split). With `1` there is no validation set and `generations` must be set |
+| `finite` | true | non-finite values (`nan`, infinities) in the input variables are replaced by zero |
+
+`fitness_function` accepts, for classification: `BER` (the default; the mean
+recall over the classes), `ER` and `accuracy`, `macro-F1`, `macro-Precision`,
+`F1` (of one class; the smallest one unless `F1_index` is given),
+`macro-RecallF1`, `accDotMacroF1`, and variants built from recall,
+precision and F1 whose names start with `Dot` or `g_` (the geometric mean over
+the classes) or with `a_` (the arithmetic mean). The definitions are in
+`EvoDAG/bagging_fitness.py` and `EvoDAG/cython_utils.pyx`. In regression the
+fitness is always minus the sum of absolute errors on the training part,
+and the validation fitness the negative relative squared error.
+
+## Parameters of the initial population
+
+| Parameter | Default | What it does |
+|:-----------------------|:------------|:------------------------------------------------|
+| `all_inputs` | true | create individuals until every input variable has been used once, instead of until the population has `popsize` individuals |
+| `pr_variable` | 0.9 | probability that an initial individual is a single input variable rather than an input function over several variables |
+| `input_functions` | `["NaiveBayes", "NaiveBayesMN", "Centroid"]` (`null` in regression) | functions used to build the initial individuals that combine inputs; names of functions among `NaiveBayes`, `NaiveBayesMN`, `Centroid` and `MultipleVariables` (all four at most) |
+| `use_all_vars_input_functions` | true | first create one individual for each input function applied to all the variables |
+| `share_inputs` | false | has no effect in this release: the lists of inputs that it is meant to share are rebuilt right after |
+
+## Other parameters of the engine
+
+These are not in the default configuration file, but they are accepted by
+the constructors.
+
+| Parameter | Default | What it does |
+|:-----------------------|:------------|:------------------------------------------------|
+| `negative_selection` | true | the individual that leaves is the worst of a tournament; when false it is chosen at random |
+| `orthogonal_selection` | false | choose the arguments by agreement (see [Selection](selection.qmd)) |
+| `orthogonal_dot_selection` | false | choose the arguments by a dot-product measure (see [Selection](selection.qmd)) |
+| `F1_index` | -1 | class used by `fitness_function="F1"`; -1 means the smallest class |
+| `remove_raw_inputs` | true | free the training inputs once the initial population exists |
+| `number_tries_feasible_ind` | 30 | attempts to find a valid individual before giving up |
+| `probability_calibration` | `None` | a class with the `fit` / `predict_proba` interface of scikit-learn; it is fitted on the outputs of the early stopping individual on the validation part, and then enables `predict_proba` of a single model and the calibrated probabilities of the ensemble |
+| `labels` | `None` | the class labels, if you do not want them taken from `y` |
+| `max_training_size` | not set | with `n_jobs` greater than 1, each member of the ensemble learns from a random subsample of at most this many examples |
+
+`EvoDAGE` also takes `n_estimators` (30), `n_jobs` (1), `tmpdir` (a directory
+where finished members are stored, so that an interrupted fit can be resumed)
+and `time_limit`.
+
+## The random search of parameters
+
+`EvoDAG-params` samples configurations from `parameter_values.json`. It is a
+JSON object that gives, for each parameter, the list of values that the search
+may choose from; one configuration takes one value of each list, and the
+configurations are drawn at random without repetition. The sets are:
+
+| Parameter | Values that the search may choose |
+|:--------------------------|:-----------------------------------------------------|
+| `Add` | 2, 5, 10, 20, 40 |
+| `Mul`, `Max`, `Min`, `NaiveBayes`, `Centroid` | 0, 2, 5, 10, 20, 40 |
+| `NaiveBayesMN` | 2, 5, 10, 20, 40 |
+| `Hypot`, `Atan2` | 0, 2 |
+| `Acos`, `Asin`, `Atan`, `Cos`, `Div`, `Expm1`, `Fabs`, `Log1p`, `Sin`, `Sq`, `Sqrt`, `Tan` | true, false |
+| every other function | false |
+| `popsize` | 100, 200, 500, 1000, 2000, 4000 (only those that do not exceed the size of the training set) |
+| `early_stopping_rounds` | 500, 1000, 2000, 4000 |
+| `population_class` | `"SteadyState"`, `"Generational"` |
+| `unique_individuals`, `function_selection`, `all_inputs`, `use_all_vars_input_functions` | true, false |
+| `random_generations` | 0, 1 |
+| `input_functions` | four lists: all three of `NaiveBayes`, `NaiveBayesMN` and `MultipleVariables`, and each of those alone |
+| `classifier`, `finite`, `fitness_function`, `fs_tournament_size`, `generations`, `min_density`, `multiple_outputs`, `pr_variable`, `share_inputs`, `time_limit`, `tournament_size`, `tr_fraction` | one fixed value |
+
+Combinations that make no sense are skipped: a `Generational` population
+needs `early_stopping_rounds` at least equal to `popsize`, and
+`early_stopping_rounds` cannot exceed the number of training examples.
+Each sampled configuration is trained three times, with seeds 0, 1 and 2, and
+the configurations are ranked by the median validation fitness of the three
+runs. See [Command line](cli.qmd) for the options of `EvoDAG-params`, and
+use `--parameters-values` to search a space of your own.

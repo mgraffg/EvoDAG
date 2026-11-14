@@ -1,0 +1,63 @@
+name: Publish website
+
+# One GitHub Pages site. The Quarto user site (website/) is served at the
+# root. Pull requests only build it; pushes to the base branch also deploy it.
+# Pages must be enabled once in the repository settings, with the source set
+# to "GitHub Actions".
+on:
+  pull_request:
+    paths:
+      - "website/**"
+      - "docs/**"
+      - "EvoDAG/**"
+      - "pyproject.toml"
+      - "setup.py"
+      - ".github/workflows/website.yml"
+  push:
+    branches: [master]
+    paths:
+      - "website/**"
+      - "docs/**"
+      - "EvoDAG/**"
+      - "pyproject.toml"
+      - "setup.py"
+      - ".github/workflows/website.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/configure-pages@v5
+
+      - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: 1.9.38
+
+      - run: quarto render website
+
+      # The Sphinx developer reference (docs/) will be built here, into
+      # website/_site/dev, before the artifact is uploaded.
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: website/_site
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: website
+      cancel-in-progress: true
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

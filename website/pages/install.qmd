@@ -1,0 +1,77 @@
+---
+title: "Install"
+---
+
+## Requirements
+
+EvoDAG needs Python 3.10 or newer and [NumPy](https://numpy.org). Those are
+the only runtime dependencies. Part of the library is written in Cython, so
+a compiled extension is shipped with it; the packaging files of the
+repository declare Python 3.10, 3.11, 3.12 and 3.13 as the versions that are
+built and tested, on Linux, macOS and Windows.
+
+## From PyPI
+
+```bash
+pip install EvoDAG
+```
+
+When a prebuilt wheel exists for your platform and Python version, `pip`
+installs it and nothing is compiled. Otherwise `pip` downloads the source
+distribution and builds it, and then you need what is listed below under
+[Building from source](#building-from-source).
+
+## From conda-forge
+
+```bash
+conda config --add channels conda-forge
+conda config --set channel_priority strict
+conda install evodag
+```
+
+or, with `mamba`:
+
+```bash
+mamba install evodag
+```
+
+## Building from source
+
+Building the extensions requires a C compiler, Cython 3 or newer and NumPy 2
+or newer. Those build requirements are declared in `pyproject.toml`, so a
+plain `pip install` of a checkout fetches Cython and NumPy by itself; the
+compiler is the only thing you must provide (`gcc` or `clang` on Linux and
+macOS, the Microsoft C++ build tools on Windows).
+
+```bash
+git clone https://github.com/mgraffg/EvoDAG.git
+cd EvoDAG
+pip install .
+```
+
+For development, install in editable mode and rebuild the extensions after
+changing a `.pyx` file:
+
+```bash
+pip install -e ".[test]"
+python setup.py build_ext --inplace
+python -m pytest -q tests
+```
+
+## Check the installation
+
+```bash
+python -c "import EvoDAG; print(EvoDAG.__version__)"
+EvoDAG-train --version
+```
+
+The second command also confirms that the four console scripts
+(`EvoDAG-params`, `EvoDAG-train`, `EvoDAG-predict` and `EvoDAG-utils`) are on
+your `PATH`; they are described in the [Command line](cli.qmd) page.
+
+## Optional packages
+
+`tqdm` is used, when it is installed, to show a progress bar while an
+ensemble is trained or evaluated. Nothing else is optional.
+Graphviz is only needed if you want to turn the graph that
+`Model.graphviz` writes into a picture (see [Python](python.qmd)).

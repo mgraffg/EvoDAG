@@ -1,0 +1,65 @@
+---
+title: "EvoDAG"
+subtitle: "Evolving Directed Acyclic Graphs: semantic genetic programming for classification and regression"
+---
+
+EvoDAG is a Python library that learns a classifier or a regressor with
+genetic programming. It keeps every individual it ever creates in a table,
+and each one is a node of a directed acyclic graph that points at the nodes
+it was built from. The result of a run is not a tree but a small graph in
+which many nodes share the same inputs.
+
+What sets it apart from textbook genetic programming is how a new
+individual is made. Every individual is described by its *semantics*, the
+vector of values it produces on the training examples. When a function
+(a sum, a product, a Naive Bayes classifier, ...) combines existing
+individuals, EvoDAG also fits the coefficients of the combination by
+ordinary least squares so that the result is as close as possible to the
+target vector. The genetic operator therefore acts at the root of the new
+individual, and only the examples (not the whole expression) are evaluated.
+The [How it works](pages/how-it-works.qmd) page walks through the method.
+
+You use it like any other estimator: `fit(X, y)` and `predict(X)`. A single
+run can overfit, so the usual way to use EvoDAG is an ensemble of
+independent runs, each one stopped early on its own validation split. A
+command line interface (`EvoDAG-params`, `EvoDAG-train`, `EvoDAG-predict`
+and `EvoDAG-utils`) covers the same ground for people who prefer to work
+with files.
+
+## A first example
+
+The snippet below trains an ensemble of five models on a small synthetic
+problem and predicts the training set. It is deliberately tiny so that it
+runs in a few seconds; the real defaults use much larger populations (see
+[Parameters](pages/parameters.qmd)).
+
+```python
+import numpy as np
+from EvoDAG import EvoDAGE
+
+rng = np.random.RandomState(0)
+X = rng.randn(200, 4)
+y = (X[:, 0] + X[:, 1] ** 2 > 1).astype(int)
+
+model = EvoDAGE(n_estimators=5, n_jobs=1, popsize=100,
+                early_stopping_rounds=100, seed=0).fit(X, y)
+hy = model.predict(X)
+print("accuracy on the training set:", (hy == y).mean())
+```
+
+## Where to go next
+
+| If you want to ... | read |
+|:---------------------------|:-------------------------------|
+| install the package | [Install](pages/install.qmd) |
+| use it from Python: classification, regression, ensembles | [Python](pages/python.qmd) |
+| train and predict from the shell | [Command line](pages/cli.qmd) |
+| understand the method | [How it works](pages/how-it-works.qmd) |
+| know what the selection heuristics of the second paper are | [Selection](pages/selection.qmd) |
+| tune it | [Parameters](pages/parameters.qmd) |
+| see how well it does | [Performance](pages/performance.qmd) |
+| cite it | [Citing](pages/citing.qmd) |
+
+EvoDAG is released under the Apache 2.0 license. The source code, the issue
+tracker and the releases are on
+[GitHub](https://github.com/mgraffg/EvoDAG).

@@ -6,5 +6,8 @@ include EvoDAG/conf/default_parameters_r.json
 include EvoDAG/*.pyx
 include EvoDAG/*.pxd
 recursive-include tests *.py *.json *.npz
+recursive-include website *.qmd *.yml *.scss *.svg *.py
+prune website/_site
+prune website/.quarto
 prune tests/__pycache__
 global-exclude *.c *.so *.pyc

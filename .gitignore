@@ -90,3 +90,7 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# Quarto website build output
+website/_site/
+website/.quarto/
