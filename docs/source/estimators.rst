@@ -13,7 +13,9 @@ interface of scikit-learn (``get_params``, ``clone``, pipelines, grid search,
 :py:class:`~EvoDAG.estimators.EnsembleClassifier` and
 :py:class:`~EvoDAG.estimators.EnsembleRegressor` clone any estimator
 ``n_estimators`` times with consecutive seeds and combine the members as
-:py:class:`~EvoDAG.model.EvoDAGE` does (majority vote, median). The module needs
+:py:class:`~EvoDAG.model.EvoDAGE` does: the median of the outputs. The
+``predict`` of the classifier is the argmax of that median, which can differ
+from the majority vote of ``EvoDAGE``. The module needs
 scikit-learn, an optional dependency (``pip install 'EvoDAG[sklearn]'``).
 
 .. automodule:: EvoDAG.estimators

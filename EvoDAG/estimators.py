@@ -18,9 +18,10 @@ scikit-learn (``get_params``/``set_params``, ``clone``, pipelines, grid
 search, ``score``) and pass its estimator checks. Each instance runs one
 evolution and keeps one :py:class:`~EvoDAG.model.Model`. ``EnsembleClassifier``
 and ``EnsembleRegressor`` clone any estimator several times and combine the
-members as ``EvoDAGE`` does, so that
-``EnsembleClassifier(EvoDAGClassifier())`` is its scikit-learn form. This
-module needs scikit-learn, which is an optional dependency::
+members as ``EvoDAGE`` does (the median of the outputs), so that
+``EnsembleClassifier(EvoDAGClassifier())`` is its scikit-learn form; its
+``predict`` is the argmax of that median, which can differ from the majority
+vote of ``EvoDAGE``. This module needs scikit-learn, which is an optional dependency::
 
     pip install 'EvoDAG[sklearn]'
 
@@ -40,6 +41,7 @@ try:
     from sklearn.utils.multiclass import check_classification_targets
     from sklearn.utils.parallel import Parallel, delayed
     from sklearn.utils.validation import check_is_fitted, validate_data
+    from scipy.special import expit, softmax
 except ImportError as error:  # pragma: no cover - exercised in a subprocess
     raise ImportError("EvoDAG.estimators needs scikit-learn: "
                       "pip install 'EvoDAG[sklearn]'") from error
@@ -463,17 +465,25 @@ class _EnsembleBase(BaseEstimator):
 
 
 class EnsembleClassifier(ClassifierMixin, _EnsembleBase):
-    """Ensemble of clones of a classifier, combined as ``EvoDAGE`` does.
+    """Ensemble of clones of a classifier, built as ``EvoDAGE`` is.
 
     ``EnsembleClassifier(EvoDAGClassifier(...), n_estimators=n, random_state=s)``
-    is the scikit-learn form of ``EvoDAG.EvoDAGE(n_estimators=n, seed=s, ...)``
-    and gives the same predictions. It also works with any other classifier.
-    Member ``i`` is a clone of ``estimator`` fitted on the whole training set
-    with ``random_state + i`` (the diversity comes from the seed); ``predict``
-    is the majority vote of the members, a tie going to the class with the
-    lowest index, and ``decision_function`` is the median over the members.
-    scikit-learn's bagging and voting ensembles cannot be used instead: they
-    average the outputs and draw random seeds.
+    is the scikit-learn form of ``EvoDAG.EvoDAGE(n_estimators=n, seed=s, ...)``:
+    the members are the same, and ``decision_function`` is exactly the median
+    over the members that ``EvoDAGE.decision_function`` returns. It also
+    works with any other classifier. Member ``i`` is a clone of ``estimator``
+    fitted on the whole training set with ``random_state + i`` (the diversity
+    comes from the seed). scikit-learn's bagging and voting ensembles cannot
+    be used instead: they average the outputs and draw random seeds.
+
+    To follow the conventions of scikit-learn, ``predict``,
+    ``decision_function`` and ``predict_proba`` agree with one another. When
+    the members have a ``decision_function`` (the EvoDAG members do),
+    ``predict`` is the class with the largest median decision (with two
+    classes, ``classes_[1]`` when the median is positive). This can differ
+    from ``EvoDAGE.predict``, which is the majority vote of the members. When
+    they have none (a decision tree, for example), ``predict`` is the
+    majority vote, a tie going to the class with the lowest index.
 
     Parameters
     ----------
@@ -491,13 +501,17 @@ class EnsembleClassifier(ClassifierMixin, _EnsembleBase):
         Processes used by ``joblib`` to fit and evaluate the members
         (default 1); the results do not depend on it.
     voting : str, optional
-        Either ``"hard"`` or ``"soft"``; how ``predict_proba`` combines the
-        members. ``"hard"`` (default) is the fraction of members that vote for each class. ``"soft"`` is the
-        mean of the ``predict_proba`` of the members, renormalised (rows
-        that are not finite become ``1 / n_classes``); it is the way
-        ``EvoDAGE`` combines calibrated probabilities and needs members with
-        ``predict_proba``. ``predict`` is always the majority vote, so with
-        ``"soft"`` the argmax of ``predict_proba`` may differ from it.
+        Either ``"hard"`` or ``"soft"``. ``"hard"`` (default): ``predict``
+        is the argmax of the median ``decision_function`` (the majority vote
+        if the members have none), and ``predict_proba`` is the softmax of
+        that median over the classes (the logistic function of it with two
+        classes), or the fraction of votes if the members have no
+        ``decision_function``. ``"soft"``: ``predict_proba`` is the mean of
+        the ``predict_proba`` of the members, renormalised (rows that are not
+        finite become ``1 / n_classes``), which is the way ``EvoDAGE``
+        combines calibrated probabilities, and ``predict`` is its argmax, as
+        in scikit-learn's ``VotingClassifier``; it needs members with
+        ``predict_proba``.
 
     Attributes
     ----------
@@ -584,10 +598,18 @@ class EnsembleClassifier(ClassifierMixin, _EnsembleBase):
             votes[rows, np.asarray(prediction).astype(int)] += 1
         return votes
 
-    def predict(self, X):
-        """Predict the class chosen by most members.
+    def _has_decision_function(self):
+        return _member_has("decision_function")(self)
 
-        A tie goes to the class with the lowest index (the smallest label).
+    def predict(self, X):
+        """Predict the class of each example.
+
+        With ``voting="soft"`` it is the argmax of ``predict_proba``. With
+        ``voting="hard"`` it is the argmax of the median ``decision_function``
+        (``classes_[1]`` when the median is positive, with two classes) if the
+        members have a ``decision_function``, and otherwise the class chosen
+        by most members, a tie going to the class with the lowest index. In
+        the first case it can differ from the majority vote of ``EvoDAGE``.
 
         Parameters
         ----------
@@ -599,11 +621,25 @@ class EnsembleClassifier(ClassifierMixin, _EnsembleBase):
         numpy.ndarray
             One element of ``classes_`` per example.
         """
-        votes = self._votes(X)
-        return self.classes_[np.argmax(votes, axis=1)]
+        check_is_fitted(self, "estimators_")
+        if self.voting == "soft":
+            return self.classes_[np.argmax(self.predict_proba(X), axis=1)]
+        if self._has_decision_function():
+            decision = self.decision_function(X)
+            if decision.ndim == 1:
+                return self.classes_[(decision > 0).astype(int)]
+            return self.classes_[np.argmax(decision, axis=1)]
+        return self.classes_[np.argmax(self._votes(X), axis=1)]
 
     def predict_proba(self, X):
         """Probability of each class, see ``voting``.
+
+        With ``voting="soft"`` it is the mean of the probabilities of the
+        members. With ``voting="hard"`` and members that have a
+        ``decision_function`` it is the softmax over the classes of the median
+        decision (with two classes, ``[1 - p, p]`` with ``p`` the logistic
+        function of it), so that its argmax is ``predict``; if the members have
+        none it is the fraction of members that vote for each class.
 
         Parameters
         ----------
@@ -622,6 +658,12 @@ class EnsembleClassifier(ClassifierMixin, _EnsembleBase):
             With ``voting="soft"`` if the members have no ``predict_proba``.
         """
         if self.voting == "hard":
+            if self._has_decision_function():
+                decision = self.decision_function(X)
+                if decision.ndim == 1:
+                    p = expit(decision)
+                    return np.column_stack([1. - p, p])
+                return softmax(decision, axis=1)
             votes = self._votes(X)
             return votes / votes.sum(axis=1)[:, np.newaxis]
         if not hasattr(self._base_estimator(), "predict_proba"):
@@ -662,7 +704,7 @@ class EnsembleClassifier(ClassifierMixin, _EnsembleBase):
 
 
 class EnsembleRegressor(RegressorMixin, _EnsembleBase):
-    """Ensemble of clones of a regressor, combined as ``EvoDAGE`` does.
+    """Ensemble of clones of a regressor, built as ``EvoDAGE`` is.
 
     ``EnsembleRegressor(EvoDAGRegressor(...), n_estimators=n, random_state=s)``
     is the scikit-learn form of

@@ -7,7 +7,7 @@ This page describes EvoDAG's own classes: `EvoDAGE` (the ensemble),
 `Model` and `Ensemble` objects that their fits return. They are not
 deprecated and they do not need scikit-learn. The scikit-learn classes of the
 [Python](python.qmd) page are the usual way to use EvoDAG; they are built on
-the same code and give the same predictions.
+the same code and fit the same models.
 
 Use the native API when you:
 
@@ -18,8 +18,15 @@ Use the native API when you:
   evolution, or `max_training_size`;
 * have code that already uses these classes, which keeps working.
 
-The two forms are equivalent. With the same parameters, seed and labels,
-they give the same predictions:
+The two forms are equivalent. With the same parameters, seed and labels
+they fit the same models, and the regression predictions and the
+`decision_function` (the median over the members) are identical. The one
+difference is the `predict` of the classification ensemble: `EvoDAGE` returns
+the class chosen by most members, whereas `EnsembleClassifier` returns the
+class with the largest median `decision_function` (the sign of it with two
+classes), so that `predict`, `decision_function` and `predict_proba` agree, as
+scikit-learn expects. The two rules coincide on most examples, not on all of
+them.
 
 | Native API | scikit-learn classes |
 |:-----------------------------------------|:---------------------------------------------|

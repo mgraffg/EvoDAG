@@ -179,30 +179,12 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor  # noqa: 
 from EvoDAG import EnsembleClassifier, EnsembleRegressor, EvoDAGE  # noqa: E402
 
 
-# The decision function of the ensemble is the median over the members (as in
-# EvoDAGE) whereas predict is their majority vote: with several classes the
-# argmax of the median can differ from the plurality, so check_classifiers_train,
-# which asserts that they agree, cannot pass for the EvoDAG members. The same
-# check passes for members without decision_function (the decision trees).
-EXPECTED_FAILED = {
-    "check_classifiers_train": "decision_function is the median of the "
-    "members and predict their vote, as in EvoDAGE; they may disagree",
-}
-
-
-def expected_failed_checks(estimator):
-    if (isinstance(estimator, EnsembleClassifier)
-            and isinstance(estimator.estimator, EvoDAGClassifier)):
-        return EXPECTED_FAILED
-    return {}
-
-
 @parametrize_with_checks([
     EnsembleClassifier(EvoDAGClassifier(**TINY), n_estimators=2),
     EnsembleRegressor(EvoDAGRegressor(**TINY), n_estimators=2),
     EnsembleClassifier(DecisionTreeClassifier(), n_estimators=3),
     EnsembleRegressor(DecisionTreeRegressor(), n_estimators=3),
-], expected_failed_checks=expected_failed_checks)
+])
 def test_ensemble_sklearn_checks(estimator, check):
     check(estimator)
 
@@ -212,10 +194,13 @@ def test_ensemble_matches_evodage():
     ours = EnsembleClassifier(EvoDAGClassifier(**TINY), n_estimators=3,
                               random_state=2).fit(X, y)
     theirs = EvoDAGE(n_estimators=3, seed=2, **TINY).fit(X, y)
-    assert (ours.predict(X) == theirs.predict(X)).all()
-    np.testing.assert_allclose(ours.predict_proba(X), theirs.predict_proba(X))
-    np.testing.assert_allclose(ours.decision_function(X),
-                               theirs.decision_function(X))
+    # the decision function is exactly the median of EvoDAGE ...
+    median = theirs.decision_function(X)
+    np.testing.assert_allclose(ours.decision_function(X), median)
+    # ... and predict is its argmax (not the majority vote of EvoDAGE)
+    assert (ours.predict(X) == ours.classes_[median.argmax(axis=1)]).all()
+    assert (ours.predict_proba(X).argmax(axis=1) == median.argmax(axis=1)).all()
+    np.testing.assert_allclose(ours.predict_proba(X).sum(axis=1), 1)
     X, y = load_diabetes(return_X_y=True)
     ours = EnsembleRegressor(EvoDAGRegressor(**TINY), n_estimators=3,
                              random_state=2).fit(X, y)
@@ -259,14 +244,14 @@ def test_n_jobs_does_not_change_results():
     np.testing.assert_array_equal(a.predict(X), b.predict(X))
 
 
-class _Fixed(ClassifierMixin, BaseEstimator):
-    """Classifier whose answers are given: ``votes`` is the class it predicts
-    for every example and ``proba`` its probabilities (one row for all)."""
+class _Voter(ClassifierMixin, BaseEstimator):
+    """Classifier without ``decision_function`` whose answers are given:
+    ``votes`` is the class it predicts for every example and ``proba`` its
+    probabilities (one row for all)."""
 
-    def __init__(self, votes=0, proba=(0.5, 0.5), score=0.0):
+    def __init__(self, votes=0, proba=(0.5, 0.5)):
         self.votes = votes
         self.proba = proba
-        self.score = score
 
     def fit(self, X, y):
         self.classes_ = np.unique(y)
@@ -278,36 +263,89 @@ class _Fixed(ClassifierMixin, BaseEstimator):
     def predict_proba(self, X):
         return np.tile(self.proba, (len(X), 1))
 
+
+class _Fixed(_Voter):
+    "A ``_Voter`` that has a ``decision_function``: ``score`` for every example"
+
+    def __init__(self, votes=0, proba=(0.5, 0.5), score=0.0):
+        super().__init__(votes=votes, proba=proba)
+        self.score = score
+
     def decision_function(self, X):
-        return np.full(len(X), float(self.score))
+        return np.tile(np.asarray(self.score, dtype=float), (len(X), 1)
+                       ).reshape((len(X),) + np.shape(self.score))
 
 
-def _ensemble_with_members(cls, members, **kwargs):
+def _ensemble_with_members(cls, members, y=(0, 1, 2, 0), **kwargs):
     ens = cls(n_estimators=len(members), **kwargs)
-    ens.fit(np.zeros((4, 2)), np.array([0, 1, 2, 0]))
+    ens.fit(np.zeros((len(y), 2)), np.array(y))
     ens.estimators_ = members
     return ens
 
 
-def test_majority_vote_and_median_classifier():
+def test_majority_vote_without_decision_function():
     X = np.zeros((3, 2))
-    members = [_Fixed(votes=v, proba=p, score=s) for v, p, s in
-               [(2, (0., 0., 1.), 3.), (1, (0., 1., 0.), 1.),
-                (1, (0.2, 0.6, 0.2), 2.)]]
+    members = [_Voter(votes=v, proba=p) for v, p in
+               [(2, (0., 0., 1.)), (1, (0., 1., 0.)), (1, (0.2, 0.6, 0.2))]]
     ens = _ensemble_with_members(EnsembleClassifier, members,
-                                 estimator=_Fixed())
+                                 estimator=_Voter())
+    assert not hasattr(ens, "decision_function")
     assert (ens.predict(X) == 1).all()
     np.testing.assert_allclose(ens.predict_proba(X)[0], [0, 2 / 3, 1 / 3])
+    # soft voting: the mean of the probabilities, and predict is its argmax
     ens.set_params(voting="soft")
     np.testing.assert_allclose(ens.predict_proba(X)[0],
                                [0.2 / 3, 1.6 / 3, 1.2 / 3])
     np.testing.assert_allclose(ens.predict_proba(X).sum(axis=1), 1)
-    assert (ens.decision_function(X) == 2.).all()
+    assert (ens.predict(X) == 1).all()
     # a tie goes to the lowest class
-    members = [_Fixed(votes=v) for v in (2, 1, 2, 1)]
+    members = [_Voter(votes=v) for v in (2, 1, 2, 1)]
+    ens = _ensemble_with_members(EnsembleClassifier, members,
+                                 estimator=_Voter())
+    assert (ens.predict(X) == 1).all()
+    ens.set_params(voting="hard")
+    np.testing.assert_allclose(ens.predict_proba(X)[0], [0, 0.5, 0.5])
+
+
+def test_predict_follows_the_median_decision():
+    X = np.zeros((3, 2))
+    # the plurality (two votes) is class 1, the median decision says class 2
+    members = [_Fixed(votes=1, score=(0., 5., 1.)),
+               _Fixed(votes=1, score=(0., 2., 1.)),
+               _Fixed(votes=2, score=(0., 0., 9.))]
     ens = _ensemble_with_members(EnsembleClassifier, members,
                                  estimator=_Fixed())
+    np.testing.assert_allclose(ens.decision_function(X)[0], [0, 2, 1])
     assert (ens.predict(X) == 1).all()
+    members[1] = _Fixed(votes=1, score=(0., 0.5, 1.))
+    np.testing.assert_allclose(ens.decision_function(X)[0], [0, 0.5, 1])
+    assert (ens.predict(X) == 2).all()
+    proba = ens.predict_proba(X)
+    np.testing.assert_allclose(proba.sum(axis=1), 1)
+    np.testing.assert_allclose(proba[0], np.exp([0, .5, 1]) / np.exp(
+        [0, .5, 1]).sum())
+    assert (proba.argmax(axis=1) == 2).all()
+
+
+def test_tied_votes_with_positive_median_decision():
+    "The case of the review: the votes tie (class 0 wins a vote) but the median is positive"
+    X = np.zeros((3, 2))
+    members = [_Fixed(votes=0, score=-1.), _Fixed(votes=1, score=3.)]
+    ens = _ensemble_with_members(EnsembleClassifier, members, y=(0, 1, 0, 1),
+                                 estimator=_Fixed())
+    assert (ens.decision_function(X) == 1.).all()
+    assert (ens.predict(X) == 1).all()
+    proba = ens.predict_proba(X)
+    np.testing.assert_allclose(proba.sum(axis=1), 1)
+    np.testing.assert_allclose(proba[:, 1], 1 / (1 + np.exp(-1.)))
+    assert (proba.argmax(axis=1) == 1).all()
+    # a decision of exactly zero is the first class in the three outputs
+    members = [_Fixed(votes=0, score=-1.), _Fixed(votes=1, score=1.)]
+    ens = _ensemble_with_members(EnsembleClassifier, members, y=(0, 1, 0, 1),
+                                 estimator=_Fixed())
+    assert (ens.predict(X) == 0).all()
+    assert (ens.decision_function(X) == 0).all()
+    assert (ens.predict_proba(X).argmax(axis=1) == 0).all()
 
 
 def test_soft_voting_needs_predict_proba_and_validation():

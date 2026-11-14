@@ -31,9 +31,11 @@ Names that need the optional dependency scikit-learn (``pip install
 * ``EvoDAGClassifier`` and ``EvoDAGRegressor``: scikit-learn estimators, each
   one fits a single model (``EvoDAG.estimators``).
 * ``EnsembleClassifier`` and ``EnsembleRegressor``: scikit-learn
-  meta-estimators that combine clones of any estimator with the rules of
-  ``EvoDAGE`` (majority vote, median); ``EnsembleClassifier(EvoDAGClassifier())``
-  gives the predictions of ``EvoDAGE``.
+  meta-estimators that combine clones of any estimator; the
+  ``decision_function`` (median) and the members of
+  ``EnsembleClassifier(EvoDAGClassifier())`` are those of ``EvoDAGE``, and
+  its ``predict`` is the argmax of that median (``EvoDAGE`` takes a majority
+  vote).
 """
 from .base import EvoDAG, RGP, RootGP
 from .model import EvoDAGE, Model, Ensemble

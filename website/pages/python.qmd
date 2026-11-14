@@ -109,10 +109,16 @@ The estimator has methods of the usual shapes. The columns follow
 
 | Method | Returns |
 |:---------------------------|:-----------------------------------------------------|
-| `predict(X)` | the class chosen by most members (a tie goes to the first class) |
-| `predict_proba(X)` | one row per example, one column per class: the fraction of members that voted for each class (`voting="hard"`), or the mean of the members' probabilities (`voting="soft"`) |
+| `predict(X)` | the class with the largest median decision (with two classes, the second class when the median is positive) |
+| `predict_proba(X)` | one row per example, one column per class: the softmax of the median decision (`voting="hard"`, the default), or the mean of the members' probabilities (`voting="soft"`) |
 | `decision_function(X)` | the median over the members of the raw outputs: one column per class, or one value per example with two classes |
 | `estimators_` | the list of fitted members, in order |
+
+`predict`, `decision_function` and `predict_proba` agree with one another, as
+scikit-learn expects. The `decision_function` is exactly the median that
+EvoDAG's own ensemble computes; its own `predict` takes a majority vote of the
+members instead, which can differ on a few examples (see
+[Native API](native-api.qmd)).
 
 ```python
 proba = ensemble.predict_proba(X)
@@ -224,8 +230,10 @@ print(grid.best_params_)
 `EnsembleClassifier` and `EnsembleRegressor` are not tied to EvoDAG: they
 clone any scikit-learn estimator `n_estimators` times, give each clone
 `random_state + i` when it has that parameter (otherwise the clones are
-identical) and combine the members in the same way: a majority vote in
-classification and the median of the predictions in regression.
+identical) and combine the members in the same way: the median of the
+predictions in regression and, in classification, the median of the
+`decision_function` when the estimator has one, or a majority vote when it has
+none (a decision tree, for example).
 
 ```python
 from sklearn.tree import DecisionTreeClassifier
