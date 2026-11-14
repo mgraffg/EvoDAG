@@ -15,7 +15,7 @@
 
 import numpy as np
 import logging
-from SparseArray import SparseArray
+from . import array_utils as au
 from .node import Variable
 from .node import Add, Mul, Div, Fabs, Exp, Sqrt, Sin, Cos, Log1p
 from .node import Sq, Min, Max
@@ -28,13 +28,164 @@ from .population import SteadyState
 from .utils import tonparray
 from .function_selection import FunctionSelection
 from .naive_bayes import NaiveBayes as NB
-from .bagging_fitness import BaggingFitness
+from .bagging_fitness import BaggingFitness, mask_mul
 import time
 import importlib
 import inspect
 
 
 class EvoDAG(object):
+    """The EvoDAG search engine, also exported as ``RGP`` and ``RootGP``.
+
+    It runs one evolution: it builds an initial population of simple
+    individuals, creates one offspring at a time with the least-squares
+    crossover (PrXO), and stops by early stopping on a validation split. After
+    ``fit`` call ``model`` to obtain the fitted model. The class with the
+    scikit-learn-like interface that wraps a single model is
+    ``EvoDAG.model.EvoDAG`` (a different class with the same name), and the
+    ensemble is ``EvoDAG.EvoDAGE``.
+
+    Most users create the engine with ``init``, which reads the default
+    parameters from ``EvoDAG/conf/default_parameters.json`` (or
+    ``default_parameters_r.json``), instead of calling the constructor, whose
+    own defaults differ from that file. The defaults documented below are
+    those of the constructor; where the configuration file has another value
+    it is given as "Key ``name`` (value)". In particular the classification
+    file sets ``orthogonal_selection`` to true and ``negative_selection`` to
+    false (agreement for the parents and a random choice of the individual
+    that leaves, the best-ranked configuration of the selection paper),
+    whereas the constructor keeps the selection by fitness.
+
+    Parameters
+    ----------
+    generations : int or float, optional
+        Maximum number of generations; one generation is ``popsize``
+        offspring. ``None`` or ``numpy.inf`` (the default) means no limit.
+        Key ``generations`` of the default parameters (``null``).
+    popsize : int, optional
+        Number of individuals in the population (default 10000). Key
+        ``popsize`` (4000). The string ``"nvar"`` sets it to the number of
+        inputs plus the number of input functions.
+    seed : int, optional
+        Seed of the pseudo-random numbers (default 0). Key ``seed``.
+    tournament_size : int, optional
+        Individuals drawn in each tournament, for the arguments and for the
+        individual that leaves (default 2). Key ``tournament_size``.
+    early_stopping_rounds : int, optional
+        The run stops when this many offspring were created without
+        improving the early stopping individual (the best on the validation
+        split). A negative value, the default, means ``popsize``. Key
+        ``early_stopping_rounds`` (4000).
+    function_set : list, optional
+        Classes of ``EvoDAG.node`` that may be used to create offspring
+        (default: all of them). ``init`` builds it from the function keys
+        of the parameters (``Add``, ``Mul``, ...).
+    tr_fraction : float, optional
+        Proportion of the data used for training when it is split into the
+        training and the validation part (default 0.5). With 1 there is no
+        validation set and ``generations`` must be finite. Key
+        ``tr_fraction``.
+    population_class : class or str, optional
+        ``SteadyState`` (default) or ``Generational``, or its name. Key
+        ``population_class``.
+    negative_selection : bool, optional
+        If true (default) the individual replaced by an offspring is the
+        worst of a tournament; if false it is chosen at random. Key
+        ``negative_selection`` (false in the classification file, true in
+        the regression one).
+    number_tries_feasible_ind : int, optional
+        Attempts to find a valid individual before giving up (default 30).
+    time_limit : float, optional
+        Seconds after which the evolution stops (default ``None``, no
+        limit). Key ``time_limit`` (3600).
+    unique_individuals : bool, optional
+        Reject offspring that repeat a function applied to the same
+        arguments (default true). Key ``unique_individuals`` (false).
+    classifier : bool, optional
+        Classification if true (default), regression otherwise. Key
+        ``classifier``.
+    labels : array_like, optional
+        The class labels; by default they are taken from ``y`` in ``fit``.
+    all_inputs : bool, optional
+        Create initial individuals until every input has been used instead
+        of until the population has ``popsize`` individuals (default
+        false). Key ``all_inputs`` (true).
+    random_generations : int, optional
+        Number of generations in which the arguments are drawn at random
+        instead of by tournament on fitness (default 0). Key
+        ``random_generations`` (1).
+    fitness_function : str, optional
+        Fitness in classification (default ``"BER"``); the options are
+        described in the Parameters page of the user guide. Ignored in
+        regression. Key ``fitness_function``.
+    orthogonal_selection : bool, optional
+        Choose the arguments of the sum, Naive Bayes and Centroid by the
+        smallest agreement with the first argument (default false). Key
+        ``orthogonal_selection`` (true in the classification file, false in
+        the regression one).
+    orthogonal_dot_selection : bool, optional
+        Choose those arguments by the smallest dot product with the first
+        argument (default false). Not in the default parameters. It has
+        no effect while ``orthogonal_selection`` is true, which has
+        precedence.
+    min_density : float, optional
+        When the average fraction of non-zero values in the population is
+        below it, only density safe functions are used (default 0.8). Key
+        ``min_density``.
+    multiple_outputs : bool, optional
+        Whether the individuals have several outputs (default false); it is
+        always on in classification. Key ``multiple_outputs``.
+    function_selection : bool, optional
+        Choose the function of each offspring by a tournament on the
+        average fitness of the offspring it produced, instead of at random
+        (default true). Key ``function_selection``.
+    fs_tournament_size : int, optional
+        Size of that tournament (default 2). Key ``fs_tournament_size``.
+    finite : bool, optional
+        Replace the non-finite values of the inputs by zero (default true).
+        Key ``finite``.
+    pr_variable : float, optional
+        Probability that an initial individual is a single input variable
+        and not an input function (default 0.33). Key ``pr_variable`` (0.9).
+    share_inputs : bool, optional
+        Kept for compatibility; it has no effect (default false). Key
+        ``share_inputs``.
+    input_functions : list, optional
+        Classes (or names) among ``NaiveBayes``, ``NaiveBayesMN``,
+        ``Centroid`` and ``MultipleVariables`` used to create the initial
+        individuals that combine inputs (default ``None``). Key
+        ``input_functions``.
+    F1_index : int, optional
+        Class used by ``fitness_function="F1"``; -1 (default) is the
+        smallest class.
+    use_all_vars_input_functions : bool, optional
+        Create first one individual per input function over all the
+        variables (default false). Key ``use_all_vars_input_functions``
+        (true).
+    remove_raw_inputs : bool, optional
+        Free the training inputs once the initial population exists
+        (default true).
+    probability_calibration : class, optional
+        A class with the ``fit``/``predict_proba`` interface of
+        scikit-learn used to calibrate probabilities (default ``None``).
+    **kwargs
+        Ignored; they are kept in the instance. This is how keys of the
+        parameters that are not arguments (for example ``Argmax``) are
+        accepted.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from EvoDAG import RGP
+    >>> rng = np.random.RandomState(0)
+    >>> X = rng.randn(100, 3)
+    >>> y = (X[:, 0] > 0).astype(int)
+    >>> engine = RGP.init(popsize=50, early_stopping_rounds=50, seed=0)
+    >>> model = engine.fit(X, y).model()
+    >>> bool((model.predict(X) == y).mean() > 0.8)
+    True
+    """
+
     def __init__(self, generations=np.inf, popsize=10000,
                  seed=0, tournament_size=2,
                  early_stopping_rounds=-1,
@@ -135,9 +286,23 @@ class EvoDAG(object):
             self._input_functions = input_functions
 
     def get_params(self):
-        "Parameters used to initialize the class"
+        """Parameters used to initialize the class.
+
+        Returns
+        -------
+        dict
+            The name and the current value of each argument of the
+            constructor, so that ``clone`` can create an equivalent engine.
+
+        Examples
+        --------
+        >>> from EvoDAG import RGP
+        >>> params = RGP(popsize=20, seed=3).get_params()
+        >>> params["popsize"], params["seed"]
+        (20, 3)
+        """
         import inspect
-        a = inspect.getargspec(self.__init__)[0]
+        a = inspect.getfullargspec(self.__init__).args
         out = dict()
         for key in a[1:]:
             value = getattr(self, "_%s" % key, None)
@@ -145,7 +310,13 @@ class EvoDAG(object):
         return out
 
     def clone(self):
-        "Clone the class without the population"
+        """Clone the class without the population.
+
+        Returns
+        -------
+        EvoDAG
+            A new engine, not fitted, created with ``get_params``.
+        """
         return self.__class__(**self.get_params())
 
     @property
@@ -210,7 +381,7 @@ class EvoDAG(object):
     @y.setter
     def y(self, v):
         if isinstance(v, np.ndarray):
-            v = SparseArray.fromlist(v)
+            v = np.array(v, dtype=float)
         if self.classifier:
             self._multiple_outputs = True
             if self._labels is None:
@@ -229,8 +400,18 @@ class EvoDAG(object):
                 raise RuntimeError(msg)
         else:
             self._mask = 1.0
-        self._ytr = v * self._mask
+        self._ytr = mask_mul(v, self._mask)
         self._y = v
+
+    @property
+    def _mask_ts(self):
+        "Mask of the training set (used by the metrics) and its positions"
+        return self.__mask_ts
+
+    @_mask_ts.setter
+    def _mask_ts(self, v):
+        self.__mask_ts = v
+        self._mask_ts_index = np.flatnonzero(v).astype(np.uint32)
 
     @property
     def function_set(self):
@@ -248,6 +429,10 @@ class EvoDAG(object):
 
     @property
     def naive_bayes(self):
+        """Naive Bayes statistics of the training part, shared by the classifier nodes.
+
+        ``None`` in regression.
+        """
         try:
             return self._naive_bayes
         except AttributeError:
@@ -276,6 +461,7 @@ class EvoDAG(object):
 
     @property
     def init_popsize(self):
+        """Number of individuals created before the evolution proper starts."""
         if self._all_inputs:
             return self._init_popsize
         return self.popsize
@@ -312,6 +498,7 @@ class EvoDAG(object):
         return v not in self._unique_individuals_set
 
     def unfeasible_offspring(self):
+        """Count a rejected offspring (it also counts for early stopping) and return ``None``."""
         self._unfeasible_counter += 1
         return None
 
@@ -338,22 +525,32 @@ class EvoDAG(object):
         pop = self.population.population
         score = self._bagging_fitness.score
         if self.classifier:
-            fit = [(k, score.accuracy(first, SparseArray.argmax(pop[x].hy),
-                                      self._mask_ts.index)[0]) for k, x in enumerate(vars)]
+            fit = [(k, score.accuracy(first, au.argmax(pop[x].hy),
+                                      self._mask_ts_index)[0]) for k, x in enumerate(vars)]
         else:
-            fit = [(k, score.accuracy(first, pop[x].hy.sign() + 1,
-                                      self._mask.index)[0]) for k, x in enumerate(vars)]
+            index = np.flatnonzero(self._mask).astype(np.uint32)
+            fit = [(k, score.accuracy(first, au.sign(pop[x].hy) + 1,
+                                      index)[0]) for k, x in enumerate(vars)]
         fit = min(fit, key=lambda x: x[1])
         index = fit[0]
         return vars[index]
 
     def get_args_orthogonal(self, func):
+        """Select the arguments of ``func`` by agreement with the first one.
+
+        The first argument is chosen with the population tournament; each
+        other one is the individual, among ``tournament_size`` drawn at
+        random, whose predicted labels agree least with those of the first
+        argument on the training part. Returns the list of positions in the
+        population of the other arguments, or ``None`` if there are fewer
+        than ``func.min_nargs``.
+        """
         first = self.population.tournament()
         args = {first: 1}
         if self.classifier:
-            first = SparseArray.argmax(self.population.population[first].hy)
+            first = au.argmax(self.population.population[first].hy)
         else:
-            first = self.population.population[first].hy.sign() + 1.0
+            first = au.sign(self.population.population[first].hy) + 1.0
         res = []
         sel = self._get_args_orthogonal
         n_tries = self._number_tries_unique_args
@@ -383,16 +580,22 @@ class EvoDAG(object):
             for k,x in enumerate(vars):  
                 pvalue = 0
                 for i in range(len(first_hy)):
-                    pvalue+= SparseArray.dot(pop[x].hy[i].mul(mask),first_hy[i])
+                    pvalue+= au.dot(au.mul(pop[x].hy[i], mask), first_hy[i])
                 prod.append( (k,pvalue) )
         else:
-            prod = [(k,SparseArray.dot(pop[x].hy.mul(mask),first_hy)) for k,x in enumerate(vars)]
+            prod = [(k, au.dot(au.mul(pop[x].hy, mask), first_hy)) for k, x in enumerate(vars)]
         
         prod = min(prod, key=lambda x: x[1])
         index = prod[0]
         return vars[index]
     
     def get_args_orthogonal_dot(self, func):
+        """Select the arguments of ``func`` by the smallest dot product with the first one.
+
+        Same procedure as ``get_args_orthogonal`` but the measure is the
+        dot product of the masked outputs. Returns the list of positions of
+        the other arguments, or ``None`` if there are too few.
+        """
         first = self.population.tournament()
         args = {first: 1}
         if self.classifier:
@@ -402,9 +605,9 @@ class EvoDAG(object):
         if isinstance(self.population.population[first].hy,list):
             first_hy = []
             for i in range(len(self.population.population[first].hy)):
-                first_hy.append( self.population.population[first].hy[i].mul(mask) )
+                first_hy.append(au.mul(self.population.population[first].hy[i], mask))
         else:
-            first_hy = self.population.population[first].hy.mul(mask)
+            first_hy = au.mul(self.population.population[first].hy, mask)
             
         res = []
         sel = self._get_args_orthogonal_dot
@@ -427,6 +630,11 @@ class EvoDAG(object):
         return res
     
     def get_unique_args(self, func):
+        """Select up to ``func.nargs`` different arguments by tournament.
+
+        Returns the list of positions in the population, or ``None`` when
+        fewer than ``func.min_nargs`` different ones were found.
+        """
         args = {}
         res = []
         p_tournament = self.population.tournament
@@ -445,6 +653,13 @@ class EvoDAG(object):
         return res
 
     def get_args(self, func):
+        """Select the arguments of function ``func`` according to the selection parameters.
+
+        It uses the agreement or the dot product heuristic when they are on
+        and ``func`` supports them, the tournament with distinct arguments
+        for functions that require them, and the plain tournament otherwise.
+        Returns a list of positions in the population or ``None``.
+        """
         args = []
         if self._orthogonal_selection and func.orthogonal_selection:
             return self.get_args_orthogonal(func)
@@ -498,6 +713,7 @@ class EvoDAG(object):
         self.population.create_population()
 
     def stopping_criteria_tl(self):
+        """Whether ``time_limit`` seconds have passed since ``fit`` started."""
         if self._time_limit is not None:
             if time.time() - self._init_time > self._time_limit:
                 return True
@@ -545,15 +761,58 @@ class EvoDAG(object):
         self.population.replace(a)
 
     def shuffle_tr2ts(self):
+        """Test set made by shuffling each input of the training set independently.
+
+        It is what ``fit`` uses as test set when ``test_set="shuffle"``.
+        """
         L = []
         for x in self.X:
-            l = np.array(x.hy.full_array())
+            l = np.array(x.hy)
             np.random.shuffle(l)
             L.append(l)
         return np.array(L).T
 
     def fit(self, X, y, test_set=None):
-        """Evolutive process"""
+        """Run the evolution.
+
+        Parameters
+        ----------
+        X : array_like
+            Inputs, one row per example. A list with one array per input
+            (column) is also accepted.
+        y : array_like
+            In classification the class of each example (numbers); in
+            regression the real target. With several outputs a list with
+            one array per output.
+        test_set : array_like or str, optional
+            Inputs to be evaluated along the evolution so that predictions
+            of the models are available without evaluating them again;
+            ``"shuffle"`` creates one from the training inputs.
+
+        Returns
+        -------
+        EvoDAG
+            The engine itself. Use ``model`` to obtain the fitted model.
+
+        Raises
+        ------
+        RuntimeError
+            If no suitable individual can be found, or if there is no
+            validation split and no limit of generations.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from EvoDAG import RGP
+        >>> rng = np.random.RandomState(0)
+        >>> X = rng.randn(100, 3)
+        >>> y = (X[:, 0] > 0).astype(int)
+        >>> engine = RGP.init(popsize=50, early_stopping_rounds=50, seed=0)
+        >>> engine.fit(X, y) is engine
+        True
+        >>> len(engine.population.hist) > 0
+        True
+        """
         self._init_time = time.time()
         self.X = X
         if self._popsize == "nvar":
@@ -601,21 +860,103 @@ class EvoDAG(object):
         return self
 
     def trace(self, n):
-        "Restore the position in the history of individual v's nodes"
+        """Positions in the history of the nodes that individual ``n`` depends on, sorted.
+
+        Parameters
+        ----------
+        n : EvoDAG.node.Variable
+            An individual of the history.
+        """
         return self.population.trace(n)
 
     def model(self, v=None):
-        "Returns the model of node v"
+        """Return the model of node ``v``.
+
+        Parameters
+        ----------
+        v : EvoDAG.node.Variable, optional
+            An individual found in ``population.hist``. By default the
+            early stopping individual, the best on the validation split.
+
+        Returns
+        -------
+        EvoDAG.model.Model
+            The nodes needed to predict, with their coefficients.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from EvoDAG import RGP, Model
+        >>> rng = np.random.RandomState(0)
+        >>> X = rng.randn(100, 3)
+        >>> y = (X[:, 0] > 0).astype(int)
+        >>> engine = RGP.init(popsize=50, early_stopping_rounds=50, seed=0)
+        >>> isinstance(engine.fit(X, y).model(), Model)
+        True
+        """
         return self.population.model(v=v)
 
     def decision_function(self, v=None, X=None):
-        "Decision function i.e. the raw data of the prediction"
+        """Decision function, i.e. the raw outputs of the model.
+
+        Parameters
+        ----------
+        v : EvoDAG.node.Variable, optional
+            Individual whose model is used; the early stopping one by default.
+        X : array_like, optional
+            Inputs to evaluate. If ``None`` the output on the test set given
+            to ``fit`` is returned.
+
+        Returns
+        -------
+        list or numpy.ndarray
+            In classification a list with one array per class.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from EvoDAG import RGP
+        >>> rng = np.random.RandomState(0)
+        >>> X = rng.randn(100, 3)
+        >>> y = (X[:, 0] > 0).astype(int)
+        >>> engine = RGP.init(popsize=50, early_stopping_rounds=50, seed=0)
+        >>> df = engine.fit(X, y).decision_function(X=X)
+        >>> len(df), df[0].shape
+        (2, (100,))
+        """
         m = self.model(v=v)
         return m.decision_function(X)
 
     def predict(self, v=None, X=None):
-        """In classification this returns the classes, in
-        regression it is equivalent to the decision function"""
+        """Predict ``X``: the classes in classification, the values in regression.
+
+        It can be called as ``predict(X)`` or as ``predict(v, X)``.
+
+        Parameters
+        ----------
+        v : EvoDAG.node.Variable or array_like, optional
+            Individual whose model is used; if ``X`` is not given this is
+            taken as the inputs.
+        X : array_like, optional
+            Inputs to predict.
+
+        Returns
+        -------
+        numpy.ndarray
+            One value per example, in the labels of the training data.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from EvoDAG import RGP
+        >>> rng = np.random.RandomState(0)
+        >>> X = rng.randn(100, 3)
+        >>> y = (X[:, 0] > 0).astype(int)
+        >>> engine = RGP.init(popsize=50, early_stopping_rounds=50, seed=0)
+        >>> hy = engine.fit(X, y).predict(X)
+        >>> sorted(set(hy.tolist())) == [0, 1]
+        True
+        """
         if X is None:
             X = v
             v = None
@@ -624,6 +965,40 @@ class EvoDAG(object):
 
     @classmethod
     def init(cls, params_fname=None, seed=None, classifier=True, **kwargs):
+        """Create an engine from a file of parameters.
+
+        Parameters
+        ----------
+        params_fname : str or dict, optional
+            JSON file (also gzip compressed when its name ends in ``.gz``)
+            or dictionary with the parameters. A file that contains a list,
+            as the one written by ``EvoDAG-params``, uses its first element.
+            By default ``EvoDAG/conf/default_parameters.json`` in
+            classification and ``default_parameters_r.json`` in regression.
+        seed : int, optional
+            Overrides the seed of the parameters.
+        classifier : bool, optional
+            Selects the default parameters when ``params_fname`` is not
+            given (default true, classification).
+        **kwargs
+            Parameters that override those of the file. Keys that are the
+            name of a function (``Add``, ``Mul``, ...) switch it on or off
+            (boolean) or set its number of arguments (integer, 0 removes it).
+
+        Returns
+        -------
+        EvoDAG
+            An engine that is not fitted.
+
+        Examples
+        --------
+        >>> from EvoDAG import RGP
+        >>> engine = RGP.init(popsize=20, Mul=0, seed=2)
+        >>> engine.popsize
+        20
+        >>> "Mul" in [f.__name__ for f in engine.function_set]
+        False
+        """
         import os
         from .utils import RandomParameterSearch
         import json

@@ -14,13 +14,24 @@
 
 
 import numpy as np
-from SparseArray import SparseArray
 import json
 import os
 import gzip
 
 
 def line_iterator(filename):
+    """Iterate over the non-empty lines of a text file, stripped.
+
+    Parameters
+    ----------
+    filename : str
+        Path of the file; a name ending in ``.gz`` is read compressed.
+
+    Yields
+    ------
+    str
+        Each line without surrounding white space. Blank lines are skipped.
+    """
     if filename.endswith(".gz"):
         f = gzip.GzipFile(filename)
     else:
@@ -49,15 +60,55 @@ def line_iterator(filename):
 
 
 def json_iterator(filename):
+    """Iterate over a file with one JSON object per line, yielding the decoded objects.
+
+    It accepts the same files as ``line_iterator``.
+    """
     for line in line_iterator(filename):
         yield json.loads(line)
 
 
 def tonparray(a):
-    return np.array(a.full_array())
+    """Convert ``a`` into a numpy array."""
+    return np.array(a)
+
+
+def index_data(pairs, size):
+    "Dense vector of ``size`` with the value of each ``(position, value)``"
+    res = np.zeros(size)
+    if len(pairs):
+        res[[i for i, _ in pairs]] = [v for _, v in pairs]
+    return res
 
 
 def BER(y, yh):
+    """Balanced error rate, in percent.
+
+    It is the mean, over the classes in ``y``, of the percentage of the
+    examples of the class that are not predicted as that class.
+
+    Parameters
+    ----------
+    y : numpy.ndarray
+        True classes.
+    yh : numpy.ndarray
+        Predicted classes.
+
+    Returns
+    -------
+    float
+        0 is perfect; 50 is the error of a classifier that is no better
+        than chance on two balanced classes.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from EvoDAG.utils import BER
+    >>> y = np.array([0, 0, 0, 0, 1, 1])
+    >>> yh = np.array([0, 0, 0, 1, 1, 0])
+    >>> float(BER(y, yh))
+    37.5
+    """
     u = np.unique(y)
     b = 0
     for cl in u:
@@ -67,6 +118,28 @@ def BER(y, yh):
 
 
 def RSE(x, y):
+    """Relative squared error: the squared error of ``y`` with respect to ``x`` over the variance of ``x`` (not divided by the size).
+
+    Parameters
+    ----------
+    x : numpy.ndarray
+        True values.
+    y : numpy.ndarray
+        Predicted values.
+
+    Returns
+    -------
+    float
+        0 is perfect, and 1 is the error of always predicting the mean of ``x``.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from EvoDAG.utils import RSE
+    >>> x = np.array([1.0, 2.0, 3.0])
+    >>> float(RSE(x, x)), float(RSE(x, np.full(3, 2.0)))
+    (0.0, 1.0)
+    """
     return ((x - y)**2).sum() / ((x - x.mean())**2).sum()
 
 
@@ -76,16 +149,39 @@ with open(params_fname, 'r') as fpt:
 
 
 class Inputs(object):
+    """Reader of the data files of the command line tools (CSV and JSON).
+
+    Values that are not numbers are replaced by integers; the dictionaries
+    ``word2id`` (for the inputs) and ``label2id`` (for the classes) store
+    the correspondence, and they are saved with the models.
+
+    Examples
+    --------
+    >>> import os, tempfile
+    >>> from EvoDAG.utils import Inputs
+    >>> path = os.path.join(tempfile.mkdtemp(), "train.csv")
+    >>> with open(path, "w") as fpt:
+    ...     for row in ("1.0,2.0,a", "3.0,4.0,b", "5.0,6.0,a"):
+    ...         print(row, file=fpt)
+    >>> inputs = Inputs()
+    >>> X, y = inputs.read_csv(path, 1)
+    >>> X.shape, y.tolist()
+    ((3, 2), [0, 1, 0])
+    >>> inputs.label2id
+    {'a': 0, 'b': 1}
+    """
     def __init__(self):
         self._word2id = {}
         self._label2id = {}
 
     @property
     def word2id(self):
+        "Dictionary that maps the inputs that are not numbers to integers"
         return self._word2id
 
     @property
     def label2id(self):
+        "Dictionary that maps the class labels that are not numbers to integers"
         return self._label2id
 
     @word2id.setter
@@ -107,6 +203,7 @@ class Inputs(object):
         return num_terms
 
     def convert(self, x):
+        """Convert an input value to a float; text is mapped to an integer with ``word2id``."""
         try:
             return float(x)
         except ValueError:
@@ -115,6 +212,7 @@ class Inputs(object):
             return self.word2id[x]
 
     def convert_label(self, x):
+        """Convert a class label to a float; text, and not finite numbers, are mapped to an integer with ``label2id``."""
         try:
             x = float(x)
             if np.isfinite(x):
@@ -135,6 +233,24 @@ class Inputs(object):
         return X
 
     def read_csv(self, fname, dim):
+        """Read a CSV file without header: the inputs and, optionally, the targets.
+
+        Parameters
+        ----------
+        fname : str
+            File name; ``.gz`` files are read compressed.
+        dim : int
+            Number of target columns at the end of each row: 1 for a class
+            or a real target, greater than 1 for several real targets, 0
+            when the file has only inputs.
+
+        Returns
+        -------
+        tuple
+            ``(X, y)``. ``X`` is an array with one row per example. ``y`` is
+            an array when ``dim`` is 1, a list with one array per target
+            when it is greater, and ``None`` when it is 0.
+        """
         X = []
         y = []
         d = self._read_csv(fname)
@@ -143,7 +259,7 @@ class Inputs(object):
                 X.append([self.convert(i) for i in x[:-dim]])
                 y.append(x[-dim:])
             X = np.array(X)
-            y = [SparseArray.fromlist([float(x[i]) for x in y]) for i in range(dim)]
+            y = [np.array([float(x[i]) for x in y]) for i in range(dim)]
         elif dim == 1:
             for x in d:
                 X.append([self.convert(i) for i in x[:-1]])
@@ -155,6 +271,27 @@ class Inputs(object):
         return X, y
 
     def read_data_json(self, fname, iterable=None):
+        """Read a file with one JSON object per line: the inputs and the target.
+
+        Each object gives the inputs as keys that are the index of the input
+        (a string), and the target under ``klass`` (environment variable
+        ``KLASS`` changes the name). Inputs that are missing are zero. An
+        object with the key ``vec`` (environment variable ``VEC``) is read
+        by ``read_data_json_vec``.
+
+        Parameters
+        ----------
+        fname : str
+            File name.
+        iterable : iterable of dict, optional
+            Objects to read instead of the file.
+
+        Returns
+        -------
+        tuple
+            ``(X, y)``: ``X`` is a list with one array per input and ``y``
+            an array with the targets, or ``None`` if there are none.
+        """
         X = None
         y = []
         dependent = os.getenv('KLASS')
@@ -176,7 +313,7 @@ class Inputs(object):
                     if k == dependent:
                         y.append(self.convert_label(v))
         num_rows = row + 1
-        X = [SparseArray.index_data(x, num_rows) for x in X]
+        X = [index_data(x, num_rows) for x in X]
         if len(y) == 0:
             y = None
         else:
@@ -184,6 +321,13 @@ class Inputs(object):
         return X, y
 
     def read_data_json_vec(self, fname, iterable=None):
+        """Read JSON lines whose inputs are in a list under ``vec``.
+
+        Without ``vecsize`` the list holds the value of every input in
+        order; with ``vecsize`` it holds ``[index, value]`` pairs of a
+        vector of that size (sparse). The target is under ``klass``. It
+        returns ``(X, y)`` as ``read_data_json``.
+        """
         X = None
         y = []
         dependent = os.getenv('KLASS')
@@ -209,7 +353,7 @@ class Inputs(object):
             except KeyError:
                 pass
         num_rows = row + 1
-        X = [SparseArray.index_data(x, num_rows) for x in X]
+        X = [index_data(x, num_rows) for x in X]
         if len(y) == 0:
             y = None
         else:
@@ -218,6 +362,40 @@ class Inputs(object):
 
 
 class RandomParameterSearch(object):
+    """Random sample of the space of parameters of EvoDAG.
+
+    The space is the product of the lists of values of ``parameter_values.json``
+    (``EvoDAG/conf``). Iterating over the object yields ``npoints`` different
+    configurations, drawn at random without repetition and without those
+    that are not consistent (see ``constraints``). It is what the
+    ``EvoDAG-params`` command uses. The space is enormous and ``len`` gives
+    its size, so do not build a list from it directly; use a loop or
+    ``itertools.islice``.
+
+    Parameters
+    ----------
+    params : dict, optional
+        Maps each parameter to the list of its values (default: the content
+        of ``parameter_values.json``).
+    npoints : int, optional
+        Number of configurations to yield (default 1468).
+    training_size : int, optional
+        Number of training examples; the values of ``popsize`` and
+        ``early_stopping_rounds`` larger than it are not used.
+    seed : int, optional
+        Seed of the sampling (default 0).
+
+    Examples
+    --------
+    >>> from itertools import islice
+    >>> from EvoDAG.utils import RandomParameterSearch
+    >>> search = RandomParameterSearch(npoints=3, training_size=500, seed=0)
+    >>> configurations = list(islice(search, 3))
+    >>> len(configurations)
+    3
+    >>> all(c["popsize"] <= 500 for c in configurations)
+    True
+    """
     def __init__(self, params=PARAMS,
                  npoints=1468,
                  training_size=5000,
@@ -233,12 +411,14 @@ class RandomParameterSearch(object):
         self.fix_early_popsize()
 
     def popsize_constraint(self, params):
+        """Keep, in ``params['popsize']``, the values not larger than the training size."""
         try:
             params['popsize'] = [x for x in params['popsize'] if x <= self._training_size]
         except KeyError:
             pass
 
     def fix_early_popsize(self):
+        """Add the training size as a value of ``popsize`` or ``early_stopping_rounds`` when none is left."""
         try:
             popsize = [x for x in self._params if x[0] == 'popsize'][0]
             if len(popsize[1]) == 0:
@@ -256,7 +436,7 @@ class RandomParameterSearch(object):
     def __len__(self):
         if self._len is None:
             _ = np.array([len(x[1]) for x in self._params], dtype=np.uint)
-            _ = np.product(_)
+            _ = np.prod(_)
             assert _ >= 0
             self._len = _
         return self._len
@@ -271,6 +451,12 @@ class RandomParameterSearch(object):
         return res
 
     def constraints(self, k):
+        """Whether configuration ``k`` is consistent.
+
+        A generational population needs ``early_stopping_rounds`` of at
+        least ``popsize``, and ``early_stopping_rounds`` cannot exceed the
+        number of training examples.
+        """
         try:
             if k['population_class'] == 'Generational' and\
                k['early_stopping_rounds'] < k['popsize']:
@@ -300,6 +486,32 @@ class RandomParameterSearch(object):
 
     @staticmethod
     def process_params(a):
+        """Convert a configuration into the arguments of the engine.
+
+        The keys that are the name of a function (``Add``, ``Mul``, ...)
+        become the ``function_set``: a boolean switches the function on or
+        off and an integer sets its number of arguments (0 removes it). The
+        other keys are returned unchanged.
+
+        Parameters
+        ----------
+        a : dict
+            A configuration, as yielded by the search or read from a file.
+
+        Returns
+        -------
+        dict
+            The keyword arguments for ``EvoDAG.EvoDAG``.
+
+        Examples
+        --------
+        >>> from EvoDAG.utils import RandomParameterSearch
+        >>> args = RandomParameterSearch.process_params({"Add": 10, "Mul": 0, "Sin": True, "popsize": 100})
+        >>> [f.__name__ for f in args["function_set"]]
+        ['Add', 'Sin']
+        >>> args["popsize"]
+        100
+        """
         from EvoDAG import EvoDAG
         fs_class = {}
         function_set = []

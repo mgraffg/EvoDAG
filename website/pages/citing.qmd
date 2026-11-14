@@ -1,0 +1,79 @@
+---
+title: "Citing EvoDAG"
+---
+
+If EvoDAG is used in a scientific publication, citations to the papers below
+are appreciated. The first one describes the library, the second one the
+selection heuristics, and the third one the earlier system that EvoDAG grew
+out of.
+
+## The library
+
+Mario Graff, Eric S. Tellez, Sabino Miranda-Jiménez and Hugo Jair Escalante.
+*EvoDAG: A semantic Genetic Programming Python library.* 2016 IEEE
+International Autumn Meeting on Power, Electronics and Computing (ROPEC),
+pp. 1–6, November 2016.
+[doi:10.1109/ROPEC.2016.7830633](https://doi.org/10.1109/ROPEC.2016.7830633)
+
+```bibtex
+@inproceedings{graff_evodag:_2016,
+  title = {{EvoDAG}: {A} semantic {Genetic} {Programming} {Python} library},
+  shorttitle = {{EvoDAG}},
+  doi = {10.1109/ROPEC.2016.7830633},
+  booktitle = {2016 {IEEE} {International} {Autumn} {Meeting} on {Power}, {Electronics} and {Computing} ({ROPEC})},
+  author = {Graff, M. and Tellez, E. S. and Miranda-Jiménez, S. and Escalante, H. J.},
+  month = nov,
+  year = {2016},
+  pages = {1--6}
+}
+```
+
+## The selection heuristics
+
+Claudia N. Sánchez and Mario Graff. *Selection Heuristics on Semantic Genetic
+Programming for Classification Problems.* Evolutionary Computation.
+
+The reference below has only the data that appear in the manuscript of the
+paper; the year, volume, pages and DOI of the published version are not
+included here and should be added from the journal's page.
+
+```bibtex
+@article{sanchez_selection_heuristics,
+  title = {Selection Heuristics on Semantic Genetic Programming for Classification Problems},
+  author = {S{\'a}nchez, Claudia N. and Graff, Mario},
+  journal = {Evolutionary Computation}
+}
+```
+
+The page [Selection](selection.qmd) says which of the heuristics of this paper
+are in the released code.
+
+## The earlier system
+
+Mario Graff, Eric S. Tellez, Hugo Jair Escalante and Sabino Miranda-Jiménez.
+*Semantic Genetic Programming for Sentiment Analysis.* NEO 2015, Studies in
+Computational Intelligence, volume 663, pp. 43–65, Springer, 2017.
+[doi:10.1007/978-3-319-44003-3_2](https://doi.org/10.1007/978-3-319-44003-3_2)
+
+```bibtex
+@incollection{graff_semantic_2017,
+  series = {Studies in {Computational} {Intelligence}},
+  title = {Semantic {Genetic} {Programming} for {Sentiment} {Analysis}},
+  isbn = {9783319440026 9783319440033},
+  url = {http://link.springer.com/chapter/10.1007/978-3-319-44003-3_2},
+  number = {663},
+  booktitle = {{NEO} 2015},
+  publisher = {Springer International Publishing},
+  author = {Graff, Mario and Tellez, Eric S. and Escalante, Hugo Jair and Miranda-Jiménez, Sabino},
+  editor = {Schütze, Oliver and Trujillo, Leonardo and Legrand, Pierrick and Maldonado, Yazmin},
+  year = {2017},
+  note = {DOI: 10.1007/978-3-319-44003-3\_2},
+  pages = {43--65}
+}
+```
+
+## The software
+
+The source code is released under the Apache 2.0 license and lives at
+<https://github.com/mgraffg/EvoDAG>. When you report results, say which
+version you used (`EvoDAG-train --version`).

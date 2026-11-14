@@ -12,7 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Evolving Directed Acyclic Graph (EvoDAG).
 
+Public names:
+
+* ``EvoDAGE``: ensemble of EvoDAG models (``fit``/``predict``).
+* ``Model``: a fitted model, obtained with ``EvoDAG(...).fit(X, y).model()``.
+* ``Ensemble``: the fitted ensemble behind ``EvoDAGE``.
+* ``EvoDAG``, ``RGP`` and ``RootGP``: three names for the search engine
+  (``EvoDAG.base.EvoDAG``).
+
+The single-model wrapper with the scikit-learn-like interface is a different
+class that is also called ``EvoDAG``: ``EvoDAG.model.EvoDAG``.
+"""
 from .base import EvoDAG, RGP, RootGP
-__all__ = ["EvoDAG", "RGP", "RootGP"]
-__version__ = '0.17.2'
+from .model import EvoDAGE, Model, Ensemble
+__all__ = ["EvoDAG", "RGP", "RootGP", "EvoDAGE", "Model", "Ensemble"]
+__version__ = '0.18.0'

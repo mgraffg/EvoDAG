@@ -18,6 +18,7 @@ from cpython.set cimport PySet_Contains, PySet_New, PySet_GET_SIZE
 
 
 cdef class FunctionSelection:
+    """Chooses the index of the function to use in a new node, by tournament on the average fitness of the functions."""
     def __cinit__(self, nfunctions=0, seed=0, tournament_size=2,
                   nargs=None, density_safe=None):
         cdef unsigned int k
@@ -44,6 +45,7 @@ cdef class FunctionSelection:
         self.times[k] += 1
 
     cpdef int random_function(self) except -1:
+        """Draw a function index uniformly at random (from the density safe functions when the density is below the minimum), retrying up to five times to avoid the unfeasible ones."""
         cdef int value, r
         cdef Py_ssize_t _
         if self.density < self.min_density and self.density_safe_size > 0:
@@ -60,12 +62,14 @@ cdef class FunctionSelection:
         return r    
 
     cpdef double avg_fitness(self, Py_ssize_t x):
+        """Average fitness of function ``x``, i.e. its accumulated fitness divided by the times it was used, 0 if never used."""
         cdef unsigned int _times = self.times[x]
         if _times == 0:
             return 0.0
         return self.fitness[x] / _times
 
     cpdef bint comparison(self, int best, int comp):
+        """Whether ``comp`` repeats ``best`` and a different feasible function can still be drawn, so that it has to be drawn again."""
         if best == comp:
             if self.density < self.min_density:
                 if self.density_safe_size == 1:
@@ -80,6 +84,7 @@ cdef class FunctionSelection:
         return False
 
     cpdef int tournament(self) except -1:
+        """Select a function with a tournament, the best average fitness wins and ties go to the function with more arguments."""
         cdef int best, comp
         cdef double best_fit, comp_fit
         cdef array.array naargs = self.nargs

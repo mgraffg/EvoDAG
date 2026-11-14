@@ -51,6 +51,8 @@
     ],
     "min_density": 0.8,
     "multiple_outputs": true,
+    "negative_selection": false,
+    "orthogonal_selection": true,
     "popsize": 4000,
     "population_class": "SteadyState",
     "pr_variable": 0.9,

@@ -44,7 +44,6 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
-nosetests.xml
 coverage.xml
 *,cover
 .hypothesis/
@@ -91,3 +90,10 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+# Quarto website build output
+website/_site/
+website/.quarto/
+
+# Sphinx build output
+docs/build/

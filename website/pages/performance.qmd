@@ -1,0 +1,198 @@
+---
+title: "Performance"
+---
+
+This page collects the benchmark results that have been published with
+EvoDAG. They were obtained with earlier versions of the library (the version
+is given for each table) and are **not** re-run when the site is built:
+treat them as a snapshot of what the method achieved at the time, not as a
+measurement of the code in this release. In particular, the library's default
+parameters changed after those versions: since this release classification uses
+the agreement selection and a random choice of the individual that leaves (see
+[Parameters](parameters.qmd)), whereas the versions in the tables used fitness
+tournaments for both.
+
+The measure is the balance error rate (BER) in percent: the average, over the
+classes, of the proportion of examples of the class that are misclassified.
+Lower is better, and the best value of each column is in bold face where the
+authors marked it.
+
+The benchmark problems come from the collection of Gunnar Rätsch's benchmark
+data sets, which are available as
+[matlab](http://theoval.cmp.uea.ac.uk/matlab/benchmarks) files and as
+[text](http://ws.ingeotec.mx/~mgraffg/classification) files.
+
+## EvoDAG against the classifiers of scikit-learn
+
+The table gives the average rank and the BER of EvoDAG and of sixteen
+classifiers of [scikit-learn](http://scikit-learn.org) on nine of the
+problems. EvoDAG was trained with the commands of the
+[Command line](cli.qmd) page and **without** optimising its parameters, that is, with the
+default parameters.
+
+|Classifier|Average rank|banana | thyroid | diabetis | heart | ringnorm | twonorm |german| image | waveform|
+|-------|------:|------:|-------:|----:|--------:|--------:|------:|-----:|--------:|---------:|
+|EvoDAG|2.4|12.0|7.7|**25.0**|**16.1**|1.5|2.3|28.3|3.6|10.8|
+|SVC|5.3|11.6|8.1|29.8|17.7|1.8|2.7|33.3|8.9|**10.7**|
+|GaussianNB|5.9|41.6|11.5|28.6|16.3|1.4|2.4|30.6|36.7|12.2|
+|GradientBoosting|6.1|13.8|8.2|28.5|21.1|6.6|5.7|31.1|2.1|13.6|
+|MLP|6.4|18.8|9.3|28.6|18.3|11.0|2.8|32.0|3.4|11.4|
+|NearestCentroid|7.4|46.3|22.5|28.2|16.7|24.1|2.3|27.7|37.1|13.0|
+|AdaBoost|8.3|28.2|8.7|29.3|22.5|7.0|5.4|31.6|3.2|14.6|
+|ExtraTrees|8.7|13.5|6.6|33.0|21.1|8.4|7.8|36.9|2.4|16.5|
+|LinearSVC|8.8|50.0|16.9|28.5|16.8|25.2|3.6|32.4|18.6|14.2|
+|LogisticRegression|9.1|50.0|20.2|28.3|17.0|25.3|2.9|32.1|18.7|13.7|
+|RandomForest|9.1|13.6|7.9|31.9|21.4|9.6|8.9|36.7|2.1|16.9|
+|KNeighbors|9.4|11.9|12.1|32.1|18.6|43.7|3.8|36.2|5.3|13.8|
+|BernoulliNB|11.6|45.5|32.5|31.9|16.6|28.1|5.8|32.8|39.0|14.3|
+|DecisionTree|11.8|15.2|9.3|33.9|27.1|19.2|20.9|36.5|3.4|20.8|
+|SGD|14.0|50.3|17.7|34.0|22.2|32.6|3.9|38.5|25.1|17.6|
+|PassiveAggressive|14.1|49.0|19.5|34.7|23.3|31.5|3.9|38.7|26.2|17.1|
+|Perceptron|14.4|50.2|18.2|34.6|21.6|33.5|3.9|37.5|26.7|19.0|
+
+The predictions of EvoDAG were obtained with this script:
+
+```bash
+dirname=evodag-`EvoDAG-params --version | awk '{print $2}'`
+[ ! -d $dirname ] && mkdir $dirname
+
+echo Training with `EvoDAG-params --version`
+
+for train in csv/*train_data*.csv;
+do
+        test=`python -c "import sys; print(sys.argv[1].replace('train', 'test'))" $train`;
+        output=`basename ${test} .csv`
+        predict=${dirname}/${output}.predict
+        model=${dirname}/${output}.model
+        if [ ! -f $model ]
+        then
+            EvoDAG-train -C -u 32 -m $model -t $test $train
+        fi
+        if [ ! -f $predict ]
+        then
+            EvoDAG-predict -u 32 -m $model -o $predict $test
+        fi
+done
+```
+
+The predictions sklearn classifiers were obtained using the following
+code:
+
+```python
+from sklearn.linear_model import LogisticRegression, SGDClassifier, Perceptron
+from sklearn.linear_model import PassiveAggressiveClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors.nearest_centroid import NearestCentroid
+from sklearn.svm import SVC, LinearSVC
+from sklearn.naive_bayes import GaussianNB, BernoulliNB
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.ensemble import AdaBoostClassifier
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.neural_network import MLPClassifier
+from glob import glob
+import numpy as np
+
+
+def predict(train, test, alg):
+    X = np.loadtxt(train, delimiter=',')
+    Xtrain = X[:, :-1]
+    ytrain = X[:, -1]
+    Xtest = np.loadtxt(test, delimiter=',')
+    m = alg().fit(Xtrain, ytrain)
+    return m.predict(Xtest)
+
+ALG = [LogisticRegression, SGDClassifier, Perceptron,
+       PassiveAggressiveClassifier, SVC, LinearSVC, KNeighborsClassifier, NearestCentroid,
+       GaussianNB, BernoulliNB, DecisionTreeClassifier, RandomForestClassifier,
+       ExtraTreesClassifier, AdaBoostClassifier, GradientBoostingClassifier, MLPClassifier]
+
+for dataset in ['banana', 'thyroid', 'diabetis', 'heart',
+                'ringnorm', 'twonorm', 'german', 'image',
+                'waveform']:
+    for train in glob('csv/%s_train_data*.csv' % dataset):
+        test = train.replace('_train_', '_test_')
+        hy_alg = [predict(train, test, alg) for alg in ALG]
+```
+
+## EvoDAG against PSMS, auto-sklearn and SVM
+
+The next table compares the average BER of PSMS, auto-sklearn, an SVM and
+EvoDAG (0.10.6, with the parameters optimised by random search) on nine
+classification problems, and, in its last columns, EvoDAG (0.10.7) without
+optimising the parameters, which only needs the command
+
+```bash
+EvoDAG-train -m model.evodag -n 100 -u 4 iris.data
+```
+
+where `iris.data` is the training set. PSMS obtained the best performance on
+three datasets and the SVM on one, whereas EvoDAG obtained the best performance
+on the remaining five. The confidence intervals of auto-sklearn (not
+shown here) are one order of magnitude larger than those of the other systems:
+in some of its trials it predicts a single class, which gives the worst
+possible BER, 50. The authors kept auto-sklearn without modification.
+
+The data sets, with the number of input features, of training patterns and
+of test patterns:
+
+|Dataset|Input features|Training patterns|Test patterns|
+|------|----------:|--------------:|---------:|
+|banana| 2| 400 | 4900|
+|thyroid | 5 | 140 | 75 |
+|diabetis | 8 | 468 | 300 |
+|heart | 13 | 170 | 100 |
+|ringnorm | 20 | 400 | 7000 |
+|twonorm | 20 | 400 | 7000 |
+|german | 20 | 700 | 300 |
+|image | 20 | 1300 | 1010 |
+|waveform | 21 | 400 | 4600 |
+
+
+
+
+|Dataset|[PSMS](http://www.jmlr.org/papers/v10/escalante09a.html)|[auto-sklearn](https://github.com/automl/auto-sklearn)|[SVC(sklearn)](http://scikit-learn.org/stable/)|EvoDAG - Inductive| EvoDAG - Shuffle | EvoDAG - Transductive|EvoDAG - BSF|
+| ----- | ---------------------------------------------: | --------------------------------------------: | -----------------------------------: | -----------: |-----------: |-----------: |-----------: |
+|banana          |     **11.08**      |  28.00  |11.27 | 12.88 | 12.43 | 11.93|14.95|
+|thyroid        |      **4.32**      |  23.38  |  6.13  |  8.56 | 8.21 |7.79 |14.63|
+|diabetis        |     27.06   |   37.65  |  26.65  |  24.85 | **24.82** | 24.87 |31.96|
+|heart             |   20.69        |  27.69  |  18.12  |  17.24 | 16.87 | **16.86**|26.08|
+|ringnorm       |      7.98      |  15.49  |  **1.96**  |  2.93 | 2.71 |2.00 |1.97|
+|twonorm       |       3.09      |  20.87  |  2.90  |  3.03 | 2.99 | **2.64** |2.74|
+|german         |      30.10    | 39.45  |  29.00  | 28.71 | **28.64** | 28.83 |35.91|
+|image         |       **2.90** | 21.29  |  3.32  | 4.07 | 3.40 | 3.42 |3.00|
+|waveform      |       12.80   | 22.67  |  **10.62**  |  10.88 | 10.79 |10.69 |24.69|
+
+## What the papers report
+
+The two papers summarised below are cited in [Citing](citing.qmd); the
+results are theirs and were not reproduced for this site.
+
+**The library paper** (Graff, Tellez, Miranda-Jiménez and Escalante, ROPEC
+2016) compares EvoDAG with an SVM and with auto-sklearn on thirteen classification
+problems from the same benchmark collection, using the balance error rate. The
+SVM and the ensemble of EvoDAG were built in a comparable way: both are
+ensembles of independently trained members that learn from different parts of
+the training data and are combined with the median. The authors
+report that the SVM gave the best result on four of the problems and
+EvoDAG on the other nine, and that the differences are statistically
+significant according to a Wilcoxon signed-rank test with the Holm-Bonferroni
+correction. They also observe that auto-sklearn was
+unstable on these problems.
+
+**The selection paper** (Sánchez and Graff) evaluates the selection
+heuristics described in [Selection](selection.qmd) on thirty classification
+problems with a varying number of samples, variables and classes. Its
+conclusions are that parent selection by agreement combined with a random
+choice of the individual that leaves the population is statistically better
+than the classical selection by fitness, and that it is better than two
+state-of-the-art selection schemes it compares with; and, against eighteen
+classifiers including two automatic machine learning systems, that this
+configuration obtains the second best average rank in macro-F1, behind TPOT,
+with a difference that is not statistically significant. The paper's setup
+differs from the default configuration of this release in the fitness (macro-F1
+there, the balanced error rate here), in the choice of the first argument and in
+the selection for the functions without a heuristic (see
+[Parameters](parameters.qmd)), so its numbers are not those of the code's
+defaults.

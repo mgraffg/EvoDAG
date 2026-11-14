@@ -67,6 +67,7 @@ class Population(object):
         np.random.seed(seed)
 
     def random_function(self):
+        """Return a node of a randomly chosen function with the first positions as arguments and unit weights."""
         func = np.random.randint(len(self._function_set))
         func = self._function_set[func]
         if issubclass(func, Add) and func.nargs > 1:
@@ -76,6 +77,7 @@ class Population(object):
         return func(range(func.nargs), weight=1)
 
     def random_terminal(self):
+        """Return a variable node on a randomly chosen input with weight one."""
         terminal = np.random.randint(self._nterminals)
         return Variable(terminal, 1)
 

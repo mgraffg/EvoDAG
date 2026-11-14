@@ -12,19 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from .cython_utils import naive_bayes_mean_std2, naive_bayes_Nc
-import array
+import numpy as np
 
 
 class NaiveBayes(object):
+    """Computes the class statistics used by the naive Bayes nodes from the training examples selected by the mask."""
     def __init__(self, mask=None, nclass=None, klass=None):
-        self._mask = mask.index
+        self._mask = np.flatnonzero(mask).astype(np.uint32)
         self._nclass = nclass
-        self._klass = array.array('I', [int(x) for x in klass.full_array()])
+        self._klass = np.asarray(klass).astype(np.uint32)
 
     def coef(self, var):
+        """Return the mean, variance and prior of each class for the variable var."""
         return naive_bayes_mean_std2(var, self._klass, self._mask, self._nclass)
 
     def coef_MN(self, var):
+        """Return the log proportion of the mass of the variable var in each class and the log prior of each class."""
         return naive_bayes_Nc(var, self._klass, self._mask, self._nclass)
 
 

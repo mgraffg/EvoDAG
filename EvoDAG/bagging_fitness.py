@@ -14,17 +14,26 @@
 
 
 import numpy as np
-from SparseArray import SparseArray
+from . import array_utils as au
 from .utils import tonparray
 from .cython_utils import fitness_SAE, Score
 
 
+def mask_mul(a, mask):
+    "``a * mask``; the mask is an array or the scalar 1.0 (no validation set)"
+    if isinstance(mask, np.ndarray):
+        return au.mul(a, mask)
+    return au.mul_scalar(a, mask)
+
+
 class BaggingFitness(object):
+    """Computes the fitness on the training and validation sets of the nodes created by an EvoDAG object."""
     def __init__(self, base=None):
         self._base = base
         self.assert_fitness_function()
 
     def assert_fitness_function(self):
+        """Check that the fitness function of the base object is one of the supported ones."""
         base = self._base
         assert base._fitness_function in ['ER', 'macro-F1', 'BER', 'macro-Precision',
                                           'DotF1', 'DotRecall', 'DotPrecision',
@@ -37,6 +46,7 @@ class BaggingFitness(object):
 
     @property
     def nclasses(self):
+        """Number of classes (3 for orthogonal selection in regression)."""
         try:
             return self._nclasses
         except AttributeError:
@@ -48,6 +58,7 @@ class BaggingFitness(object):
 
     @property
     def score(self):
+        """Score object used to compute the classification measures, created on first use."""
         try:
             return self._score
         except AttributeError:
@@ -56,6 +67,7 @@ class BaggingFitness(object):
 
     @property
     def min_class(self):
+        """Index of the least frequent class, computed on first use."""
         try:
             return self._min_class
         except AttributeError:
@@ -65,9 +77,10 @@ class BaggingFitness(object):
         return self._min_class
 
     def mask_fitness_BER(self, k):
+        """Return the training mask that keeps the same number of validation examples in each class."""
         base = self._base
         k = k.argmax(axis=1)
-        base._y_klass = SparseArray.fromlist(k)
+        base._y_klass = k.astype(float)
         klass = np.unique(k)
         cnt = np.min([(k == x).sum() for x in klass]) * (1 - base._tr_fraction)
         cnt = int(np.floor(cnt))
@@ -80,18 +93,19 @@ class BaggingFitness(object):
             np.random.shuffle(index)
             mask[index[:cnt]] = False
             mask_ts[index[cnt:]] = 1.0 / (1.0 * index[cnt:].shape[0] * klass.shape[0])
-        base._mask_vs = SparseArray.fromlist(~mask)
-        base._mask_ts = SparseArray.fromlist(mask_ts)
+        base._mask_vs = (~mask).astype(float)
+        base._mask_ts = mask_ts
         return mask
 
     def mask_fitness_function(self, k):
+        """Return the training mask for the classes k, which depends on the fitness function."""
         base = self._base
         if base._fitness_function == 'BER':
             return self.mask_fitness_BER(k)
         elif base._fitness_function == 'macro-RecallF1':
             return self.mask_fitness_BER(k)
         k = k.argmax(axis=1)
-        base._y_klass = SparseArray.fromlist(k)
+        base._y_klass = k.astype(float)
         cnt = k.shape[0] * (1 - base._tr_fraction)
         cnt = int(np.floor(cnt))
         if cnt == 0:
@@ -107,8 +121,8 @@ class BaggingFitness(object):
                 break
         mask[index[:cnt]] = False
         mask_ts[index[cnt:]] = 1.0
-        base._mask_vs = SparseArray.fromlist(~mask)
-        base._mask_ts = SparseArray.fromlist(mask_ts / mask_ts.sum())
+        base._mask_vs = (~mask).astype(float)
+        base._mask_ts = mask_ts / mask_ts.sum()
         return mask
 
     def set_classifier_mask(self, v, base_mask=True):
@@ -125,10 +139,13 @@ class BaggingFitness(object):
             index = np.where((v == i) & base_mask)[0]
             np.random.shuffle(index)
             mask[index[:cnt]] = True
-        base._mask = SparseArray.fromlist(mask)
-        return SparseArray.fromlist(v)
+        base._mask = mask.astype(float)
+        # read-only: compute_weight remembers what it derives from a mask
+        base._mask.flags.writeable = False
+        return np.array(v, dtype=float)
 
     def transform_to_mo(self, v):
+        """Convert the labels v into a matrix with one column per class, with 1 for the class and -1 otherwise."""
         base = self._base
         klass = base._labels
         y = np.empty((v.shape[0], klass.shape[0]))
@@ -139,6 +156,7 @@ class BaggingFitness(object):
         return y
 
     def multiple_outputs_cl(self, v):
+        """Set the targets, masks and labels of the base object for a classification with multiple outputs."""
         base = self._base
         if isinstance(v, list):
             assert len(v) == base._labels.shape[0]
@@ -151,7 +169,7 @@ class BaggingFitness(object):
         ytr = []
         y = []
         for _v in v.T:
-            _v = SparseArray.fromlist(_v)
+            _v = np.array(_v, dtype=float)
             self.set_classifier_mask(_v, base_mask)
             mask.append(base._mask)
             ytr.append(_v * base._mask)
@@ -164,21 +182,23 @@ class BaggingFitness(object):
     def set_regression_mask(self, v):
         """Computes the mask used to create the training and validation set"""
         base = self._base
-        index = np.arange(v.size())
+        index = np.arange(v.shape[0])
         np.random.shuffle(index)
-        ones = np.ones(v.size())
-        ones[index[int(base._tr_fraction * v.size()):]] = 0
-        base._mask = SparseArray.fromlist(ones)
+        ones = np.ones(v.shape[0])
+        ones[index[int(base._tr_fraction * v.shape[0]):]] = 0
+        base._mask = ones
+        base._mask.flags.writeable = False
 
     def test_regression_mask(self, v):
         """Test whether the average prediction is different than zero"""
         base = self._base
-        m = (base._mask + -1.0).fabs()
-        x = v * m
-        b = (x + -x.sum() / x.size()).sq().sum()
+        m = np.fabs(base._mask - 1.0)
+        x = au.mul(v, m)
+        b = au.sq_sum(x + -au.sum(x) / x.shape[0])
         return b != 0
 
     def multiple_outputs_regression(self, v):
+        """Set the targets and masks of the base object for a regression with multiple outputs."""
         base = self._base
         assert isinstance(v, list)
         v = np.array([tonparray(x) for x in v]).T
@@ -186,7 +206,7 @@ class BaggingFitness(object):
         ytr = []
         y = []
         for _v in v.T:
-            _v = SparseArray.fromlist(_v)
+            _v = np.array(_v, dtype=float)
             for _ in range(base._number_tries_feasible_ind):
                 self.set_regression_mask(_v)
                 flag = self.test_regression_mask(_v)
@@ -204,6 +224,7 @@ class BaggingFitness(object):
         base._mask = mask
 
     def del_error(self, v):
+        """Remove the temporary validation error stored in the node v, if any."""
         try:
             delattr(v, '_error')
         except AttributeError:
@@ -214,57 +235,57 @@ class BaggingFitness(object):
         base = self._base
         if base._classifier:
             if base._multiple_outputs:
-                hy = SparseArray.argmax(v.hy)
+                hy = au.argmax(v.hy)
                 fit_func = base._fitness_function
                 if fit_func == 'macro-F1' or fit_func == 'a_F1':
                     f1_score = self.score
-                    mf1, mf1_v = f1_score.a_F1(base._y_klass, hy, base._mask_ts.index)
+                    mf1, mf1_v = f1_score.a_F1(base._y_klass, hy, base._mask_ts_index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
                 elif fit_func == 'DotF1' or fit_func == 'g_F1':
                     f1_score = self.score
-                    mf1, mf1_v = f1_score.g_F1(base._y_klass, hy, base._mask_ts.index)
+                    mf1, mf1_v = f1_score.g_F1(base._y_klass, hy, base._mask_ts_index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
                 elif fit_func == 'DotRecallDotPrecision' or fit_func == 'g_g_recall_precision':
                     f1_score = self.score
                     mf1, mf1_v = f1_score.g_g_recall_precision(base._y_klass, hy,
-                                                               base._mask_ts.index)
+                                                               base._mask_ts_index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
                 elif fit_func == 'BER' or fit_func == 'a_recall':
                     f1_score = self.score
-                    mf1, mf1_v = f1_score.a_recall(base._y_klass, hy, base._mask_ts.index)
+                    mf1, mf1_v = f1_score.a_recall(base._y_klass, hy, base._mask_ts_index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
                 elif fit_func == 'DotRecall' or fit_func == 'g_recall':
                     f1_score = self.score
                     mf1, mf1_v = f1_score.g_recall(base._y_klass, hy,
-                                                   base._mask_ts.index)
+                                                   base._mask_ts_index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
                 elif fit_func == 'macro-Precision' or fit_func == 'a_precision':
                     f1_score = self.score
                     mf1, mf1_v = f1_score.a_precision(base._y_klass, hy,
-                                                      base._mask_ts.index)
+                                                      base._mask_ts_index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
                 elif fit_func == 'DotPrecision' or fit_func == 'g_precision':
                     f1_score = self.score
                     mf1, mf1_v = f1_score.g_precision(base._y_klass, hy,
-                                                      base._mask_ts.index)
+                                                      base._mask_ts_index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
                 elif fit_func == 'accDotMacroF1':
                     f1_score = self.score
                     mf1, mf1_v = f1_score.accDotMacroF1(base._y_klass, hy,
-                                                        base._mask_ts.index)
+                                                        base._mask_ts_index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
                 elif fit_func == 'macro-RecallF1':
                     f1_score = self.score
                     mf1, mf1_v = f1_score.macroRecallF1(base._y_klass, hy,
-                                                        base._mask_ts.index)
+                                                        base._mask_ts_index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
                 elif fit_func == 'F1':
@@ -272,32 +293,32 @@ class BaggingFitness(object):
                     f1_index = self._base._F1_index
                     index = self.min_class if f1_index < 0 else f1_index
                     mf1, mf1_v = f1_score.F1(index, base._y_klass,
-                                             hy, base._mask_ts.index)
+                                             hy, base._mask_ts_index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
                 elif fit_func == 'RecallDotPrecision' or fit_func == 'g_recall_precision':
                     f1_score = self.score
                     mf1, mf1_v = f1_score.g_recall_precision(self.min_class,
                                                              base._y_klass,
-                                                             hy, base._mask_ts.index)
+                                                             hy, base._mask_ts_index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
                 elif fit_func == 'ER' or fit_func == 'accuracy':
                     f1_score = self.score
                     mf1, mf1_v = f1_score.accuracy(base._y_klass,
-                                                   hy, base._mask_ts.index)
+                                                   hy, base._mask_ts_index)
                     v._error = mf1_v - 1
                     v.fitness = mf1 - 1
                 else:
                     raise RuntimeError('Unknown fitness function %s' % base._fitness_function)
             else:
-                v.fitness = -base._ytr.SSE(v.hy * base._mask)
+                v.fitness = -au.SSE(base._ytr, mask_mul(v.hy, base._mask))
         else:
             if base._multiple_outputs:
-                _ = np.mean([a.SAE(b.mul(c)) for a, b, c in zip(base._ytr, v.hy, base._mask)])
+                _ = np.mean([au.SAE(a, au.mul(b, c)) for a, b, c in zip(base._ytr, v.hy, base._mask)])
                 v.fitness = - _
             else:
-                v.fitness = -base._ytr.SAE(v.hy * base._mask)
+                v.fitness = -au.SAE(base._ytr, mask_mul(v.hy, base._mask))
 
     def fitness_vs(self, v):
         """Fitness function in the validation set
@@ -321,8 +342,8 @@ class BaggingFitness(object):
                 # else:
                 #     v.fitness_vs = - v._error.dot(base._mask_vs) / base._mask_vs.sum()
             else:
-                v.fitness_vs = -((base.y - v.hy.sign()).sign().fabs() *
-                                 base._mask_vs).sum()
+                _ = np.fabs(au.sign(base.y - au.sign(v.hy)))
+                v.fitness_vs = -au.sum(au.mul(_, base._mask_vs))
         else:
             mask = base._mask
             y = base.y
@@ -333,11 +354,11 @@ class BaggingFitness(object):
                 hy = [hy]
             fit = []
             for _mask, _y, _hy in zip(mask, y, hy):
-                m = (_mask + -1).fabs()
-                x = _y * m
-                y = _hy * m
-                a = (x - y).sq().sum()
-                b = (x + -x.sum() / x.size()).sq().sum()
+                m = np.fabs(_mask - 1)
+                x = au.mul(_y, m)
+                y = au.mul(_hy, m)
+                a = au.SSE(x, y)
+                b = au.sq_sum(x + -au.sum(x) / x.shape[0])
                 fit.append(-a / b)
             v.fitness_vs = np.mean(fit)
 

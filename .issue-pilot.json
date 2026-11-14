@@ -1,5 +1,5 @@
 {
-  "test_command": ".venv/bin/python setup.py build_ext --inplace && .venv/bin/python -m pytest -q EvoDAG/tests",
+  "test_command": ".venv/bin/python setup.py build_ext --inplace && .venv/bin/python -m pytest -q tests",
   "base_branch": "master",
   "model": "sonnet",
   "effort": "high"

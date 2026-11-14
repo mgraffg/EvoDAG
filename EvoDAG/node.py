@@ -16,13 +16,18 @@
 import numpy as np
 from .linalg_solve import compute_weight
 from .cython_utils import naive_bayes as NB
-from .cython_utils import naive_bayes_MN as MN
+from .cython_utils import _naive_bayes_MN_stored as MN
 from .cython_utils import naive_bayes_isfinite, naive_bayes_isfinite_MN
 from .cython_utils import centroid_coef
-from SparseArray import SparseArray
+from . import array_utils as au
+
+
+def _unary(symbol):
+    return getattr(au, symbol)
 
 
 class Variable(object):
+    """Terminal node: a variable of the input (or a stored node) times a least-squares weight; arity 0."""
     classification = True
     regression = True
 
@@ -49,6 +54,7 @@ class Variable(object):
 
     @property
     def height(self):
+        """Height of the node in the DAG; zero for the nodes created directly from the inputs."""
         return self._height
 
     @height.setter
@@ -56,6 +62,7 @@ class Variable(object):
         self._height = v
 
     def tostore(self):
+        """Return a light copy that keeps the variable, weight, position, height and fitness but not the outputs."""
         ins = self.__class__(self.variable, weight=self.weight)
         ins.position = self.position
         ins.height = self.height
@@ -66,6 +73,7 @@ class Variable(object):
         return ins
 
     def w2dict(self):
+        """Return the weight with each entry converted to plain Python lists, ready to be serialized."""
         return [x.tolist() for x in self.weight]
 
     def _tojson(self):
@@ -77,6 +85,7 @@ class Variable(object):
                     n_outputs=self._n_outputs)
 
     def tojson(self):
+        """Return a JSON string with the node class, variable, weight, position, height and fitness."""
         import json
         _ = self._tojson()
         return json.dumps(_)
@@ -133,11 +142,13 @@ class Variable(object):
         return compute_weight(r, ytr, mask)
 
     def raw_outputs(self, X):
+        """Return the outputs of the referenced variable on the training and test sets, before the weight."""
         r = X[self.variable].hy
         hr = X[self.variable].hy_test
         return r, hr
 
     def set_weight(self, r):
+        """Compute the weight by least squares on the training set if not set; False if it cannot be computed."""
         if self.weight is None:
             if not self._multiple_outputs:
                 ytr = [self._ytr]
@@ -158,34 +169,38 @@ class Variable(object):
         return True
 
     def _mul(self, a, w):
+        if isinstance(w, np.ndarray) and w.size == 1:
+            # a size-1 array (ndim > 0) is not a scalar for au.mul_scalar
+            w = w.item()
         if not isinstance(w, list):
-            return a * w
+            return au.mul_scalar(a, w)
         if not isinstance(a, list):
-            return [a * x for x in w]
-        return [x * y for x, y in zip(a, w)]
+            return [au.mul_scalar(a, x) for x in w]
+        return [au.mul_scalar(x, y) for x, y in zip(a, w)]
 
     def eval(self, X):
+        """Evaluate the node on X, setting hy and hy_test to the weighted outputs; False if no weight is found."""
         r, hr = self.raw_outputs(X)
         if isinstance(r, list):
             if self._finite:
-                r = [x.finite(inplace=True) for x in r]
+                r = [au.finite(x) for x in r]
             else:
                 r = [x for x in r]
         else:
             if self._finite:
-                r = r.finite(inplace=True)
+                r = au.finite(r)
         if not self.set_weight(r):
             return False
         self.hy = self._mul(r, self.weight)
         if hr is not None:
             if isinstance(hr, list):
                 if self._finite:
-                    hr = [x.finite(inplace=True) for x in hr]
+                    hr = [au.finite(x) for x in hr]
                 else:
                     hr = [x for x in hr]
             else:
                 if self._finite:
-                    hr = hr.finite(inplace=True)
+                    hr = au.finite(hr)
             self.hy_test = self._mul(hr, self.weight)
         return True
 
@@ -193,15 +208,16 @@ class Variable(object):
         "Test whether the predicted values are finite"
         if self._multiple_outputs:
             if self.hy_test is not None:
-                r = [(hy.isfinite() and (hyt is None or hyt.isfinite()))
+                r = [(au.isfinite(hy) and (hyt is None or au.isfinite(hyt)))
                      for hy, hyt in zip(self.hy, self.hy_test)]
             else:
-                r = [hy.isfinite() for hy in self.hy]
+                r = [au.isfinite(hy) for hy in self.hy]
             return np.all(r)
-        return self.hy.isfinite() and (self.hy_test is None or
-                                       self.hy_test.isfinite())
+        return au.isfinite(self.hy) and (self.hy_test is None or
+                                         au.isfinite(self.hy_test))
 
     def normalize(self):
+        """Do nothing; the subclasses that need to rescale their outputs override it."""
         pass
 
     @property
@@ -212,6 +228,29 @@ class Variable(object):
     @hy.setter
     def hy(self, v):
         self._eval_tr = v
+
+    # set by the nodes whose output stores entries that are zero (see
+    # cython_utils._naive_bayes_MN_stored)
+    _stored_density = None
+    _density_cache = None
+
+    @property
+    def density(self):
+        """Fraction of the entries of the predicted values that are not zero
+        (average over the outputs); it drives the choice of functions"""
+        if self._stored_density is not None:
+            return sum(self._stored_density) / len(self._stored_density)
+        hy = self.hy
+        cache = self._density_cache
+        if cache is not None and cache[0] is hy:
+            return cache[1]
+        if isinstance(hy, list):
+            density = sum([au.density(x) for x in hy]) / len(hy)
+        else:
+            density = au.density(hy)
+        # the population asks twice (when the node enters and when it leaves)
+        self._density_cache = (hy, density)
+        return density
 
     @property
     def hy_test(self):
@@ -224,11 +263,13 @@ class Variable(object):
 
 
 class Function(Variable):
+    """Base class of the nodes that combine other nodes; two arguments by default."""
     nargs = 2
     unique_args = False
     orthogonal_selection = False
 
     def tostore(self):
+        """Return a light copy of the node as in Variable, which also stores the number of arguments."""
         ins = super(Function, self).tostore()
         ins.nargs = self.nargs
         return ins
@@ -239,6 +280,7 @@ class Function(Variable):
         return ins
 
     def signature(self):
+        """Return a string made of the symbol and the argument positions, used to detect repeated nodes."""
         vars = self._variable
         if not isinstance(vars, list):
             vars = [vars]
@@ -246,6 +288,7 @@ class Function(Variable):
         return c
 
     def hy2listM(self, X):
+        """Return the training and test outputs of the argument nodes X as lists, one list per output if multiple."""
         if not self._multiple_outputs:
             hy = [x.hy for x in X]
             if X[0].hy_test is not None:
@@ -264,6 +307,7 @@ class Function(Variable):
         return hy, hyt
 
     def hy2list(self, X):
+        """Return the training and test outputs of the single argument node X as lists of vectors."""
         if not self._multiple_outputs:
             hy = [X.hy]
             hyt = [X.hy_test]
@@ -273,6 +317,7 @@ class Function(Variable):
         return hy, hyt
 
     def return_r_hr(self, r, hr):
+        """Unwrap r and hr when they hold a single vector and turn an empty hr into None."""
         if len(r) == 1:
             r = r[0]
         if hr is None:
@@ -285,7 +330,9 @@ class Function(Variable):
 
 
 class Function1(Function):
+    """Base class of the nodes that apply a function to their arguments and fit one weight per output."""
     def set_weight(self, r):
+        """Compute one least-squares weight per output from the function result r if not set; False on failure."""
         if self.weight is None:
             if not self._multiple_outputs:
                 ytr = [self._ytr]
@@ -309,17 +356,20 @@ class Function1(Function):
     def _raw_outputs(self, X, func):
         X = X[self.variable]
         hy, hyt = self.hy2list(X)
-        r = [getattr(x, func)() for x in hy]
+        func = _unary(func)
+        r = [func(x) for x in hy]
         hr = None
         if hyt is not None:
-            hr = [getattr(x, func)() for x in hyt if x is not None]
+            hr = [func(x) for x in hyt if x is not None]
         return self.return_r_hr(r, hr)
 
     def raw_outputs(self, X):
+        """Apply the function named by the symbol to the training and test outputs of the argument."""
         return self._raw_outputs(X, self.symbol)
 
 
 class Add(Function):
+    """Sum of its arguments, each times a least-squares coefficient; arity 5 by default (at least 2); symbol +."""
     nargs = 5
     symbol = '+'
     unique_args = True
@@ -333,9 +383,11 @@ class Add(Function):
 
     @staticmethod
     def cumsum(r):
-        return SparseArray.cumsum(r)
+        """Element-wise sum of a list of vectors."""
+        return au.cumsum(r)
 
     def set_weight(self, hy):
+        """Compute the least-squares coefficients of the arguments hy on the training set; False on failure."""
         if self.weight is not None:
             return True
         if not self._multiple_outputs:
@@ -358,6 +410,7 @@ class Add(Function):
         return [_a * _b for _a, _b in zip(a, b)]
 
     def eval(self, X):
+        """Evaluate the node on X as the weighted sum of its arguments on the training and test sets."""
         X = [X[x] for x in self.variable]
         hy, hyt = self.hy2listM(X)
         if not self.set_weight(hy):
@@ -369,9 +422,9 @@ class Add(Function):
             else:
                 hr = None
         else:
-            r = self.cumsum([x * w for x, w in zip(hy, self.weight)])
+            r = self.cumsum([au.mul_scalar(x, w) for x, w in zip(hy, self.weight)])
             if hyt is not None:
-                hr = self.cumsum([x * w for x, w in zip(hyt, self.weight)])
+                hr = self.cumsum([au.mul_scalar(x, w) for x, w in zip(hyt, self.weight)])
             else:
                 hr = None
         self.hy = r
@@ -380,6 +433,7 @@ class Add(Function):
 
 
 class Mul(Function1):
+    """Element-wise product of its arguments (two by default), scaled by a least-squares weight; symbol ``*``."""
     symbol = '*'
     density_safe = False
 
@@ -389,9 +443,11 @@ class Mul(Function1):
 
     @staticmethod
     def cumprod(r):
-        return SparseArray.cummul(r)
+        """Element-wise product of a list of vectors."""
+        return au.cummul(r)
 
     def raw_outputs(self, X):
+        """Return the element-wise product of the arguments on the training and test sets, before the weight."""
         X = [X[x] for x in self.variable]
         hy, hyt = self.hy2listM(X)
         hr = None
@@ -407,192 +463,225 @@ class Mul(Function1):
 
 
 class Div(Function1):
+    """Element-wise division of the first argument by the second, scaled by a least-squares weight; symbol /."""
     symbol = '/'
     density_safe = False
 
     def raw_outputs(self, X):
+        """Return the element-wise division of the arguments on the training and test sets, before the weight."""
         X = [X[x] for x in self.variable]
         hy, hyt = self.hy2listM(X)
         hr = None
         if self._multiple_outputs:
-            r = [x[0] / x[1] for x in hy]
+            r = [au.div(x[0], x[1]) for x in hy]
             if hyt is not None:
-                hr = [x[0] / x[1] for x in hyt]
+                hr = [au.div(x[0], x[1]) for x in hyt]
         else:
-            r = hy[0] / hy[1]
+            r = au.div(hy[0], hy[1])
             if hyt is not None:
-                hr = hyt[0] / hyt[1]
+                hr = au.div(hyt[0], hyt[1])
         return r, hr
 
 
 class Atan2(Function1):
+    """Element-wise two-argument arctangent of its two arguments, scaled by a least-squares weight; symbol atan2."""
     symbol = 'atan2'
     density_safe = False
 
     def raw_outputs(self, X):
+        """Return the two-argument arctangent of the arguments on the training and test sets, before the weight."""
         X = [X[x] for x in self.variable]
         hy, hyt = self.hy2listM(X)
         hr = None
         if self._multiple_outputs:
-            r = [x[0].atan2(x[1]) for x in hy]
+            r = [au.atan2(x[0], x[1]) for x in hy]
             if hyt is not None:
-                hr = [x[0].atan2(x[1]) for x in hyt]
+                hr = [au.atan2(x[0], x[1]) for x in hyt]
         else:
-            r = hy[0].atan2(hy[1])
+            r = au.atan2(hy[0], hy[1])
             if hyt is not None:
-                hr = hyt[0].atan2(hyt[1])
+                hr = au.atan2(hyt[0], hyt[1])
         return r, hr
 
 
 class Hypot(Function1):
+    """Element-wise square root of the sum of the squares of its two arguments, scaled by a least-squares weight."""
     symbol = 'hypot'
     density_safe = True
 
     def raw_outputs(self, X):
+        """Return the hypotenuse of the arguments on the training and test sets, before the weight."""
         X = [X[x] for x in self.variable]
         hy, hyt = self.hy2listM(X)
         hr = None
         if self._multiple_outputs:
-            r = [x[0].hypot(x[1]) for x in hy]
+            r = [au.hypot(x[0], x[1]) for x in hy]
             if hyt is not None:
-                hr = [x[0].hypot(x[1]) for x in hyt]
+                hr = [au.hypot(x[0], x[1]) for x in hyt]
         else:
-            r = hy[0].hypot(hy[1])
+            r = au.hypot(hy[0], hy[1])
             if hyt is not None:
-                hr = hyt[0].hypot(hyt[1])
+                hr = au.hypot(hyt[0], hyt[1])
         return r, hr
 
 
 class OneArg(Function1):
+    """Base class of the nodes with a single argument that apply a function element-wise and scale it by a weight."""
     nargs = 1
 
 
 class Acos(OneArg):
+    """Element-wise arccosine of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'acos'
     density_safe = False
 
 
 class Asin(OneArg):
+    """Element-wise arcsine of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'asin'
     density_safe = True
 
 
 class Atan(OneArg):
+    """Element-wise arctangent of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'atan'
     density_safe = True
 
 
 class Cos(OneArg):
+    """Element-wise cosine of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'cos'
     density_safe = False
 
 
 class Sin(OneArg):
+    """Element-wise sine of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'sin'
     density_safe = True
 
 
 class Tan(OneArg):
+    """Element-wise tangent of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'tan'
     density_safe = True
 
 
 class Cosh(OneArg):
+    """Element-wise hyperbolic cosine of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'cosh'
     density_safe = False
 
 
 class Sinh(OneArg):
+    """Element-wise hyperbolic sine of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'sinh'
     density_safe = True
 
 
 class Tanh(OneArg):
+    """Element-wise hyperbolic tangent of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'tanh'
     density_safe = True
 
 
 class Acosh(OneArg):
+    """Element-wise inverse hyperbolic cosine of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'acosh'
     density_safe = False
 
 
 class Asinh(OneArg):
+    """Element-wise inverse hyperbolic sine of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'asinh'
     density_safe = True
 
 
 class Atanh(OneArg):
+    """Element-wise inverse hyperbolic tangent of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'atanh'
     density_safe = True
 
 
 class Exp(OneArg):
+    """Element-wise exponential of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'exp'
     density_safe = False
 
 
 class Expm1(OneArg):
+    """Element-wise exponential minus one of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'expm1'
     density_safe = True
 
 
 class Log(OneArg):
+    """Element-wise natural logarithm of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'log'
     density_safe = False
 
 
 class Log2(OneArg):
+    """Element-wise base 2 logarithm of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'log2'
     density_safe = False
 
 
 class Log10(OneArg):
+    """Element-wise base 10 logarithm of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'log10'
     density_safe = False
 
 
 class Log1p(OneArg):
+    """Element-wise natural logarithm of one plus the value of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'log1p'
     density_safe = True
 
 
 class Lgamma(OneArg):
+    """Element-wise logarithm of the absolute value of the gamma function of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'lgamma'
     density_safe = False
 
 
 class Sqrt(OneArg):
+    """Element-wise square root of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'sqrt'
     density_safe = True
 
 
 class Sq(OneArg):
+    """Element-wise square of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'sq'
     density_safe = True
 
 
 class Sign(OneArg):
+    """Element-wise sign (-1, 0 or 1) of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'sign'
     density_safe = True
 
 
 class Fabs(OneArg):
+    """Element-wise absolute value of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'fabs'
     density_safe = True
 
 
 class Ceil(OneArg):
+    """Element-wise ceiling of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'ceil'
     density_safe = True
 
 
 class Floor(OneArg):
+    """Element-wise floor of its single argument, scaled by a least-squares weight; arity 1."""
     symbol = 'floor'
     density_safe = True
 
 
 class Min(Function1):
+    """Element-wise minimum of its arguments (two by default, at least 2), scaled by a least-squares weight."""
     nargs = 2
     symbol = 'min'
     unique_args = True
@@ -605,9 +694,11 @@ class Min(Function1):
 
     @staticmethod
     def cummin(r):
-        return SparseArray.cummin(r)
+        """Element-wise minimum of a list of vectors."""
+        return au.cummin(r)
 
     def raw_outputs(self, X):
+        """Return the element-wise minimum of the arguments on the training and test sets, before the weight."""
         X = [X[x] for x in self.variable]
         hy, hyt = self.hy2listM(X)
         hr = None
@@ -623,6 +714,7 @@ class Min(Function1):
 
 
 class Max(Function1):
+    """Element-wise maximum of its arguments (two by default, at least 2), scaled by a least-squares weight."""
     nargs = 2
     symbol = 'max'
     unique_args = True
@@ -635,9 +727,11 @@ class Max(Function1):
 
     @staticmethod
     def cummax(r):
-        return SparseArray.cummax(r)
+        """Element-wise maximum of a list of vectors."""
+        return au.cummax(r)
 
     def raw_outputs(self, X):
+        """Return the element-wise maximum of the arguments on the training and test sets, before the weight."""
         X = [X[x] for x in self.variable]
         hy, hyt = self.hy2listM(X)
         hr = None
@@ -653,6 +747,7 @@ class Max(Function1):
 
 
 class Argmax(Function1):
+    """Position of the argument with the largest value at each element, scaled by a least-squares weight."""
     nargs = 2
     symbol = 'argmax'
     unique_args = True
@@ -661,9 +756,11 @@ class Argmax(Function1):
 
     @staticmethod
     def argop(r):
-        return SparseArray.argmax(r)
+        """Position in the list of the largest value at each element of the vectors."""
+        return au.argmax(r)
 
     def raw_outputs(self, X):
+        """Return the position of the largest argument on the training and test sets, before the weight."""
         X = [X[x] for x in self.variable]
         hy, hyt = self.hy2listM(X)
         hr = None
@@ -679,6 +776,7 @@ class Argmax(Function1):
 
 
 class Argmin(Argmax):
+    """Position of the argument with the smallest value at each element, scaled by a least-squares weight."""
     nargs = 2
     symbol = 'argmin'
     unique_args = True
@@ -687,10 +785,12 @@ class Argmin(Argmax):
 
     @staticmethod
     def argop(r):
-        return SparseArray.argmin(r)
+        """Position in the list of the smallest value at each element of the vectors."""
+        return au.argmin(r)
 
 
 class NaiveBayes(Function):
+    """Gaussian naive Bayes over its arguments, with one output per class; classification only; symbol NB."""
     nargs = 2
     min_nargs = 2
     symbol = 'NB'
@@ -705,6 +805,7 @@ class NaiveBayes(Function):
         self._naive_bayes = naive_bayes
 
     def hy2listM(self, X):
+        """Return the training and test outputs of the argument nodes X as flat lists of vectors."""
         if self._multiple_outputs:
             hy = []
             for x in X:
@@ -730,9 +831,11 @@ class NaiveBayes(Function):
         return hy, hyt
 
     def w2dict(self):
+        """Return the weight (class coefficients, used arguments and number of classes) with plain Python lists."""
         return [[[x1.tolist() for x1 in x] for x in self.weight[0]], self.weight[1], self.weight[2]]
 
     def set_weight(self, X):
+        """Compute the per-class mean, variance and prior of each argument from the training set; False on failure."""
         if self.weight is not None:
             return True
         if self._naive_bayes is None:
@@ -753,6 +856,7 @@ class NaiveBayes(Function):
         return True
 
     def eval(self, X):
+        """Evaluate the node on X as the class log-likelihoods of a Gaussian naive Bayes classifier."""
         X = [X[x] for x in self.variable]
         hy, hyt = self.hy2listM(X)
         if not self.set_weight(hy):
@@ -769,21 +873,24 @@ class NaiveBayes(Function):
 
     @staticmethod
     def _normalize(hy):
-        hy = [x.exp() for x in hy]
-        den = SparseArray.cumsum(hy)
-        hy = [(x / den).mul2(2).add2(-1.0) for x in hy]
+        hy = [au.exp(x) for x in hy]
+        den = au.cumsum(hy)
+        hy = [au.mul_scalar(au.div(x, den), 2.0) - 1.0 for x in hy]
         return hy
 
     def normalize(self):
+        """Replace the outputs by their softmax, rescaled to the range from -1 to 1."""
         self.hy = self._normalize(self.hy)
-        [x.finite(inplace=True) for x in self.hy]
+        [au.finite(x) for x in self.hy]
 
 
 class NaiveBayesMN(NaiveBayes):
+    """Multinomial naive Bayes over its arguments, with one output per class; classification only; symbol MN."""
     symbol = 'MN'
     density_safe = True
 
     def set_weight(self, X):
+        """Compute the per-class log proportions and log priors of the arguments from the training set."""
         if self.weight is not None:
             return True
         if self._naive_bayes is None:
@@ -804,27 +911,33 @@ class NaiveBayesMN(NaiveBayes):
         return True
 
     def eval(self, X):
+        """Evaluate the node on X as the unnormalized class probabilities of a multinomial naive Bayes classifier."""
         X = [X[x] for x in self.variable]
         hy, hyt = self.hy2listM(X)
         if not self.set_weight(hy):
             return False
         weight, var, nclass = self.weight
-        self.hy = MN([hy[x] for x in var], weight, nclass)
+        self.hy, stored = MN([hy[x] for x in var], weight, nclass)
+        size = float(len(self.hy[0]))
+        self._stored_density = [x / size for x in stored]
         if hyt is not None:
-            self.hy_test = MN([hyt[x] for x in var], weight, nclass)
+            self.hy_test = MN([hyt[x] for x in var], weight, nclass)[0]
         return True
 
     def normalize(self):
-        den = SparseArray.cumsum(self.hy)
-        hy = [(x / den).mul2(2).add2(-1.0) for x in self.hy]
-        [x.finite(inplace=True) for x in hy]
+        """Divide each output by the sum over the classes and rescale it to the range from -1 to 1."""
+        den = au.cumsum(self.hy)
+        hy = [au.mul_scalar(au.div(x, den), 2.0) - 1.0 for x in self.hy]
+        [au.finite(x) for x in hy]
         self.hy = hy
 
 
 class MultipleVariables(Add):
+    """Sum of all the input variables, each times a least-squares coefficient fitted jointly; symbol X."""
     symbol = 'X'
 
     def raw_outputs(self, X):
+        """Return the outputs of all the variables on the training and test sets, before the weights."""
         r = [X[x].hy for x in self.variable]
         hr = None
         if X[0].hy_test is not None:
@@ -832,6 +945,7 @@ class MultipleVariables(Add):
         return r, hr
 
     def set_weight(self, r):
+        """Compute the joint least-squares coefficients of the variables r, per output if multiple."""
         if self.weight is None:
             if not self._multiple_outputs:
                 ytr = [self._ytr]
@@ -852,38 +966,41 @@ class MultipleVariables(Add):
         return True
 
     def _mul(self, a, w):
-        cumsum = SparseArray.cumsum
+        cumsum = au.cumsum
         if not isinstance(w, list):
-            return cumsum([x * y for x, y in zip(a, w)])
-        return [cumsum([x * y1 for x, y1 in zip(a, y)]) for y in w]
+            return cumsum([au.mul_scalar(x, y) for x, y in zip(a, w)])
+        return [cumsum([au.mul_scalar(x, y1) for x, y1 in zip(a, y)])
+                for y in w]
 
     def eval(self, X):
+        """Evaluate the node on X as the weighted sum of all the variables on the training and test sets."""
         r, hr = self.raw_outputs(X)
         if isinstance(r, list):
             if self._finite:
-                r = [x.finite(inplace=True) for x in r]
+                r = [au.finite(x) for x in r]
             else:
                 r = [x for x in r]
         else:
             if self._finite:
-                r = r.finite(inplace=True)
+                r = au.finite(r)
         if not self.set_weight(r):
             return False
         self.hy = self._mul(r, self.weight)
         if hr is not None:
             if isinstance(hr, list):
                 if self._finite:
-                    hr = [x.finite(inplace=True) for x in hr]
+                    hr = [au.finite(x) for x in hr]
                 else:
                     hr = [x for x in hr]
             else:
                 if self._finite:
-                    hr = hr.finite(inplace=True)
+                    hr = au.finite(hr)
             self.hy_test = self._mul(hr, self.weight)
         return True
 
 
 class Centroid(NaiveBayes):
+    """Negative squared Euclidean distance to the class centroids of its arguments, one output per class; symbol Centroid."""
     symbol = 'Centroid'
 
     def __init__(self, variable, **kwargs):
@@ -891,6 +1008,7 @@ class Centroid(NaiveBayes):
         self._centroids = []
 
     def set_weight(self, hy):
+        """Compute, from the training set, the negative mean of each argument in each class."""
         if self.weight is not None:
             return True
         naive = self._naive_bayes
@@ -898,30 +1016,26 @@ class Centroid(NaiveBayes):
         return True
 
     def w2dict(self):
+        """Return the weight, one array per class, as plain Python lists."""
         return [x.tolist() for x in self.weight]
 
     def eval(self, X):
+        """Evaluate the node on X as minus the squared distance of the arguments to each class centroid."""
         X = [X[x] for x in self.variable]
         hy, hyt = self.hy2listM(X)
         if not self.set_weight(hy):
             return False
         weight = self.weight
-        self.hy = [SparseArray.cumsum([x.add2(_w).sq() for x, _w in
-                                       zip(hy, w)]).mul2(-1.0) for w in weight]
-        # if self.height == 0:
-        # else:
-        #     self.hy = [SparseArray.cumsum([x.add2(_w).sq() for x, _w in
-        #                                    zip(hy, w)]).mul2(-1.0).exp().mul2(2).add2(-1.0) for w in weight]
+        self.hy = [au.mul_scalar(au.cumsum([au.sq(x + _w) for x, _w in
+                                            zip(hy, w)]), -1.0) for w in weight]
         if hyt is not None:
-            self.hy_test = [SparseArray.cumsum([x.add2(_w).sq() for x,
-                                                _w in zip(hyt, w)]).mul2(-1.0) for w in weight]
-            # if self.height == 0:
-            # else:
-            #     self.hy_test = [SparseArray.cumsum([x.add2(_w).sq() for x,
-            #                                         _w in zip(hyt, w)]).mul2(-1.0).exp().mul2(2).add2(-1.0) for w in weight]
+            self.hy_test = [au.mul_scalar(au.cumsum([au.sq(x + _w) for x, _w
+                                                     in zip(hyt, w)]), -1.0)
+                            for w in weight]
         return True
 
     def normalize(self):
-        hy = [x.exp().mul2(2).add2(-1.0) for x in self.hy]
-        [x.finite(inplace=True) for x in hy]
+        """Replace each output by its exponential rescaled to the range from -1 to 1."""
+        hy = [au.mul_scalar(au.exp(x), 2.0) - 1.0 for x in self.hy]
+        [au.finite(x) for x in hy]
         self.hy = hy

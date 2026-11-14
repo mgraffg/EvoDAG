@@ -1,0 +1,79 @@
+name: Publish website
+
+# One GitHub Pages site, two sources: the Quarto user site (website/) at the
+# root and the Sphinx developer reference (docs/) under /dev/. Pull requests
+# only build them; pushes to the base branch also deploy them.
+# Pages must be enabled once in the repository settings, with the source set
+# to "GitHub Actions".
+on:
+  pull_request:
+    paths:
+      - "website/**"
+      - "docs/**"
+      - "EvoDAG/**"
+      - "pyproject.toml"
+      - "setup.py"
+      - ".github/workflows/website.yml"
+  push:
+    branches: [master]
+    paths:
+      - "website/**"
+      - "docs/**"
+      - "EvoDAG/**"
+      - "pyproject.toml"
+      - "setup.py"
+      - ".github/workflows/website.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pull requests only build the site, so they must not need Pages to
+      # be enabled on the repository.
+      - uses: actions/configure-pages@v5
+        if: github.event_name != 'pull_request'
+
+      - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: 1.9.38
+
+      - run: quarto render website
+
+      # The Sphinx developer reference (docs/) is served under /dev/. The
+      # package is installed because autodoc imports it, and that compiles the
+      # Cython extensions.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install docs requirements and the package
+        run: |
+          pip install -r docs/requirements.txt
+          pip install -e .
+
+      - name: Build the developer reference strictly into the site
+        run: python -m sphinx -n -W --keep-going -b html docs/source website/_site/dev
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: website/_site
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: website
+      cancel-in-progress: true
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

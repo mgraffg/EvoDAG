@@ -1,0 +1,77 @@
+[build-system]
+# Building against numpy >= 2 produces extensions that also run on numpy 1.x.
+requires = ["setuptools>=61.0", "Cython>=3.0", "numpy>=2.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "EvoDAG"
+description = "Evolving Directed Acyclic Graph"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+authors = [{ name = "Mario Graff", email = "mgraffg@ieee.org" }]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Cython",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = ["numpy"]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+test = ["pytest>=7.0", "tomli; python_version < '3.11'"]
+
+[project.urls]
+Homepage = "https://github.com/mgraffg/EvoDAG"
+Source = "https://github.com/mgraffg/EvoDAG"
+Issues = "https://github.com/mgraffg/EvoDAG/issues"
+
+[project.scripts]
+EvoDAG-params = "EvoDAG.command_line:params"
+EvoDAG-train = "EvoDAG.command_line:train"
+EvoDAG-predict = "EvoDAG.command_line:predict"
+EvoDAG-utils = "EvoDAG.command_line:utils"
+
+[tool.setuptools]
+# MANIFEST.in only controls the sdist; the wheel ships exactly package-data
+# (the tests are in the sdist but not in the wheel).
+include-package-data = false
+
+[tool.setuptools.packages.find]
+include = ["EvoDAG", "EvoDAG.*"]
+# Keep the discovery limited to the package: tests/ and benchmarks/ have no
+# __init__.py and must not be shipped as namespace packages.
+namespaces = false
+
+[tool.setuptools.package-data]
+EvoDAG = ["conf/*.json", "*.pxd", "*.pyx"]
+
+[tool.setuptools.dynamic]
+# setuptools reads the literal statically; it does not import the package.
+version = { attr = "EvoDAG.__version__" }
+
+[tool.uv]
+# The version is dynamic (read from EvoDAG/__init__.py) and the extensions are
+# compiled from the .pyx files; without these cache keys uv would not rebuild
+# the editable install when either changes.
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "setup.py" },
+    { file = "EvoDAG/__init__.py" },
+    { file = "EvoDAG/*.pyx" },
+]
+
+[tool.cibuildwheel]
+build = "cp310-* cp311-* cp312-* cp313-*"
+skip = "*-musllinux_* *-win32 *-manylinux_i686"
+test-requires = ["pytest", "tomli; python_version < '3.11'"]
+test-command = "pytest {project}/tests -q"

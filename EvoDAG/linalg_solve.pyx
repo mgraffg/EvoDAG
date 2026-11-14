@@ -15,7 +15,7 @@
 
 import numpy as np
 cimport numpy as np
-from SparseArray.sparse_array cimport SparseArray
+from . import array_utils
 from libc cimport math
 from libc.float cimport DBL_EPSILON
 from cpython cimport array
@@ -102,23 +102,82 @@ cdef bint gauss_jordan(list m):
     return False
 
         
-cpdef compute_weight(list r, SparseArray ytr, mask):
+cdef double dot(double[::1] a, double[::1] b):
+    """Sum of the products of the positions where both are not zero, adding
+    in order (see array_utils.dot)"""
+    cdef Py_ssize_t i, n = a.shape[0]
+    cdef double x, y, res = 0
+    for i in range(n):
+        x = a[i]
+        y = b[i]
+        if x != 0 and y != 0:
+            res += x * y
+    return res
+
+
+cdef dict support_cache = {}
+
+
+cdef tuple support(mask):
+    """Positions where the mask is not zero and the mask there. Masks made by
+    the library are read-only, which makes the result safe to remember: it
+    is asked for every node, with the same few masks."""
+    cdef bint cacheable = not mask.flags.writeable
+    if cacheable:
+        hit = support_cache.get(id(mask))
+        if hit is not None and hit[0] is mask:
+            return hit[1], hit[2]
+    index = np.flatnonzero(mask)
+    values = np.ascontiguousarray(mask[index])
+    if cacheable:
+        if len(support_cache) > 256:
+            support_cache.clear()
+        support_cache[id(mask)] = (mask, index, values)
+    return index, values
+
+
+cdef Py_ssize_t masked(double[::1] a, Py_ssize_t[::1] index, double[::1] mask,
+                       double[::1] out):
+    """``out = a * mask`` restricted to the positions in ``index`` (those
+    where the mask is not zero): a zero in either is a zero, as in
+    ``array_utils.mul``. Everything else is zero outside ``index``, which is
+    why the products between these vectors only need these positions.
+    Returns how many entries are not zero."""
+    cdef Py_ssize_t k, n = index.shape[0], nz = 0
+    cdef double x, m
+    for k in range(n):
+        x = a[index[k]]
+        m = mask[k]
+        if x == 0 or m == 0:
+            out[k] = 0
+        else:
+            out[k] = x * m
+            if out[k] != 0:
+                nz += 1
+    return nz
+
+
+cpdef compute_weight(list r, double[::1] ytr, mask):
     """Returns the weight (w) using OLS of r * w = gp._ytr """
     cdef Py_ssize_t i, j, size=PyList_GET_SIZE(r), k=0
-    cdef SparseArray ri, rj
+    cdef double[::1] ri, rj, rc
     cdef array.array data = array.array('d'), other, dependent
     cdef list X = [], R = [], var = []
     cdef double tmp, *dependent_value
+    if not isinstance(mask, np.ndarray):
+        mask = np.full(ytr.shape[0], float(mask))
+    index, mask_support = support(mask)
     dependent = array.clone(data, size, False)
     dependent_value = dependent.data.as_doubles
     for i in range(size):
-        ri = <SparseArray> PyList_GET_ITEM(r, i)
-        tmp = ytr.dot(ri)
+        ri = <object> PyList_GET_ITEM(r, i)
+        tmp = dot(ytr, ri)
         if not math.isfinite(tmp):
-            return None        
-        ri = ri * mask
-        if ri.non_zero:
-            PyList_Append(R, ri)
+            return None
+        rc_array = np.empty(len(index))
+        rc = rc_array
+        if masked(ri, index, mask_support, rc):
+            PyList_Append(R, rc_array)
             PyList_Append(var, i)
             dependent_value[k] = tmp
             k += 1
@@ -126,11 +185,11 @@ cpdef compute_weight(list r, SparseArray ytr, mask):
     X = [array.clone(data, size+1, False) for i in range(size)]
     for i in range(size):
         data = <array.array> PyList_GET_ITEM(X, i)
-        ri = <SparseArray> PyList_GET_ITEM(R, i)
+        ri = <object> PyList_GET_ITEM(R, i)
         data.data.as_doubles[size] = dependent_value[i]
         for j in range(i, size):
-            rj = <SparseArray> PyList_GET_ITEM(R, j)
-            tmp = ri.dot(rj)
+            rj = <object> PyList_GET_ITEM(R, j)
+            tmp = dot(ri, rj)
             if not math.isfinite(tmp):
                 return None
             data.data.as_doubles[j] = tmp

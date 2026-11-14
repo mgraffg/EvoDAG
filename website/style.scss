@@ -1,0 +1,43 @@
+/*-- scss:defaults --*/
+
+// Plain reading layout: serif text and a narrow measure.
+$font-family-base: "Palatino Linotype", Palatino, "URW Palladio L", Georgia,
+  "Times New Roman", serif;
+$headings-font-family: $font-family-base;
+$font-size-root: 18px;
+$line-height-base: 1.6;
+
+$body-bg: #fdfdfb;
+$body-color: #1f1e1b;
+$link-color: #1c5cab;
+$link-decoration: none;
+
+$grid-body-width: 800px;
+
+/*-- scss:rules --*/
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+}
+
+// Tables of parameters can be wide: let them scroll instead of overflowing.
+main table {
+  display: block;
+  overflow-x: auto;
+  font-size: 0.9em;
+}
+
+figure img,
+main img {
+  max-width: 100%;
+}
+
+.figure-caption,
+.table-caption,
+caption {
+  font-size: 0.85em;
+  color: #52514e;
+  text-align: left;
+}
