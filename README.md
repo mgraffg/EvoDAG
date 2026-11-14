@@ -107,6 +107,12 @@ auto-sklearn and an SVM) are in the
 [Performance](https://mgraffg.github.io/EvoDAG/pages/performance.html) page
 of the documentation.
 
+## Development ##
+
+The development guide is [`CLAUDE.md`](CLAUDE.md) (architecture, commands, rules and
+conventions), and the developer reference, with every module documented, is at
+<https://mgraffg.github.io/EvoDAG/dev/>.
+
 ## Citing EvoDAG ##
 
 If you like EvoDAG, and it is used in a scientific publication, I would

@@ -271,3 +271,39 @@ def test_sphinx_doctest(tmp_path):
     result = run_sphinx("doctest", tmp_path / "doctest")
     assert result.returncode == 0, result.stdout[-4000:]
     assert " 0 failures in tests" in result.stdout
+
+
+# Backticked tokens of CLAUDE.md that look like a path but are not one in the
+# repository: the virtual environment is local and not tracked.
+CLAUDE_NOT_PATHS = {".venv"}
+PATH_SUFFIXES = (".py", ".pyx", ".pxd", ".json", ".yml", ".yaml", ".md",
+                 ".toml", ".rst", ".qmd", ".scss", ".svg", ".txt", ".in",
+                 ".npz")
+
+
+def claude_md_paths():
+    text = (ROOT / "CLAUDE.md").read_text(encoding="utf8")
+    # the commands are in fenced blocks and are not paths of the tree
+    text = re.sub(r"^```.*?^```", "", text, flags=re.MULTILINE | re.DOTALL)
+    paths = []
+    for token in re.findall(r"`([^`\n]+)`", text):
+        if token in CLAUDE_NOT_PATHS or re.search(r"[\s*<>=]", token):
+            continue
+        if re.match(r"(https?:|/|-)", token):
+            continue
+        if "/" in token or token.endswith(PATH_SUFFIXES):
+            paths.append(token)
+    return paths
+
+
+def test_claude_md_paths_exist():
+    paths = claude_md_paths()
+    assert len(paths) > 30
+    missing = [p for p in paths if not (ROOT / p).exists()]
+    assert not missing, "CLAUDE.md names paths that do not exist: %s" % missing
+
+
+def test_claude_md_names_the_test_command():
+    with open(ROOT / ".issue-pilot.json") as fpt:
+        command = json.load(fpt)["test_command"]
+    assert command in (ROOT / "CLAUDE.md").read_text(encoding="utf8")
