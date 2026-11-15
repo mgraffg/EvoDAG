@@ -2,8 +2,10 @@
 title: "Parameters"
 ---
 
-EvoDAG is configured with keyword arguments: to `EvoDAGE`, to
-`EvoDAG.model.EvoDAG`, to `RGP.init`, and, as a JSON object, to
+EvoDAG is configured with the arguments of the scikit-learn classes
+(`EvoDAGClassifier`, `EvoDAGRegressor`, see [Python](python.qmd)), with
+keyword arguments to its native classes `EvoDAGE`, `EvoDAG.model.EvoDAG` and
+`RGP.init` (see [Native API](native-api.qmd)), and, as a JSON object, with
 `EvoDAG-train --kw`. This page starts with what the defaults are and where they
 come from, and then lists every parameter, what it does and the value it has in
 the default configuration. For the meaning of terms such as the
@@ -12,9 +14,11 @@ validation split or the early stopping individual see
 
 ## What are EvoDAG's defaults?
 
-The default configuration is what you get from `EvoDAGE()`, from
-`EvoDAG.model.EvoDAG()`, from `RGP.init()` and from `EvoDAG-train -C`, without
-saying anything else. For classification it is this:
+The default configuration is what you get from `EvoDAGClassifier()` and
+`EnsembleClassifier()` (and, for regression, from `EvoDAGRegressor()` and
+`EnsembleRegressor()`), and from their native counterparts `EvoDAGE()`,
+`EvoDAG.model.EvoDAG()`, `RGP.init()` and `EvoDAG-train -C`, without saying
+anything else. For classification it is this:
 
 | | Default |
 |:---------------------------|:--------------------------------------------------------|
@@ -25,7 +29,7 @@ saying anything else. For classification it is this:
 | Fitness | `fitness_function` `"BER"` (balanced error rate) |
 | Selection of the arguments | the agreement heuristic for `Add`, `NaiveBayes`, `NaiveBayesMN` and `Centroid` (`orthogonal_selection` true); a tournament of size 2 (`tournament_size`) on fitness for the other functions |
 | Selection of the individual that leaves | random (`negative_selection` false) |
-| Ensemble (`EvoDAGE`) | `n_estimators` 30, seeds 0 to 29 |
+| Ensemble (`EnsembleClassifier`, `EvoDAGE`) | `n_estimators` 30, seeds 0 to 29 |
 
 Regression has its own file with a different function set (no `NaiveBayes`,
 `NaiveBayesMN` or `Centroid`), the fitness `"ER"`, which has no effect there, and
@@ -70,18 +74,37 @@ defaults is not the model an earlier release produced.
 There are other, smaller differences that are listed in
 [How it works](how-it-works.qmd).
 
+### The parameters of the scikit-learn classes
+
+`EvoDAGClassifier` and `EvoDAGRegressor` have the arguments `popsize`,
+`early_stopping_rounds`, `time_limit`, `random_state`, `params_fname` and
+`params`. `None` in the first three means the value of the JSON file of the
+defaults (the classification or the regression one, according to the class),
+so the tables below apply as they are. `random_state` is the `seed` of the
+engine (an integer, `0` by default). `params` is a dictionary with any other
+parameter of this page, the function names included: it is where, for example,
+`orthogonal_selection` or `fitness_function` go. The ensembles
+(`EnsembleClassifier`, `EnsembleRegressor`) take the estimator, so its
+parameters are reached with the prefix `estimator__`, and they add
+`n_estimators` (30), `n_jobs` (1) and, for the classifier, `voting`.
+
 ### Getting the previous behaviour, or the paper's fitness
 
 ```python
-from EvoDAG import EvoDAGE
+from EvoDAG import EvoDAGClassifier
 
 # fitness tournaments for the parents and for the individual that leaves,
 # as in the releases before the change of the default
-classic = EvoDAGE(orthogonal_selection=False, negative_selection=True)
+classic = EvoDAGClassifier(params={"orthogonal_selection": False,
+                                   "negative_selection": True})
 
 # the fitness of the paper
-macro_f1 = EvoDAGE(fitness_function="macro-F1")
+macro_f1 = EvoDAGClassifier(params={"fitness_function": "macro-F1"})
 ```
+
+The native form of the same two settings is
+`EvoDAGE(orthogonal_selection=False, negative_selection=True)` and
+`EvoDAGE(fitness_function="macro-F1")`.
 
 On the command line: `EvoDAG-train -C --kw '{"orthogonal_selection": false,
 "negative_selection": true}'`, and likewise for `fitness_function`.
@@ -92,8 +115,8 @@ There are two sets of default values and they differ.
 
 1. **The configuration files** `EvoDAG/conf/default_parameters.json`
    (classification) and `EvoDAG/conf/default_parameters_r.json` (regression),
-   the ones described above. They are read by `EvoDAGE`,
-   `EvoDAG.model.EvoDAG`, `EvoDAG.EvoDAG.init` (also `RGP.init`) and the command
+   the ones described above. They are read by the scikit-learn classes,
+   `EvoDAGE`, `EvoDAG.model.EvoDAG`, `EvoDAG.EvoDAG.init` (also `RGP.init`) and the command
    line.
 2. **The keyword defaults of the constructor of the engine**
    (`EvoDAG.EvoDAG`, also `RGP` and `RootGP`, in `EvoDAG/base.py`). They apply
@@ -136,11 +159,14 @@ overriding the previous:
    line). It can be a single object, or a list of objects as the one written
    by `EvoDAG-params`, in which case the first one is used; it replaces the
    default file;
-3. the keyword arguments of the call.
+3. the keyword arguments of the call (in the scikit-learn classes, the
+   arguments `popsize`, `early_stopping_rounds` and `time_limit`, and the
+   dictionary `params`).
 
 Keep in mind two exceptions. `EvoDAGE` has its own `time_limit` argument,
 which is `None` (no limit) unless you set it, and which replaces the
-`time_limit` of the file; a single model uses the one in the file. And the
+`time_limit` of the file; a single model uses the one in the file (and so does
+`EvoDAGClassifier`, unless you give its `time_limit`). And the
 function parameters (below) are not passed one by one to the engine: they are
 converted into its function set.
 

@@ -17,16 +17,24 @@ Version |version|.
    `mgraffg.github.io/EvoDAG <https://mgraffg.github.io/EvoDAG/>`_.
 
 EvoDAG is a steady-state semantic genetic programming system for
-classification and regression. The public names are exported by the
-top-level package: ``EvoDAGE`` (the ensemble), ``Model`` and ``Ensemble``
-(what a fit returns), and ``EvoDAG``, ``RGP`` and ``RootGP`` (the three names
-of the search engine). Two different classes are called ``EvoDAG``:
-``EvoDAG.EvoDAG`` is the search engine of :py:mod:`EvoDAG.base`, whereas
-``EvoDAG.model.EvoDAG`` is a single model with the ``fit``/``predict``
-interface; each docstring says which one it is.
+classification and regression. The usual way to use it is through the
+scikit-learn estimators of :py:mod:`EvoDAG.estimators`:
+``EnsembleClassifier(EvoDAGClassifier())`` (``EnsembleRegressor`` and
+``EvoDAGRegressor`` for regression) is EvoDAG's ensemble, and
+``EvoDAGClassifier`` alone fits one model. They need scikit-learn, an optional
+dependency (``pip install 'EvoDAG[sklearn]'``). EvoDAG's own classes do not
+need it and are exported by the top-level package: ``EvoDAGE`` (the ensemble),
+``Model`` and ``Ensemble`` (what a fit returns), and ``EvoDAG``, ``RGP`` and
+``RootGP`` (the three names of the search engine). Two different classes are
+called ``EvoDAG``: ``EvoDAG.EvoDAG`` is the search engine of
+:py:mod:`EvoDAG.base`, whereas ``EvoDAG.model.EvoDAG`` is a single model with
+the ``fit``/``predict`` interface; each docstring says which one it is.
 
-The pages follow the way the data flows through the package:
+The first page is the scikit-learn estimators; the rest follow the way the
+data flows through the package:
 
+#. :doc:`estimators`: the scikit-learn estimators, one model or an ensemble
+   (:py:mod:`EvoDAG.estimators`).
 #. :doc:`engine`: the search engine (:py:mod:`EvoDAG.base`), the population
    and the selection of parents (:py:mod:`EvoDAG.population`,
    :py:mod:`EvoDAG.function_selection`).
@@ -116,6 +124,7 @@ outputs for ``decision_function``, and the fraction of votes for
 .. toctree::
    :hidden:
 
+   estimators
    engine
    nodes
    fitness

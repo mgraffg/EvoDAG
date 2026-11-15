@@ -2,10 +2,32 @@
 title: "Citing EvoDAG"
 ---
 
-If EvoDAG is used in a scientific publication, citations to the papers below
-are appreciated. The first one describes the library, the second one the
-selection heuristics, and the third one the earlier system that EvoDAG grew
-out of.
+If EvoDAG is used in a scientific publication, please cite the first paper
+below, which is the preferred citation. The second one describes the library
+and the third one the earlier system that EvoDAG grew out of.
+
+## The selection heuristics (preferred citation)
+
+Claudia N. Sánchez and Mario Graff. *Selection Heuristics on Semantic Genetic
+Programming for Classification Problems.* Evolutionary Computation 30(2),
+pp. 253–289, 2022.
+[doi:10.1162/evco_a_00297](https://doi.org/10.1162/evco_a_00297)
+
+```bibtex
+@article{sanchez_selection_2022,
+  title = {Selection Heuristics on Semantic Genetic Programming for Classification Problems},
+  author = {S{\'a}nchez, Claudia N. and Graff, Mario},
+  journal = {Evolutionary Computation},
+  volume = {30},
+  number = {2},
+  pages = {253--289},
+  year = {2022},
+  doi = {10.1162/evco_a_00297}
+}
+```
+
+The page [Selection](selection.qmd) says which of the heuristics of this paper
+are in the released code.
 
 ## The library
 
@@ -27,26 +49,6 @@ pp. 1–6, November 2016.
   pages = {1--6}
 }
 ```
-
-## The selection heuristics
-
-Claudia N. Sánchez and Mario Graff. *Selection Heuristics on Semantic Genetic
-Programming for Classification Problems.* Evolutionary Computation.
-
-The reference below has only the data that appear in the manuscript of the
-paper; the year, volume, pages and DOI of the published version are not
-included here and should be added from the journal's page.
-
-```bibtex
-@article{sanchez_selection_heuristics,
-  title = {Selection Heuristics on Semantic Genetic Programming for Classification Problems},
-  author = {S{\'a}nchez, Claudia N. and Graff, Mario},
-  journal = {Evolutionary Computation}
-}
-```
-
-The page [Selection](selection.qmd) says which of the heuristics of this paper
-are in the released code.
 
 ## The earlier system
 

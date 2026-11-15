@@ -1,5 +1,4 @@
 [![Tests](https://github.com/mgraffg/EvoDAG/actions/workflows/test.yml/badge.svg)](https://github.com/mgraffg/EvoDAG/actions/workflows/test.yml)
-[![Coverage Status](https://coveralls.io/repos/github/mgraffg/EvoDAG/badge.svg?branch=develop)](https://coveralls.io/github/mgraffg/EvoDAG?branch=develop)
 [![PyPI version](https://badge.fury.io/py/evodag.svg)](https://badge.fury.io/py/evodag)
 [![azure](https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/evodag-feedstock?branchName=main)](https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=16226&branchName=main)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/evodag.svg)](https://anaconda.org/conda-forge/evodag) 
@@ -18,11 +17,14 @@ _et al._ and the implementation performed by
 [Leonardo Vanneschi](https://scholar.google.com.mx/citations?user=uR5K07QAAAAJ&hl=en&oi=ao)
 _et al_.
 
-EvoDAG is described in the following conference paper
-[EvoDAG: A semantic Genetic Programming Python library](http://ieeexplore.ieee.org/document/7830633/)
-Mario Graff, Eric S. Tellez, Sabino Miranda-Jiménez, Hugo Jair Escalante.
-2016 IEEE International Autumn Meeting on Power, Electronics and Computing (ROPEC)
-pp 1-6. A pre-print version can be download from [here](http://ws.ingeotec.mx/~mgraffg/publications/pdf/ropec2016.pdf).
+EvoDAG is described in two papers. The preferred reference is
+[Selection Heuristics on Semantic Genetic Programming for Classification Problems](https://doi.org/10.1162/evco_a_00297),
+Claudia N. Sánchez and Mario Graff, Evolutionary Computation 30(2):253–289, 2022;
+the library is presented in
+[EvoDAG: A semantic Genetic Programming Python library](https://doi.org/10.1109/ROPEC.2016.7830633),
+Mario Graff, Eric S. Tellez, Sabino Miranda-Jiménez, Hugo Jair Escalante,
+2016 IEEE International Autumn Meeting on Power, Electronics and Computing (ROPEC),
+pp 1-6.
 
 **Documentation:** the user guide is at <https://mgraffg.github.io/EvoDAG/>:
 installation, using EvoDAG from Python and from the command line, how the
@@ -34,13 +36,20 @@ There are two options to use EvoDAG, one is as a library and the other is using 
 
 ### Using EvoDAG as library
 
+EvoDAG offers scikit-learn estimators, which need the optional dependency
+scikit-learn:
+
+```bash
+pip install 'EvoDAG[sklearn]'
+```
+
 Let us assume that `X` contains the inputs and `y` contains the
 classes. Then in order to train an ensemble of 30 EvoDAG and predict
 `X` one uses the following instructions:
 
 ```python
-# Importing EvoDAG ensemble
-from EvoDAG.model import EvoDAGE
+# Importing the EvoDAG ensemble (scikit-learn interface)
+from EvoDAG import EnsembleClassifier, EvoDAGClassifier
 # Importing iris dataset from sklearn
 from sklearn.datasets import load_iris
 
@@ -49,18 +58,18 @@ data = load_iris()
 X = data.data
 y = data.target
 
-#train the model
-m = EvoDAGE(n_estimators=30, n_jobs=4).fit(X, y)
+# train the model: 30 EvoDAG models, seeds 0 to 29
+m = EnsembleClassifier(EvoDAGClassifier(), n_estimators=30, n_jobs=4).fit(X, y)
 
-#predict X using the model
+# predict X using the model
 hy = m.predict(X)
 ```
 
-`EvoDAGE`, `Model` and `Ensemble` are importable from the top-level package.
-There are two classes called `EvoDAG`: `EvoDAG.EvoDAG` (also `RGP` and
-`RootGP`) is the search engine, whereas `EvoDAG.model.EvoDAG` is a single
-model with the `fit`/`predict` interface. The `EvoDAG.model.*` imports keep
-working.
+`EvoDAGClassifier` alone is one model, and `EvoDAGRegressor` and
+`EnsembleRegressor` are their counterparts for regression. EvoDAG's own
+classes (`EvoDAGE`, the search engine `EvoDAG.EvoDAG`, `Model` and `Ensemble`)
+keep working and do not need scikit-learn; they are described in the
+[Native API](https://mgraffg.github.io/EvoDAG/pages/native-api.html) page.
 
 ### Using EvoDAG from the command line
 
@@ -111,16 +120,34 @@ of the documentation.
 
 ## Development ##
 
-The development guide is [`CLAUDE.md`](CLAUDE.md) (architecture, commands, rules and
+The development guide is [`CLAUDE.md`](https://github.com/mgraffg/EvoDAG/blob/master/CLAUDE.md) (architecture, commands, rules and
 conventions), and the developer reference, with every module documented, is at
 <https://mgraffg.github.io/EvoDAG/dev/>.
 
 ## Citing EvoDAG ##
 
-If you like EvoDAG, and it is used in a scientific publication, I would
-appreciate citations to either the conference paper or the book chapter:
+If EvoDAG is used in a scientific publication, I would appreciate a citation
+to the first paper below (the preferred one); the conference paper and the book
+chapter describe the library and the earlier system. The same information is
+in [`CITATION.cff`](https://github.com/mgraffg/EvoDAG/blob/master/CITATION.cff)
+and on the [Citing](https://mgraffg.github.io/EvoDAG/pages/citing.html) page.
 
-[EvoDAG: A semantic Genetic Programming Python library](http://ieeexplore.ieee.org/document/7830633/)
+[Selection Heuristics on Semantic Genetic Programming for Classification Problems](https://doi.org/10.1162/evco_a_00297)
+Claudia N. Sánchez, Mario Graff. Evolutionary Computation 30(2):253–289, 2022.
+```bibtex
+@article{sanchez_selection_2022,
+	title = {Selection {Heuristics} on {Semantic} {Genetic} {Programming} for {Classification} {Problems}},
+	author = {S{\'a}nchez, Claudia N. and Graff, Mario},
+	journal = {Evolutionary Computation},
+	volume = {30},
+	number = {2},
+	pages = {253--289},
+	year = {2022},
+	doi = {10.1162/evco_a_00297}
+}
+```
+
+[EvoDAG: A semantic Genetic Programming Python library](https://doi.org/10.1109/ROPEC.2016.7830633)
 Mario Graff, Eric S. Tellez, Sabino Miranda-Jiménez, Hugo Jair Escalante.
 2016 IEEE International Autumn Meeting on Power, Electronics and Computing (ROPEC)
 pp 1-6.
@@ -139,7 +166,7 @@ pp 1-6.
 }
 ```
 
-[Semantic Genetic Programming for Sentiment Analysis](http://link.springer.com/chapter/10.1007/978-3-319-44003-3_2)
+[Semantic Genetic Programming for Sentiment Analysis](https://doi.org/10.1007/978-3-319-44003-3_2)
 Mario Graff, Eric S. Tellez, Hugo Jair Escalante, Sabino
 Miranda-Jiménez. NEO 2015
 Volume 663 of the series Studies in Computational Intelligence pp 43-65.
@@ -149,7 +176,7 @@ Volume 663 of the series Studies in Computational Intelligence pp 43-65.
 	title = {Semantic {Genetic} {Programming} for {Sentiment} {Analysis}},
 	copyright = {©2017 Springer International Publishing Switzerland},
 	isbn = {9783319440026 9783319440033},
-	url = {http://link.springer.com/chapter/10.1007/978-3-319-44003-3_2},
+	url = {https://doi.org/10.1007/978-3-319-44003-3_2},
 	abstract = {Sentiment analysis is one of the most important tasks in text mining. This field has a high impact for government and private companies to support major decision-making policies. Even though Genetic Programming (GP) has been widely used to solve real world problems, GP is seldom used to tackle this trendy problem. This contribution starts rectifying this research gap by proposing a novel GP system, namely, Root Genetic Programming, and extending our previous genetic operators based on projections on the phenotype space. The results show that these systems are able to tackle this problem being competitive with other state-of-the-art classifiers, and, also, give insight to approach large scale problems represented on high dimensional spaces.},
 	language = {en},
 	number = {663},

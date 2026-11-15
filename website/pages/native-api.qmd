@@ -1,0 +1,253 @@
+---
+title: "Native API"
+---
+
+This page describes EvoDAG's own classes: `EvoDAGE` (the ensemble),
+`EvoDAG.model.EvoDAG` (a single model), the search engine `RGP` and the
+`Model` and `Ensemble` objects that their fits return. They are not
+deprecated and they do not need scikit-learn. The scikit-learn classes of the
+[Python](python.qmd) page are the usual way to use EvoDAG; they are built on
+the same code and fit the same models.
+
+Use the native API when you:
+
+* work with the models that the [command line](cli.qmd) stores, which are
+  `Model` and `Ensemble` objects;
+* need what only `EvoDAGE` offers: a `time_limit` for the whole ensemble,
+  `tmpdir` to resume an interrupted fit, a `test_set` evaluated along the
+  evolution, or `max_training_size`;
+* have code that already uses these classes, which keeps working.
+
+The two forms are equivalent. With the same parameters, seed and labels
+they fit the same models, and the regression predictions and the
+`decision_function` (the median over the members) are identical. The one
+difference is the `predict` of the classification ensemble: `EvoDAGE` returns
+the class chosen by most members, whereas `EnsembleClassifier` returns the
+class with the largest median `decision_function` (the sign of it with two
+classes), so that `predict`, `decision_function` and `predict_proba` agree, as
+scikit-learn expects. The two rules coincide on most examples, not on all of
+them.
+
+| Native API | scikit-learn classes |
+|:-----------------------------------------|:---------------------------------------------|
+| `EvoDAGE(n_estimators=n, seed=s, **kw)` | `EnsembleClassifier(EvoDAGClassifier(**kw), n_estimators=n, random_state=s)` |
+| `EvoDAGE(n_estimators=n, seed=s, classifier=False, **kw)` | `EnsembleRegressor(EvoDAGRegressor(**kw), n_estimators=n, random_state=s)` |
+| `EvoDAG.model.EvoDAG(seed=s, **kw)` | `EvoDAGClassifier(random_state=s, **kw)` |
+| `EvoDAG.model.EvoDAG(seed=s, classifier=False, **kw)` | `EvoDAGRegressor(random_state=s, **kw)` |
+
+In the scikit-learn classes the keywords `kw` that are not `popsize`,
+`early_stopping_rounds` or `time_limit` go in `params={...}`, and the labels
+may be anything (the native classes want numbers).
+
+Every Python block on this page is executed by the test suite of the
+repository (`tests/test_docs.py`). The blocks share state: each one builds on
+the variables of the previous one, so you can paste the whole page into a
+script.
+
+## Which class do I use?
+
+There are three entry points, and the name `EvoDAG` is used by two of them.
+
+| Import | What it is |
+|:------------------------------------|:-------------------------------------------------|
+| `from EvoDAG import EvoDAGE` | the **ensemble** with a `fit` / `predict` interface |
+| `from EvoDAG.model import EvoDAG` | a **single model** with the same interface |
+| `from EvoDAG import EvoDAG` (also `RGP`, `RootGP`) | the **search engine** that runs one evolution; you get the fitted model with `.model()` |
+
+`Model` and `Ensemble` (what the fits return) are also importable from the
+top-level package: `from EvoDAG import Model, Ensemble`.
+
+## Data
+
+`X` is a two-dimensional array with one row per example, or anything NumPy
+can turn into one (a list of lists, for instance). For classification `y`
+holds the class of each example as numbers, and the predictions are given
+back in the same numbers; they need not be consecutive. Strings as labels
+are not accepted by these classes (the [command line](cli.qmd) maps them to
+numbers for you, and the classes of the [Python](python.qmd) page accept them). For regression `y` holds the real targets.
+
+```python
+import numpy as np
+
+rng = np.random.RandomState(0)
+X = rng.randn(200, 5)
+# three classes, labelled 1, 5 and 9
+y = (X[:, 0] + X[:, 1] ** 2 > 1).astype(int) + (X[:, 2] > 1.0)
+y = np.array([1, 5, 9])[y]
+```
+
+## Classification with an ensemble
+
+`EvoDAGE` trains `n_estimators` independent EvoDAG runs. Each run gets its
+own seed (`seed`, `seed + 1`, ...), and therefore its own random split of the
+training data into the part used to evolve and the validation part used to
+stop (see [How it works](how-it-works.qmd)). `n_jobs` is the number of
+processes used to train the members and to evaluate them later.
+
+```python
+from EvoDAG import EvoDAGE
+
+ensemble = EvoDAGE(n_estimators=5, n_jobs=1, popsize=100,
+                   early_stopping_rounds=100, seed=0).fit(X, y)
+hy = ensemble.predict(X)
+print("accuracy:", (hy == y).mean())
+```
+
+Any keyword that is not an argument of `EvoDAGE` is a parameter of the
+evolution (here `popsize` and `early_stopping_rounds`); all of them are
+listed in [Parameters](parameters.qmd).
+
+`fit` returns the fitted `EvoDAG.Ensemble`, which has these methods:
+
+| Method | Returns |
+|:---------------------------|:-----------------------------------------------------|
+| `predict(X)` | the class of each row: the class chosen by most members |
+| `predict_proba(X)` | one row per example, one column per class: the fraction of members that voted for each class |
+| `decision_function(X)` | the median over the members of the raw outputs, one column per class |
+| `raw_decision_function(X)` | the raw outputs of every member side by side, with `n_estimators * n_classes` columns |
+| `models` | the list of `Model` objects, one per member |
+
+The columns follow the sorted class labels, which are
+`np.unique(y)`.
+
+```python
+proba = ensemble.predict_proba(X)
+print(proba.shape, proba.sum(axis=1)[:3])
+
+scores = ensemble.decision_function(X)
+print(scores.shape)
+
+raw = ensemble.raw_decision_function(X)
+print(raw.shape)
+print(len(ensemble.models), "members")
+```
+
+For classification a model has one output per class: the problem is solved
+one class against the others, and `predict` picks the class with the largest
+output. When the last node of a model is a Naive Bayes or a Nearest Centroid
+node its outputs are squashed into the interval from -1 to 1 before they are
+returned; for any other kind of node they are the raw values.
+
+## Classification with a single model
+
+`EvoDAG.model.EvoDAG` fits one run. It takes the same keywords as the
+ensemble, without `n_estimators`, `n_jobs` and `tmpdir`. After `fit` the fitted model is in the
+`model` attribute.
+
+```python
+from EvoDAG.model import EvoDAG as SingleEvoDAG
+
+single = SingleEvoDAG(popsize=100, early_stopping_rounds=100, seed=0).fit(X, y)
+print("accuracy:", (single.predict(X) == y).mean())
+
+model = single.model
+print("nodes:", model.size, "height:", model.height)
+print("validation fitness:", model.fitness_vs)
+```
+
+`decision_function` of a single model returns a list with one array per
+class, instead of one two-dimensional array. `model.fitness_vs` is the
+fitness on the validation part, and it is the *negative* of the error: zero
+is perfect and lower values are worse.
+
+## Regression
+
+Pass `classifier=False`. The defaults for regression come from a different
+file, `default_parameters_r.json`, and `predict` returns the real values. That
+file has the ordinary selections (a tournament on fitness for the arguments and
+a negative tournament for the individual that leaves), not the agreement
+selection that is the default of classification.
+
+```python
+yr = 2 * X[:, 0] + X[:, 1] ** 2 + 0.1 * rng.randn(200)
+
+regressor = EvoDAGE(n_estimators=5, classifier=False, popsize=100,
+                    early_stopping_rounds=100, seed=0).fit(X, yr)
+hr = regressor.predict(X)
+print("correlation:", np.corrcoef(hr, yr)[0, 1])
+```
+
+In regression the ensemble prediction is the median of the members'
+predictions. A regression with several targets at once is possible: pass
+`multiple_outputs=True` and a list with one array per target as `y`;
+`predict` then returns one column per target.
+
+## Choosing the function set and other parameters
+
+The functions that EvoDAG may use to build an individual are parameters,
+named after the function. A boolean switches the function on or off; an
+integer sets how many arguments it takes, and `0` removes it. Everything else
+is an ordinary keyword.
+
+```python
+tuned = EvoDAGE(n_estimators=3, popsize=100, early_stopping_rounds=100,
+                Mul=0, Sin=False, Add=10, tournament_size=3,
+                seed=0).fit(X, y)
+print((tuned.predict(X) == y).mean())
+```
+
+You can also start from a JSON file of your own with `params_fname`; the
+format is described in [Parameters](parameters.qmd). Keywords given in the
+call override what the file says.
+
+## Looking inside a model
+
+A fitted `Model` is a list of nodes stored in evaluation order. It can tell
+how big it is, which input variables it ended up using, and it can write
+itself in the dot language of Graphviz.
+
+```python
+import io
+
+print("inputs used (variable: times):", dict(model.inputs()))
+
+dot = io.StringIO()
+model.graphviz(dot)
+print(dot.getvalue().splitlines()[0])
+```
+
+`model.graphviz("model.dot")` writes the same text to a file, and
+`model.graphviz(fpt, terminals=False)` leaves the input variables out. With
+Graphviz installed, `dot -Tsvg model.dot -o model.svg` draws it. In the
+picture below the node at the top (green) is the output; the red nodes are
+the ones at height zero, which are the inputs and the functions applied
+directly to them; the blue ones are internal nodes, darker the higher they
+are.
+
+![A model fitted to a small synthetic problem. Generated by `website/figures/make_figures.py`.](../figures/dag.svg)
+
+For an ensemble, `ensemble.graphviz("directory")` writes one file per
+member into that directory.
+
+## Saving and loading
+
+Models and ensembles are plain Python objects and can be pickled. The
+command line tools store their models with `pickle` inside a gzip file.
+
+```python
+import pickle
+
+blob = pickle.dumps(ensemble)
+restored = pickle.loads(blob)
+print((restored.predict(X) == hy).all())
+```
+
+## Running one evolution yourself
+
+The search engine is what the classes above are built on. `RGP.init` reads
+the default parameters, `fit` runs the evolution and `model()` returns the
+fitted model. You can also reach the population it evolved.
+
+```python
+from EvoDAG import RGP
+
+engine = RGP.init(popsize=100, early_stopping_rounds=100, seed=0)
+engine.fit(X, y)
+best = engine.model()
+print(type(best).__name__, "predictions:", best.predict(X)[:5])
+print("individuals created:", len(engine.population.hist))
+```
+
+`engine.model()` returns the early stopping individual: the one with the
+best fitness on the validation part. `engine.model(v)` returns the model of
+any individual `v` found in `engine.population.hist`.

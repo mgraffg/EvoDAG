@@ -49,10 +49,14 @@ def run_page_examples(*paths):
 
 
 def test_python_page_examples_run():
-    run_page_examples(PAGES / "python.qmd", WEBSITE / "index.qmd")
+    # the pages use the scikit-learn classes, an optional dependency
+    pytest.importorskip("sklearn")
+    run_page_examples(PAGES / "python.qmd", WEBSITE / "index.qmd",
+                      PAGES / "native-api.qmd")
 
 
 def test_selection_and_parameters_page_examples_run():
+    pytest.importorskip("sklearn")  # the Parameters page uses the estimators
     run_page_examples(PAGES / "selection.qmd", PAGES / "parameters.qmd")
 
 
@@ -105,7 +109,7 @@ def test_every_page_is_in_the_navbar():
              if "_site" not in p.parts and ".quarto" not in p.parts}
     assert pages == set(navbar_targets()) & pages
     assert {"index.qmd", "pages/install.qmd", "pages/python.qmd",
-            "pages/cli.qmd", "pages/how-it-works.qmd",
+            "pages/native-api.qmd", "pages/cli.qmd", "pages/how-it-works.qmd",
             "pages/selection.qmd", "pages/parameters.qmd",
             "pages/performance.qmd", "pages/citing.qmd"} <= pages
 
@@ -329,3 +333,26 @@ def test_parameters_page_gives_the_selection_defaults():
         assert space, key
         with open(ROOT / "EvoDAG" / "conf" / "parameter_values.json") as fpt:
             assert [space.group(1) == "true"] == json.load(fpt)[key]
+
+
+def test_readme_quick_start_uses_sklearn_classes():
+    text = (ROOT / "README.md").read_text(encoding="utf8")
+    assert "EnsembleClassifier(EvoDAGClassifier(" in text
+    assert "EvoDAG[sklearn]" in text
+
+
+def test_navbar_has_native_api_right_after_python():
+    targets = navbar_targets()
+    assert targets.index("pages/native-api.qmd") == \
+        targets.index("pages/python.qmd") + 1
+
+
+def test_python_page_points_to_the_native_api():
+    "The first example of the pages is scikit-learn, the native classes live apart"
+    for path in (WEBSITE / "index.qmd", PAGES / "python.qmd"):
+        assert "EnsembleClassifier(tiny" in python_blocks(path)[0]
+    page = (PAGES / "python.qmd").read_text(encoding="utf8")
+    assert "native-api.qmd" in page
+    code = "\n".join(python_blocks(PAGES / "python.qmd"))
+    assert "EvoDAGE" not in code and "RGP" not in code
+    assert "RGP" not in page

@@ -1,0 +1,66 @@
+cff-version: 1.2.0
+message: "If you use EvoDAG in a scientific publication, please cite the article below."
+title: "EvoDAG"
+type: software
+abstract: >-
+  EvoDAG (Evolving Directed Acyclic Graph) is a steady-state semantic genetic
+  programming system for classification and regression, in Python with Cython
+  kernels.
+authors:
+  - family-names: Graff
+    given-names: Mario
+license: Apache-2.0
+repository-code: "https://github.com/mgraffg/EvoDAG"
+url: "https://mgraffg.github.io/EvoDAG/"
+preferred-citation:
+  type: article
+  title: "Selection Heuristics on Semantic Genetic Programming for Classification Problems"
+  authors:
+    - family-names: Sánchez
+      given-names: Claudia N.
+    - family-names: Graff
+      given-names: Mario
+  journal: "Evolutionary Computation"
+  volume: 30
+  issue: 2
+  start: 253
+  end: 289
+  year: 2022
+  doi: "10.1162/evco_a_00297"
+references:
+  - type: conference-paper
+    title: "EvoDAG: A semantic Genetic Programming Python library"
+    authors:
+      - family-names: Graff
+        given-names: Mario
+      - family-names: Tellez
+        given-names: Eric S.
+      - family-names: Miranda-Jiménez
+        given-names: Sabino
+      - family-names: Escalante
+        given-names: Hugo Jair
+    collection-title: "2016 IEEE International Autumn Meeting on Power, Electronics and Computing (ROPEC)"
+    start: 1
+    end: 6
+    year: 2016
+    month: 11
+    doi: "10.1109/ROPEC.2016.7830633"
+  - type: book
+    title: "Semantic Genetic Programming for Sentiment Analysis"
+    authors:
+      - family-names: Graff
+        given-names: Mario
+      - family-names: Tellez
+        given-names: Eric S.
+      - family-names: Escalante
+        given-names: Hugo Jair
+      - family-names: Miranda-Jiménez
+        given-names: Sabino
+    collection-title: "NEO 2015"
+    collection-type: proceedings
+    publisher:
+      name: "Springer International Publishing"
+    year: 2017
+    start: 43
+    end: 65
+    doi: "10.1007/978-3-319-44003-3_2"

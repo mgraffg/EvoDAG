@@ -42,6 +42,17 @@ Modules in the order the data flows; each is documented in the developer referen
 - **`EvoDAG/model.py`.** `Model` (the nodes the early stopping individual depends on, with their
   weights), `Ensemble` and `EvoDAGE` (members with seeds `seed`, `seed + 1`, ...; classes by
   majority vote, median for `decision_function`). `EvoDAGE.fit` returns an `Ensemble`.
+- **`EvoDAG/estimators.py`.** `EvoDAGClassifier` and `EvoDAGRegressor`, scikit-learn estimators that
+  fit **one** model (`model_`, a `Model`); `random_state` is the engine `seed`, and the predictions
+  equal those of `EvoDAG.model.EvoDAG` with the same parameters and seed. scikit-learn is the optional
+  extra `EvoDAG[sklearn]`: the module is imported lazily by `EvoDAG/__init__.py` (the two names are not
+  in `__all__`) and nothing else in the package imports it. `EnsembleClassifier` and
+  `EnsembleRegressor` in the same module clone any estimator `n_estimators` times with
+  `random_state + i` and combine the members as `Ensemble` does, so that
+  `EnsembleClassifier(EvoDAGClassifier())` has the members and the median `decision_function` of
+  `EvoDAGE`. Its `predict` is the argmax of that median (the sign with two classes), not the majority
+  vote of `EvoDAGE`, so that `predict`, `decision_function` and `predict_proba` agree as scikit-learn
+  requires; `EnsembleRegressor` equals `EvoDAGE` with `classifier=False`.
 - **`EvoDAG/utils.py` and `EvoDAG/command_line.py`.** The CSV/JSON readers, the error measures
   and `RandomParameterSearch`; the four console commands `EvoDAG-params`, `EvoDAG-train`,
   `EvoDAG-predict` and `EvoDAG-utils`. Models are stored as gzip pickles.
@@ -69,7 +80,8 @@ Modules in the order the data flows; each is documented in the developer referen
 - `benchmarks/`: `benchmarks/bench.py` and its recorded results. `scripts/`: the PyPI version check.
 - `.github/workflows/`: `.github/workflows/test.yml`, `.github/workflows/website.yml`,
   `.github/workflows/publish-pypi.yml`. `.issue-pilot.json`: the
-  test command and the base branch.
+  test command and the base branch. `CITATION.cff`: the citation metadata (the Evolutionary Computation
+  article is the preferred citation; `website/pages/citing.qmd` and the README keep the same order).
 
 ## Commands
 
@@ -111,10 +123,12 @@ under 5 to 10 percent. Times only compare on the same machine. The development e
   mask and reader groups still run.
 - **Performance claims need the benchmark**: run `benchmarks/bench.py` and compare it with the
   recorded results (`benchmarks/results-numpy.json`, `benchmarks/results-optimized.json`).
+  `benchmarks/raetsch.py` reproduces the Performance table; its full run is long and done by the author.
 - **Public names need a docstring and a verified example**, as `tests/test_docs.py` enforces:
   every public name has a docstring, every engine parameter is described, the Sphinx build is
   strict and its doctests run. Documentation changes must not change behaviour.
 - **No new runtime dependency** without discussion: the only one is NumPy (`pyproject.toml`).
+  scikit-learn is allowed only as the optional `sklearn` extra, imported by `EvoDAG/estimators.py` alone.
   Build requirements are Cython and NumPy.
 - Keep the Cython extensions and the density mechanism. Scratch files go in `tmp_path`, never in
   the repository root; do not commit build output (the generated C files and shared libraries,
@@ -125,10 +139,12 @@ under 5 to 10 percent. Times only compare on the same machine. The development e
 Two halves of one GitHub Pages site, built by `.github/workflows/website.yml` (pull requests build
 it, pushes to `master` deploy it; Pages has to be enabled once with the source "GitHub Actions").
 
-- **User site** (Quarto, `website/`, served at the root): installing, the Python API, the command
-  line, how the method works, the selection heuristics, the parameters, performance, citing. Code
+- **User site** (Quarto, `website/`, served at the root): installing, the Python API, the native API, the command
+  line, how the method works, the selection heuristics, the parameters, performance, citing. The Python
+  page covers the scikit-learn classes and the Native API page covers `EvoDAGE` and the engine. Code
   is not executed when it renders; `tests/test_docs.py` runs the Python blocks of
-  `website/index.qmd`, `website/pages/python.qmd` and `website/pages/selection.qmd`, checks that
+  `website/index.qmd`, `website/pages/python.qmd`, `website/pages/native-api.qmd` and
+  `website/pages/selection.qmd`, checks that
   `website/pages/cli.qmd` names every option of the four commands and that
   `website/pages/parameters.qmd` names every key of the JSON files, and that the navbar and
   figures exist.
