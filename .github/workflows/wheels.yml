@@ -1,0 +1,31 @@
+name: Wheels
+
+# Builds and tests the wheels exactly as publish-pypi.yml does (same
+# cibuildwheel version and configuration) on pull requests that touch the
+# packaging, so a broken wheel build is found before a release. Nothing is
+# uploaded.
+on:
+  pull_request:
+    paths:
+      - "pyproject.toml"
+      - "setup.py"
+      - "EvoDAG/*.pyx"
+      - ".github/workflows/wheels.yml"
+      - ".github/workflows/publish-pypi.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: wheels-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wheels:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test the wheels
+        uses: pypa/cibuildwheel@v2.23.3

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import importlib.util
+import re
 try:
     import tomllib
 except ImportError:  # Python 3.10
@@ -98,12 +99,14 @@ def test_readme_has_only_absolute_links_and_no_dead_ones():
     assert not relative, relative
 
 
-def test_cibuildwheel_test_requires_have_no_spaces():
-    # cibuildwheel splits test-requires on whitespace before calling pip, so a
-    # requirement with spaces (e.g. an environment marker written
-    # "tomli; python_version < '3.11'") breaks every wheel build.
+def test_cibuildwheel_test_requires_are_shell_safe():
+    # cibuildwheel splits test-requires on whitespace and, on Windows, runs pip
+    # through cmd.exe, where < > | & ^ are redirections or operators: a marker
+    # such as "tomli; python_version < '3.11'" or a bound such as ">=1.6"
+    # breaks the wheel builds or is silently dropped. Only plain names and
+    # characters that no shell interprets are allowed.
     with open(ROOT / "pyproject.toml", "rb") as fpt:
         pyproject = tomllib.load(fpt)
     requires = pyproject["tool"]["cibuildwheel"]["test-requires"]
     for requirement in requires:
-        assert requirement.split() == [requirement], requirement
+        assert re.fullmatch(r"[A-Za-z0-9._\-\[\],]+", requirement), requirement
