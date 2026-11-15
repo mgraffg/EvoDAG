@@ -96,3 +96,14 @@ def test_readme_has_only_absolute_links_and_no_dead_ones():
     assert targets
     relative = [t for t in targets if not t.startswith("https://")]
     assert not relative, relative
+
+
+def test_cibuildwheel_test_requires_have_no_spaces():
+    # cibuildwheel splits test-requires on whitespace before calling pip, so a
+    # requirement with spaces (e.g. an environment marker written
+    # "tomli; python_version < '3.11'") breaks every wheel build.
+    with open(ROOT / "pyproject.toml", "rb") as fpt:
+        pyproject = tomllib.load(fpt)
+    requires = pyproject["tool"]["cibuildwheel"]["test-requires"]
+    for requirement in requires:
+        assert requirement.split() == [requirement], requirement
