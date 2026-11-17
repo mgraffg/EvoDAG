@@ -11,17 +11,11 @@ Installing EvoDAG puts four commands on your `PATH`:
 | `EvoDAG-predict` | load a model and predict a data set |
 | `EvoDAG-utils` | inspect models and parameter files, and combine models |
 
-All four accept `-h` / `--help`, `--version` (prints `EvoDAG` and the
-version), and `--verbose LEVEL`, which sets the level of the `EvoDAG`
-logger from the standard `logging` module as an integer (10 shows debug
-messages, 20 informational ones). `-u` / `--cpu-cores` is the number of
-processes to use.
+All four accept `-h` / `--help`, `--version` (prints `EvoDAG` and the version), and `--verbose LEVEL`, which sets the level of the `EvoDAG` logger from the standard `logging` module as an integer (10 shows debug messages, 20 informational ones). `-u` / `--cpu-cores` is the number of processes to use.
 
 ## A short session
 
-Take a comma separated file `train.csv` without a header, one example per
-row, the class in the last column, and a file `test.csv` with the same
-columns except the class.
+Take a comma separated file `train.csv` without a header, one example per row, the class in the last column, and a file `test.csv` with the same columns except the class.
 
 ```bash
 # train an ensemble of 30 models with the default parameters
@@ -31,8 +25,7 @@ EvoDAG-train -C -n 30 -u 4 -m model.evodag train.csv
 EvoDAG-predict -m model.evodag -o predictions.txt test.csv
 ```
 
-To let EvoDAG look for good parameters first, run the search and give its
-output to `EvoDAG-train`:
+To let EvoDAG look for good parameters first, run the search and give its output to `EvoDAG-train`:
 
 ```bash
 EvoDAG-params -C -r 734 -u 4 -P params.json train.csv
@@ -43,35 +36,18 @@ EvoDAG-train -P params.json -n 30 -u 4 -m model.evodag train.csv
 
 ### CSV
 
-A CSV file has one example per line and the values separated by commas,
-with no header line. Blank lines are skipped, and a file whose name ends in
-`.gz` is read compressed.
+A CSV file has one example per line and the values separated by commas, with no header line. Blank lines are skipped, and a file whose name ends in `.gz` is read compressed.
 
-* **Training files** (`EvoDAG-params`, `EvoDAG-train`): the *last* column is
-  the target, either a class or, for regression, a real number. A value in a
-  feature column that is not a number is replaced by an integer that
-  identifies that text; the correspondence is stored with the model, so that
-  the same text maps to the same number when predicting.
-* **Class labels** that are numbers are used as such. Labels that are text
-  are replaced by integers while training and mapped back to your text by
-  `EvoDAG-predict`. When the labels are numbers the predictions are
-  printed as numbers, for example `1.0`.
-* **Files to predict**, and the test set of `EvoDAG-train`: only features,
-  with no target column. The number of columns must not be smaller than the
-  number used for training.
-* **Several targets**: with `--output-dim k` the last `k` columns are `k`
-  real targets (see `--output-dim` below).
+* **Training files** (`EvoDAG-params`, `EvoDAG-train`): the *last* column is the target, either a class or, for regression, a real number. A value in a feature column that is not a number is replaced by an integer that identifies that text; the correspondence is stored with the model, so that the same text maps to the same number when predicting.
+* **Class labels** that are numbers are used as such. Labels that are text are replaced by integers while training and mapped back to your text by `EvoDAG-predict`. When the labels are numbers the predictions are printed as numbers, for example `1.0`.
+* **Files to predict**, and the test set of `EvoDAG-train`: only features, with no target column. The number of columns must not be smaller than the number used for training.
+* **Several targets**: with `--output-dim k` the last `k` columns are `k` real targets (see `--output-dim` below).
 
 ### JSON
 
-With `-j` / `--json` the file has one JSON object per line. There are two
-layouts.
+With `-j` / `--json` the file has one JSON object per line. There are two layouts.
 
-The first one gives each feature as a key that is the position of the feature
-written as a string; features that are missing count as zero, which makes it
-a convenient way to write sparse data. The target is under the key
-`klass`. The number of features is the number of keys (minus one for
-`klass`) unless the object has a key `num_terms`:
+The first one gives each feature as a key that is the position of the feature written as a string; features that are missing count as zero, which makes it a convenient way to write sparse data. The target is under the key `klass`. The number of features is the number of keys (minus one for `klass`) unless the object has a key `num_terms`:
 
 ```json
 {"0": 1.5, "3": 0.25, "klass": "spam", "num_terms": 4}
@@ -83,22 +59,11 @@ The second layout gives all the features in a list under the key `vec`:
 {"vec": [1.5, 0.0, 0.0, 0.25], "klass": "spam"}
 ```
 
-If an object has both `vec` and `vecsize`, `vec` is read as a list of
-`[position, value]` pairs of a vector with `vecsize` positions, again sparse.
-The environment variables `KLASS` and `VEC` change the names `klass` and
-`vec`.
+If an object has both `vec` and `vecsize`, `vec` is read as a list of `[position, value]` pairs of a vector with `vecsize` positions, again sparse. The environment variables `KLASS` and `VEC` change the names `klass` and `vec`.
 
 ## `EvoDAG-params`
 
-Samples points from the space of parameters, trains EvoDAG with each one on
-the training set (three runs with different seeds) and writes the
-configurations sorted by the median fitness on the validation part, best
-first. The output is a JSON list; each element is a full set of parameters
-plus its `fitness` (the three values obtained) and the time that it took.
-The space that is sampled is `parameter_values.json`, described in
-[Parameters](parameters.qmd). For classification every configuration has the
-agreement selection and the random choice of the individual that leaves; with
-`-R` those two keys are left out.
+Samples points from the space of parameters, trains EvoDAG with each one on the training set (three runs with different seeds) and writes the configurations sorted by the median fitness on the validation part, best first. The output is a JSON list; each element is a full set of parameters plus its `fitness` (the three values obtained) and the time that it took. The space that is sampled is `parameter_values.json`, described in [Parameters](parameters.qmd). For classification every configuration has the agreement selection and the random choice of the individual that leaves; with `-R` those two keys are left out.
 
 ```bash
 EvoDAG-params [-C | -R] [-r N] [-P FILE] [options] training_set
@@ -124,8 +89,7 @@ EvoDAG-params [-C | -R] [-r N] [-P FILE] [options] training_set
 
 ## `EvoDAG-train`
 
-Trains the model and stores it. Models are stored with `pickle` in a gzip
-file, together with the correspondence of text values to numbers.
+Trains the model and stores it. Models are stored with `pickle` in a gzip file, together with the correspondence of text values to numbers.
 
 ```bash
 EvoDAG-train (-C | -R | -P FILE) [-n N] [-m FILE] [options] training_set
@@ -147,11 +111,7 @@ EvoDAG-train (-C | -R | -P FILE) [-n N] [-m FILE] [options] training_set
 | `-u N`, `--cpu-cores N` | processes used to train the ensemble; 1 by default |
 | `--version`, `--verbose LEVEL`, `-h`, `--help` | as for every command |
 
-While an ensemble is trained, the models that are done are written to a
-directory named after the model file with `_dir` appended, which is removed
-when the training ends. Because of that, a training that was interrupted can
-be started again with the same command and goes on from the models that were
-finished.
+While an ensemble is trained, the models that are done are written to a directory named after the model file with `_dir` appended, which is removed when the training ends. Because of that, a training that was interrupted can be started again with the same command and goes on from the models that were finished.
 
 ## `EvoDAG-predict`
 
@@ -173,16 +133,11 @@ EvoDAG-predict -m FILE [-o FILE] [options] test_set
 | `-u N`, `--cpu-cores N` | processes used to evaluate the models; 1 by default |
 | `--version`, `--verbose LEVEL`, `-h`, `--help` | as for every command |
 
-By default the output has one line per example with the class (or, for
-regression, the predicted value). The other three options write the values
-of each example in one line, separated by commas. `--predict-proba` and
-`--raw-outputs` need an ensemble, that is a model trained with `-n` greater
-than 1.
+By default the output has one line per example with the class (or, for regression, the predicted value). The other three options write the values of each example in one line, separated by commas. `--predict-proba` and `--raw-outputs` need an ensemble, that is a model trained with `-n` greater than 1.
 
 ## `EvoDAG-utils`
 
-A collection of small tools. Which one runs depends on the flag; only the
-first of these flags found is used, in the order of the table.
+A collection of small tools. Which one runs depends on the flag; only the first of these flags found is used, in the order of the table.
 
 ```bash
 EvoDAG-utils [flag] [-o FILE] model_file

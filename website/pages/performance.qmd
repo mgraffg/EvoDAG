@@ -2,35 +2,15 @@
 title: "Performance"
 ---
 
-This page collects the benchmark results that have been published with
-EvoDAG. They were obtained with earlier versions of the library (the version
-is given for each table) and are **not** re-run when the site is built:
-treat them as a snapshot of what the method achieved at the time, not as a
-measurement of the code in this release. In particular, the library's default
-parameters changed after those versions: since this release classification uses
-the agreement selection and a random choice of the individual that leaves (see
-[Parameters](parameters.qmd)), whereas the versions in the tables used fitness
-tournaments for both.
+This page collects the benchmark results that have been published with EvoDAG. They were obtained with earlier versions of the library (the version is given for each table) and are **not** re-run when the site is built: treat them as a snapshot of what the method achieved at the time, not as a measurement of the code in this release. In particular, the library's default parameters changed after those versions: since this release classification uses the agreement selection and a random choice of the individual that leaves (see [Parameters](parameters.qmd)), whereas the versions in the tables used fitness tournaments for both.
 
-The measure is the balance error rate (BER) in percent: the average, over the
-classes, of the proportion of examples of the class that are misclassified.
-Lower is better, and the best value of each column is in bold face where the
-authors marked it.
+The measure is the balance error rate (BER) in percent: the average, over the classes, of the proportion of examples of the class that are misclassified. Lower is better, and the best value of each column is in bold face where the authors marked it.
 
-The benchmark problems come from the collection of Gunnar Rätsch's benchmark
-data sets. The original hosts are no longer reachable; the same collection,
-with the same problems and the same training and test splits, is in the GitHub
-repository
-[tdiethe/gunnar_raetsch_benchmark_datasets](https://github.com/tdiethe/gunnar_raetsch_benchmark_datasets)
-(MIT license), as a single matlab file.
+The benchmark problems come from the collection of Gunnar Rätsch's benchmark data sets. The original hosts are no longer reachable; the same collection, with the same problems and the same training and test splits, is in the GitHub repository [tdiethe/gunnar_raetsch_benchmark_datasets](https://github.com/tdiethe/gunnar_raetsch_benchmark_datasets) (MIT license), as a single matlab file.
 
 ## EvoDAG against the classifiers of scikit-learn
-
-The table gives the average rank and the BER of EvoDAG and of sixteen
-classifiers of [scikit-learn](http://scikit-learn.org) on nine of the
-problems. EvoDAG was trained with the commands of the
-[Command line](cli.qmd) page and **without** optimising its parameters, that is, with the
-default parameters.
+ 
+The table gives the average rank and the BER of EvoDAG and of sixteen classifiers of [scikit-learn](http://scikit-learn.org) on nine of the problems. EvoDAG was trained with the commands of the [Command line](cli.qmd) page and **without** optimising its parameters, that is, with the default parameters.
 
 |Classifier|Average rank|banana | thyroid | diabetis | heart | ringnorm | twonorm |german| image | waveform|
 |-------|------:|------:|-------:|----:|--------:|--------:|------:|-----:|--------:|---------:|
@@ -77,8 +57,7 @@ do
 done
 ```
 
-The predictions sklearn classifiers were obtained using the following
-code:
+The predictions sklearn classifiers were obtained using the following code:
 
 ```python
 from sklearn.linear_model import LogisticRegression, SGDClassifier, Perceptron
@@ -120,12 +99,7 @@ for dataset in ['banana', 'thyroid', 'diabetis', 'heart',
 
 ## Reproducing the first table with this release
 
-The table above is a historical snapshot. The script `benchmarks/raetsch.py`
-of the repository reproduces it with this release: it trains
-`EnsembleClassifier(EvoDAGClassifier())` with every parameter at its default
-(see [Python](python.qmd)) and the sixteen classifiers of scikit-learn with
-their default parameters on the same splits, and measures the BER on the test
-part. It needs scipy and scikit-learn (`pip install scipy 'EvoDAG[sklearn]'`).
+The table above is a historical snapshot. The script `benchmarks/raetsch.py` of the repository reproduces it with this release: it trains `EnsembleClassifier(EvoDAGClassifier())` with every parameter at its default (see [Python](python.qmd)) and the sixteen classifiers of scikit-learn with their default parameters on the same splits, and measures the BER on the test part. It needs scipy and scikit-learn (`pip install scipy 'EvoDAG[sklearn]'`).
 
 ```bash
 # train and evaluate everything; --n-jobs is the number of processes for the
@@ -144,43 +118,23 @@ python benchmarks/raetsch.py --datasets heart thyroid --splits 0-4 --n-jobs 8
 python benchmarks/raetsch.py --summary
 ```
 
-The data (`benchmarks.mat`, 8.9 MB) is downloaded once into `~/.cache/evodag`
-from a pinned commit of the repository above and its sha256 is verified; the
-results are appended, one JSON line per problem, split and algorithm, to
-`benchmarks/raetsch-results.jsonl`, which is not committed. `--quick` runs
-EvoDAG with tiny parameters (`popsize=50`, `early_stopping_rounds=50`, three
-members) only to test the pipeline; those lines are marked and are not results.
+The data (`benchmarks.mat`, 8.9 MB) is downloaded once into `~/.cache/evodag` from a pinned commit of the repository above and its sha256 is verified; the results are appended, one JSON line per problem, split and algorithm, to `benchmarks/raetsch-results.jsonl`, which is not committed. `--quick` runs EvoDAG with tiny parameters (`popsize=50`, `early_stopping_rounds=50`, three members) only to test the pipeline; those lines are marked and are not results.
 
-**It is expensive.** With the default parameters (population of 4000
-individuals, 4000 rounds of early stopping, 30 members) one fit of the ensemble
-on one split of heart (170 training examples) had not finished after more than
-40 minutes on a machine with 12 cores. The whole table (nine problems, about
-820 splits, 30 members each) takes hundreds of CPU hours, so it is meant for a
-large machine, not for a laptop.
+**It is expensive.** With the default parameters (population of 4000 individuals, 4000 rounds of early stopping, 30 members) one fit of the ensemble on one split of heart (170 training examples) had not finished after more than 40 minutes on a machine with 12 cores. The whole table (nine problems, about 820 splits, 30 members each) takes hundreds of CPU hours, so it is meant for a large machine, not for a laptop.
 
-The table above has not been re-run with this release. It will be replaced
-once the full run is done.
+The table above has not been re-run with this release. It will be replaced once the full run is done.
 
 ## EvoDAG against PSMS, auto-sklearn and SVM
 
-The next table compares the average BER of PSMS, auto-sklearn, an SVM and
-EvoDAG (0.10.6, with the parameters optimised by random search) on nine
-classification problems, and, in its last columns, EvoDAG (0.10.7) without
-optimising the parameters, which only needs the command
+The next table compares the average BER of PSMS, auto-sklearn, an SVM and EvoDAG (0.10.6, with the parameters optimised by random search) on nine classification problems, and, in its last columns, EvoDAG (0.10.7) without optimising the parameters, which only needs the command
 
 ```bash
 EvoDAG-train -m model.evodag -n 100 -u 4 iris.data
 ```
 
-where `iris.data` is the training set. PSMS obtained the best performance on
-three datasets and the SVM on one, whereas EvoDAG obtained the best performance
-on the remaining five. The confidence intervals of auto-sklearn (not
-shown here) are one order of magnitude larger than those of the other systems:
-in some of its trials it predicts a single class, which gives the worst
-possible BER, 50. The authors kept auto-sklearn without modification.
+where `iris.data` is the training set. PSMS obtained the best performance on three datasets and the SVM on one, whereas EvoDAG obtained the best performance on the remaining five. The confidence intervals of auto-sklearn (not shown here) are one order of magnitude larger than those of the other systems: in some of its trials it predicts a single class, which gives the worst possible BER, 50. The authors kept auto-sklearn without modification.
 
-The data sets, with the number of input features, of training patterns and
-of test patterns:
+The data sets, with the number of input features, of training patterns and of test patterns:
 
 |Dataset|Input features|Training patterns|Test patterns|
 |------|----------:|--------------:|---------:|
@@ -211,33 +165,8 @@ of test patterns:
 
 ## What the papers report
 
-The two papers summarised below are cited in [Citing](citing.qmd); the
-results are theirs and were not reproduced for this site.
+The two papers summarised below are cited in [Citing](citing.qmd); the results are theirs and were not reproduced for this site.
 
-**The library paper** (Graff, Tellez, Miranda-Jiménez and Escalante, ROPEC
-2016) compares EvoDAG with an SVM and with auto-sklearn on thirteen classification
-problems from the same benchmark collection, using the balance error rate. The
-SVM and the ensemble of EvoDAG were built in a comparable way: both are
-ensembles of independently trained members that learn from different parts of
-the training data and are combined with the median. The authors
-report that the SVM gave the best result on four of the problems and
-EvoDAG on the other nine, and that the differences are statistically
-significant according to a Wilcoxon signed-rank test with the Holm-Bonferroni
-correction. They also observe that auto-sklearn was
-unstable on these problems.
+**The library paper** (Graff, Tellez, Miranda-Jiménez and Escalante, ROPEC 2016) compares EvoDAG with an SVM and with auto-sklearn on thirteen classification problems from the same benchmark collection, using the balance error rate. The SVM and the ensemble of EvoDAG were built in a comparable way: both are ensembles of independently trained members that learn from different parts of the training data and are combined with the median. The authors report that the SVM gave the best result on four of the problems and EvoDAG on the other nine, and that the differences are statistically significant according to a Wilcoxon signed-rank test with the Holm-Bonferroni correction. They also observe that auto-sklearn was unstable on these problems.
 
-**The selection paper** (Sánchez and Graff) evaluates the selection
-heuristics described in [Selection](selection.qmd) on thirty classification
-problems with a varying number of samples, variables and classes. Its
-conclusions are that parent selection by agreement combined with a random
-choice of the individual that leaves the population is statistically better
-than the classical selection by fitness, and that it is better than two
-state-of-the-art selection schemes it compares with; and, against eighteen
-classifiers including two automatic machine learning systems, that this
-configuration obtains the second best average rank in macro-F1, behind TPOT,
-with a difference that is not statistically significant. The paper's setup
-differs from the default configuration of this release in the fitness (macro-F1
-there, the balanced error rate here), in the choice of the first argument and in
-the selection for the functions without a heuristic (see
-[Parameters](parameters.qmd)), so its numbers are not those of the code's
-defaults.
+**The selection paper** (Sánchez and Graff) evaluates the selection heuristics described in [Selection](selection.qmd) on thirty classification problems with a varying number of samples, variables and classes. Its conclusions are that parent selection by agreement combined with a random choice of the individual that leaves the population is statistically better than the classical selection by fitness, and that it is better than two state-of-the-art selection schemes it compares with; and, against eighteen classifiers including two automatic machine learning systems, that this configuration obtains the second best average rank in macro-F1, behind TPOT, with a difference that is not statistically significant. The paper's setup differs from the default configuration of this release in the fitness (macro-F1 there, the balanced error rate here), in the choice of the first argument and in the selection for the functions without a heuristic (see [Parameters](parameters.qmd)), so its numbers are not those of the code's defaults.
