@@ -80,7 +80,8 @@ Modules in the order the data flows; each is documented in the developer referen
 - `docs/`: the Sphinx developer reference (`docs/source/`). `website/`: the Quarto user site
   (`website/pages/`, `website/figures/`).
 - `benchmarks/`: `benchmarks/bench.py` and its recorded results. `benchmarks/ecj2022/` holds the scripts that
-  reproduce the experiments of the selection heuristics article, starting with `benchmarks/ecj2022/datasets.py`;
+  reproduce the experiments of the selection heuristics article, starting with `benchmarks/ecj2022/datasets.py` and followed by `benchmarks/ecj2022/configs.py`,
+  `benchmarks/ecj2022/run.py`, `benchmarks/ecj2022/submit.py` and `benchmarks/ecj2022/summary.py`;
   their data and results go to a directory named experiments at the repository root that git ignores.
   `scripts/`: the PyPI version check.
 - `.github/workflows/`: `.github/workflows/test.yml`, `.github/workflows/website.yml`,
@@ -103,6 +104,7 @@ quarto render website
 .venv/bin/python website/figures/make_figures.py
 .venv/bin/python tests/golden/record.py --output /tmp/golden-check
 .venv/bin/python benchmarks/bench.py --output /tmp/bench.json
+.venv/bin/python benchmarks/ecj2022/submit.py --dry-run
 .venv/bin/python scripts/check_package_versions.py
 ```
 
@@ -110,6 +112,8 @@ The second line is the test command of `.issue-pilot.json` (about 1 to 2 minutes
 build and the doctest take seconds (the build downloads the intersphinx inventories, so it needs
 network). `website/figures/make_figures.py` needs Graphviz (`dot`); `scripts/check_package_versions.py`
 queries PyPI.
+The full campaign of the selection heuristics experiments is thousands of CPU hours on Slurm and is launched
+by the maintainer; the dry run only prints the `sbatch` commands.
 The benchmark takes about a minute; run it alone, and repeat it before trusting a difference
 under 5 to 10 percent. Times only compare on the same machine. The development environment is a
 `.venv` with the package installed in editable mode; do not reinstall packages in it casually.
