@@ -4,12 +4,7 @@ title: "Install"
 
 ## Requirements
 
-EvoDAG needs Python 3.10 or newer and [NumPy](https://numpy.org). Those are
-the only runtime dependencies; scikit-learn is optional (see
-[Optional packages](#optional-packages)). Part of the library is written in Cython, so
-a compiled extension is shipped with it; the packaging files of the
-repository declare Python 3.10, 3.11, 3.12 and 3.13 as the versions that are
-built and tested, on Linux, macOS and Windows.
+EvoDAG needs Python 3.10 or newer and [NumPy](https://numpy.org). Those are the only runtime dependencies; scikit-learn is optional (see [Optional packages](#optional-packages)). Part of the library is written in Cython, so a compiled extension is shipped with it; the packaging files of the repository declare Python 3.10, 3.11, 3.12 and 3.13 as the versions that are built and tested, on Linux, macOS and Windows.
 
 ## From PyPI
 
@@ -17,19 +12,13 @@ built and tested, on Linux, macOS and Windows.
 pip install EvoDAG
 ```
 
-To use the scikit-learn classes of EvoDAG (`EvoDAGClassifier`,
-`EnsembleClassifier` and their regression counterparts, see
-[Python](python.qmd)), install the `sklearn` extra, which adds
-scikit-learn 1.6 or newer:
+To use the scikit-learn classes of EvoDAG (`EvoDAGClassifier`, `EnsembleClassifier` and their regression counterparts, see [Python](python.qmd)), install the `sklearn` extra, which adds scikit-learn 1.6 or newer:
 
 ```bash
 pip install 'EvoDAG[sklearn]'
 ```
 
-When a prebuilt wheel exists for your platform and Python version, `pip`
-installs it and nothing is compiled. Otherwise `pip` downloads the source
-distribution and builds it, and then you need what is listed below under
-[Building from source](#building-from-source).
+When a prebuilt wheel exists for your platform and Python version, `pip` installs it and nothing is compiled. Otherwise `pip` downloads the source distribution and builds it, and then you need what is listed below under [Building from source](#building-from-source).
 
 ## From conda-forge
 
@@ -47,11 +36,7 @@ mamba install evodag
 
 ## Building from source
 
-Building the extensions requires a C compiler, Cython 3 or newer and NumPy 2
-or newer. Those build requirements are declared in `pyproject.toml`, so a
-plain `pip install` of a checkout fetches Cython and NumPy by itself; the
-compiler is the only thing you must provide (`gcc` or `clang` on Linux and
-macOS, the Microsoft C++ build tools on Windows).
+Building the extensions requires a C compiler, Cython 3 or newer and NumPy 2 or newer. Those build requirements are declared in `pyproject.toml`, so a plain `pip install` of a checkout fetches Cython and NumPy by itself; the compiler is the only thing you must provide (`gcc` or `clang` on Linux and macOS, the Microsoft C++ build tools on Windows).
 
 ```bash
 git clone https://github.com/mgraffg/EvoDAG.git
@@ -59,8 +44,7 @@ cd EvoDAG
 pip install .
 ```
 
-For development, install in editable mode and rebuild the extensions after
-changing a `.pyx` file:
+For development, install in editable mode and rebuild the extensions after changing a `.pyx` file:
 
 ```bash
 pip install -e ".[test]"   # the test extra includes scikit-learn
@@ -75,19 +59,10 @@ python -c "import EvoDAG; print(EvoDAG.__version__)"
 EvoDAG-train --version
 ```
 
-The second command also confirms that the four console scripts
-(`EvoDAG-params`, `EvoDAG-train`, `EvoDAG-predict` and `EvoDAG-utils`) are on
-your `PATH`; they are described in the [Command line](cli.qmd) page.
+The second command also confirms that the four console scripts (`EvoDAG-params`, `EvoDAG-train`, `EvoDAG-predict` and `EvoDAG-utils`) are on your `PATH`; they are described in the [Command line](cli.qmd) page.
 
 ## Optional packages
 
-scikit-learn (`pip install 'EvoDAG[sklearn]'`) enables the scikit-learn
-classes `EvoDAGClassifier`, `EvoDAGRegressor`, `EnsembleClassifier` and
-`EnsembleRegressor`. Without it `import EvoDAG` works and so do `EvoDAGE`, the
-engine and the command line; only `from EvoDAG import EvoDAGClassifier` (and
-the other three names) raises an `ImportError` that tells you what to install.
+scikit-learn (`pip install 'EvoDAG[sklearn]'`) enables the scikit-learn classes `EvoDAGClassifier`, `EvoDAGRegressor`, `EnsembleClassifier` and `EnsembleRegressor`. Without it `import EvoDAG` works and so do `EvoDAGE`, the engine and the command line; only `from EvoDAG import EvoDAGClassifier` (and the other three names) raises an `ImportError` that tells you what to install.
 
-`tqdm` is used, when it is installed, to show a progress bar while an
-ensemble is trained or evaluated.
-Graphviz is only needed if you want to turn the graph that
-`Model.graphviz` writes into a picture (see [Native API](native-api.qmd)).
+`tqdm` is used, when it is installed, to show a progress bar while an ensemble is trained or evaluated. Graphviz is only needed if you want to turn the graph that `Model.graphviz` writes into a picture (see [Native API](native-api.qmd)).

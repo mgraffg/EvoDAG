@@ -1,31 +1,13 @@
 ---
 title: "EvoDAG"
-subtitle: "Evolving Directed Acyclic Graphs: semantic genetic programming for classification and regression"
+subtitle: "Evolving Directed Acyclic Graphs: Semantic Genetic Programming for Classification and Regression"
 ---
 
-EvoDAG is a Python library that learns a classifier or a regressor with
-genetic programming. It keeps every individual it ever creates in a table,
-and each one is a node of a directed acyclic graph that points at the nodes
-it was built from. The result of a run is not a tree but a small graph in
-which many nodes share the same inputs.
+EvoDAG is a Python library that learns a classifier or a regressor with Genetic Programming (GP). It keeps every individual it ever creates in a table, and each one is a node of a directed acyclic graph that points at the nodes it was built from. The result of a run is not a tree but a small graph in which many nodes share the same inputs.
 
-What sets it apart from textbook genetic programming is how a new
-individual is made. Every individual is described by its *semantics*, the
-vector of values it produces on the training examples. When a function
-(a sum, a product, a Naive Bayes classifier, ...) combines existing
-individuals, EvoDAG also fits the coefficients of the combination by
-ordinary least squares so that the result is as close as possible to the
-target vector. The genetic operator therefore acts at the root of the new
-individual, and only the examples (not the whole expression) are evaluated.
-The [How it works](pages/how-it-works.qmd) page walks through the method.
+What sets it apart from textbook GP is how a new individual is made. Every individual is described by its *semantics*, the vector of values it produces on the training examples. When a function (a sum, a product, a Naive Bayes classifier, ...) combines existing individuals, EvoDAG also fits the coefficients of the combination by ordinary least squares so that the result is as close as possible to the target vector. The genetic operator therefore acts at the root of the new individual, and only the examples (not the whole expression) are evaluated. The [How it works](pages/how-it-works.qmd) page walks through the method.
 
-You use it like any scikit-learn estimator: `fit(X, y)`, `predict(X)` and
-`score(X, y)`, and it works in pipelines and in grid searches. A single run
-can overfit, so the usual way to use EvoDAG is an ensemble of independent
-runs, each one stopped early on its own validation split. A
-command line interface (`EvoDAG-params`, `EvoDAG-train`, `EvoDAG-predict`
-and `EvoDAG-utils`) covers the same ground for people who prefer to work
-with files.
+You use it like any scikit-learn estimator: `fit(X, y)`, `predict(X)` and `score(X, y)`, and it works in pipelines and in grid searches. A single run can overfit, so the usual way to use EvoDAG is an ensemble of independent runs, each one stopped early on its own validation split. A command line interface (`EvoDAG-params`, `EvoDAG-train`, `EvoDAG-predict` and `EvoDAG-utils`) covers the same ground for people who prefer to work with files.
 
 ## A first example
 
@@ -60,7 +42,7 @@ print("accuracy on the training set:", model.score(X, y))
 | use EvoDAG's own classes (`EvoDAGE`, the engine) | [Native API](pages/native-api.qmd) |
 | train and predict from the shell | [Command line](pages/cli.qmd) |
 | understand the method | [How it works](pages/how-it-works.qmd) |
-| know what the selection heuristics of the second paper are | [Selection](pages/selection.qmd) |
+| know more about the selection heuristics | [Selection](pages/selection.qmd) |
 | tune it | [Parameters](pages/parameters.qmd) |
 | see how well it does | [Performance](pages/performance.qmd) |
 | cite it | [Citing](pages/citing.qmd) |

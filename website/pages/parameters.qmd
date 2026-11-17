@@ -2,23 +2,11 @@
 title: "Parameters"
 ---
 
-EvoDAG is configured with the arguments of the scikit-learn classes
-(`EvoDAGClassifier`, `EvoDAGRegressor`, see [Python](python.qmd)), with
-keyword arguments to its native classes `EvoDAGE`, `EvoDAG.model.EvoDAG` and
-`RGP.init` (see [Native API](native-api.qmd)), and, as a JSON object, with
-`EvoDAG-train --kw`. This page starts with what the defaults are and where they
-come from, and then lists every parameter, what it does and the value it has in
-the default configuration. For the meaning of terms such as the
-validation split or the early stopping individual see
-[How it works](how-it-works.qmd).
+EvoDAG is configured with the arguments of the scikit-learn classes (`EvoDAGClassifier`, `EvoDAGRegressor`, see [Python](python.qmd)), with keyword arguments to its native classes `EvoDAGE`, `EvoDAG.model.EvoDAG` and `RGP.init` (see [Native API](native-api.qmd)), and, as a JSON object, with `EvoDAG-train --kw`. This page starts with what the defaults are and where they come from, and then lists every parameter, what it does and the value it has in the default configuration. For the meaning of terms such as the validation split or the early stopping individual see [How it works](how-it-works.qmd).
 
 ## What are EvoDAG's defaults?
 
-The default configuration is what you get from `EvoDAGClassifier()` and
-`EnsembleClassifier()` (and, for regression, from `EvoDAGRegressor()` and
-`EnsembleRegressor()`), and from their native counterparts `EvoDAGE()`,
-`EvoDAG.model.EvoDAG()`, `RGP.init()` and `EvoDAG-train -C`, without saying
-anything else. For classification it is this:
+The default configuration is what you get from `EvoDAGClassifier()` and `EnsembleClassifier()` (and, for regression, from `EvoDAGRegressor()` and `EnsembleRegressor()`), and from their native counterparts `EvoDAGE()`, `EvoDAG.model.EvoDAG()`, `RGP.init()` and `EvoDAG-train -C`, without saying anything else. For classification it is this:
 
 | | Default |
 |:---------------------------|:--------------------------------------------------------|
@@ -31,62 +19,25 @@ anything else. For classification it is this:
 | Selection of the individual that leaves | random (`negative_selection` false) |
 | Ensemble (`EnsembleClassifier`, `EvoDAGE`) | `n_estimators` 30, seeds 0 to 29 |
 
-Regression has its own file with a different function set (no `NaiveBayes`,
-`NaiveBayesMN` or `Centroid`), the fitness `"ER"`, which has no effect there, and
-the ordinary selections: a tournament on fitness for the arguments
-(`orthogonal_selection` false) and a negative tournament for the individual that
-leaves (`negative_selection` true).
+Regression has its own file with a different function set (no `NaiveBayes`, `NaiveBayesMN` or `Centroid`), the fitness `"ER"`, which has no effect there, and the ordinary selections: a tournament on fitness for the arguments (`orthogonal_selection` false) and a negative tournament for the individual that leaves (`negative_selection` true).
 
 ### Where they come from
 
-The second EvoDAG paper (see [Citing](citing.qmd)) reports that the default
-parameters, the number of arguments of each function included, were found by a
-random search over the parameter space on a benchmark of classification
-problems (several sentiment analysis problems and problems from the UCI
-repository, not the ones used to measure the selection heuristics), and that
-the values kept are the consensus of the parameters that obtained the best
-performance. The function set, the population size, the early stopping, the
-validation split and the ensemble size above are those that the paper describes
-for the system it evaluates.
+The second EvoDAG paper (see [Citing](citing.qmd)) reports that the default parameters, the number of arguments of each function included, were found by a random search over the parameter space on a benchmark of classification problems (several sentiment analysis problems and problems from the UCI repository, not the ones used to measure the selection heuristics), and that the values kept are the consensus of the parameters that obtained the best performance. The function set, the population size, the early stopping, the validation split and the ensemble size above are those that the paper describes for the system it evaluates.
 
-The paper's best-ranked configuration for the selection is agreement for the
-parents together with a random choice of the individual that leaves (it is called
-`agr-rnd` there; see [Selection](selection.qmd)), and it is statistically
-better than the classical selection, a tournament on fitness for both the parents
-and the individual that leaves (`fit-fit` there). Since this release the
-classification defaults follow it. **Earlier releases used the classical
-selection**, a tournament on fitness for the arguments and a negative
-tournament for the individual that leaves, and a model trained now with the
-defaults is not the model an earlier release produced.
+The paper's best-ranked configuration for the selection is agreement for the parents together with a random choice of the individual that leaves (it is called `agr-rnd` there; see [Selection](selection.qmd)), and it is statistically better than the classical selection, a tournament on fitness for both the parents and the individual that leaves (`fit-fit` there). Since this release the classification defaults follow it. **Earlier releases used the classical selection**, a tournament on fitness for the arguments and a negative tournament for the individual that leaves, and a model trained now with the defaults is not the model an earlier release produced.
 
 ### What still differs from the paper's setup
 
-* **Fitness.** The paper reports that EvoDAG used the macro-F1 score as
-  fitness. The default here is `"BER"`; `fitness_function="macro-F1"` selects
-  macro-F1.
-* **The first argument.** The paper chooses the first argument of a function at
-  random. The code chooses it by the usual tournament on fitness (it is random
-  only in the first `random_generations` generations).
-* **Functions without a heuristic.** The paper uses random selection for the
-  arguments of the functions that the heuristic does not apply to. The code
-  uses the tournament on fitness for them.
+* **Fitness.** The paper reports that EvoDAG used the macro-F1 score as fitness. The default here is `"BER"`; `fitness_function="macro-F1"` selects macro-F1.
+* **The first argument.** The paper chooses the first argument of a function at random. The code chooses it by the usual tournament on fitness (it is random only in the first `random_generations` generations).
+* **Functions without a heuristic.** The paper uses random selection for the arguments of the functions that the heuristic does not apply to. The code uses the tournament on fitness for them.
 
-There are other, smaller differences that are listed in
-[How it works](how-it-works.qmd).
+There are other, smaller differences that are listed in [How it works](how-it-works.qmd).
 
 ### The parameters of the scikit-learn classes
 
-`EvoDAGClassifier` and `EvoDAGRegressor` have the arguments `popsize`,
-`early_stopping_rounds`, `time_limit`, `random_state`, `params_fname` and
-`params`. `None` in the first three means the value of the JSON file of the
-defaults (the classification or the regression one, according to the class),
-so the tables below apply as they are. `random_state` is the `seed` of the
-engine (an integer, `0` by default). `params` is a dictionary with any other
-parameter of this page, the function names included: it is where, for example,
-`orthogonal_selection` or `fitness_function` go. The ensembles
-(`EnsembleClassifier`, `EnsembleRegressor`) take the estimator, so its
-parameters are reached with the prefix `estimator__`, and they add
-`n_estimators` (30), `n_jobs` (1) and, for the classifier, `voting`.
+`EvoDAGClassifier` and `EvoDAGRegressor` have the arguments `popsize`, `early_stopping_rounds`, `time_limit`, `random_state`, `params_fname` and `params`. `None` in the first three means the value of the JSON file of the defaults (the classification or the regression one, according to the class), so the tables below apply as they are. `random_state` is the `seed` of the engine (an integer, `0` by default). `params` is a dictionary with any other parameter of this page, the function names included: it is where, for example, `orthogonal_selection` or `fitness_function` go. The ensembles (`EnsembleClassifier`, `EnsembleRegressor`) take the estimator, so its parameters are reached with the prefix `estimator__`, and they add `n_estimators` (30), `n_jobs` (1) and, for the classifier, `voting`.
 
 ### Getting the previous behaviour, or the paper's fitness
 
@@ -102,12 +53,9 @@ classic = EvoDAGClassifier(params={"orthogonal_selection": False,
 macro_f1 = EvoDAGClassifier(params={"fitness_function": "macro-F1"})
 ```
 
-The native form of the same two settings is
-`EvoDAGE(orthogonal_selection=False, negative_selection=True)` and
-`EvoDAGE(fitness_function="macro-F1")`.
+The native form of the same two settings is `EvoDAGE(orthogonal_selection=False, negative_selection=True)` and `EvoDAGE(fitness_function="macro-F1")`.
 
-On the command line: `EvoDAG-train -C --kw '{"orthogonal_selection": false,
-"negative_selection": true}'`, and likewise for `fitness_function`.
+On the command line: `EvoDAG-train -C --kw '{"orthogonal_selection": false, "negative_selection": true}'`, and likewise for `fitness_function`.
 
 ### Two layers of defaults
 
@@ -118,9 +66,7 @@ There are two sets of default values and they differ.
    the ones described above. They are read by the scikit-learn classes,
    `EvoDAGE`, `EvoDAG.model.EvoDAG`, `EvoDAG.EvoDAG.init` (also `RGP.init`) and the command
    line.
-2. **The keyword defaults of the constructor of the engine**
-   (`EvoDAG.EvoDAG`, also `RGP` and `RootGP`, in `EvoDAG/base.py`). They apply
-   only when the class is called directly, as in `RGP(...)`, without `init`.
+2. **The keyword defaults of the constructor of the engine** (`EvoDAG.EvoDAG`, also `RGP` and `RootGP`, in `EvoDAG/base.py`). They apply only when the class is called directly, as in `RGP(...)`, without `init`.
 
 | Parameter | Configuration file (classification) | Constructor of the engine |
 |:----------------------|:------------------------|:-------------------------|
@@ -137,50 +83,26 @@ There are two sets of default values and they differ.
 | `input_functions` | `NaiveBayes`, `NaiveBayesMN`, `Centroid` | none |
 | `time_limit` | 3600 | none |
 
-The two coincide in `tournament_size`, `fs_tournament_size`, `tr_fraction`,
-`fitness_function`, `min_density`, `finite`, `seed` and `population_class`. Use
-`init` unless you want the constructor's own values.
+The two coincide in `tournament_size`, `fs_tournament_size`, `tr_fraction`, `fitness_function`, `min_density`, `finite`, `seed` and `population_class`. Use `init` unless you want the constructor's own values.
 
-A parameters file replaces the default file; it is not merged with it. A file
-written by `EvoDAG-params` of this release contains the two selection keys, but
-one written by an earlier release does not, so a model trained from it
-(`-P`, or `params_fname`) uses the constructor's values for them, the
-classical selection.
+A parameters file replaces the default file; it is not merged with it. A file written by `EvoDAG-params` of this release contains the two selection keys, but one written by an earlier release does not, so a model trained from it (`-P`, or `params_fname`) uses the constructor's values for them, the classical selection.
 
 ## Where the values come from
 
-When you create a model, its parameters are taken from three places, each one
-overriding the previous:
+When you create a model, its parameters are taken from three places, each one overriding the previous:
 
-1. the default configuration, a JSON file inside the package:
-   `default_parameters.json` for classification and `default_parameters_r.json`
-   for regression (`classifier=False`);
-2. a JSON file of your own, if you pass `params_fname` (or `-P` on the command
-   line). It can be a single object, or a list of objects as the one written
-   by `EvoDAG-params`, in which case the first one is used; it replaces the
-   default file;
-3. the keyword arguments of the call (in the scikit-learn classes, the
-   arguments `popsize`, `early_stopping_rounds` and `time_limit`, and the
-   dictionary `params`).
+1. the default configuration, a JSON file inside the package: `default_parameters.json` for classification and `default_parameters_r.json` for regression (`classifier=False`);
+2. a JSON file of your own, if you pass `params_fname` (or `-P` on the command line). It can be a single object, or a list of objects as the one written by `EvoDAG-params`, in which case the first one is used; it replaces the default file;
+3. the keyword arguments of the call (in the scikit-learn classes, the arguments `popsize`, `early_stopping_rounds` and `time_limit`, and the dictionary `params`).
 
-Keep in mind two exceptions. `EvoDAGE` has its own `time_limit` argument,
-which is `None` (no limit) unless you set it, and which replaces the
-`time_limit` of the file; a single model uses the one in the file (and so does
-`EvoDAGClassifier`, unless you give its `time_limit`). And the
-function parameters (below) are not passed one by one to the engine: they are
+Keep in mind two exceptions. `EvoDAGE` has its own `time_limit` argument, which is `None` (no limit) unless you set it, and which replaces the `time_limit` of the file; a single model uses the one in the file (and so does `EvoDAGClassifier`, unless you give its `time_limit`). And the function parameters (below) are not passed one by one to the engine: they are
 converted into its function set.
 
-The values in the tables that follow are those of `default_parameters.json`, the
-classification configuration. Where `default_parameters_r.json` differs it is
-said.
+The values in the tables that follow are those of `default_parameters.json`, the classification configuration. Where `default_parameters_r.json` differs it is said.
 
 ## The function set
 
-There is one parameter for every function that EvoDAG can use to build an
-individual. They are written with the name of the function, capitalised. A
-boolean switches the function on or off; an integer gives the number of
-arguments that the function takes (a function that takes several arguments
-uses *up to* that many) and `0` switches it off.
+There is one parameter for every function that EvoDAG can use to build an individual. They are written with the name of the function, capitalised. A boolean switches the function on or off; an integer gives the number of arguments that the function takes (a function that takes several arguments uses *up to* that many) and `0` switches it off.
 
 | Function | Meaning | Default |
 |:-------------|:-----------------------------------------|:-------------------|
@@ -227,15 +149,7 @@ the regression configuration they are 0.
 | `tr_fraction` | 0.5 | proportion used for training when the data are split into the training and the validation part; see [How it works](how-it-works.qmd#early-stopping-and-the-validation-split). With `1` there is no validation set and `generations` must be set |
 | `finite` | true | non-finite values (`nan`, infinities) in the input variables are replaced by zero |
 
-`fitness_function` accepts, for classification: `BER` (the default; the mean
-recall over the classes), `ER` and `accuracy`, `macro-F1`, `macro-Precision`,
-`F1` (of one class; the smallest one unless `F1_index` is given),
-`macro-RecallF1`, `accDotMacroF1`, and variants built from recall,
-precision and F1 whose names start with `Dot` or `g_` (the geometric mean over
-the classes) or with `a_` (the arithmetic mean). The definitions are in
-`EvoDAG/bagging_fitness.py` and `EvoDAG/cython_utils.pyx`. In regression the
-fitness is always minus the sum of absolute errors on the training part,
-and the validation fitness the negative relative squared error.
+`fitness_function` accepts, for classification: `BER` (the default; the mean recall over the classes), `ER` and `accuracy`, `macro-F1`, `macro-Precision`, `F1` (of one class; the smallest one unless `F1_index` is given), `macro-RecallF1`, `accDotMacroF1`, and variants built from recall, precision and F1 whose names start with `Dot` or `g_` (the geometric mean over the classes) or with `a_` (the arithmetic mean). The definitions are in `EvoDAG/bagging_fitness.py` and `EvoDAG/cython_utils.pyx`. In regression the fitness is always minus the sum of absolute errors on the training part, and the validation fitness the negative relative squared error.
 
 ## Parameters of the initial population
 
@@ -249,8 +163,7 @@ and the validation fitness the negative relative squared error.
 
 ## Other parameters of the engine
 
-These are not in the default configuration files, but they are accepted by
-the constructors.
+These are not in the default configuration files, but they are accepted by the constructors.
 
 | Parameter | Default | What it does |
 |:-----------------------|:------------|:------------------------------------------------|
@@ -262,16 +175,11 @@ the constructors.
 | `labels` | `None` | the class labels, if you do not want them taken from `y` |
 | `max_training_size` | not set | with `n_jobs` greater than 1, each member of the ensemble learns from a random subsample of at most this many examples |
 
-`EvoDAGE` also takes `n_estimators` (30), `n_jobs` (1), `tmpdir` (a directory
-where finished members are stored, so that an interrupted fit can be resumed)
-and `time_limit`.
+`EvoDAGE` also takes `n_estimators` (30), `n_jobs` (1), `tmpdir` (a directory where finished members are stored, so that an interrupted fit can be resumed) and `time_limit`.
 
 ## The random search of parameters
 
-`EvoDAG-params` samples configurations from `parameter_values.json`. It is a
-JSON object that gives, for each parameter, the list of values that the search
-may choose from; one configuration takes one value of each list, and the
-configurations are drawn at random without repetition. The sets are:
+`EvoDAG-params` samples configurations from `parameter_values.json`. It is a JSON object that gives, for each parameter, the list of values that the search may choose from; one configuration takes one value of each list, and the configurations are drawn at random without repetition. The sets are:
 
 | Parameter | Values that the search may choose |
 |:--------------------------|:-----------------------------------------------------|
@@ -291,13 +199,4 @@ configurations are drawn at random without repetition. The sets are:
 | `negative_selection` | false |
 | `classifier`, `finite`, `fitness_function`, `fs_tournament_size`, `generations`, `min_density`, `multiple_outputs`, `pr_variable`, `share_inputs`, `time_limit`, `tournament_size`, `tr_fraction` | one fixed value |
 
-In a search for regression (`EvoDAG-params -R`) the two selection parameters are
-left out, since agreement with random negative selection is the default of
-classification only, and the regression search keeps sampling with the
-constructor's values for them. Combinations that make no sense are skipped: a `Generational` population
-needs `early_stopping_rounds` at least equal to `popsize`, and
-`early_stopping_rounds` cannot exceed the number of training examples.
-Each sampled configuration is trained three times, with seeds 0, 1 and 2, and
-the configurations are ranked by the median validation fitness of the three
-runs. See [Command line](cli.qmd) for the options of `EvoDAG-params`, and
-use `--parameters-values` to search a space of your own.
+In a search for regression (`EvoDAG-params -R`) the two selection parameters are left out, since agreement with random negative selection is the default of classification only, and the regression search keeps sampling with the constructor's values for them. Combinations that make no sense are skipped: a `Generational` population needs `early_stopping_rounds` at least equal to `popsize`, and `early_stopping_rounds` cannot exceed the number of training examples. Each sampled configuration is trained three times, with seeds 0, 1 and 2, and the configurations are ranked by the median validation fitness of the three runs. See [Command line](cli.qmd) for the options of `EvoDAG-params`, and use `--parameters-values` to search a space of your own.
