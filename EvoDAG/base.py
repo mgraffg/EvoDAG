@@ -903,34 +903,56 @@ class EvoDAG(object):
         """Masked outputs of the reference ``first``."""
         return self._masked_outputs(self.population.population[first])
 
-    def _pearson_value(self, reference, x):
-        """Sum of the absolute Pearson correlations between the outputs of ``x`` and the reference.
+    @staticmethod
+    def _mean(u):
+        """``u.mean()`` of a one-dimensional array (the same sum and division
+        without the overhead of the method)."""
+        return np.add.reduce(u) / u.size
 
-        An output where one of the vectors is zero or constant adds 99.
-        """
+    def _pearson_prepare(self, reference):
+        """What of the reference the measure needs for each output: ``None``
+        if it is zero, else its centred vector and the norm of that."""
+        prepared = []
+        for v in reference:
+            if np.dot(v, v) == 0:
+                prepared.append(None)
+                continue
+            vc = v - self._mean(v)
+            prepared.append((vc, np.sqrt(np.dot(vc, vc))))
+        return prepared
+
+    def _pearson_prepared_value(self, prepared, x):
+        """The measure of ``x`` against a reference that went through
+        ``_pearson_prepare`` (which is done once for all the candidates)."""
         value = 0.0
-        for u, v in zip(self._masked_outputs(self.population.population[x]),
-                        reference):
-            if np.dot(u, u) == 0 or np.dot(v, v) == 0:
+        for u, ref in zip(self._masked_outputs(self.population.population[x]),
+                          prepared):
+            if np.dot(u, u) == 0 or ref is None:
                 value += 99.0
                 continue
-            uc = u - u.mean()
-            vc = v - v.mean()
+            uc = u - self._mean(u)
             nu = np.sqrt(np.dot(uc, uc))
-            nv = np.sqrt(np.dot(vc, vc))
+            vc, nv = ref
             if nu == 0 or nv == 0:
                 value += 99.0
             else:
                 value += abs(np.dot(uc, vc) / (nu * nv))
         return value
 
+    def _pearson_value(self, reference, x):
+        """Sum of the absolute Pearson correlations between the outputs of ``x`` and the reference.
+
+        An output where one of the vectors is zero or constant adds 99.
+        """
+        return self._pearson_prepared_value(self._pearson_prepare(reference), x)
+
     def _get_args_pearson(self, func):
         """Arguments chosen by the smallest absolute Pearson correlation with the reference."""
         first = self._first_draw()()
-        reference = self._pearson_reference(first)
+        prepared = self._pearson_prepare(self._pearson_reference(first))
         return self._heuristic_args(
             func, first, lambda: self._tournament_min(
-                lambda x: self._pearson_value(reference, x)))
+                lambda x: self._pearson_prepared_value(prepared, x)))
 
     def _relative_semantics(self, v, target):
         """Target minus the masked outputs of ``v``, one vector per output."""
@@ -960,8 +982,10 @@ class EvoDAG(object):
                                                  target), reference):
             norm = np.sqrt(np.dot(e, e))
             if norm > 0.0:
-                value += float(np.arccos(np.clip(np.dot(e / norm, r),
-                                                 -1.0, 1.0)))
+                # min and max of the number give what np.clip gives (also
+                # for nan) without its overhead
+                value += float(np.arccos(min(max(np.dot(e / norm, r), -1.0),
+                                             1.0)))
         return value
 
     def _get_args_angle(self, func):

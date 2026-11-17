@@ -81,7 +81,8 @@ Modules in the order the data flows; each is documented in the developer referen
   (`website/pages/`, `website/figures/`).
 - `benchmarks/`: `benchmarks/bench.py` and its recorded results. `benchmarks/ecj2022/` holds the scripts that
   reproduce the experiments of the selection heuristics article, starting with `benchmarks/ecj2022/datasets.py` and followed by `benchmarks/ecj2022/configs.py`,
-  `benchmarks/ecj2022/run.py`, `benchmarks/ecj2022/submit.py` and `benchmarks/ecj2022/summary.py`;
+  `benchmarks/ecj2022/run.py`, `benchmarks/ecj2022/submit.py` and `benchmarks/ecj2022/summary.py`, with
+  `benchmarks/ecj2022/profile_fit.py` (profile one member) and `benchmarks/ecj2022/parity.py` (the bit-level parity check);
   their data and results go to a directory named experiments at the repository root that git ignores.
   `scripts/`: the PyPI version check.
 - `.github/workflows/`: `.github/workflows/test.yml`, `.github/workflows/website.yml`,
@@ -105,6 +106,8 @@ quarto render website
 .venv/bin/python tests/golden/record.py --output /tmp/golden-check
 .venv/bin/python benchmarks/bench.py --output /tmp/bench.json
 .venv/bin/python benchmarks/ecj2022/submit.py --dry-run
+.venv/bin/python benchmarks/ecj2022/parity.py record --output /tmp/parity
+.venv/bin/python benchmarks/ecj2022/parity.py check --reference /tmp/parity
 .venv/bin/python scripts/check_package_versions.py
 ```
 
@@ -114,6 +117,8 @@ network). `website/figures/make_figures.py` needs Graphviz (`dot`); `scripts/che
 queries PyPI.
 The full campaign of the selection heuristics experiments is thousands of CPU hours on Slurm and is launched
 by the maintainer; the dry run only prints the `sbatch` commands.
+The parity check is the bit-level check for any change that claims to be an optimisation: record the reference before the
+change and check after it (about a minute and a half each).
 The benchmark takes about a minute; run it alone, and repeat it before trusting a difference
 under 5 to 10 percent. Times only compare on the same machine. The development environment is a
 `.venv` with the package installed in editable mode; do not reinstall packages in it casually.
@@ -132,7 +137,7 @@ under 5 to 10 percent. Times only compare on the same machine. The development e
   holds its fingerprint); elsewhere, CI included, those groups are skipped and the node, kernel,
   mask and reader groups still run.
 - **Performance claims need the benchmark**: run `benchmarks/bench.py` and compare it with the
-  recorded results (`benchmarks/results-numpy.json`, `benchmarks/results-optimized.json`).
+  recorded results (`benchmarks/results-numpy.json`, `benchmarks/results-optimized.json`, `benchmarks/results-profiled.json`).
   `benchmarks/raetsch.py` reproduces the Performance table; its full run is long and done by the author.
 - **Public names need a docstring and a verified example**, as `tests/test_docs.py` enforces:
   every public name has a docstring, every engine parameter is described, the Sphinx build is

@@ -19,6 +19,7 @@ from . import array_utils
 from libc cimport math
 from libc.float cimport DBL_EPSILON
 from cpython cimport array
+from cpython.mem cimport PyMem_Malloc, PyMem_Free
 from cpython.list cimport PyList_GET_SIZE, PyList_GET_ITEM, PyList_SET_ITEM, PyList_Append
 
 
@@ -134,15 +135,15 @@ cdef bint all_finite(double[::1] a):
     return True
 
 
-cdef void dot4(double[::1] a, double[::1] b0, double[::1] b1,
-               double[::1] b2, double[::1] b3, double *out):
-    """``out[k] = dot(a, bk)`` for four vectors at once, when every entry is
-    finite. Then a product with a zero is a zero and adding it changes
-    nothing (the sum is never -0.0), so the guard of ``dot`` is not needed.
-    Each sum adds the same numbers in the same order as ``dot`` (the results
-    are identical) but the four chains of additions do not wait for each
-    other."""
-    cdef Py_ssize_t i, n = a.shape[0]
+cdef void dot4(double *a, double *b0, double *b1, double *b2, double *b3,
+               Py_ssize_t n, double *out) noexcept nogil:
+    """``out[k] = dot(a, bk)`` for four vectors of ``n`` entries at once, when
+    every entry is finite. Then a product with a zero is a zero and adding it
+    changes nothing (the sum is never -0.0), so the guard of ``dot`` is not
+    needed. Each sum adds the same numbers in the same order as ``dot`` (the
+    results are identical) but the four chains of additions do not wait for
+    each other."""
+    cdef Py_ssize_t i
     cdef double x, r0 = 0, r1 = 0, r2 = 0, r3 = 0
     for i in range(n):
         x = a[i]
@@ -224,43 +225,53 @@ cpdef compute_weight(list r, double[::1] ytr, mask):
             k += 1
     size = PyList_GET_SIZE(R)
     X = [array.clone(data, size+1, False) for i in range(size)]
-    cdef double[::1] r1, r2, r3
     cdef double four[4]
+    cdef double **cols = NULL
     cdef bint finite_all = True
+    cdef Py_ssize_t n = index.shape[0]
     for i in range(size):
         ri = <object> PyList_GET_ITEM(R, i)
         if not all_finite(ri):
             finite_all = False
             break
-    for i in range(size):
-        data = <array.array> PyList_GET_ITEM(X, i)
-        ri = <object> PyList_GET_ITEM(R, i)
-        data.data.as_doubles[size] = dependent_value[i]
-        j = i
-        while j < size:
-            if finite_all and j + 3 < size:
-                # four dot products at a time: the same sums, in the same order
-                rj = <object> PyList_GET_ITEM(R, j)
-                r1 = <object> PyList_GET_ITEM(R, j + 1)
-                r2 = <object> PyList_GET_ITEM(R, j + 2)
-                r3 = <object> PyList_GET_ITEM(R, j + 3)
-                dot4(ri, rj, r1, r2, r3, four)
-                for k in range(4):
-                    if not math.isfinite(four[k]):
+    if finite_all and size >= 4:
+        # the columns by their address: no memoryview for every product
+        cols = <double**> PyMem_Malloc(size * sizeof(double*))
+        if cols == NULL:
+            raise MemoryError()
+        for i in range(size):
+            ri = <object> PyList_GET_ITEM(R, i)
+            cols[i] = &ri[0]
+    try:
+        for i in range(size):
+            data = <array.array> PyList_GET_ITEM(X, i)
+            ri = <object> PyList_GET_ITEM(R, i)
+            data.data.as_doubles[size] = dependent_value[i]
+            j = i
+            while j < size:
+                if cols != NULL and j + 3 < size:
+                    # four dot products at a time: the same sums, in the same order
+                    dot4(cols[i], cols[j], cols[j + 1], cols[j + 2],
+                         cols[j + 3], n, four)
+                    for k in range(4):
+                        if not math.isfinite(four[k]):
+                            return None
+                        data.data.as_doubles[j + k] = four[k]
+                        other = <array.array> PyList_GET_ITEM(X, j + k)
+                        other.data.as_doubles[i] = four[k]
+                    j += 4
+                else:
+                    rj = <object> PyList_GET_ITEM(R, j)
+                    tmp = dot(ri, rj)
+                    if not math.isfinite(tmp):
                         return None
-                    data.data.as_doubles[j + k] = four[k]
-                    other = <array.array> PyList_GET_ITEM(X, j + k)
-                    other.data.as_doubles[i] = four[k]
-                j += 4
-            else:
-                rj = <object> PyList_GET_ITEM(R, j)
-                tmp = dot(ri, rj)
-                if not math.isfinite(tmp):
-                    return None
-                data.data.as_doubles[j] = tmp
-                other = <array.array> PyList_GET_ITEM(X, j)
-                other.data.as_doubles[i] = tmp
-                j += 1
+                    data.data.as_doubles[j] = tmp
+                    other = <array.array> PyList_GET_ITEM(X, j)
+                    other.data.as_doubles[i] = tmp
+                    j += 1
+    finally:
+        if cols != NULL:
+            PyMem_Free(cols)
     if gauss_jordan(X):
         return None
     res = np.zeros(PyList_GET_SIZE(r))

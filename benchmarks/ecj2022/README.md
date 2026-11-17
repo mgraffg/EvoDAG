@@ -121,3 +121,58 @@ python benchmarks/ecj2022/summary.py                   # the tables
 ### Cost
 
 The article reports 0.5 to 5 seconds per training example for an ensemble of 30 members. The 30 datasets have about 600 000 training examples in total, so one configuration is on the order of hundreds of CPU hours and the 22 of them thousands. The largest datasets (census-income, dota2, aps-failure, sensorless, adult, bank) dominate. The full campaign is launched by hand with the command above.
+
+## Profile
+
+The fit of one member was profiled with `profile_fit.py` (cProfile, one core, `--max-seconds 900`, which no profile reached), and the engine was optimised in steps that must give **the same bits**: `parity.py` records 103 small fits (the 22 configurations, the released defaults, two ensembles, extreme values) before a change and `check` compares them again exactly, including a digest of every individual created, and `tests/test_golden.py` must pass without a skipped test. Measured on 2026-11-17 on one core of a compute node of the cluster (the profiles ran twelve at a time on two nodes, the same load before and after, and the 900-second limit was not reached by any), one member of an ensemble (`seed=0`, the parameters of the configuration without `--quick`).
+
+| Dataset | Configuration | Individuals | Fit before (s) | Fit after (s) | Speed-up | Top functions before (own time, s) |
+|---|---|---:|---:|---:|---:|---|
+| optdigits | `agr-rnd` | 5462 | 36.8 | 19.4 | 1.90x | base.py _get_args_orthogonal 15.1s; node.py compute_weight 9.2s; node.py eval 1.9s |
+| optdigits | `fit-fit` | 18428 | 89.8 | 75.6 | 1.19x | node.py compute_weight 42.4s; node.py _raw_outputs 5.5s; node.py eval 5.5s |
+| optdigits | `prs-rnd` | 6894 | 146.9 | 84.4 | 1.74x | base.py _masked_outputs 54.1s; base.py _pearson_value 33.2s; node.py compute_weight 11.4s |
+| optdigits | `sim-rnd` | 4058 | 54.9 | 36.6 | 1.50x | base.py _masked_outputs 33.4s; base.py _cosine_value 6.9s; node.py compute_weight 3.9s |
+| optdigits | `ads-rnd` | 7032 | 542.1 | 357.0 | 1.52x | base.py _masked_outputs 260.3s; base.py _angle_value 123.2s; base.py _relative_semantics 43.9s |
+| optdigits | `nvs-rnd` | 5813 | 29.5 | 27.0 | 1.09x | node.py compute_weight 8.6s; base.py _novelty_value 3.5s; node.py eval 2.3s |
+| optdigits | `default` | 7149 | 55.1 | 30.7 | 1.79x | base.py _get_args_orthogonal 20.2s; node.py compute_weight 17.1s; node.py eval 2.5s |
+| magic04 | `agr-rnd` | 18584 | 175.3 | 76.3 | 2.30x | node.py compute_weight 85.9s; base.py _get_args_orthogonal 60.0s; node.py _mul 5.6s |
+| magic04 | `fit-fit` | 12803 | 97.9 | 50.8 | 1.93x | node.py compute_weight 75.3s; node.py _mul 4.0s; node.py _raw_outputs 3.5s |
+| magic04 | `nvs-rnd` | 7099 | 59.8 | 42.2 | 1.41x | node.py compute_weight 32.6s; base.py _novelty_value 11.3s; node.py _mul 2.2s |
+| letter-recognition | `agr-rnd` | 3499 | 100.1 | 65.0 | 1.54x | base.py _get_args_orthogonal 39.9s; node.py eval 23.2s; node.py compute_weight 8.8s |
+| adult | `agr-rnd` | 8263 | 167.7 | 67.1 | 2.50x | node.py compute_weight 70.6s; base.py _get_args_orthogonal 69.8s; node.py _mul 7.0s |
+
+The fit times are those under cProfile and include its overhead; the number of individuals created is identical before and after in every case. Without the profiler, on an idle node: `magic04` `agr-rnd` 157 s to 68 s and `optdigits` `agr-rnd` 31 s to 21 s with the first changes, and `optdigits` `fit-fit` 79 s to 64 s. The peak memory fell too (the maximum resident set of the process, before and after): `optdigits` `agr-rnd` 1.66 GB to 1.38 GB, `magic04` `agr-rnd` 3.75 GB to 1.29 GB, `optdigits` `fit-fit` 5.5 GB to 1.3 GB, because the engine kept the outputs of every individual ever created (see below).
+
+`benchmarks/bench.py`, three runs before and three after on the same node (the best of each is the one that counts; the spread between the three repeats was at most 2.4% before and 2.0% after), the fastest `fit_min` of the three seeds in seconds (`benchmarks/results-profiled.json` is the best "after" run; the recorded column is `benchmarks/results-optimized.json`, an earlier version and run):
+
+| Case | Recorded | Before | After | Speed-up |
+|---|---:|---:|---:|---:|
+| classification_1000x20_3c | 0.71 | 0.73 | 0.66 | 1.11x |
+| classification_10000x50_5c | 11.49 | 11.25 | 10.44 | 1.08x |
+| regression_1000x20 | 0.61 | 0.62 | 0.37 | 1.67x |
+| ensemble_1000x20_4 | 3.66 | 5.11 | 2.46 | 2.07x |
+
+The training accuracy and the relative squared error of the benchmark are identical before and after, and so are all 103 cases of `parity.py` and the size of a pickled model.
+
+### Optimisations kept
+
+Each one is covered by a test that compares the fast path with the plain computation (`tests/test_optimisations.py`, `tests/test_linalg_solve.py`) and by the parity check.
+
+- **Predicted labels of an individual are remembered** (`Variable.labels`, used by the agreement heuristic of `EvoDAG/base.py`). The labels (`argmax` of the outputs, or the sign in regression) were recomputed for every candidate of every tournament, about 60 000 to 200 000 times per fit. They depend only on `hy`, which is not changed while the individual is in the population, and the cache is dropped whenever `hy` is replaced or released, so every value is the one computed before. It is not stored in the models (their size in bytes is unchanged). It is the largest gain for many classes (`optdigits` `agr-rnd`: 15 s of 37).
+- **The train accuracy of the agreement heuristic does not count the validation part** (`Score._accuracy_index`). `Score.accuracy` also counted the rest of the examples, and only the first number was used. The counts are integers, so the quotient is the same one; the method is private because the golden test asks every public kernel to be recorded.
+- **`compute_weight` computes the dot products of the Gram matrix four at a time** (`EvoDAG/linalg_solve.pyx`) when all the vectors are finite. Every sum adds the same numbers in the same order as `dot`, so the results are identical; four independent chains stop waiting for the latency of the additions. The guard of `dot` is not needed then: when everything is finite a product with a zero is a zero and adding it changes nothing (the sum is never `-0.0`). The columns are taken by their address, once. With a non-finite value the old guarded path is used. `dot` itself lost its branch (adds `+0.0` where a factor is zero, which is the same), which was unpredictable on masked vectors. `tests/test_linalg_solve.py` compares it with a plain Python version of the whole algorithm, signs of zero included. It halves the time of an `Add` with many arguments, the main cost of the datasets with two classes and many examples.
+- **`array_utils.mul` has no branch** (the product where both factors are not zero and `+0.0` elsewhere, as before). The masks have random zeros, so the branch was unpredictable: 25 to 10 microseconds for 3823 values. It helps the cosine, Pearson and angle heuristics, which multiply every output by the mask for every candidate.
+- **Pearson and angle selection**: the quantities that depend only on the reference (its centred vector and norm) are computed once per reference instead of once per candidate, `u.mean()` is `np.add.reduce(u) / u.size` (the same sum and division without the method overhead), and `np.clip` of a number is `min(max(...))`, which gives the same value (also for NaN). The regression index of the heuristic is computed once per mask.
+- **A node does not keep its density cache once it is released** (`BasePopulation.clean`). The cache stores a reference to the outputs, so the outputs of every individual ever created stayed in memory, not only those of the population. This is a memory fix, not a speed one, and it is what keeps the labels cache from raising the peak memory: the memory the experiments request (`submit.py`, `1.5 * 8 * popsize * classes * examples`) was sized for a population and is now respected.
+
+### Candidates tried and rejected
+
+- **One Gram matrix for all the outputs of a node** (Context of the issue): it does not apply. The masks of the outputs are different (each class has its own balanced sample, `bagging_fitness.py`), and for `Add` and the functions of one argument the arguments of each output are different (the output `k` of each argument). Only the right-hand side is shared, which is nothing.
+- **Eight dot products at a time** instead of four: no gain (the time is bounded by the loads).
+- **A branch-free `dot` alone** (without the four chains): it helps on sparse vectors only and is subsumed by the change that was kept.
+- **Remembering the masked outputs of an individual** for the cosine, Pearson and angle heuristics (`_masked_outputs` is the first function for them): it would double the memory of the population, which the memory request of `submit.py` does not allow for. A smarter layout is a decision for the maintainer.
+- **Replacing `gauss_jordan` by a LAPACK solve**, changing the order of the sums, `np.random` in blocks: not allowed (they change bits).
+
+### What remains the bottleneck
+
+`compute_weight` (the Gram matrix and the elimination of an `Add` with up to 60 arguments, which is a quadratic number of dot products of vectors that each depend on the mask), then `_masked_outputs` and `_angle_value` of the heuristics that look at the semantics (`ads-rnd` is slow because each argument draws many candidates), the `eval` of the Naive Bayes and Centroid nodes for many classes (`letter-recognition`), and `_novelty_value` (the work is one gather and one sum per candidate). Going further needs a blocked kernel for the Gram matrix that keeps the order of every sum (a SIMD layout across the dot products), or an algorithmic change (fewer arguments, the Gram matrix updated incrementally), which is a decision for the maintainer.

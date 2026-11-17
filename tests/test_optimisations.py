@@ -130,3 +130,82 @@ def test_the_density_does_not_keep_the_outputs_alive():
     assert node.hy is None and node._density_cache is None
     gc.collect()
     assert ref() is None
+
+
+def test_mul_is_the_product_with_zeros_that_stay_zero():
+    "``array_utils.mul`` against the plain loop, with the sign of zero"
+    rs = np.random.RandomState(0)
+    special = np.array([0.0, -0.0, np.inf, -np.inf, np.nan, 1e-200, -1e-200,
+                        1e200, -1e200, 3.0, -2.5])
+    a = np.concatenate([special.repeat(len(special)),
+                        rs.randn(100) * (rs.rand(100) < 0.5)])
+    b = np.concatenate([np.tile(special, len(special)),
+                        rs.randn(100) * (rs.rand(100) < 0.5)])
+    expected = np.array([0.0 if x == 0 or y == 0 else x * y
+                         for x, y in zip(a, b)])
+    with np.errstate(all="ignore"):
+        got = au.mul(a, b)
+    assert np.array_equal(got, expected, equal_nan=True)
+    assert (np.signbit(got) == np.signbit(expected)).all()
+    assert not np.signbit(got[(a == 0) | (b == 0)]).any()
+
+
+def test_mean_without_the_method_overhead():
+    rs = np.random.RandomState(0)
+    for n in (1, 2, 3, 7, 64, 3823, 10000):
+        for _ in range(50):
+            u = rs.randn(n) * 10.0 ** rs.randint(-6, 6)
+            got = Engine._mean(u)
+            assert got == u.mean() and np.signbit(got) == np.signbit(u.mean())
+
+
+def plain_pearson(engine, reference, x):
+    "The measure as it was written before the reference was prepared"
+    value = 0.0
+    for u, v in zip(engine._masked_outputs(engine.population.population[x]),
+                    reference):
+        if np.dot(u, u) == 0 or np.dot(v, v) == 0:
+            value += 99.0
+            continue
+        uc = u - u.mean()
+        vc = v - v.mean()
+        nu = np.sqrt(np.dot(uc, uc))
+        nv = np.sqrt(np.dot(vc, vc))
+        if nu == 0 or nv == 0:
+            value += 99.0
+        else:
+            value += abs(np.dot(uc, vc) / (nu * nv))
+    return value
+
+
+def plain_angle(engine, reference, x, target):
+    value = 0.0
+    for e, r in zip(engine._relative_semantics(
+            engine.population.population[x], target), reference):
+        norm = np.sqrt(np.dot(e, e))
+        if norm > 0.0:
+            value += float(np.arccos(np.clip(np.dot(e / norm, r), -1.0, 1.0)))
+    return value
+
+
+def test_pearson_and_angle_equal_the_plain_formulas():
+    engine = fitted(selection="pearson")
+    pop = engine.population.population
+    for first in (0, 3, 11):
+        reference = engine._pearson_reference(first)
+        prepared = engine._pearson_prepare(reference)
+        for x in range(len(pop)):
+            plain = plain_pearson(engine, reference, x)
+            assert engine._pearson_prepared_value(prepared, x) == plain
+            assert engine._pearson_value(reference, x) == plain
+    # a reference without variation adds 99 per output
+    zero = [np.zeros(len(engine._mask_ts))] * 3
+    assert engine._pearson_value(zero, 0) == 99.0 * 3
+    target = engine._angle_target()
+    for first in (0, 3, 11):
+        reference = engine._angle_reference(first, target)
+        if reference is None:
+            continue
+        for x in range(len(pop)):
+            assert engine._angle_value(reference, x, target) == \
+                plain_angle(engine, reference, x, target)
