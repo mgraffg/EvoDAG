@@ -100,3 +100,6 @@ docs/build/
 
 # Results of benchmarks/raetsch.py (long runs; the author commits the table, not this file)
 benchmarks/raetsch-results*.jsonl
+
+# Files of the experiments of the selection heuristics article: data, results, logs
+experiments/

@@ -79,7 +79,10 @@ Modules in the order the data flows; each is documented in the developer referen
   and their recorder `tests/golden/record.py`.
 - `docs/`: the Sphinx developer reference (`docs/source/`). `website/`: the Quarto user site
   (`website/pages/`, `website/figures/`).
-- `benchmarks/`: `benchmarks/bench.py` and its recorded results. `scripts/`: the PyPI version check.
+- `benchmarks/`: `benchmarks/bench.py` and its recorded results. `benchmarks/ecj2022/` holds the scripts that
+  reproduce the experiments of the selection heuristics article, starting with `benchmarks/ecj2022/datasets.py`;
+  their data and results go to a directory named experiments at the repository root that git ignores.
+  `scripts/`: the PyPI version check.
 - `.github/workflows/`: `.github/workflows/test.yml`, `.github/workflows/website.yml`,
   `.github/workflows/publish-pypi.yml` and `.github/workflows/wheels.yml` (the same wheel build, without
   the upload, on pull requests that touch the packaging). `.issue-pilot.json`: the
@@ -134,7 +137,7 @@ under 5 to 10 percent. Times only compare on the same machine. The development e
   scikit-learn is allowed only as the optional `sklearn` extra, imported by `EvoDAG/estimators.py` alone.
   Build requirements are Cython and NumPy.
 - Keep the Cython extensions and the density mechanism. Scratch files go in `tmp_path`, never in
-  the repository root; do not commit build output (the generated C files and shared libraries,
+  the repository root, and the files of the experiments go to the ignored experiments directory; do not commit build output (the generated C files and shared libraries,
   the build and dist directories, the Sphinx build under docs and the rendered site under website).
 
 ## Documentation
