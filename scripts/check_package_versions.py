@@ -32,10 +32,7 @@ from pathlib import Path
 
 from packaging.version import Version
 
-try:
-    import tomllib
-except ImportError:  # Python 3.10
-    import tomli as tomllib
+import tomllib
 
 ROOT = Path(__file__).resolve().parents[1]
 

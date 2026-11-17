@@ -8,7 +8,7 @@ name = "EvoDAG"
 description = "Evolving Directed Acyclic Graph"
 readme = "README.md"
 license = { text = "Apache-2.0" }
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 authors = [{ name = "Mario Graff", email = "mgraffg@ieee.org" }]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -22,6 +22,11 @@ classifiers = [
     "Programming Language :: Cython",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = ["numpy"]
@@ -29,7 +34,7 @@ dynamic = ["version"]
 
 [project.optional-dependencies]
 sklearn = ["scikit-learn>=1.6"]
-test = ["pytest>=7.0", "scikit-learn>=1.6", "tomli; python_version < '3.11'"]
+test = ["pytest>=7.0", "scikit-learn>=1.6"]
 
 [project.urls]
 Homepage = "https://mgraffg.github.io/EvoDAG/"
@@ -74,12 +79,12 @@ cache-keys = [
 ]
 
 [tool.cibuildwheel]
-build = "cp310-* cp311-* cp312-* cp313-*"
+build = "cp311-* cp312-* cp313-* cp314-* cp315-*"
 skip = "*-musllinux_* *-win32 *-manylinux_i686"
 # manylinux2014 (glibc 2.17) has no wheels of recent scikit-learn or scipy, so
 # the tests could not install them there; manylinux_2_28 has.
 manylinux-x86_64-image = "manylinux_2_28"
 # Plain names only: on Windows cibuildwheel runs pip through cmd.exe,
 # where < and > are redirections (see tests/test_packaging.py).
-test-requires = ["pytest", "scikit-learn", "tomli"]
+test-requires = ["pytest", "scikit-learn"]
 test-command = "pytest {project}/tests -q"

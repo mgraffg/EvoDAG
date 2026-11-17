@@ -40,7 +40,7 @@ Names that need the optional dependency scikit-learn (``pip install
 from .base import EvoDAG, RGP, RootGP
 from .model import EvoDAGE, Model, Ensemble
 __all__ = ["EvoDAG", "RGP", "RootGP", "EvoDAGE", "Model", "Ensemble"]
-__version__ = '0.18.0'
+__version__ = '0.19.0'
 
 
 _ESTIMATORS = ("EvoDAGClassifier", "EvoDAGRegressor", "EnsembleClassifier",

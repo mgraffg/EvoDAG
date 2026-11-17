@@ -162,7 +162,7 @@ it, pushes to `master` deploy it; Pages has to be enabled once with the source "
 reads it without importing the package; keep it a plain literal). `scripts/check_package_versions.py`,
 run by the `check-package-versions` job of `.github/workflows/test.yml`, requires the version to be the next patch or
 the next minor after the one on PyPI. A release is a tag `v<version>`: `.github/workflows/publish-pypi.yml` checks
-that the tag matches the version, builds wheels with cibuildwheel (Python 3.10 to 3.13, Linux,
+that the tag matches the version, builds wheels with cibuildwheel (Python 3.11 to 3.15, Linux,
 macOS, Windows; its test command is `pytest tests`) and the sdist, runs `twine check` and uploads
 to PyPI with the repository secret `TWINE`. Do not tag, upload or change repository settings
 unless asked. The conda-forge feedstock is a separate repository.
@@ -178,4 +178,4 @@ unless asked. The conda-forge feedstock is a separate repository.
 - Tests live in `tests/`, mostly one file per module (for instance `tests/test_node.py` and `tests/test_model.py`), plus
   `tests/test_docs.py`,
   `tests/test_packaging.py`, `tests/test_public_api.py` and `tests/test_golden.py`.
-- The package supports Python 3.10 or newer (`requires-python` in `pyproject.toml`).
+- The package supports Python 3.11 or newer (`requires-python` in `pyproject.toml`).
