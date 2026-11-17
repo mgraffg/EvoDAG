@@ -134,6 +134,6 @@ This page follows the code. Compared with what the two papers (see [Citing](citi
 | Several classes | The library paper returns a list of models, one per class, wrapped in one object. | One model whose nodes have one output per class, as the selection paper describes |
 | Prediction of the ensemble | The library paper takes the label from the median of the decision functions; the selection paper says the final prediction is the average of the models. | `predict` is the class that most models choose; `decision_function` is the median |
 | Bagging | The selection paper trains 30 models, each on a random 50 % of the examples with the rest for validation. | 30 models by default, each with its own split by seed; see the validation set above |
-| First argument of the heuristic | Chosen at random. | By the tournament on fitness, except in the first `random_generations` generations |
-| Arguments of the other functions | Chosen at random when the heuristic does not apply. | By the tournament on fitness |
-| Pearson and cosine heuristics | Both are proposed. | Not available as described; see [Selection](selection.qmd) |
+| First argument of the heuristic | Chosen at random. | At random with `selection` and `first_selection="random"` (the default of that parameter); by the tournament on fitness with the legacy `orthogonal_selection`, which is the default of classification, except in the first `random_generations` generations |
+| Arguments of the other functions | Chosen at random when the heuristic does not apply. | At random with `selection`; by the tournament on fitness with the legacy `orthogonal_selection` |
+| Pearson and cosine heuristics | Both are proposed. | `selection="pearson"` and `selection="cosine"`, off by default; see [Selection](selection.qmd) |

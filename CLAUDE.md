@@ -27,7 +27,9 @@ Modules in the order the data flows; each is documented in the developer referen
 - **`EvoDAG/population.py` and `EvoDAG/function_selection.pyx`.** The population (`SteadyState`,
   `Generational`), tournament and negative selection, the early stopping individual, and the
   tournament that chooses a function. Parent selection by agreement or dot product is in
-  `EvoDAG/base.py` (`orthogonal_selection`, `orthogonal_dot_selection`); there is no Pearson heuristic.
+  `EvoDAG/base.py` (`orthogonal_selection`, `orthogonal_dot_selection`). The engine parameters `selection`,
+  `first_selection` and `heuristic_functions` (off by default) select the schemes of the selection article (fitness,
+  random, agreement, cosine, Pearson, angle-driven, novelty search) and override the two `orthogonal_*` flags.
   The classification defaults use agreement for the parents and random negative selection
   (`orthogonal_selection` true, `negative_selection` false); regression uses the tournaments on fitness.
 - **`EvoDAG/node.py` and `EvoDAG/naive_bayes.py`.** An individual is a node: `Variable` or a

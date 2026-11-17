@@ -168,6 +168,9 @@ These are not in the default configuration files, but they are accepted by the c
 | Parameter | Default | What it does |
 |:-----------------------|:------------|:------------------------------------------------|
 | `orthogonal_dot_selection` | false | choose the arguments by a dot-product measure (see [Selection](selection.qmd)) |
+| `selection` | `None` | the scheme that chooses the arguments of an offspring: `"fitness"`, `"random"`, `"agreement"`, `"cosine"`, `"pearson"`, `"angle"` or `"novelty"` (see [Selection](selection.qmd)); `None` keeps the behaviour of `orthogonal_selection` and `orthogonal_dot_selection`, which `selection` overrides when it is given |
+| `first_selection` | `"random"` | how the reference individual of the heuristics `"agreement"`, `"cosine"`, `"pearson"` and `"angle"` is chosen: `"random"` or `"fitness"` |
+| `heuristic_functions` | `"tailored"` | `"tailored"` applies the heuristic only to `Add`, `NaiveBayes`, `NaiveBayesMN` and `Centroid`; `"all"` to every function with more than one argument |
 | `F1_index` | -1 | class used by `fitness_function="F1"`; -1 means the smallest class |
 | `remove_raw_inputs` | true | free the training inputs once the initial population exists |
 | `number_tries_feasible_ind` | 30 | attempts to find a valid individual before giving up |

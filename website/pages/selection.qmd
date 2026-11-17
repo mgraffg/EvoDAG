@@ -25,48 +25,44 @@ The paper also combines each heuristic with two ways of choosing which individua
 
 ## What the released code has
 
-The code implements **two** of the three heuristics, one of them only approximately. This is read from `EvoDAG/base.py` (`get_args_orthogonal`, `get_args_orthogonal_dot`, `get_args`), from the `orthogonal_selection` attribute of the functions in `EvoDAG/node.py` and from `EvoDAG/population.py`.
+The engine implements every scheme the paper compares. This is read from `EvoDAG/base.py` (`get_args`, `_get_args_selection` and the `_get_args_*` methods), from the `orthogonal_selection` attribute of the functions in `EvoDAG/node.py` and from `EvoDAG/population.py`. Three keyword parameters of the engine, all off by default, give access to them: `selection`, `first_selection` and `heuristic_functions`. They are not keys of the default parameter files and are accepted by `EvoDAGE`, `EvoDAG.model.EvoDAG` and `RGP.init`, but not by the explicit arguments of the scikit-learn classes (give them through `params`).
 
-| Heuristic of the paper | Constructor parameter | Status in the code |
-|:------------------------|:--------------------------------|:------------------------------------|
-| Agreement | `orthogonal_selection=True` | implemented; **the default of classification** |
-| Cosine similarity | `orthogonal_dot_selection=True` | **only an approximation**: it uses the dot product, see below |
-| Pearson's correlation | none | **not available in the released code** |
-| Random choice of the individual that leaves | `negative_selection=False` | implemented; **the default of classification** (`True` is the negative tournament on fitness) |
+| Scheme of the paper | `selection` | What it does |
+|:------------------------|:--------------|:------------------------------------|
+| `fit`, tournament on fitness | `"fitness"` | every argument is the winner of a tournament on fitness |
+| `rnd`, random | `"random"` | every argument is chosen uniformly at random |
+| `agr` (called `acc` in some tables), agreement | `"agreement"` | smallest agreement of the predicted labels with the reference |
+| `sim`, absolute cosine similarity | `"cosine"` | smallest sum, over the outputs, of the absolute cosine with the reference |
+| `prs`, absolute Pearson correlation | `"pearson"` | smallest sum, over the outputs, of the absolute Pearson correlation with the reference |
+| `ads`, Angle-Driven Selection | `"angle"` | largest angle between the relative semantics (target minus output) of the candidate and of the reference |
+| `nvs`, Novelty Search | `"novelty"` | most novel individual of a tournament; classification only |
 
-The classification defaults are the two settings in the first and the last row, the paper's best-ranked configuration, which it calls `agr-rnd`: they are in `EvoDAG/conf/default_parameters.json`. The regression defaults (`EvoDAG/conf/default_parameters_r.json`) have neither, so regression uses the ordinary selections, and so do the engine's keyword defaults when its class is called directly (see [Parameters](parameters.qmd)). Releases before this change used the ordinary selections for classification too.
+With `selection=None` (the default) nothing of this is used and the selection is the one of the two legacy booleans described below. When `selection` is not `None` it **takes precedence**: `orthogonal_selection` and `orthogonal_dot_selection` are ignored (the classification file sets `orthogonal_selection` to true, so raising an error would make the parameter unusable through `init`). `negative_selection`, which chooses the individual that leaves, is independent of it.
 
-### Agreement: `orthogonal_selection`
+`first_selection` says how the first individual of `"agreement"`, `"cosine"`, `"pearson"` and `"angle"` is chosen: `"random"` (the default, what the paper proposes) or `"fitness"`, a tournament. The other three values ignore it. `heuristic_functions` says to which functions a heuristic applies (`"agreement"`, `"cosine"`, `"pearson"`, `"angle"` and `"novelty"`): `"tailored"` (the default) only to the sum, `NaiveBayes`, `NaiveBayesMN` and `Centroid`, the functions that inspired it, and `"all"` to every function with more than one argument (the variants marked with an asterisk in the paper). The functions a heuristic does not apply to get their arguments **at random**, as in the paper, and not by fitness; with `selection="fitness"` every function uses the tournament.
 
-For a function that supports it (the sum, `NaiveBayes`, `NaiveBayesMN` and `Centroid`) the code does what the paper describes:
+Each heuristic with a reference works like this: the first individual is drawn with `first_selection`, and each other argument is the winner of a tournament of `tournament_size` random individuals (ten for `"angle"`, drawn like the first one, duplicates included) that is decided by the measure of the table against the first individual. The measures are computed on the masked outputs, that is, on the training part of the data; the zeros of the validation examples are part of the vectors, so the mean in Pearson's correlation is taken over all the examples. A candidate whose vectors are zero (or constant, for Pearson) is given a value of 99 per output and so loses. In ties the first candidate wins. If the reference of `"angle"` has no error on some output, the arguments are chosen at random.
 
-1. the first argument is chosen with `Population.tournament`, that is, a tournament on fitness (see the note below);
-2. its outputs are turned into labels (the index of the largest output);
-3. each other argument comes from a tournament of `tournament_size` random individuals whose outputs are also turned into labels; the one with the **smallest agreement** with the first argument, computed on the training part of the data, wins.
+**The reference is not an argument.** As in the code that produced the paper, the first individual only defines the measure: it is excluded from the arguments but it is not returned, so the function receives at most `nargs - 1` arguments. For the sum (five arguments) this means four, and a function with two arguments, such as `Mul` with `heuristic_functions="all"`, never gets the two it needs and is not built by a heuristic (the offspring is made with another function).
 
-For the other functions the ordinary selection, a tournament on fitness, is used; the paper uses random selection for them (see below). If both `orthogonal_selection` and `orthogonal_dot_selection` are on, the agreement takes precedence; to get the dot-product heuristic you have to turn the agreement off with `orthogonal_selection=False`.
+**Novelty Search** has no reference: all the arguments are winners of tournaments, and the winner is the candidate with the largest sum, over the training examples, of $1/(p_j + 10^{-5})$, where $p_j$ is the fraction of the population that predicts for example $j$ the same class as the candidate. The engine keeps the predicted labels of the population and the counts of each class per example up to date as individuals are added and replaced, so the cost of a tournament is that of one pass over the training examples; the labels take one byte per individual and example, which for a population of 4000 and 100000 training examples is 400 MB. This is a reimplementation: the code of the paper divided the counts by inconsistent denominators (the number of examples in one place, the population size in another); here it is always the population size. It is not implemented for regression, and it needs the `SteadyState` population.
 
-The paper picks the first argument at random. In the code it is chosen by the usual tournament, except during the first `random_generations` generations, when every tournament that is not a negative one is random (`random_generations` is 1 in the default configuration). There is no switch that makes only the first argument random: a very large `random_generations` does make it random, and it also makes random the parents of every function that does not use the heuristic. That would also bring the code closer to the paper in the other point where they differ: the paper selects at random the arguments of the functions to which the heuristic does not apply, whereas the code uses the tournament on fitness for them.
+**Angle-Driven Selection** follows Chen et al. (2019): the relative semantics of an individual is the target minus its output, normalised to unit length, and the candidate that forms the largest angle with the reference (the sum of the angles of the outputs) wins.
 
-The code also has a branch for regression, which compares the signs of the outputs. The paper defines the agreement only for classification and does not report results for it in regression.
+The validation of the three parameters raises `ValueError` for an unknown value, and for `selection="novelty"` in regression or with a population other than `SteadyState`.
 
-### Cosine similarity: `orthogonal_dot_selection`
+### The legacy booleans
 
-The code has a heuristic of the same family that is based on the dot product. It is **not** the absolute cosine similarity of the paper, and the differences matter:
+Before these parameters the engine had two booleans, which stay as they were and are what runs when `selection` is `None`.
 
-* it does not divide by the norms of the vectors, so the value depends on the size of the outputs and not only on the angle;
-* it does not take the absolute value, so the winner is the candidate with the *smallest signed* dot product, which favours vectors pointing in the opposite direction to the first argument rather than orthogonal ones;
-* the products are weighted with the mask of the training part, so only the training examples count.
+* `orthogonal_selection=True` is the agreement heuristic, **the default of classification**: for the sum, `NaiveBayes`, `NaiveBayesMN` and `Centroid` the first argument is chosen with `Population.tournament` (a tournament on fitness, random during the first `random_generations` generations, which is 1 in the default configuration); its outputs are turned into labels; each other argument is the winner (smallest agreement on the training part) of a tournament of random individuals. The other functions use the tournament on fitness. This is close to, but not the same as, `selection="agreement"`, which draws the first argument at random and the other functions' arguments at random. The classification defaults are this and `negative_selection=False`, the paper's best-ranked configuration, which it calls `agr-rnd`; they are in `EvoDAG/conf/default_parameters.json`. The regression defaults (`EvoDAG/conf/default_parameters_r.json`) have neither, and neither do the engine's keyword defaults when its class is called directly (see [Parameters](parameters.qmd)).
+* `orthogonal_dot_selection=True` is a relative of the cosine heuristic that uses the raw dot product of the masked outputs: it does not divide by the norms and does not take the absolute value, so the candidate with the smallest *signed* product wins. It is applied to the same four functions and picks the first argument like the agreement does. If both booleans are on, the agreement takes precedence. For the exact cosine of the paper use `selection="cosine"`.
 
-It is applied to the same four functions and chooses the first argument in the same way as the agreement does. If you need the exact behaviour of the paper's cosine heuristic, the released code does not provide it.
-
-### Pearson's correlation
-
-No parameter in the released code selects arguments by Pearson's correlation. The paper's text and the code of this release disagree here: the code on the base branch contains only the two selection parameters above.
+The code also has a branch of the agreement for regression, which compares the signs of the outputs. The paper defines it only for classification.
 
 ### Random selection
 
-The paper's random parent selection has no dedicated parameter either. The closest thing is `random_generations`: while the current generation is not larger than it, every tournament that is not a negative one is replaced by a uniform random draw. A generation is `popsize` replacements, so a value larger than the number of generations a run will last makes all the parent selection that does not go through a heuristic random.
+`selection="random"` is the paper's random parent selection. Another, indirect way is `random_generations`: while the current generation is not larger than it, every tournament that is not a negative one is replaced by a uniform random draw.
 
 ## Example
 
@@ -93,6 +89,12 @@ dot = EvoDAGE(n_estimators=3, popsize=100, early_stopping_rounds=100,
               orthogonal_selection=False, orthogonal_dot_selection=True,
               seed=0).fit(X, y)
 print((dot.predict(X) == y).mean())
+
+# the schemes of the paper: Pearson's correlation with a random reference
+pearson = EvoDAGE(n_estimators=2, popsize=40, early_stopping_rounds=40,
+                  selection="pearson", first_selection="random",
+                  heuristic_functions="tailored", seed=0).fit(X, y)
+print((pearson.predict(X) == y).mean())
 
 # the selection of the releases before the default changed
 classic = EvoDAGE(n_estimators=3, popsize=100, early_stopping_rounds=100,

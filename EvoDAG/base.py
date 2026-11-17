@@ -33,6 +33,13 @@ import time
 import importlib
 import inspect
 
+_SELECTIONS = ('fitness', 'random', 'agreement', 'cosine', 'pearson',
+               'angle', 'novelty')
+_HEURISTICS = _SELECTIONS[2:]
+_FIRST_SELECTIONS = ('random', 'fitness')
+_HEURISTIC_FUNCTIONS = ('tailored', 'all')
+_ANGLE_CANDIDATES = 10
+
 
 class EvoDAG(object):
     """The EvoDAG search engine, also exported as ``RGP`` and ``RootGP``.
@@ -128,6 +135,29 @@ class EvoDAG(object):
         argument (default false). Not in the default parameters. It has
         no effect while ``orthogonal_selection`` is true, which has
         precedence.
+    selection : str, optional
+        How the arguments (parents) of an offspring are chosen (default
+        ``None``). ``None`` keeps the behaviour driven by
+        ``orthogonal_selection`` and ``orthogonal_dot_selection``. Otherwise
+        it is one of ``"fitness"`` (tournament on fitness), ``"random"``,
+        ``"agreement"``, ``"cosine"``, ``"pearson"``, ``"angle"`` (Angle-Driven
+        Selection) and ``"novelty"`` (Novelty Search, classification and
+        ``SteadyState`` only), the schemes of the selection paper. It takes
+        precedence over the two ``orthogonal_*`` booleans, which are then
+        ignored. With a heuristic (the last five), the functions it does
+        not apply to get their arguments at random. Not a key of the
+        default parameters files.
+    first_selection : str, optional
+        How the first (reference) individual of ``"agreement"``,
+        ``"cosine"``, ``"pearson"`` and ``"angle"`` is chosen: ``"random"``
+        (default) or ``"fitness"`` (tournament). The reference is not an
+        argument of the function, it only defines the measure. Not a key of
+        the default parameters files.
+    heuristic_functions : str, optional
+        ``"tailored"`` (default): the heuristic is applied only to the
+        functions it was designed for (the sum, the two Naive Bayes and the
+        Nearest Centroid); ``"all"``: to every function with more than one
+        argument. Not a key of the default parameters files.
     min_density : float, optional
         When the average fraction of non-zero values in the population is
         below it, only density safe functions are used (default 0.8). Key
@@ -205,7 +235,12 @@ class EvoDAG(object):
                  fs_tournament_size=2, finite=True, pr_variable=0.33,
                  share_inputs=False, input_functions=None, F1_index=-1,
                  use_all_vars_input_functions=False, remove_raw_inputs=True,
-                 probability_calibration=None, **kwargs):
+                 probability_calibration=None,
+                 selection=None, first_selection='random',
+                 heuristic_functions='tailored', **kwargs):
+        self._selection = selection
+        self._first_selection = first_selection
+        self._heuristic_functions = heuristic_functions
         self._remove_raw_inputs = remove_raw_inputs
         self._fitness_function = fitness_function
         self._bagging_fitness = BaggingFitness(base=self)
@@ -248,6 +283,7 @@ class EvoDAG(object):
             population_class = getattr(pop, population_class)
         self._set_input_functions(input_functions)
         self._population_class = population_class
+        self._check_selection(classifier)
         np.random.seed(self._seed)
         self._unique_individuals = unique_individuals
         self._unique_individuals_set = set()
@@ -660,6 +696,8 @@ class EvoDAG(object):
         for functions that require them, and the plain tournament otherwise.
         Returns a list of positions in the population or ``None``.
         """
+        if self._selection is not None:
+            return self._get_args_selection(func)
         args = []
         if self._orthogonal_selection and func.orthogonal_selection:
             return self.get_args_orthogonal(func)
@@ -683,6 +721,359 @@ class EvoDAG(object):
         if len(args) < min_nargs:
             return None
         return args
+
+    def _check_selection(self, classifier):
+        """Validate ``selection``, ``first_selection`` and ``heuristic_functions``."""
+        for name, value, valid in (
+                ('selection', self._selection, (None,) + _SELECTIONS),
+                ('first_selection', self._first_selection, _FIRST_SELECTIONS),
+                ('heuristic_functions', self._heuristic_functions,
+                 _HEURISTIC_FUNCTIONS)):
+            if value not in valid:
+                raise ValueError("%s must be one of %s, not %r" %
+                                 (name, ', '.join(map(repr, valid)), value))
+        if self._selection == 'novelty':
+            if not classifier:
+                raise ValueError("selection='novelty' is only implemented "
+                                 "for classification")
+            if not issubclass(self._population_class, SteadyState):
+                raise ValueError("selection='novelty' requires the "
+                                 "SteadyState population")
+
+    def _heuristic_applies(self, func):
+        """Whether the selection heuristic is used to choose the arguments of ``func``."""
+        return func.orthogonal_selection or (
+            self._heuristic_functions == 'all' and func.nargs > 1)
+
+    def _get_args_selection(self, func):
+        """Select the arguments of ``func`` with the scheme of ``selection``.
+
+        It is what ``get_args`` does when ``selection`` is not ``None``. The
+        functions that the heuristic does not apply to get their arguments
+        at random, except with ``selection="fitness"``.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from EvoDAG import RGP
+        >>> from EvoDAG.node import Add
+        >>> rng = np.random.RandomState(0)
+        >>> X = rng.randn(60, 3)
+        >>> y = (X[:, 0] > 0).astype(int)
+        >>> engine = RGP.init(popsize=20, early_stopping_rounds=20, seed=0,
+        ...                   selection='cosine')
+        >>> _ = engine.fit(X, y)
+        >>> args = engine._get_args_selection(Add)
+        >>> len(args) <= Add.nargs - 1
+        True
+        """
+        sel = self._selection
+        if sel in _HEURISTICS and self._heuristic_applies(func):
+            return getattr(self, '_get_args_' + sel)(func)
+        draw = (self.population.tournament if sel == 'fitness'
+                else self.population.random_selection)
+        return self._get_args_plain(func, draw)
+
+    def _get_args_plain(self, func, draw):
+        """Select the arguments of ``func`` calling ``draw()`` for each one."""
+        n_tries = self._number_tries_unique_args
+        min_nargs = getattr(func, 'min_nargs', func.nargs)
+        if func.unique_args:
+            args = {}
+            res = []
+            for j in range(func.nargs):
+                k = draw()
+                for _ in range(n_tries):
+                    if k not in args:
+                        args[k] = 1
+                        res.append(k)
+                        break
+                    else:
+                        k = draw()
+            if len(res) < min_nargs:
+                return None
+            return res
+        args = []
+        for j in range(func.nargs):
+            k = draw()
+            for _ in range(n_tries):
+                if k not in args:
+                    break
+                else:
+                    k = draw()
+            args.append(k)
+        if len(args) < min_nargs:
+            return None
+        return args
+
+    def _first_draw(self):
+        """Function that draws the reference individual of the heuristics."""
+        if self._first_selection == 'fitness':
+            return self.population.tournament
+        return self.population.random_selection
+
+    def _heuristic_args(self, func, first, choose):
+        """Arguments of ``func`` chosen by ``choose()`` given the reference ``first``.
+
+        ``first`` (a position) is only the reference of the measure: it is
+        excluded from the arguments but not returned, so the function
+        receives at most ``func.nargs - 1`` arguments. This is how the code
+        that produced the selection paper behaves.
+        """
+        used = {first: 1}
+        res = []
+        n_tries = self._number_tries_unique_args
+        for j in range(func.nargs - 1):
+            k = choose()
+            for _ in range(n_tries):
+                if k not in used:
+                    used[k] = 1
+                    res.append(k)
+                    break
+                else:
+                    k = choose()
+        min_nargs = getattr(func, 'min_nargs', func.nargs)
+        if len(res) < min_nargs:
+            return None
+        return res
+
+    def _selection_mask(self):
+        """The mask of the examples the heuristics look at (training part)."""
+        return self._mask_ts if self.classifier else self._mask
+
+    def _masked_outputs(self, v):
+        """The outputs of node ``v`` multiplied by the mask, as a list."""
+        hy = v.hy if isinstance(v.hy, list) else [v.hy]
+        m = self._selection_mask()
+        return [au.mul(h, m) for h in hy]
+
+    def _get_args_agreement(self, func):
+        """Arguments chosen by the smallest agreement with the reference."""
+        first = self._first_draw()()
+        hy = self.population.population[first].hy
+        if self.classifier:
+            labels = au.argmax(hy)
+        else:
+            labels = au.sign(hy) + 1.0
+        return self._heuristic_args(
+            func, first, lambda: self._get_args_orthogonal(labels))
+
+    def _cosine_reference(self, first):
+        """Masked outputs of the reference ``first`` and their norms."""
+        f = self._masked_outputs(self.population.population[first])
+        return f, [np.sqrt(np.dot(x, x)) for x in f]
+
+    def _cosine_value(self, reference, x):
+        """Sum of the absolute cosines between the outputs of ``x`` and the reference.
+
+        99 if no output has both vectors different from zero.
+        """
+        f, nf = reference
+        value = 0.0
+        counter = 0
+        for u, fi, nfi in zip(self._masked_outputs(self.population.population[x]),
+                              f, nf):
+            nu = np.sqrt(np.dot(u, u))
+            if nfi != 0 and nu != 0:
+                value += abs(np.dot(u, fi) / (nfi * nu))
+            else:
+                counter += 1
+        if counter == len(f):
+            return 99.0
+        return value
+
+    def _get_args_cosine(self, func):
+        """Arguments chosen by the smallest absolute cosine with the reference."""
+        first = self._first_draw()()
+        reference = self._cosine_reference(first)
+        return self._heuristic_args(
+            func, first, lambda: self._tournament_min(
+                lambda x: self._cosine_value(reference, x)))
+
+    def _tournament_min(self, value):
+        """Winner (smallest ``value``) of a tournament among random individuals."""
+        vars = self.population.random()
+        fit = [(k, value(x)) for k, x in enumerate(vars)]
+        return vars[min(fit, key=lambda x: x[1])[0]]
+
+    def _pearson_reference(self, first):
+        """Masked outputs of the reference ``first``."""
+        return self._masked_outputs(self.population.population[first])
+
+    def _pearson_value(self, reference, x):
+        """Sum of the absolute Pearson correlations between the outputs of ``x`` and the reference.
+
+        An output where one of the vectors is zero or constant adds 99.
+        """
+        value = 0.0
+        for u, v in zip(self._masked_outputs(self.population.population[x]),
+                        reference):
+            if np.dot(u, u) == 0 or np.dot(v, v) == 0:
+                value += 99.0
+                continue
+            uc = u - u.mean()
+            vc = v - v.mean()
+            nu = np.sqrt(np.dot(uc, uc))
+            nv = np.sqrt(np.dot(vc, vc))
+            if nu == 0 or nv == 0:
+                value += 99.0
+            else:
+                value += abs(np.dot(uc, vc) / (nu * nv))
+        return value
+
+    def _get_args_pearson(self, func):
+        """Arguments chosen by the smallest absolute Pearson correlation with the reference."""
+        first = self._first_draw()()
+        reference = self._pearson_reference(first)
+        return self._heuristic_args(
+            func, first, lambda: self._tournament_min(
+                lambda x: self._pearson_value(reference, x)))
+
+    def _relative_semantics(self, v, target):
+        """Target minus the masked outputs of ``v``, one vector per output."""
+        return [t - u for t, u in zip(target, self._masked_outputs(v))]
+
+    def _angle_target(self):
+        """The masked target, one vector per output."""
+        Y = self.y if isinstance(self.y, list) else [self.y]
+        m = self._selection_mask()
+        return [au.mul(y, m) for y in Y]
+
+    def _angle_reference(self, first, target):
+        """Unit relative semantics of ``first``; ``None`` if some output has a null error."""
+        res = []
+        for e in self._relative_semantics(self.population.population[first],
+                                          target):
+            norm = np.sqrt(np.dot(e, e))
+            if norm <= 1e-7:
+                return None
+            res.append(e / norm)
+        return res
+
+    def _angle_value(self, reference, x, target):
+        """Sum of the angles between the relative semantics of ``x`` and the reference."""
+        value = 0.0
+        for e, r in zip(self._relative_semantics(self.population.population[x],
+                                                 target), reference):
+            norm = np.sqrt(np.dot(e, e))
+            if norm > 0.0:
+                value += float(np.arccos(np.clip(np.dot(e / norm, r),
+                                                 -1.0, 1.0)))
+        return value
+
+    def _get_args_angle(self, func):
+        """Arguments chosen by Angle-Driven Selection.
+
+        Each one is, among ``_ANGLE_CANDIDATES`` individuals drawn as the
+        reference is, the one whose relative semantics (target minus
+        output) forms the largest angle with that of the reference. When the
+        reference has no error the arguments are chosen at random.
+        """
+        draw = self._first_draw()
+        first = draw()
+        target = self._angle_target()
+        reference = self._angle_reference(first, target)
+        if reference is None:
+            return self._get_args_plain(func, self.population.random_selection)
+
+        def choose():
+            fit = []
+            for _ in range(_ANGLE_CANDIDATES):
+                x = draw()
+                fit.append((x, self._angle_value(reference, x, target)))
+            return max(fit, key=lambda x: x[1])[0]
+        return self._heuristic_args(func, first, choose)
+
+    def _novelty_row(self, v):
+        """Predicted class of ``v`` on each training example."""
+        hy = v.hy if isinstance(v.hy, list) else [v.hy]
+        index = self._mask_ts_index
+        return np.argmax(np.array([h[index] for h in hy]), axis=0)
+
+    def _novelty_build(self):
+        """Create the labels and counts of the current population."""
+        pop = self.population.population
+        nclasses = len(pop[0].hy)
+        if nclasses <= 2 ** 8:
+            dtype = np.uint8
+        elif nclasses <= 2 ** 16:
+            dtype = np.uint16
+        else:
+            dtype = np.uint32
+        n_tr = self._mask_ts_index.shape[0]
+        capacity = max(self._popsize, len(pop))
+        self._novelty_labels = np.zeros((capacity, n_tr), dtype=dtype)
+        self._novelty_counts = np.zeros((n_tr, nclasses), dtype=np.int32)
+        self._novelty_arange = np.arange(n_tr)
+        self._novelty_n = 0
+        for v in pop:
+            self._novelty_add(v)
+
+    def _novelty_add(self, v):
+        """Account for the individual ``v`` appended to the population."""
+        labels = self._novelty_labels
+        if self._novelty_n == labels.shape[0]:
+            labels = np.concatenate([labels, np.zeros_like(labels)])
+            self._novelty_labels = labels
+        row = self._novelty_row(v)
+        labels[self._novelty_n] = row
+        self._novelty_counts[self._novelty_arange, row] += 1
+        self._novelty_n += 1
+
+    def _novelty_replace(self, k, v):
+        """Account for the individual ``v`` that replaced the one at position ``k``."""
+        counts = self._novelty_counts
+        ar = self._novelty_arange
+        counts[ar, self._novelty_labels[k]] -= 1
+        row = self._novelty_row(v)
+        self._novelty_labels[k] = row
+        counts[ar, row] += 1
+
+    def _novelty_reset(self):
+        """Forget the novelty state; it is rebuilt when next needed."""
+        self._novelty_labels = None
+        self._novelty_counts = None
+
+    def _novelty_value(self, x):
+        """Sum over the training examples of the inverse frequency of the label of ``x``.
+
+        The frequency of an example is the fraction of the population that
+        predicts, for it, the same class as ``x`` (the code of the paper
+        divided by inconsistent denominators; here it is always the
+        population size).
+        """
+        counts = self._novelty_counts[self._novelty_arange,
+                                      self._novelty_labels[x]]
+        p = counts / float(self.population.popsize)
+        return float(np.sum(1.0 / (p + 1e-5)))
+
+    def _get_args_novelty(self, func):
+        """Arguments chosen by Novelty Search: the most novel of a tournament.
+
+        All ``func.nargs`` arguments are returned (there is no reference).
+        """
+        if getattr(self, '_novelty_labels', None) is None:
+            self._novelty_build()
+        args = {}
+        res = []
+        n_tries = self._number_tries_unique_args
+
+        def choose():
+            vars = self.population.random()
+            fit = [(k, self._novelty_value(x)) for k, x in enumerate(vars)]
+            return vars[max(fit, key=lambda x: x[1])[0]]
+        for j in range(func.nargs):
+            k = choose()
+            for _ in range(n_tries):
+                if k not in args:
+                    args[k] = 1
+                    res.append(k)
+                    break
+                else:
+                    k = choose()
+        if len(res) < getattr(func, 'min_nargs', func.nargs):
+            return None
+        return res
 
     def random_offspring(self):
         "Returns an offspring with the associated weight(s)"
