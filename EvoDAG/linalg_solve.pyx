@@ -102,17 +102,58 @@ cdef bint gauss_jordan(list m):
     return False
 
         
+cdef union double_bits:
+    double value
+    unsigned long long bits
+
+
 cdef double dot(double[::1] a, double[::1] b):
     """Sum of the products of the positions where both are not zero, adding
     in order (see array_utils.dot)"""
     cdef Py_ssize_t i, n = a.shape[0]
     cdef double x, y, res = 0
+    cdef double_bits p
     for i in range(n):
         x = a[i]
         y = b[i]
-        if x != 0 and y != 0:
-            res += x * y
+        # the product where both are not zero and +0.0 elsewhere, without a
+        # branch (it is unpredictable on masked vectors); adding +0.0 is the
+        # same as not adding because res is never -0.0
+        p.value = x * y
+        p.bits &= -(<unsigned long long> ((x != 0) & (y != 0)))
+        res += p.value
     return res
+
+
+cdef bint all_finite(double[::1] a):
+    "Whether every entry is finite"
+    cdef Py_ssize_t i, n = a.shape[0]
+    for i in range(n):
+        if not math.isfinite(a[i]):
+            return False
+    return True
+
+
+cdef void dot4(double[::1] a, double[::1] b0, double[::1] b1,
+               double[::1] b2, double[::1] b3, double *out):
+    """``out[k] = dot(a, bk)`` for four vectors at once, when every entry is
+    finite. Then a product with a zero is a zero and adding it changes
+    nothing (the sum is never -0.0), so the guard of ``dot`` is not needed.
+    Each sum adds the same numbers in the same order as ``dot`` (the results
+    are identical) but the four chains of additions do not wait for each
+    other."""
+    cdef Py_ssize_t i, n = a.shape[0]
+    cdef double x, r0 = 0, r1 = 0, r2 = 0, r3 = 0
+    for i in range(n):
+        x = a[i]
+        r0 += x * b0[i]
+        r1 += x * b1[i]
+        r2 += x * b2[i]
+        r3 += x * b3[i]
+    out[0] = r0
+    out[1] = r1
+    out[2] = r2
+    out[3] = r3
 
 
 cdef dict support_cache = {}
@@ -183,18 +224,43 @@ cpdef compute_weight(list r, double[::1] ytr, mask):
             k += 1
     size = PyList_GET_SIZE(R)
     X = [array.clone(data, size+1, False) for i in range(size)]
+    cdef double[::1] r1, r2, r3
+    cdef double four[4]
+    cdef bint finite_all = True
+    for i in range(size):
+        ri = <object> PyList_GET_ITEM(R, i)
+        if not all_finite(ri):
+            finite_all = False
+            break
     for i in range(size):
         data = <array.array> PyList_GET_ITEM(X, i)
         ri = <object> PyList_GET_ITEM(R, i)
         data.data.as_doubles[size] = dependent_value[i]
-        for j in range(i, size):
-            rj = <object> PyList_GET_ITEM(R, j)
-            tmp = dot(ri, rj)
-            if not math.isfinite(tmp):
-                return None
-            data.data.as_doubles[j] = tmp
-            other = <array.array> PyList_GET_ITEM(X, j)
-            other.data.as_doubles[i] = tmp
+        j = i
+        while j < size:
+            if finite_all and j + 3 < size:
+                # four dot products at a time: the same sums, in the same order
+                rj = <object> PyList_GET_ITEM(R, j)
+                r1 = <object> PyList_GET_ITEM(R, j + 1)
+                r2 = <object> PyList_GET_ITEM(R, j + 2)
+                r3 = <object> PyList_GET_ITEM(R, j + 3)
+                dot4(ri, rj, r1, r2, r3, four)
+                for k in range(4):
+                    if not math.isfinite(four[k]):
+                        return None
+                    data.data.as_doubles[j + k] = four[k]
+                    other = <array.array> PyList_GET_ITEM(X, j + k)
+                    other.data.as_doubles[i] = four[k]
+                j += 4
+            else:
+                rj = <object> PyList_GET_ITEM(R, j)
+                tmp = dot(ri, rj)
+                if not math.isfinite(tmp):
+                    return None
+                data.data.as_doubles[j] = tmp
+                other = <array.array> PyList_GET_ITEM(X, j)
+                other.data.as_doubles[i] = tmp
+                j += 1
     if gauss_jordan(X):
         return None
     res = np.zeros(PyList_GET_SIZE(r))

@@ -308,6 +308,8 @@ class BasePopulation(object):
             return
         v.y = None
         v.hy = None
+        # the cache of the density keeps a reference to the outputs
+        v._density_cache = None
 
     def random_selection(self, negative=False):
         """Return the index of an individual selected uniformly at random."""

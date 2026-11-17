@@ -556,17 +556,27 @@ class EvoDAG(object):
             return self.unfeasible_offspring()
         return f
 
+    def _regression_index(self):
+        """Positions of the training examples of the mask as ``uint32``; the
+        mask does not change during a fit, so it is computed once for each."""
+        cache = getattr(self, '_regression_index_cache', None)
+        if cache is None or cache[0] is not self._mask:
+            index = np.flatnonzero(self._mask).astype(np.uint32)
+            cache = self._regression_index_cache = (self._mask, index)
+        return cache[1]
+
     def _get_args_orthogonal(self, first):
         vars = self.population.random()
         pop = self.population.population
-        score = self._bagging_fitness.score
+        accuracy = self._bagging_fitness.score._accuracy_index
         if self.classifier:
-            fit = [(k, score.accuracy(first, au.argmax(pop[x].hy),
-                                      self._mask_ts_index)[0]) for k, x in enumerate(vars)]
+            index = self._mask_ts_index
+            fit = [(k, accuracy(first, pop[x].labels(), index))
+                   for k, x in enumerate(vars)]
         else:
-            index = np.flatnonzero(self._mask).astype(np.uint32)
-            fit = [(k, score.accuracy(first, au.sign(pop[x].hy) + 1,
-                                      index)[0]) for k, x in enumerate(vars)]
+            index = self._regression_index()
+            fit = [(k, accuracy(first, pop[x].labels(False), index))
+                   for k, x in enumerate(vars)]
         fit = min(fit, key=lambda x: x[1])
         index = fit[0]
         return vars[index]
@@ -583,10 +593,7 @@ class EvoDAG(object):
         """
         first = self.population.tournament()
         args = {first: 1}
-        if self.classifier:
-            first = au.argmax(self.population.population[first].hy)
-        else:
-            first = au.sign(self.population.population[first].hy) + 1.0
+        first = self.population.population[first].labels(self.classifier)
         res = []
         sel = self._get_args_orthogonal
         n_tries = self._number_tries_unique_args
@@ -850,11 +857,7 @@ class EvoDAG(object):
     def _get_args_agreement(self, func):
         """Arguments chosen by the smallest agreement with the reference."""
         first = self._first_draw()()
-        hy = self.population.population[first].hy
-        if self.classifier:
-            labels = au.argmax(hy)
-        else:
-            labels = au.sign(hy) + 1.0
+        labels = self.population.population[first].labels(self.classifier)
         return self._heuristic_args(
             func, first, lambda: self._get_args_orthogonal(labels))
 

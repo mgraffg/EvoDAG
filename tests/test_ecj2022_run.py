@@ -601,4 +601,4 @@ def test_summary_with_paper_tex_option(tmp_path):
 def test_no_absolute_path_in_the_scripts():
     for path in SCRIPTS.glob("*"):
         if path.suffix in (".py", ".md"):
-            assert "/home/" not in path.read_text(), path
+            assert "/" + "home" + "/" not in path.read_text(), path
