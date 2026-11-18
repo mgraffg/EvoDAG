@@ -24,8 +24,15 @@ The prepared data are those of ``datasets.py``. Results go to
 ``<root>/results[-quick]/<dataset>/<config>/``: ``member-<i>.model.gz`` and
 ``member-<i>.json`` for each member (the JSON is written last, and its
 presence means the member is done, so an interrupted unit resumes at the
-member that was missing) and, when every member is done, ``result.json``.
-The files of the scikit-learn unit are ``<dataset>/sklearn/<Name>.json``.
+member that was missing) and, when every member is done, ``result.json``
+(it counts as the finished unit only if it has the number of members that
+was asked for) and ``predictions.npz`` (the labels of the test set, the
+predictions of the majority vote and of the median, and the median decision
+function). The files of the scikit-learn unit are
+``<dataset>/sklearn/<Name>.json`` and ``<Name>.npz`` (``y_test`` and ``hy``);
+``--classifiers`` or ``--classifier-index`` select some of the classifiers.
+Each member is a process of its own (``fork`` when the platform has it); a
+member killed by a signal is recorded in ``member-<i>.error.txt``.
 
 Every fit uses one core (the BLAS and OpenMP thread variables are set to 1
 before NumPy is imported) and no test set is given to ``fit``: the
@@ -45,6 +52,7 @@ import pickle  # noqa: E402
 import platform  # noqa: E402
 import resource  # noqa: E402
 import socket  # noqa: E402
+import io  # noqa: E402
 import subprocess  # noqa: E402
 import sys  # noqa: E402
 import time  # noqa: E402
@@ -111,9 +119,35 @@ def macro_f1(y, hy):
     return float(np.mean(scores))
 
 
+def recall_macro(y, hy):
+    """Macro-recall: the mean, over the classes that are in ``y``, of the
+    proportion of the examples of the class that ``hy`` predicts as that
+    class. The balanced error rate (BER) is ``1 - recall_macro``."""
+    y = np.asarray(y)
+    hy = np.asarray(hy)
+    recalls = [float(np.sum((y == c) & (hy == c))) / float(np.sum(y == c))
+               for c in np.unique(y)]
+    return float(np.mean(recalls))
+
+
 def accuracy(y, hy):
     "Proportion of correct predictions"
     return float(np.mean(np.asarray(y) == np.asarray(hy)))
+
+
+def git_dirty():
+    """Whether ``git status --porcelain`` prints anything (the tree has
+    changes not committed); ``None`` if git fails."""
+    try:
+        done = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=Path(__file__).resolve().parent, stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL, timeout=60)
+        if done.returncode != 0:
+            return None
+        return bool(done.stdout.decode().strip())
+    except (OSError, subprocess.SubprocessError):
+        return None
 
 
 def git_commit():
@@ -133,7 +167,7 @@ def environment(sklearn=False):
     import EvoDAG
     env = {"evodag": EvoDAG.__version__, "numpy": np.__version__,
            "python": platform.python_version(), "host": socket.gethostname(),
-           "git_commit": git_commit()}
+           "git_commit": git_commit(), "git_dirty": git_dirty()}
     if sklearn:
         import sklearn as sk
         env["scikit-learn"] = sk.__version__
@@ -152,6 +186,13 @@ def write_atomic(path, data):
 def write_json(path, content):
     "Write a JSON file atomically"
     write_atomic(path, (json.dumps(content, indent=2) + "\n").encode("utf8"))
+
+
+def write_npz(path, **arrays):
+    "Write a compressed ``.npz`` atomically"
+    buffer = io.BytesIO()
+    np.savez_compressed(buffer, **arrays)
+    write_atomic(path, buffer.getvalue())
 
 
 def mp_context():
@@ -187,6 +228,7 @@ def fit_member(task):
         model = member.model
         write_atomic(model_path, gzip.compress(pickle.dumps(model)))
         info = {"seed": i, "fit_seconds": seconds,
+                "host": socket.gethostname(),
                 "size": int(model.size), "height": int(model.height),
                 "max_rss_kb": int(resource.getrusage(
                     resource.RUSAGE_SELF).ru_maxrss)}
@@ -238,11 +280,22 @@ def build_result(root, dataset, config, quick, members, params):
     if labels is not None:
         hy_median = np.asarray(labels)[hy_median]
     fit_seconds = float(sum(x["fit_seconds"] for x in infos))
+    y_test = np.asarray(y_test).astype(np.int64)
+    hy = np.asarray(hy).astype(np.int64)
+    hy_median = np.asarray(hy_median).astype(np.int64)
+    # before result.json: the unit is finished when result.json exists
+    write_npz(directory / "predictions.npz", y_test=y_test, hy=hy,
+              hy_median=hy_median,
+              decision_function=scores.astype(np.float32))
+    recall, recall_median = recall_macro(y_test, hy), recall_macro(
+        y_test, hy_median)
     return {
         "dataset": dataset, "config": config, "quick": bool(quick),
         "members": members,
         "macro_f1": macro_f1(y_test, hy),
         "macro_f1_median": macro_f1(y_test, hy_median),
+        "macro_recall": recall, "ber": 1.0 - recall,
+        "macro_recall_median": recall_median, "ber_median": 1.0 - recall_median,
         "accuracy": accuracy(y_test, hy),
         "fit_seconds": fit_seconds,
         "fit_seconds_per_sample": fit_seconds / len(y_train),
@@ -254,6 +307,69 @@ def build_result(root, dataset, config, quick, members, params):
     }
 
 
+def run_members(tasks, directory, workers, dataset, config, log=print):
+    """Fit the members of ``tasks`` (``fit_member`` arguments), at most
+    ``workers`` processes at a time, and return the sorted indices of those
+    that have no JSON file afterwards.
+
+    One fresh process per member (the memory is returned and the peak memory
+    is per member). The processes are not a ``multiprocessing.Pool`` because a
+    Pool never returns when a worker is killed by a signal (the out-of-memory
+    killer, a crash of a kernel) and the unit would hold its cores for ever:
+    here a process that ends without its JSON file is a failed member."""
+    ctx = mp_context()
+    pending = list(tasks)
+    running = {}
+    failed = []
+    workers = max(1, min(workers, len(pending)))
+    try:
+        while pending or running:
+            while pending and len(running) < workers:
+                task = pending.pop(0)
+                i = task[4]
+                error_path = member_paths(directory, i)[2]
+                if error_path.exists():  # the error of an earlier attempt
+                    error_path.unlink()
+                proc = ctx.Process(target=fit_member, args=(task,))
+                proc.start()
+                running[i] = proc
+            for i, proc in list(running.items()):
+                proc.join(timeout=0.2)
+                if proc.is_alive():
+                    continue
+                del running[i]
+                _, json_path, error_path = member_paths(directory, i)
+                if proc.exitcode != 0 and not json_path.exists():
+                    # killed by a signal or crashed outside Python
+                    if not error_path.exists():
+                        write_atomic(error_path, (
+                            "process died with exit code %s\n"
+                            % proc.exitcode).encode("utf8"))
+                if json_path.exists():
+                    log("%s %s: member %d done" % (dataset, config, i))
+                else:
+                    failed.append(i)
+                    text = (error_path.read_text() if error_path.exists()
+                            else "no result file")
+                    log("%s %s: member %d FAILED\n%s"
+                        % (dataset, config, i, text))
+    finally:
+        for proc in running.values():  # an interruption of this process
+            proc.terminate()
+            proc.join()
+    return sorted(failed)
+
+
+def result_has_members(path, members):
+    """Whether ``path`` is a ``result.json`` of an ensemble of ``members``
+    members (a missing or unreadable file is not)."""
+    try:
+        with open(path) as fpt:
+            return json.load(fpt).get("members") == members
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
 def run_evodag_unit(root, dataset, config, workers=1, members=None,
                     quick=False, log=print):
     """Run the missing members of a unit and, when all are done, write
@@ -261,7 +377,7 @@ def run_evodag_unit(root, dataset, config, workers=1, members=None,
     root = Path(root)
     members = configs.n_members(quick) if members is None else members
     directory = unit_dir(root, dataset, config, quick)
-    if (directory / "result.json").exists():
+    if result_has_members(directory / "result.json", members):
         log("%s %s: already done" % (dataset, config))
         return 0
     load_data(root, dataset)  # fail early if the dataset is not prepared
@@ -271,21 +387,7 @@ def run_evodag_unit(root, dataset, config, workers=1, members=None,
     failed = []
     if pending:
         tasks = [(str(root), dataset, config, quick, i) for i in pending]
-        # one fresh process per member: memory is returned and the peak
-        # memory is per member
-        pool = mp_context().Pool(max(1, min(workers, len(tasks))),
-                                 maxtasksperchild=1)
-        try:
-            for i, error in pool.imap_unordered(fit_member, tasks):
-                if error is None:
-                    log("%s %s: member %d done" % (dataset, config, i))
-                else:
-                    failed.append(i)
-                    log("%s %s: member %d FAILED\n%s"
-                        % (dataset, config, i, error))
-        finally:
-            pool.close()
-            pool.join()
+        failed = run_members(tasks, directory, workers, dataset, config, log)
     if failed:
         log("%s %s: members %s failed" % (dataset, config, sorted(failed)))
         return 1
@@ -326,7 +428,9 @@ def _fit_classifier(name, root, dataset, quick, conn):
         t1 = time.perf_counter()
         hy = np.asarray(estimator.predict(X_test))
         t2 = time.perf_counter()
+        recall = recall_macro(y_test, hy)
         result = {"macro_f1": macro_f1(y_test, hy),
+                  "macro_recall": recall, "ber": 1.0 - recall,
                   "accuracy": accuracy(y_test, hy),
                   "fit_seconds": t1 - t0,
                   "fit_seconds_per_sample": (t1 - t0) / len(y_train),
@@ -335,7 +439,10 @@ def _fit_classifier(name, root, dataset, quick, conn):
                   "n_classes": int(len(np.unique(
                       np.concatenate([y_train, y_test])))),
                   "max_rss_kb": int(resource.getrusage(
-                      resource.RUSAGE_SELF).ru_maxrss)}
+                      resource.RUSAGE_SELF).ru_maxrss),
+                  # the predictions cross the pipe as a list; the parent
+                  # stores them in <Name>.npz, not in the JSON
+                  "hy": hy.astype(np.int64).tolist()}
     except BaseException as error:
         result = {"error": "%s: %s" % (type(error).__name__, error)}
     conn.send(result)
@@ -369,16 +476,24 @@ def run_classifier(name, root, dataset, quick, timeout_seconds):
 def run_sklearn_unit(root, dataset, quick=False,
                      timeout_hours=DEFAULT_SKLEARN_TIMEOUT_HOURS, names=None,
                      log=print):
-    "Fit the classifiers that have no result file; returns the exit status 0"
+    """Fit the classifiers that have no result file (all sixteen by default,
+    or ``names``); returns the exit status 0. Each result is ``<Name>.json``
+    and, when the fit succeeded, ``<Name>.npz`` with ``y_test`` and ``hy``,
+    written first."""
     directory = unit_dir(root, dataset, "sklearn", quick)
     directory.mkdir(parents=True, exist_ok=True)
-    load_data(root, dataset)
+    _, _, _, y_test = load_data(root, dataset)
     for name in names or [n for n, _, _ in SKLEARN]:
         path = directory / (name + ".json")
         if path.exists():
             continue
         result = run_classifier(name, root, dataset, quick,
                                 timeout_hours * 3600.0)
+        hy = result.pop("hy", None)
+        if hy is not None:
+            write_npz(directory / (name + ".npz"),
+                      y_test=np.asarray(y_test).astype(np.int64),
+                      hy=np.asarray(hy, dtype=np.int64))
         record = {"dataset": dataset, "classifier": name,
                   "quick": bool(quick), **result,
                   "environment": environment(sklearn=True)}
@@ -400,6 +515,13 @@ def main(argv=None):
     parser.add_argument("--config", help="a configuration of configs.py")
     parser.add_argument("--sklearn", action="store_true",
                         help="run the scikit-learn classifiers instead")
+    parser.add_argument("--classifiers", nargs="+", metavar="NAME",
+                        help="with --sklearn, only these classifiers "
+                             "(default: all sixteen)")
+    parser.add_argument("--classifier-index", type=int, metavar="N",
+                        help="with --sklearn, only the N-th classifier of "
+                             "the table (0 to 15), for a job array "
+                             "($SLURM_ARRAY_TASK_ID)")
     parser.add_argument("--task-file", help="JSON list of configurations "
                         "written by submit.py")
     parser.add_argument("--task-index", type=int,
@@ -420,8 +542,19 @@ def main(argv=None):
     args = parser.parse_args(argv)
     root = resolve_root(args.root)
     if args.sklearn:
+        names = args.classifiers
+        unknown = [n for n in names or [] if n not in configs.SKLEARN_NAMES]
+        if unknown:
+            parser.error("unknown classifiers: %s; choose among %s"
+                         % (", ".join(unknown),
+                            ", ".join(configs.SKLEARN_NAMES)))
+        if args.classifier_index is not None:
+            if not 0 <= args.classifier_index < len(configs.SKLEARN_NAMES):
+                parser.error("--classifier-index must be between 0 and %d"
+                             % (len(configs.SKLEARN_NAMES) - 1))
+            names = [configs.SKLEARN_NAMES[args.classifier_index]]
         return run_sklearn_unit(root, args.dataset, args.quick,
-                                args.sklearn_timeout)
+                                args.sklearn_timeout, names)
     config = args.config
     if args.task_file:
         index = args.task_index

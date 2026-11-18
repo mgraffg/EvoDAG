@@ -119,7 +119,7 @@ build and the doctest take seconds (the build downloads the intersphinx inventor
 network). `website/figures/make_figures.py` needs Graphviz (`dot`); `scripts/check_package_versions.py`
 queries PyPI.
 The full campaign of the selection heuristics experiments is thousands of CPU hours on Slurm and is launched
-by the maintainer; the dry run only prints the `sbatch` commands.
+by the maintainer; the dry run prints the `sbatch` commands and writes nothing (it needs the prepared datasets).
 The parity check is the bit-level check for any change that claims to be an optimisation: record the reference before the
 change and check after it (about a minute and a half each).
 The benchmark takes about a minute; run it alone, and repeat it before trusting a difference

@@ -38,14 +38,19 @@ For each of the 30 datasets the article reports the macro-F1 on the test set and
 - 15 selection schemes (angle-driven selection and novelty search included),
 - EvoDAG against the 16 classifiers of scikit-learn with default parameters (TPOT and auto-sklearn are not reproduced).
 
-The scripts, all of them writing only below the experiments directory:
+The scripts (those that run the experiments write only below the experiments directory; `profile_fit.py` and `parity.py` belong to the [Profile](#profile) section):
 
 | Script | What it does |
 |---|---|
-| `configs.py` | the 22 named configurations, the three tables of the article and the common parameters |
+| `datasets.py` | downloads and prepares the 30 datasets |
+| `configs.py` | the 22 named configurations, the tables of the article and the common parameters |
 | `run.py` | runs one unit: a dataset with a configuration, or with the scikit-learn classifiers |
-| `submit.py` | submits the units to Slurm with the cores and memory of each dataset, and shows the state |
-| `summary.py` | turns the results into the tables of the article |
+| `submit.py` | submits the units to Slurm with the cores and memory of each dataset, shows the state and waits for the queue |
+| `summary.py` | turns the results into the tables of the article, with macro-F1 or the balanced error rate |
+| `profile_fit.py` | profiles the fit of one member (see Profile) |
+| `parity.py` | records and checks the bit-level parity of the engine (see Profile) |
+
+The measures are the macro-F1 of the article and the balanced error rate (BER, `1 - macro-recall`, the mean over the classes of the test set of the proportion of each class that is predicted correctly), both on the test set.
 
 ### Configurations
 
@@ -82,45 +87,74 @@ Every configuration but `default` also has `fitness_function="macro-F1"`, `rando
 
 ```
 experiments/data/<dataset>.npz, manifest.json      (datasets.py)
-experiments/results/<dataset>/<config>/member-<i>.model.gz, member-<i>.json, result.json
-experiments/results/<dataset>/sklearn/<Name>.json
+experiments/results/<dataset>/<config>/member-<i>.model.gz, member-<i>.json, result.json, predictions.npz
+experiments/results/<dataset>/sklearn/<Name>.json, <Name>.npz
 experiments/results-quick/                          (the same, for --quick)
-experiments/logs/                                   (Slurm output, <dataset>.tasks.json, submissions.jsonl)
+experiments/logs/                                   (Slurm output, <dataset>.<time>.tasks.json, submissions.jsonl)
 ```
 
 ### Running a unit by hand
 
 ```bash
 python benchmarks/ecj2022/run.py --dataset iris --config agr-rnd [--workers 4] [--members 30] [--quick]
+python benchmarks/ecj2022/run.py --dataset iris --task-file logs/iris.<time>.tasks.json [--task-index N]
 python benchmarks/ecj2022/run.py --dataset iris --sklearn [--sklearn-timeout HOURS]
+python benchmarks/ecj2022/run.py --dataset iris --sklearn --classifiers GaussianNB SVC
+python benchmarks/ecj2022/run.py --dataset iris --sklearn --classifier-index 2
 ```
 
-An ensemble of 30 members is trained, one per seed `0 .. 29`, each on a random half of the training set, with one core (the BLAS and OpenMP thread variables are set to 1) and without a test set, so that the memory is that of the training examples only. Each member is a fresh process; its files are written with the JSON last, so a unit that is interrupted resumes at the member that was missing, and one that is done does nothing. `result.json` has the macro-F1 of the majority vote (`macro_f1`, the prediction of `EvoDAGE.predict`) and of the median decision function (`macro_f1_median`), the sum of the training times of the members (`fit_seconds`, the one-core time of the article) divided by the training examples (`fit_seconds_per_sample`), and the peak memory. The scikit-learn classifiers are fitted with default parameters and `random_state=0` on the prepared data without scaling, in a child process with a timeout (24 hours by default); an error or a timeout is recorded as a result, like the `-` cells of the article.
+An ensemble of 30 members is trained, one per seed `0 .. 29`, each on a random half of the training set, with one core (the BLAS and OpenMP thread variables are set to 1) and without a test set, so that the memory is that of the training examples only. Each member is a fresh process, started with the `fork` start method when the platform has it (`--workers` of them at a time); a member killed by a signal (the out-of-memory killer, a crash of a kernel) is recorded as a failure in `member-<i>.error.txt` ("process died with exit code ...") and the unit ends with the exit status 1 instead of waiting for it for ever. The files of a member are written with the JSON last, so a unit that is interrupted resumes at the member that was missing, and one that is done does nothing. A `result.json` counts as the finished unit only when its `members` is the number asked for (30, 3 with `--quick`): a run with `--members 2` leaves a result that `submit.py` and `summary.py` ignore, and running the unit again without it reuses the two members and fits the rest.
+
+`--task-file` is the JSON list of configurations that `submit.py` writes for an array (`<dataset>.<time>.tasks.json`, one file per submission) and `--task-index` (default `$SLURM_ARRAY_TASK_ID`) the position of this task in it. `--classifiers` and `--classifier-index` (the position, 0 to 15, in the table of classifiers; the jobs pass `$SLURM_ARRAY_TASK_ID`) select some of the sixteen classifiers; a result is skipped when it exists.
+
+`result.json` has the macro-F1 of the majority vote (`macro_f1`, the prediction of `EvoDAG.predict`) and of the median decision function (`macro_f1_median`), the same for the balanced error rate (`macro_recall`, `ber`, `macro_recall_median`, `ber_median`), the accuracy, the sum of the training times of the members (`fit_seconds`, the one-core time of the article) divided by the training examples (`fit_seconds_per_sample`), the peak memory and the `environment` (versions, `host`, `git_commit` and `git_dirty`, whether the tree had uncommitted changes). `predictions.npz` holds the test labels `y_test`, the predictions of the majority vote `hy` and of the median `hy_median` (all `int64`) and the median decision function (`float32`), so that any other measure can be computed without a new run. Each `member-<i>.json` records the `host`. The scikit-learn classifiers are fitted with default parameters and `random_state=0` on the prepared data without scaling, in a child process with a timeout (24 hours by default); each writes `<Name>.npz` (`y_test`, `hy`) and then `<Name>.json` (with `macro_f1`, `macro_recall`, `ber`); an error or a timeout is recorded as a result, like the `-` cells of the article, and has no `.npz`.
 
 ### Slurm
 
 ```bash
-python benchmarks/ecj2022/submit.py --dry-run          # print the sbatch commands, submit nothing
+python benchmarks/ecj2022/submit.py --dry-run          # print the sbatch commands and the configurations of each array; writes and submits nothing
 python benchmarks/ecj2022/submit.py --smoke            # the five smallest datasets, every configuration
 python benchmarks/ecj2022/submit.py                    # the full campaign
 python benchmarks/ecj2022/submit.py --status           # finished, partial, failed, in the queue
+python benchmarks/ecj2022/submit.py --wait 600         # wait up to 600 s for the queue to empty, print one line, submit nothing
 python benchmarks/ecj2022/summary.py                   # the tables
 ```
 
-(use the interpreter of the environment, `.venv/bin/python`: the jobs use the one that submits them). There is one job array per dataset with one task per pending configuration and a separate one-task job for the scikit-learn classifiers (16000 MB). The resources of the array follow the size of the dataset: a member needs `ceil(1.5 * 8 * popsize * n_classes * n_train / 1e6) + 1500` MB with `popsize = 4000`; a task runs `workers = max(1, min(--max-workers, --max-mem-mb // member_mb))` members at the same time (defaults 8 and 120000) and asks for `workers` cores and `workers * member_mb` MB. `--max-parallel` limits the tasks of an array that run together, `--datasets` and `--configs` restrict the campaign. Submitting again is safe: finished units are left out, the others resume at the member level, and a dataset that still has jobs in the queue is skipped. The peak memory of every member is recorded, to check the factor of the formula.
+(use the interpreter of the environment, `.venv/bin/python`: the jobs use the one that submits them). The other options of `submit.py`: `--datasets` and `--configs` restrict the campaign, `--quick` uses the tiny parameters, `--no-sklearn` leaves the scikit-learn jobs out, `--max-workers` (8) and `--max-mem-mb` (120000) bound a task, `--max-parallel` limits the tasks of an array that run together and `--sklearn-timeout HOURS` (24) is passed to `run.py`.
 
-`summary.py` prints, for the three tables, the macro-F1 with the rank of each system on each dataset (ties share the best rank), the average rank over the datasets where every system has a result, the Friedman p-value and, for the classifiers, the training time per training example. `--median` uses the median decision function, `--quick` reads the quick results, and `--paper-tex PATH` (for example `../articulos/ECJ2022/paper.tex` next to the repository) reads the numbers of the tables of the article from its LaTeX source and prints the differences; no file of the article is ever copied.
+There is one job array per dataset with one task per pending configuration, and for the scikit-learn classifiers one more array with one task per classifier that has no result (`--array` lists their positions, for example `0,3,7`; 1 core and 16000 MB each, so a dataset takes the time of its slowest classifier and not the sum of the sixteen). The datasets are submitted heaviest first (`n_train * n_classes`), so that the longest units start first. The resources of the EvoDAG array follow the size of the dataset: a member needs `ceil(MEMORY_FACTOR * 8 * popsize * n_classes * n_train / 1e6) + 1500` MB with `popsize = 4000` (`MEMORY_FACTOR` is in `submit.py`, see the Memory pilot below); a task runs `workers = max(1, min(--max-workers, --max-mem-mb // member_mb))` members at the same time and asks for `workers` cores and `workers * member_mb` MB. **The cluster does not enforce the memory a job asks for** (`TaskPlugin=task/none`, no accounting): it is used only to place jobs, so a job that uses more than it asked for can exhaust a node, and the request has to be right. The task file is `logs/<dataset>.<YYYYmmdd-HHMMSS>.tasks.json`, a name per call, so that the file a running array reads is never rewritten. Submitting again is safe: finished units are left out, the others resume at the member level, and a dataset that still has jobs in the queue is skipped; if `squeue` fails (after two retries) nothing is submitted, because the busy datasets would not be known. The peak memory of every member is recorded.
+
+`--wait SECONDS` checks the queue once a minute until no job of the campaign (name `ecj-...`) is left or the time runs out, and prints `queue: N jobs left; units finished F/T, failed X`; a failure of `squeue` counts as unknown and the wait goes on.
+
+`summary.py` prints, for the three tables of the article and a fourth with the released defaults (`default`, `agr-rnd`, `fit-fit`, `rnd-rnd`, which the article does not have), the macro-F1 with the rank of each system on each dataset (ties share the best rank), the average rank over the datasets where every system has a result, the Friedman p-value and, for the classifiers, the training time per training example. The datasets of the manifest without a result are listed as incomplete. `--measure ber` prints the balanced error rate instead (lower is better; the comparison with the article is skipped, because the article reports macro-F1 only), `--median` uses the median decision function, `--quick` reads the quick results, `--output FILE` writes the Markdown to a file instead of the standard output, and `--paper-tex PATH` (for example `../articulos/ECJ2022/paper.tex` next to the repository) reads the numbers of the tables of the article from its LaTeX source and prints the differences in macro-F1 and, for the classifiers, the ratio of our training time per example to the article's; if the file or a table cannot be read one sentence says so. No file of the article is ever copied.
 
 ### What differs from the article
 
-- The preprocessing of the datasets (see above): the original is lost.
+- The preprocessing of the datasets (see above): the original is lost. The 70/30 splits are ours (stratified, seed 0), and 12 datasets differ from the article's Table 1 by one or two rows, because the article's files were not available; `ad` has 1558 variables against 1557.
+- In `ml-prove` the class is a deterministic function of five other columns (the other one-hot label columns), as in the article, where almost every system scores 1.0. `yeast` keeps the sequence name as an ordinal variable. Class labels that are all numbers are ordered numerically.
 - EvoDAG's prediction is the majority vote of the members (the median is recorded too), while the article says "average of the predictions".
+- The measures are the macro-F1 of the article and, in addition, the balanced error rate (BER); the predictions of the test set are stored.
 - The scikit-learn defaults are those of the installed version, and TPOT and auto-sklearn are not run.
-- It is another machine and the time is measured on one core of it: times only compare among themselves.
+- It is another machine. The training times are measured with 5 to 8 members sharing a node without CPU binding, so they include contention, and they compare only among themselves. The memory requests are not enforced by this cluster.
 
-### Cost
+### Memory pilot
 
-The article reports 0.5 to 5 seconds per training example for an ensemble of 30 members. The 30 datasets have about 600 000 training examples in total, so one configuration is on the order of hundreds of CPU hours and the 22 of them thousands. The largest datasets (census-income, dota2, aps-failure, sensorless, adult, bank) dominate. The full campaign is launched by hand with the command above.
+The memory a job requests is not enforced on this cluster, so the request of `submit.py` has to be right. To size it, one member (`seed=0`, `--members 1`, one core, the parameters of the configuration) was fitted on the four datasets with the largest requests, with the cheapest kind of configuration (`agr-rnd`) and the most expensive (`ads-rnd`), each in its own Slurm job of 60000 MB on `geoint1` or `geoint2`, on 2026-11-17. The ratio is `(max_rss_kb * 1024 - 1e9) / (8 * popsize * classes * n_train)` with `popsize = 4000`: the peak memory of the process, less 1 GB for the interpreter, the data and NumPy, over the size of the outputs of the population.
+
+| Dataset | Configuration | `n_train` | Classes | Max RSS (GB) | Ratio | Fit (s) | Node |
+|---|---|---:|---:|---:|---:|---:|---|
+| sensorless | `agr-rnd` | 40953 | 11 | 16.06 | 1.04 | 569 | geoint1 |
+| census-income | `agr-rnd` | 199523 | 2 | 19.20 | 1.43 | 438 | geoint1 |
+| letter-recognition | `agr-rnd` | 14000 | 26 | 10.72 | 0.83 | 65 | geoint2 |
+| krkopt | `agr-rnd` | 19639 | 18 | 11.92 | 0.97 | 81 | geoint2 |
+| sensorless | `ads-rnd` | 40953 | 11 | 14.75 | 0.95 | 8329 | geoint1 |
+| census-income | `ads-rnd` | 199523 | 2 | 13.01 | 0.94 | 2933 | geoint1 |
+| letter-recognition | `ads-rnd` | 14000 | 26 | 8.95 | 0.68 | 1927 | geoint2 |
+| krkopt | `ads-rnd` | 19639 | 18 | 10.59 | 0.85 | 2481 | geoint2 |
+
+The largest ratio is 1.43 (`census-income` with `agr-rnd`; the earlier measurements on medium datasets were 1.13 to 1.51 with `agr-rnd`). With the margin of 1.25 and rounded up, `MEMORY_FACTOR` in `submit.py` is **1.8** (it was 1.5), so a member of `census-income` is asked 24486 MB and a task runs 4 members at the same time instead of 5. The `ads-rnd` members used less memory than the `agr-rnd` ones on these datasets (0.68 to 0.95; the cause was not investigated). The configurations `prs`, `sim` and `nvs` were not measured on a large dataset, so their request rests on the same factor, and the peak memory recorded in every `member-<i>.json` of the campaign will show whether it holds.
+
+The fit times are the best estimate of the cost of the campaign for the large datasets (one member, one core, a node with other jobs): a member takes 1 to 10 minutes with `agr-rnd` (65 s to 569 s here) and 0.5 to 2.3 hours with `ads-rnd` (1927 s to 8329 s, `sensorless` being the slowest of the four), and a unit has 30 members.
 
 ## Profile
 

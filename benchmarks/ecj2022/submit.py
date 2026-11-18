@@ -18,15 +18,24 @@
     python benchmarks/ecj2022/submit.py --smoke
     python benchmarks/ecj2022/submit.py
     python benchmarks/ecj2022/submit.py --status
+    python benchmarks/ecj2022/submit.py --wait 600
 
 The prepared datasets and their manifest come from ``datasets.py``. There is
 one job array per dataset, with one task per pending configuration (a unit of
-``run.py``), plus a one-task job per dataset for the scikit-learn
-classifiers. The cores and the memory of the array follow the size of the
-dataset (see :func:`member_mb` and :func:`resources`). Units that have a
-result are left out, and unfinished ones resume at the member level, so
+``run.py``), plus a one-core job array per dataset with one task per
+scikit-learn classifier that has no result. The cores and the memory of the
+array follow the size of the dataset (see :func:`member_mb` and
+:func:`resources`). Units that have a result (with the expected number of
+members) are left out, and unfinished ones resume at the member level, so
 submitting again is always safe. A dataset that still has jobs of this
-campaign in the queue is skipped.
+campaign in the queue is skipped, and if ``squeue`` fails nothing is
+submitted. The datasets are submitted heaviest first (``n_train`` times the
+number of classes), so the longest units start first.
+
+``--dry-run`` writes nothing (no directory, no task file) and submits
+nothing: it prints the commands and the configurations of every array.
+``--wait SECONDS`` submits nothing either: it waits until the queue holds no
+job of the campaign and prints one line with the progress.
 
 The full campaign is thousands of CPU hours. ``--smoke`` runs the five
 smallest datasets only.
@@ -51,7 +60,10 @@ import run as runner  # noqa: E402
 SMOKE_DATASETS = ["fertility", "iris", "tae", "wine", "parkinsons"]
 POPSIZE = 4000
 QUICK_POPSIZE = configs.QUICK["popsize"]
-MEMORY_FACTOR = 1.5
+# peak memory of a member over ``8 * popsize * n_classes * n_train`` bytes:
+# the largest ratio measured by the memory pilot (README, "Memory pilot") was
+# 1.43 (census-income with agr-rnd), times 1.25 of margin, rounded up
+MEMORY_FACTOR = 1.8
 BASE_MB = 1500
 SKLEARN_MB = 16000
 JOB_PREFIX = "ecj-"
@@ -60,8 +72,9 @@ JOB_PREFIX = "ecj-"
 # -- resources -------------------------------------------------------------
 
 def member_mb(n_classes, n_train, popsize=POPSIZE):
-    """Memory in megabytes requested for one member: 1.5 times the outputs of
-    the population (``8 * popsize * n_classes * n_train`` bytes) plus 1.5 GB."""
+    """Memory in megabytes requested for one member: ``MEMORY_FACTOR`` times
+    the outputs of the population (``8 * popsize * n_classes * n_train``
+    bytes) plus 1.5 GB."""
     return int(math.ceil(MEMORY_FACTOR * 8 * popsize * n_classes * n_train
                          / 1e6)) + BASE_MB
 
@@ -102,9 +115,12 @@ def select_datasets(manifest, names):
 
 
 def unit_done(root, dataset, config, quick=False):
-    "Whether ``result.json`` of a unit exists"
-    return (runner.unit_dir(root, dataset, config, quick)
-            / "result.json").exists()
+    """Whether ``result.json`` of a unit exists and is the one of an ensemble
+    with the expected number of members (a run with ``--members 2`` is not a
+    finished unit)"""
+    return runner.result_has_members(
+        runner.unit_dir(root, dataset, config, quick) / "result.json",
+        configs.n_members(quick))
 
 
 def sklearn_done(root, dataset, quick=False):
@@ -114,6 +130,34 @@ def sklearn_done(root, dataset, quick=False):
                for n in configs.SKLEARN_NAMES)
 
 
+def pending_classifiers(root, dataset, quick=False):
+    "Positions, in the table of classifiers, of those without a result"
+    directory = runner.unit_dir(root, dataset, "sklearn", quick)
+    return [i for i, n in enumerate(configs.SKLEARN_NAMES)
+            if not (directory / (n + ".json")).exists()]
+
+
+def array_spec(indices):
+    "The ``--array`` list of sorted indices, with ranges: ``0-2,5,7-8``"
+    parts, i = [], 0
+    indices = sorted(indices)
+    while i < len(indices):
+        j = i
+        while j + 1 < len(indices) and indices[j + 1] == indices[j] + 1:
+            j += 1
+        parts.append(str(indices[i]) if i == j
+                     else "%d-%d" % (indices[i], indices[j]))
+        i = j + 1
+    return ",".join(parts)
+
+
+def heaviest_first(manifest, datasets):
+    """The datasets in decreasing order of ``n_train * n_classes`` (the size
+    of the outputs of the population), ties in the given order."""
+    return sorted(datasets, key=lambda d: -(manifest[d]["n_train"]
+                                            * manifest[d]["n_classes"]))
+
+
 def pending_configs(root, dataset, config_names, quick=False):
     "The configurations without a result"
     return [c for c in config_names if not unit_done(root, dataset, c, quick)]
@@ -121,23 +165,37 @@ def pending_configs(root, dataset, config_names, quick=False):
 
 # -- the jobs --------------------------------------------------------------
 
-def running_jobs():
-    "Names of the jobs of this campaign in the queue (``[]`` without Slurm)"
+def running_jobs(retries=2, pause=5):
+    """Names of the jobs of this campaign in the queue. ``[]`` only when
+    ``squeue`` is not installed; when it fails (or times out) it is tried
+    again ``retries`` times, ``pause`` seconds apart, and then the program
+    stops: with the queue unknown, a dataset that is running could be
+    submitted a second time."""
     if shutil.which("squeue") is None:
         return []
-    try:
-        done = subprocess.run(
-            ["squeue", "-u", os.environ.get("USER") or getpass.getuser(),
-             "-h", "-o", "%j %T"], stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL, timeout=60)
-    except (OSError, subprocess.SubprocessError):
-        return []
-    jobs = []
-    for line in done.stdout.decode().splitlines():
-        parts = line.split()
-        if parts and parts[0].startswith(JOB_PREFIX):
-            jobs.append(parts[0])
-    return jobs
+    problem = ""
+    for attempt in range(retries + 1):
+        if attempt:
+            time.sleep(pause)
+        try:
+            done = subprocess.run(
+                ["squeue", "-u", os.environ.get("USER") or getpass.getuser(),
+                 "-h", "-o", "%j %T"], stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE, timeout=60)
+        except (OSError, subprocess.SubprocessError) as error:
+            problem = "%s: %s" % (type(error).__name__, error)
+            continue
+        if done.returncode != 0:
+            problem = "exit status %s: %s" % (
+                done.returncode, done.stderr.decode().strip())
+            continue
+        jobs = []
+        for line in done.stdout.decode().splitlines():
+            parts = line.split()
+            if parts and parts[0].startswith(JOB_PREFIX):
+                jobs.append(parts[0])
+        return jobs
+    raise SystemExit("squeue failed: %s; nothing was submitted" % problem)
 
 
 def job_name(dataset, sklearn=False):
@@ -145,14 +203,22 @@ def job_name(dataset, sklearn=False):
     return "%s%s%s" % (JOB_PREFIX, dataset, "-sklearn" if sklearn else "")
 
 
+def timestamp():
+    "One timestamp per call of the program, in the names of the task files"
+    return time.strftime("%Y%m%d-%H%M%S")
+
+
 def plan(root, manifest, datasets, config_names, quick=False, max_workers=8,
          max_mem_mb=120000, max_parallel=None, with_sklearn=True,
-         busy=()):
+         busy=(), stamp=None, sklearn_timeout=None):
     """The jobs to submit: a list of dictionaries with the ``sbatch``
     argument list (``argv``), the tasks and the resources. Datasets whose
-    jobs are in ``busy`` are left out."""
+    jobs are in ``busy`` are left out. The task file of a dataset is
+    ``logs/<dataset>.<stamp>.tasks.json``: a name per submission, because
+    the tasks of an array that is running are indices into its own file."""
     root = Path(root)
     run_py = str(HERE / "run.py")
+    stamp = stamp or timestamp()
     jobs = []
     for dataset in datasets:
         entry = manifest[dataset]
@@ -164,7 +230,8 @@ def plan(root, manifest, datasets, config_names, quick=False, max_workers=8,
         if tasks and job_name(dataset) not in busy:
             workers, mem = resources(entry["n_classes"], entry["n_train"],
                                      quick, max_workers, max_mem_mb)
-            task_file = root / "logs" / (dataset + ".tasks.json")
+            task_file = root / "logs" / ("%s.%s.tasks.json"
+                                         % (dataset, stamp))
             array = "0-%d" % (len(tasks) - 1)
             if max_parallel:
                 array += "%%%d" % max_parallel
@@ -181,31 +248,47 @@ def plan(root, manifest, datasets, config_names, quick=False, max_workers=8,
                          "--mem=%dM" % mem,
                          "--output=%s" % (root / "logs" / "%x-%A_%a.out"),
                          "--wrap", shlex.join(wrap)]})
-        if (with_sklearn and not sklearn_done(root, dataset, quick)
+        pending = pending_classifiers(root, dataset, quick)
+        if (with_sklearn and pending
                 and job_name(dataset, True) not in busy):
+            wrap = base + ["--sklearn"]
+            if sklearn_timeout is not None:
+                wrap += ["--sklearn-timeout", "%g" % sklearn_timeout]
+            # one task per classifier: the task id is its position
+            wrap = shlex.join(wrap) + " --classifier-index $SLURM_ARRAY_TASK_ID"
             jobs.append({
-                "dataset": dataset, "kind": "sklearn", "tasks": ["sklearn"],
+                "dataset": dataset, "kind": "sklearn",
+                "tasks": [configs.SKLEARN_NAMES[i] for i in pending],
                 "task_file": None, "workers": 1, "cpus": 1,
                 "mem_mb": SKLEARN_MB,
                 "argv": ["sbatch", "--parsable",
                          "--job-name=" + job_name(dataset, True),
+                         "--array=" + array_spec(pending),
                          "--cpus-per-task=1", "--mem=%dM" % SKLEARN_MB,
-                         "--output=%s" % (root / "logs" / "%x-%j.out"),
-                         "--wrap", shlex.join(base + ["--sklearn"])]})
+                         "--output=%s" % (root / "logs" / "%x-%A_%a.out"),
+                         "--wrap", wrap]})
     return jobs
 
 
 def submit(jobs, root, dry_run=False, log=print):
-    """Write the task files and submit (or just print, with ``dry_run``) the
-    jobs; every submission is appended to ``logs/submissions.jsonl``."""
+    """Write the task files and submit the jobs; every submission is appended
+    to ``logs/submissions.jsonl``. With ``dry_run`` nothing is written and
+    nothing is submitted: the commands are printed, each followed by the
+    configurations of its array."""
     root = Path(root)
     logs = root / "logs"
     for job in jobs:
-        logs.mkdir(parents=True, exist_ok=True)
-        if job["task_file"] is not None:
-            runner.write_json(job["task_file"], job["tasks"])
+        if not dry_run:
+            logs.mkdir(parents=True, exist_ok=True)
+            if job["task_file"] is not None:
+                runner.write_json(job["task_file"], job["tasks"])
         log(shlex.join(job["argv"]))
         if dry_run:
+            log("#   %s array of %s%s: %s" % (
+                job["dataset"], len(job["tasks"]),
+                "" if job["task_file"] is None else
+                " (task file %s)" % job["task_file"],
+                " ".join(job["tasks"])))
             continue
         done = subprocess.run(job["argv"], stdout=subprocess.PIPE,
                               stderr=subprocess.PIPE)
@@ -217,6 +300,8 @@ def submit(jobs, root, dry_run=False, log=print):
                   "job_id": job["job_id"], "dataset": job["dataset"],
                   "kind": job["kind"], "tasks": job["tasks"],
                   "cpus": job["cpus"], "mem_mb": job["mem_mb"]}
+        if job["task_file"] is not None:
+            record["task_file"] = str(job["task_file"])
         with open(logs / "submissions.jsonl", "a") as fpt:
             fpt.write(json.dumps(record) + "\n")
         log("submitted job %s (%s)" % (job["job_id"], job_name(
@@ -228,7 +313,7 @@ def submit(jobs, root, dry_run=False, log=print):
 def unit_state(root, dataset, config, members, quick=False):
     "``(finished, members_done, n_errors)`` of one EvoDAG unit"
     directory = runner.unit_dir(root, dataset, config, quick)
-    if (directory / "result.json").exists():
+    if runner.result_has_members(directory / "result.json", members):
         return True, members, 0
     if not directory.exists():
         return False, 0, 0
@@ -237,10 +322,10 @@ def unit_state(root, dataset, config, members, quick=False):
     return False, done, errors
 
 
-def status(root, datasets, config_names, quick=False, log=print):
+def status(root, datasets, config_names, quick=False, log=print, queue=None):
     "Print the state of every dataset; returns the totals"
     members = configs.n_members(quick)
-    queue = running_jobs()
+    queue = running_jobs() if queue is None else queue
     totals = {"units": 0, "finished": 0, "partial": 0, "failed": 0}
     for dataset in datasets:
         finished = partial = failed = 0
@@ -284,6 +369,29 @@ def status(root, datasets, config_names, quick=False, log=print):
     return totals
 
 
+def wait(root, datasets, config_names, quick, seconds, log=print):
+    """Wait until the queue has no job of the campaign or ``seconds`` have
+    passed (checking once a minute) and print one line with the progress.
+    Nothing is submitted. A failure of ``squeue`` is not fatal: the queue is
+    then unknown and the wait goes on."""
+    deadline = time.monotonic() + seconds
+    while True:
+        try:
+            queue = running_jobs(retries=0)
+        except SystemExit:
+            queue = None
+        remaining = deadline - time.monotonic()
+        if queue == [] or remaining <= 0:
+            break
+        time.sleep(min(60, max(remaining, 0)))
+    totals = status(root, datasets, config_names, quick,
+                    log=lambda *a: None, queue=queue or [])
+    log("queue: %s jobs left; units finished %d/%d, failed %d"
+        % ("unknown" if queue is None else len(queue), totals["finished"],
+           totals["units"], totals["failed"]))
+    return 0
+
+
 # -- command line ----------------------------------------------------------
 
 def main(argv=None):
@@ -300,9 +408,20 @@ def main(argv=None):
     parser.add_argument("--quick", action="store_true",
                         help="tiny parameters (see run.py)")
     parser.add_argument("--dry-run", action="store_true",
-                        help="print the sbatch commands and submit nothing")
+                        help="print the sbatch commands and the "
+                             "configurations of each array; it submits and "
+                             "writes nothing")
     parser.add_argument("--status", action="store_true",
                         help="print what is done, running and missing")
+    parser.add_argument("--wait", type=float, metavar="SECONDS",
+                        help="submit nothing: wait until no job of the "
+                             "campaign is in the queue or SECONDS have "
+                             "passed, then print one line of progress")
+    parser.add_argument("--sklearn-timeout", type=float, default=None,
+                        metavar="HOURS",
+                        help="hours allowed to each scikit-learn classifier "
+                             "(default %g, that of run.py)"
+                             % runner.DEFAULT_SKLEARN_TIMEOUT_HOURS)
     parser.add_argument("--no-sklearn", action="store_true",
                         help="do not submit the scikit-learn jobs")
     parser.add_argument("--max-workers", type=int, default=8,
@@ -325,12 +444,15 @@ def main(argv=None):
     if args.status:
         status(root, datasets, config_names, args.quick)
         return 0
+    if args.wait is not None:
+        return wait(root, datasets, config_names, args.quick, args.wait)
     if not args.dry_run and shutil.which("sbatch") is None:
         raise SystemExit("sbatch is not on the PATH: this needs a Slurm "
                          "login node (use --dry-run to see the commands)")
-    jobs = plan(root, manifest, datasets, config_names, args.quick,
-                args.max_workers, args.max_mem_mb, args.max_parallel,
-                not args.no_sklearn, busy=set(running_jobs()))
+    jobs = plan(root, manifest, heaviest_first(manifest, datasets),
+                config_names, args.quick, args.max_workers, args.max_mem_mb,
+                args.max_parallel, not args.no_sklearn,
+                busy=set(running_jobs()), sklearn_timeout=args.sklearn_timeout)
     if not jobs:
         print("nothing to submit")
         return 0

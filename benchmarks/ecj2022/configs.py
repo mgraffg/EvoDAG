@@ -100,6 +100,9 @@ TABLE_SCHEMES = [
     "agr-rnd--fit", "prs-fit", "prs-rnd", "ads-rnd", "sim-rnd",
     "ads-fit--fit", "fit-fit", "nvs-rnd", "ads-rnd-all", "ads-fit--fit-all"]
 EVODAG_CLASSIFIERS = ["agr-rnd", "rnd-rnd", "fit-fit", "nvs-rnd", "ads-rnd"]
+# the released defaults against three of the configurations (the table has no
+# counterpart in the article)
+TABLE_DEFAULTS = ["default", "agr-rnd", "fit-fit", "rnd-rnd"]
 
 # labels of the tables of the article (several when a table is in parts)
 PAPER_LABELS = {
@@ -108,6 +111,11 @@ PAPER_LABELS = {
                 "tab:res_apx_selectionschemes_part2"],
     "classifiers": ["tab:res_comparison_f1", "tab:res_apx_classifiers_part2"],
 }
+# the three tables of the article with the training time per example (the
+# columns of the EvoDAG systems are named ``EvoDAG agr-rnd``...)
+PAPER_TIME_LABELS = ["tab:res_apx_classifiers_time_part1",
+                     "tab:res_apx_classifiers_time_part2",
+                     "tab:res_apx_classifiers_time_part3"]
 
 # the abbreviations of the article for the scikit-learn classifiers
 SKLEARN_ARTICLE_NAMES = {
@@ -135,7 +143,7 @@ SKLEARN_NAMES = [name for name, _, _ in SKLEARN]
 TABLE_CLASSIFIERS = EVODAG_CLASSIFIERS + SKLEARN_NAMES
 
 TABLES = {"heuristics": TABLE_HEURISTICS, "schemes": TABLE_SCHEMES,
-          "classifiers": TABLE_CLASSIFIERS}
+          "classifiers": TABLE_CLASSIFIERS, "defaults": TABLE_DEFAULTS}
 
 
 def params_for(config, quick=False):

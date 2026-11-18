@@ -15,15 +15,21 @@
 
     python benchmarks/ecj2022/summary.py
     python benchmarks/ecj2022/summary.py --quick --median --output tables.md
+    python benchmarks/ecj2022/summary.py --measure ber
     python benchmarks/ecj2022/summary.py --paper-tex path/to/paper.tex
 
 Prints Markdown with, for each of the three tables of the article (the 14
 combinations of selection heuristics, the 15 selection schemes and the
-comparison with the classifiers of scikit-learn), the macro-F1 on the test
-set of every system on every dataset with its rank in parentheses, the
-average rank (computed on the datasets where every system has a result), and
-the p-value of the Friedman test. For the classifiers it also prints the
-training time per training example and its ranks (1 is the fastest).
+comparison with the classifiers of scikit-learn) and a fourth one with the
+released defaults, the macro-F1 on the test set of every system on every
+dataset with its rank in parentheses, the average rank (computed on the
+datasets where every system has a result), and the p-value of the Friedman
+test. ``--measure ber`` prints the balanced error rate (``1 - macro-recall``,
+lower is better) instead. For the classifiers it also prints the training
+time per training example and its ranks (1 is the fastest). The datasets of
+the manifest that have no result are listed as incomplete. A result of an
+ensemble with a number of members other than the expected one (30, or 3 with
+``--quick``) counts as missing.
 
 A rank is 1 plus the number of systems that are strictly better: systems with
 the same value share the best rank of the tie and the following ranks are
@@ -31,7 +37,11 @@ skipped. A system without a result or with an error is shown as ``-``.
 
 With ``--paper-tex`` the numbers of the tables of the article are read from
 its LaTeX source and the average ranks and the macro-F1 differences (ours
-minus the article's) are printed after each table. The file is never copied.
+minus the article's) are printed after each table, and, after the table of
+the classifiers, the training time per example as the ratio of ours to the
+article's. The table of the defaults has no counterpart and the BER is not in
+the article. If the file or a table cannot be read, one sentence says so. The
+file is never copied.
 """
 import argparse
 import json
@@ -45,7 +55,12 @@ import run as runner  # noqa: E402
 
 TITLES = {"heuristics": "Combinations of parent and negative selection",
           "schemes": "Selection schemes",
-          "classifiers": "Comparison with classifiers"}
+          "classifiers": "Comparison with classifiers",
+          "defaults": "Released defaults"}
+MEASURES = {"macro_f1": ("macro_f1", "macro_f1_median", True,
+                         "Macro-F1 of the test set"),
+            "ber": ("ber", "ber_median", False,
+                    "Balanced error rate (BER) on the test set")}
 
 
 # -- reading the results ---------------------------------------------------
@@ -71,22 +86,29 @@ def read_result(root, dataset, system, quick=False):
     if not path.exists():
         return None
     with open(path) as fpt:
-        return json.load(fpt)
+        result = json.load(fpt)
+    # a run with --members N is not the finished unit
+    if (system in configs.CONFIGS and "error" not in result
+            and result.get("members") != configs.n_members(quick)):
+        return None
+    return result
 
 
-def collect(root, datasets, systems, quick=False, median=False):
+def collect(root, datasets, systems, quick=False, median=False,
+            measure="macro_f1"):
     """``(f1, time)``: dictionaries dataset -> system -> number (or ``None``
-    for a missing result or an error)."""
-    key = "macro_f1_median" if median else "macro_f1"
+    for a missing result, an error or, for a result written before the
+    measure existed, a missing key); ``f1`` holds the ``measure``."""
+    key = MEASURES[measure][1 if median else 0]
     f1, seconds = {}, {}
     for dataset in datasets:
         f1[dataset], seconds[dataset] = {}, {}
         for system in systems:
             result = read_result(root, dataset, system, quick)
             usable = result is not None and "error" not in result
-            f1[dataset][system] = result[key] if usable else None
-            seconds[dataset][system] = (result["fit_seconds_per_sample"]
-                                        if usable else None)
+            f1[dataset][system] = result.get(key) if usable else None
+            seconds[dataset][system] = (
+                result.get("fit_seconds_per_sample") if usable else None)
     return f1, seconds
 
 
@@ -201,6 +223,8 @@ def article_header_map():
             mapping[header] = name
     for name, abbreviation in configs.SKLEARN_ARTICLE_NAMES.items():
         mapping[abbreviation] = name
+    for name in configs.EVODAG_CLASSIFIERS:  # the tables of time
+        mapping["EvoDAG " + name] = name
     return mapping
 
 
@@ -291,36 +315,79 @@ def paper_comparison(f1, averages, systems, datasets, text, labels):
     return "\n".join(lines)
 
 
+def paper_time_comparison(seconds, systems, datasets, text):
+    """Markdown with the training time per example, ours divided by the
+    article's, two significant digits, for the cells that both have."""
+    values, _ = paper_table(text, configs.PAPER_TIME_LABELS)
+    lines = ["#### Training time against the article", "",
+             "Training time per training example, ours divided by the "
+             "article's (below 1 is faster than the article, and the "
+             "machines are not the same), for the cells that both have.",
+             ""]
+    rows = []
+    for dataset in datasets:
+        row = [dataset]
+        for s in systems:
+            ours = seconds[dataset].get(s)
+            theirs = values.get(dataset, {}).get(s)
+            row.append("-" if not ours or not theirs
+                       else "%.2g" % (ours / theirs))
+        rows.append(row)
+    lines.append(markdown_table(["dataset"] + list(systems), rows))
+    return "\n".join(lines)
+
+
+def attempt(function, *args):
+    """The text of a comparison with the article; if the article's tables do
+    not parse, one sentence says so (a comparison never stops the summary)."""
+    try:
+        return function(*args)
+    except (ValueError, KeyError, IndexError) as error:
+        return ("The comparison with the article could not be made: %s."
+                % error)
+
+
 # -- command line ----------------------------------------------------------
 
-def summarize(root, quick=False, median=False, paper_text=None):
-    "The Markdown of the three tables"
+def summarize(root, quick=False, median=False, paper_text=None,
+              measure="macro_f1", paper_note=None):
+    """The Markdown of the four tables. ``measure`` is ``macro_f1`` or
+    ``ber``; ``paper_note`` is a sentence to print when the article's source
+    could not be read."""
     order = dataset_order(root)
     results = runner.results_dir(root, quick)
     found = sorted(p.name for p in results.iterdir()
                    if p.is_dir()) if results.exists() else []
-    datasets = [d for d in order if d in found]
-    datasets += [d for d in found if d not in datasets]
-    if not datasets:
+    if not found:
         return "No results in %s." % results
+    # every dataset of the manifest, also those that were not started
+    datasets = list(order)
+    datasets += [d for d in found if d not in datasets]
+    _, _, higher_is_better, unit = MEASURES[measure]
     out = ["# Selection heuristics experiments", "",
-           "Macro-F1 on the test set, EvoDAG ensembles of %d members with "
-           "the %s." % (configs.n_members(quick),
-                        "median decision function" if median
-                        else "majority vote")]
+           "%s, EvoDAG ensembles of %d members with the %s."
+           % (unit, configs.n_members(quick),
+              "median decision function" if median else "majority vote")]
     if quick:
         out += ["", "These are `--quick` results: tiny parameters, they are "
                 "not results of the article."]
+    if paper_note:
+        out += ["", paper_note]
+    if paper_text is not None and measure != "macro_f1":
+        out += ["", "The comparison with the article is skipped: the "
+                "article reports macro-F1 only."]
     for name, systems in configs.TABLES.items():
-        f1, seconds = collect(root, datasets, systems, quick, median)
+        f1, seconds = collect(root, datasets, systems, quick, median,
+                              measure)
         text, averages = ranked_table(
-            TITLES[name], f1, systems, datasets, "%.2f", True,
-            "Macro-F1 of the test set")
+            TITLES[name], f1, systems, datasets, "%.2f", higher_is_better,
+            unit)
         out += ["", text]
-        if paper_text is not None:
-            out += ["", paper_comparison(f1, averages, systems, datasets,
-                                         paper_text,
-                                         configs.PAPER_LABELS[name])]
+        if (paper_text is not None and measure == "macro_f1"
+                and name in configs.PAPER_LABELS):
+            out += ["", attempt(paper_comparison, f1, averages, systems,
+                                datasets, paper_text,
+                                configs.PAPER_LABELS[name])]
         if name == "classifiers":
             text, _ = ranked_table(
                 "Training time per training example, comparison with "
@@ -328,6 +395,9 @@ def summarize(root, quick=False, median=False, paper_text=None):
                 "Seconds of training per training example (the sum over the "
                 "members for EvoDAG); the rank 1 is the fastest")
             out += ["", text]
+            if paper_text is not None:
+                out += ["", attempt(paper_time_comparison, seconds, systems,
+                                    datasets, paper_text)]
     return "\n".join(out) + "\n"
 
 
@@ -340,6 +410,10 @@ def main(argv=None):
     parser.add_argument("--median", action="store_true",
                         help="use the median decision function instead of "
                              "the majority vote")
+    parser.add_argument("--measure", choices=sorted(MEASURES),
+                        default="macro_f1",
+                        help="macro_f1 (default) or ber, the balanced error "
+                             "rate (lower is better)")
     parser.add_argument("--paper-tex", metavar="PATH",
                         help="LaTeX source of the article, to compare with "
                              "its numbers (e.g. ../articulos/ECJ2022/paper.tex)")
@@ -348,10 +422,16 @@ def main(argv=None):
                         "$%s or <repository>/experiments)" % runner.ENV_ROOT)
     args = parser.parse_args(argv)
     root = runner.resolve_root(args.root)
-    paper_text = None
+    paper_text, note = None, None
     if args.paper_tex:
-        paper_text = Path(args.paper_tex).read_text(encoding="utf8")
-    text = summarize(root, args.quick, args.median, paper_text)
+        try:
+            paper_text = Path(args.paper_tex).read_text(encoding="utf8")
+        except (OSError, UnicodeDecodeError) as error:
+            note = ("The article's source %s could not be read (%s): no "
+                    "comparison with the article." % (args.paper_tex,
+                                                      type(error).__name__))
+    text = summarize(root, args.quick, args.median, paper_text,
+                     args.measure, note)
     if args.output:
         Path(args.output).write_text(text, encoding="utf8")
     else:
