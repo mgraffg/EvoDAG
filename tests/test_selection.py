@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests of the selection schemes of the heuristics article (``selection``)."""
 import itertools
+import warnings
 import numpy as np
 import pytest
 from test_root import X, cl
@@ -68,9 +69,11 @@ def test_every_selection_fits_and_is_deterministic(selection, first,
     assert np.array_equal(np.array(a), np.array(b))
 
 
-def test_fitness_selection_equals_legacy():
-    a = fit(selection='fitness', orthogonal_selection=True)
-    b = fit(orthogonal_selection=False, orthogonal_dot_selection=False)
+@pytest.mark.parametrize("seed", (0, 1, 2))
+def test_fitness_selection_equals_legacy(seed):
+    a = fit(seed=seed, selection='fitness', orthogonal_selection=True)
+    b = fit(seed=seed, orthogonal_selection=False,
+            orthogonal_dot_selection=False)
     assert np.array_equal(np.array(a.model().decision_function(X)),
                           np.array(b.model().decision_function(X)))
     assert len(a.population.hist) == len(b.population.hist)
@@ -151,6 +154,30 @@ def test_degenerate_measures():
     zero = [np.zeros(len(engine._mask_ts))] * 3
     assert engine._cosine_value((zero, [0.0] * 3), 0) == 99.0
     assert engine._pearson_value(zero, 0) == 99.0 * 3
+    # a zero candidate against a reference that is not zero: for the cosine
+    # the zero outputs add nothing and the value is 99 only when all are zero
+    ref = engine._cosine_reference(3)
+    v = engine.population.population[0]
+    n = len(engine._mask_ts)
+    v.hy = [np.zeros(n) for _ in v.hy]
+    assert engine._cosine_value(ref, 0) == 99.0
+    saved = engine.population.population[7].hy
+    v.hy = [np.zeros(n)] + [h.copy() for h in saved[1:]]
+    assert abs(engine._cosine_value(ref, 0) - brute_cosine(engine, 3, 0)) \
+        < 1e-12
+    assert 0.0 < engine._cosine_value(ref, 0) < 99.0
+    # for Pearson each zero output adds 99
+    v.hy = [np.zeros(n) for _ in v.hy]
+    assert engine._pearson_value(engine._pearson_reference(3), 0) == 99.0 * 3
+    v.hy = [np.zeros(n)] + [h.copy() for h in saved[1:]]
+    value = engine._pearson_value(engine._pearson_reference(3), 0)
+    assert 99.0 <= value < 99.0 + 2 and \
+        abs(value - brute_pearson(engine, 3, 0)) < 1e-12
+    # a constant output is constant after the mask only where the mask is
+    # constant, so it is a normal output for the measure
+    v.hy = [np.full(n, 2.0) for _ in v.hy]
+    assert abs(engine._pearson_value(engine._pearson_reference(3), 0) -
+               brute_pearson(engine, 3, 0)) < 1e-12
 
 
 def novelty_state(engine):
@@ -218,11 +245,28 @@ def test_heuristic_functions_all(monkeypatch):
 def test_reference_is_not_an_argument(selection, monkeypatch):
     engine = fit()
     monkeypatch.setattr(Mul, 'nargs', 2)
-    engine._first_draw = lambda: (lambda: 3)
+    monkeypatch.setattr(Add, 'nargs', 5)
+
+    def first_draw():
+        # the reference is individual 3; the angle scheme draws its
+        # candidates with the same function, so the rest are random
+        calls = []
+
+        def draw():
+            calls.append(1)
+            if len(calls) == 1:
+                return 3
+            return np.random.randint(engine.population.popsize)
+        return draw
+    engine._first_draw = first_draw
     method = getattr(engine, '_get_args_' + selection)
     for _ in range(50):
         args = method(Add)
-        assert args is None or (3 not in args and len(args) <= Add.nargs - 1)
+        # the winner of an angle tournament repeats, and the tries to find
+        # a different one are limited, so that scheme may return fewer
+        wanted = range(2, 5) if selection == 'angle' else (4,)
+        assert args is not None and len(args) in wanted and 3 not in args \
+            and len(set(args)) == len(args)
     assert method(Mul) is None
 
 
@@ -237,3 +281,143 @@ def test_random_selection_for_the_other_functions(monkeypatch):
     assert calls == [Add]
     args = engine.get_args(Mul)
     assert len(args) == 2
+
+
+def two_candidates(engine, monkeypatch, *lists):
+    "The tournaments draw these lists of candidates, one after the other"
+    draws = itertools.cycle(lists)
+    monkeypatch.setattr(engine.population, 'random',
+                        lambda: list(next(draws)))
+
+
+@pytest.mark.parametrize("selection,name", (
+    ('cosine', '_cosine_value'), ('pearson', '_pearson_prepared_value')))
+def test_tournament_min_picks_the_smallest(selection, name, monkeypatch):
+    engine = fit(selection=selection)
+    monkeypatch.setattr(Add, 'nargs', 2)
+    monkeypatch.setattr(Add, 'min_nargs', 1)
+    engine._first_draw = lambda: (lambda: 3)
+    method = getattr(engine, '_get_args_' + selection)
+    for values, expected in (({4: 0.9, 7: 0.1}, [7]), ({4: 0.1, 7: 0.9}, [4]),
+                             ({4: 0.5, 7: 0.5}, [4])):
+        two_candidates(engine, monkeypatch, [4, 7])
+        monkeypatch.setattr(engine, name, lambda ref, x, v=values: v[x])
+        assert method(Add) == expected
+    # the generic tournament
+    two_candidates(engine, monkeypatch, [4, 7])
+    assert engine._tournament_min({4: 0.9, 7: 0.1}.get) == 7
+    two_candidates(engine, monkeypatch, [4, 7])
+    assert engine._tournament_min({4: 0.5, 7: 0.5}.get) == 4
+
+
+# the paper draws ten candidates; the number is spelled out so that a change
+# of the constant of the engine is noticed
+ANGLE_CANDIDATES = 10
+
+
+def test_angle_draws_ten_candidates_and_picks_the_largest(monkeypatch):
+    engine = fit(selection='angle')
+    monkeypatch.setattr(Add, 'nargs', 2)
+    monkeypatch.setattr(Add, 'min_nargs', 1)
+    draws = []
+
+    def first_draw():
+        counter = itertools.count()
+
+        def draw():
+            draws.append(next(counter))
+            return draws[-1]
+        return draw
+    monkeypatch.setattr(engine, '_first_draw', first_draw)
+    monkeypatch.setattr(engine, '_angle_value',
+                        lambda reference, x, target: float(x))
+    args = engine._get_args_angle(Add)
+    assert len(draws) == 1 + ANGLE_CANDIDATES
+    assert args == [ANGLE_CANDIDATES]
+    monkeypatch.setattr(engine, '_angle_value',
+                        lambda reference, x, target: -float(x))
+    del draws[:]
+    assert engine._get_args_angle(Add) == [1]
+
+
+def test_novelty_picks_the_largest(monkeypatch):
+    engine = fit(selection='novelty')
+    values = {4: 1.0, 7: 3.0, 2: 0.5}
+    monkeypatch.setattr(engine, '_novelty_value', lambda x: values[x])
+    two_candidates(engine, monkeypatch, [4, 7], [4, 2])
+    assert engine._get_args_novelty(Add)[:2] == [7, 4]
+    values.update({4: 5.0})
+    two_candidates(engine, monkeypatch, [4, 7], [2, 7])
+    assert engine._get_args_novelty(Add)[:2] == [4, 7]
+
+
+def test_first_selection_chooses_the_draw():
+    engine = fit(selection='cosine', first_selection='fitness')
+    assert engine._first_draw() == engine.population.tournament
+    engine = fit(selection='cosine', first_selection='random')
+    assert engine._first_draw() == engine.population.random_selection
+
+
+def forbid(*_, **__):
+    raise AssertionError("the wrong draw was used")
+
+
+def test_other_functions_use_the_right_draw(monkeypatch):
+    engine = fit(selection='cosine')
+    monkeypatch.setattr(Mul, 'nargs', 2)
+    monkeypatch.setattr(engine.population, 'tournament', forbid)
+    assert len(engine.get_args(Mul)) == 2
+    # without the random generations of the defaults the tournament is used
+    engine = fit(selection='fitness', random_generations=0)
+    monkeypatch.setattr(Mul, 'nargs', 2)
+    monkeypatch.setattr(engine.population, 'random_selection', forbid)
+    assert engine.get_args(Add) is not None
+    assert len(engine.get_args(Mul)) == 2
+    engine = fit(selection='random')
+    monkeypatch.setattr(engine.population, 'tournament', forbid)
+    assert engine.get_args(Add) is not None
+
+
+def test_angle_falls_back_to_random(monkeypatch):
+    engine = fit(selection='angle')
+    monkeypatch.setattr(engine, '_angle_reference',
+                        lambda first, target: None)
+    monkeypatch.setattr(engine.population, 'tournament', forbid)
+    args = engine._get_args_angle(Add)
+    assert isinstance(args, list) and len(args) >= Add.min_nargs
+
+
+def test_huge_outputs_do_not_warn(monkeypatch):
+    engine = fit(selection='cosine')
+    v = engine.population.population[5]
+    v.hy = [h * 1e200 for h in v.hy]
+    engine._first_draw = lambda: (lambda: 5)
+    pop = engine.population
+    with warnings.catch_warnings():
+        warnings.simplefilter('error')
+        for name in ('cosine', 'pearson', 'angle'):
+            engine._selection = name
+            for _ in range(20):
+                engine._get_args_selection(Add)
+            # the huge individual is a candidate and the reference
+            monkeypatch.setattr(pop, 'random', lambda: [5, 6, 7])
+            engine._get_args_selection(Add)
+            monkeypatch.undo()
+    with np.errstate(over='ignore', invalid='ignore'):
+        assert engine._cosine_value(engine._cosine_reference(3), 5) == 0.0
+
+
+def test_agreement_in_regression():
+    rng = np.random.RandomState(0)
+    Xr = rng.randn(80, 3)
+    yr = Xr[:, 0] + 0.1 * rng.randn(80)
+
+    def run(**kw):
+        engine = RGP.init(classifier=False, popsize=20, seed=0,
+                          early_stopping_rounds=20, time_limit=None, **kw)
+        return engine.fit(Xr, yr).predict(Xr)
+    a = run(selection='agreement')
+    assert np.isfinite(a).all() and np.array_equal(a, run(
+        selection='agreement'))
+    # the same as the legacy flag
+    assert np.array_equal(a, run(orthogonal_selection=True))

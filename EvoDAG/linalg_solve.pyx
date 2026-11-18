@@ -103,26 +103,16 @@ cdef bint gauss_jordan(list m):
     return False
 
         
-cdef union double_bits:
-    double value
-    unsigned long long bits
-
-
 cdef double dot(double[::1] a, double[::1] b):
     """Sum of the products of the positions where both are not zero, adding
     in order (see array_utils.dot)"""
     cdef Py_ssize_t i, n = a.shape[0]
     cdef double x, y, res = 0
-    cdef double_bits p
     for i in range(n):
         x = a[i]
         y = b[i]
-        # the product where both are not zero and +0.0 elsewhere, without a
-        # branch (it is unpredictable on masked vectors); adding +0.0 is the
-        # same as not adding because res is never -0.0
-        p.value = x * y
-        p.bits &= -(<unsigned long long> ((x != 0) & (y != 0)))
-        res += p.value
+        if x != 0 and y != 0:
+            res += x * y
     return res
 
 

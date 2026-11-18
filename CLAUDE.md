@@ -38,7 +38,9 @@ Modules in the order the data flows; each is documented in the developer referen
   examples and `hy_test` on the test set (`None` when none was given); with several outputs
   (always in classification, one per class) they are lists of arrays. Weights come from least
   squares (`EvoDAG/linalg_solve.pyx`) except for the Naive Bayes and Centroid nodes, which use the
-  class labels.
+  class labels. A node also keeps the
+  predicted labels of its outputs (`labels`, read by the agreement heuristic); the cache is dropped whenever
+  `hy` is replaced or released and it is not part of a stored model.
 - **`EvoDAG/bagging_fitness.py`.** The training/validation split (`tr_fraction`), the masks and
   the fitness on each part. A fit is deterministic for a fixed `seed`.
 - **`EvoDAG/model.py`.** `Model` (the nodes the early stopping individual depends on, with their
@@ -82,7 +84,8 @@ Modules in the order the data flows; each is documented in the developer referen
 - `benchmarks/`: `benchmarks/bench.py` and its recorded results. `benchmarks/ecj2022/` holds the scripts that
   reproduce the experiments of the selection heuristics article, starting with `benchmarks/ecj2022/datasets.py` and followed by `benchmarks/ecj2022/configs.py`,
   `benchmarks/ecj2022/run.py`, `benchmarks/ecj2022/submit.py` and `benchmarks/ecj2022/summary.py`, with
-  `benchmarks/ecj2022/profile_fit.py` (profile one member) and `benchmarks/ecj2022/parity.py` (the bit-level parity check);
+  `benchmarks/ecj2022/profile_fit.py` (profile one member) and `benchmarks/ecj2022/parity.py` (the bit-level parity check,
+  106 cases, among them an ensemble of each kind; the profile and the speed-ups it recorded are in `benchmarks/ecj2022/README.md`);
   their data and results go to a directory named experiments at the repository root that git ignores.
   `scripts/`: the PyPI version check.
 - `.github/workflows/`: `.github/workflows/test.yml`, `.github/workflows/website.yml`,
@@ -191,5 +194,8 @@ unless asked. The conda-forge feedstock is a separate repository.
   a commit.
 - Tests live in `tests/`, mostly one file per module (for instance `tests/test_node.py` and `tests/test_model.py`), plus
   `tests/test_docs.py`,
-  `tests/test_packaging.py`, `tests/test_public_api.py` and `tests/test_golden.py`.
+  `tests/test_packaging.py`, `tests/test_public_api.py` and `tests/test_golden.py`. The selection
+  schemes are in `tests/test_selection.py`, the optimisations in `tests/test_optimisations.py`,
+  and the scripts of the experiments in `tests/test_ecj2022_datasets.py`, `tests/test_ecj2022_run.py`
+  and `tests/test_ecj2022_parity.py`.
 - The package supports Python 3.11 or newer (`requires-python` in `pyproject.toml`).

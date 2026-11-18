@@ -30,8 +30,8 @@ The paper's best-ranked configuration for the selection is agreement for the par
 ### What still differs from the paper's setup
 
 * **Fitness.** The paper reports that EvoDAG used the macro-F1 score as fitness. The default here is `"BER"`; `fitness_function="macro-F1"` selects macro-F1.
-* **The first argument.** The paper chooses the first argument of a function at random. The code chooses it by the usual tournament on fitness (it is random only in the first `random_generations` generations).
-* **Functions without a heuristic.** The paper uses random selection for the arguments of the functions that the heuristic does not apply to. The code uses the tournament on fitness for them.
+* **The first argument.** The paper chooses the first argument of a function at random. The code chooses it by the usual tournament on fitness (it is random only in the first `random_generations` generations). That is the behaviour of the defaults; with `selection` set, `first_selection="random"` (its default) does what the paper describes (see [Selection](selection.qmd)).
+* **Functions without a heuristic.** The paper uses random selection for the arguments of the functions that the heuristic does not apply to. The code uses the tournament on fitness for them. That is the behaviour of the defaults; with `selection` set to a heuristic they are chosen at random, as in the paper.
 
 There are other, smaller differences that are listed in [How it works](how-it-works.qmd).
 

@@ -30,8 +30,10 @@ The cases are the 22 configurations of ``configs.py`` with the parameters of
 the experiments (population and early stopping reduced to 200) on a 3-class
 and a 2-class problem with seeds 0 and 1, the released defaults for
 classification (with and without multiple outputs) and regression, two
-``EvoDAGE`` ensembles, and cases with a column of huge values and a constant
-column. Record the reference from the tree **before** an optimisation and
+``EvoDAGE`` ensembles, cases with a column of huge values and a constant
+column, and three cases of paths the others do not take (the agreement
+heuristic in regression, the generational population and a test set given to
+``fit``, whose outputs on it are recorded too); 106 cases in all. Record the reference from the tree **before** an optimisation and
 check after each change; the golden files of the tests do not cover the
 selection schemes nor these configurations.
 """
@@ -120,6 +122,20 @@ def make_cases():
                           kind="engine", classifier=False, seed=seed,
                           params=dict(SMALL), data=regression_data()))
     X, y, Xt = problems["3c"]
+    # paths the others do not take: the regression branch of the agreement
+    # heuristic, the generational population and a test set given to fit
+    Xr, yr, Xtr = regression_data()
+    cases.append(dict(name="regression-orthogonal", kind="engine",
+                      classifier=False, seed=0,
+                      params=dict(SMALL, orthogonal_selection=True),
+                      data=(Xr, yr, Xtr)))
+    cases.append(dict(name="generational-3c", kind="engine", classifier=True,
+                      seed=0, params=dict(SMALL,
+                                          population_class="Generational"),
+                      data=(X, y, Xt)))
+    cases.append(dict(name="test-set-3c", kind="engine", classifier=True,
+                      seed=0, params=dict(SMALL), data=(X, y, Xt),
+                      test_set=True))
     cases.append(dict(name="ensemble-classification", kind="ensemble",
                       classifier=True, seed=0,
                       params=dict(SMALL, n_estimators=3), data=(X, y, Xt)))
@@ -203,8 +219,12 @@ def run_case(case):
                 return out
             engine = Engine.init(classifier=case["classifier"],
                                  seed=case["seed"], **case["params"])
-            engine.fit(X, y)
+            engine.fit(X, y, test_set=Xt if case.get("test_set") else None)
             out = observe_model(engine.model(), X, Xt)
+            if case.get("test_set"):
+                # what the engine evaluated on the test set along the way
+                out["df_fit_test"] = stack(engine.decision_function())
+                out["hy_test"] = stack(engine.population.estopping.hy_test)
             out["n_individuals"] = np.array(len(engine.population.hist))
             out["history"] = history_digest(engine)
     return out

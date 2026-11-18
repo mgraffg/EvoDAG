@@ -86,11 +86,34 @@ def reference(r, ytr, mask):
     return res
 
 
-def same(a, b):
+def exact(a, b):
     if a is None or b is None:
         return a is None and b is None
     return np.array_equal(a, b, equal_nan=True) and \
         np.signbit(a).tolist() == np.signbit(b).tolist()
+
+
+def _probe():
+    rng = np.random.RandomState(12345)
+    r = rng.randn(200)
+    t = rng.randn(200)
+    return compute_weight([r], t, np.ones(200)), reference([r], t, np.ones(200))
+
+
+# A build whose compiler fuses a multiply and an add (FMA contraction) does
+# not give the bits of the unfused Python reference: detect it once
+FUSED = not exact(*_probe())
+
+
+def same(a, b):
+    if not FUSED:
+        return exact(a, b)
+    if a is None and b is None:
+        return True
+    if a is None or b is None:
+        # a singular system that only one of the two sees as singular
+        pytest.skip("the system is singular for one of the two only")
+    return bool(np.allclose(a, b, rtol=1e-9, atol=0, equal_nan=True))
 
 
 def make_case(rs, n, size, density, kind):

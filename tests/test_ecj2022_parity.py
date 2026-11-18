@@ -44,6 +44,9 @@ def test_the_case_list_covers_what_the_issue_asks():
     assert "default-regression-s0" in names
     assert any(n.startswith("ensemble-") for n in names)
     assert any(n.startswith("extremes-") for n in names)
+    assert len(names) == 106
+    for extra in ("regression-orthogonal", "generational-3c", "test-set-3c"):
+        assert extra in names
     assert all(c["params"]["popsize"] == 200 for c in cases)
 
 
@@ -58,6 +61,14 @@ def test_record_then_check_is_identical(tmp_path, monkeypatch, capsys):
     assert parity.check(tmp_path / "ref", log=lambda *a: None) == []
     assert parity.main(["check", "--reference", str(tmp_path / "ref")]) == 0
     assert "identical" in capsys.readouterr().out
+
+
+def test_a_test_set_given_to_fit_is_recorded():
+    case = dict(tiny_cases()[0], test_set=True)
+    out = parity.run_case(case)
+    assert out["hy_test"].shape == (3, 20)
+    assert out["df_fit_test"].shape == (3, 20)
+    assert "hy_test" not in parity.run_case(tiny_cases()[0])
 
 
 def test_check_detects_a_change(tmp_path, monkeypatch, capsys):

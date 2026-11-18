@@ -129,12 +129,12 @@ class EvoDAG(object):
         Choose the arguments of the sum, Naive Bayes and Centroid by the
         smallest agreement with the first argument (default false). Key
         ``orthogonal_selection`` (true in the classification file, false in
-        the regression one).
+        the regression one). Ignored when ``selection`` is given.
     orthogonal_dot_selection : bool, optional
         Choose those arguments by the smallest dot product with the first
         argument (default false). Not in the default parameters. It has
         no effect while ``orthogonal_selection`` is true, which has
-        precedence.
+        precedence. Ignored when ``selection`` is given.
     selection : str, optional
         How the arguments (parents) of an offspring are chosen (default
         ``None``). ``None`` keeps the behaviour driven by
@@ -701,6 +701,8 @@ class EvoDAG(object):
         It uses the agreement or the dot product heuristic when they are on
         and ``func`` supports them, the tournament with distinct arguments
         for functions that require them, and the plain tournament otherwise.
+        When ``selection`` is not ``None`` it returns
+        ``_get_args_selection(func)`` and the rest does not apply.
         Returns a list of positions in the population or ``None``.
         """
         if self._selection is not None:
@@ -771,12 +773,17 @@ class EvoDAG(object):
         ...                   selection='cosine')
         >>> _ = engine.fit(X, y)
         >>> args = engine._get_args_selection(Add)
-        >>> len(args) <= Add.nargs - 1
+        >>> isinstance(args, list) and len(args) == len(set(args))
         True
         """
         sel = self._selection
         if sel in _HEURISTICS and self._heuristic_applies(func):
-            return getattr(self, '_get_args_' + sel)(func)
+            # outputs are finite but can exceed 1e154, so a squared norm can
+            # overflow; the code of the article computed the same inf/nan
+            # silently (such an output contributes 0 to the cosine and to
+            # Pearson and pi/2 to the angle)
+            with np.errstate(over='ignore', invalid='ignore'):
+                return getattr(self, '_get_args_' + sel)(func)
         draw = (self.population.tournament if sel == 'fitness'
                 else self.population.random_selection)
         return self._get_args_plain(func, draw)
