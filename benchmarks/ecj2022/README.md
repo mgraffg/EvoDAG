@@ -156,6 +156,102 @@ The largest ratio is 1.43 (`census-income` with `agr-rnd`; the earlier measureme
 
 The fit times are the best estimate of the cost of the campaign for the large datasets (one member, one core, a node with other jobs): a member takes 1 to 10 minutes with `agr-rnd` (65 s to 569 s here) and 0.5 to 2.3 hours with `ads-rnd` (1927 s to 8329 s, `sensorless` being the slowest of the four), and a unit has 30 members.
 
+## Results of the campaign
+
+The whole campaign was run from 2026-11-18 00:23 to 2026-11-20 01:29 (about 49 hours of wall time) on the three nodes of the cluster (`geoint0`, `geoint1`, `geoint2`, 60 to 62 cores and about 240 GB each, Slurm partition `compute`), from commit `e6b1e3f` with a clean tree (`environment.git_dirty` is false and `git_commit` the same in all 660 EvoDAG results), with `submit.py` as described above and the default caps (up to 8 members at a time per task, memory factor 1.8).
+
+All 690 units finished (30 datasets, 22 configurations with 30 members each, and the 16 scikit-learn classifiers) at the first submission, with no failed member and no resubmission. The 480 scikit-learn results have no timeout and no error. The EvoDAG members took 1470 CPU hours in total (the sum of `fit_seconds`; `sensorless` 438 h, `census-income` 248 h, `krkopt` 172 h, `letter-recognition` 145 h, `dota2` 139 h, `aps-failure` 65 h, the other 24 datasets 264 h together) and the scikit-learn classifiers 2 CPU hours. The warnings in the logs are those of `EvoDAG/node.py` (overflow in products and sums, invalid values), none from `EvoDAG/base.py`. For five units across datasets, the macro-F1, the BER and the accuracy computed again from `predictions.npz` are equal to the ones in `result.json`.
+
+Average ranks over the 30 datasets (1 is best; ranks are computed within each table, ties share the best rank), sorted, and the p-value of the Friedman test. The per-dataset tables are in `experiments/summary-macro-f1.md`, `experiments/summary-ber.md` and `experiments/summary-macro-f1-median.md`, which are not committed. The prediction is the majority vote of the 30 members.
+
+**The 14 combinations of parent and negative selection, macro-F1:** `agr-fit-all` 4.1, `agr-fit` 5.0, `agr-rnd` 5.4, `agr-rnd-all` 5.7, `prs-fit-all` 5.7, `prs-fit` 5.8, `rnd-rnd` 5.9, `prs-rnd-all` 6.4, `sim-fit` 6.9, `prs-rnd` 6.9, `sim-rnd` 7.0, `fit-fit` 7.6, `sim-fit-all` 7.8, `sim-rnd-all` 8.4. Friedman p-value 0.000278.
+
+**The 14 combinations of parent and negative selection, BER:** `agr-fit-all` 4.4, `agr-rnd` 5.0, `agr-fit` 5.0, `prs-fit-all` 5.0, `rnd-rnd` 6.1, `prs-fit` 6.1, `agr-rnd-all` 6.1, `prs-rnd-all` 6.8, `sim-fit` 6.9, `sim-rnd` 6.9, `prs-rnd` 7.1, `sim-fit-all` 7.2, `sim-rnd-all` 7.9, `fit-fit` 8.3. Friedman p-value 0.000564.
+
+**The 15 selection schemes, macro-F1:** `agr-fit--fit` 4.6, `agr-fit` 4.8, `agr-rnd--fit` 5.1, `agr-rnd` 5.5, `prs-fit` 5.6, `rnd-rnd` 5.8, `prs-rnd` 6.6, `sim-fit` 6.8, `sim-rnd` 6.9, `nvs-rnd` 7.1, `fit-fit` 7.4, `ads-rnd` 8.1, `ads-fit--fit` 9.3, `ads-rnd-all` 10.3, `ads-fit--fit-all` 10.6. Friedman p-value 9.73e-11.
+
+**The 15 selection schemes, BER:** `agr-fit--fit` 4.2, `agr-rnd--fit` 4.7, `agr-fit` 5.3, `agr-rnd` 5.4, `prs-fit` 6.0, `rnd-rnd` 6.4, `nvs-rnd` 6.5, `sim-fit` 6.9, `prs-rnd` 7.0, `sim-rnd` 7.0, `ads-rnd` 8.0, `fit-fit` 8.5, `ads-fit--fit` 9.3, `ads-rnd-all` 9.6, `ads-fit--fit-all` 9.6. Friedman p-value 1.8e-08.
+
+**EvoDAG and the 16 scikit-learn classifiers (the time table is in `experiments/summary-macro-f1.md`), macro-F1:** `ExtraTrees` 4.9, `GradientBoosting` 5.4, `RandomForest` 5.6, `rnd-rnd` 6.3, `agr-rnd` 6.3, `nvs-rnd` 6.8, `fit-fit` 7.0, `ads-rnd` 7.5, `MLP` 8.3, `DecisionTree` 9.1, `LogisticRegression` 10.6, `KNeighbors` 10.6, `LinearSVC` 10.8, `AdaBoost` 12.4, `SVC` 13.5, `GaussianNB` 13.7, `SGD` 15.7, `PassiveAggressive` 16.6, `Perceptron` 16.6, `BernoulliNB` 16.9, `NearestCentroid` 17.7. Friedman p-value 1.18e-47.
+
+**EvoDAG and the 16 scikit-learn classifiers (the time table is in `experiments/summary-macro-f1.md`), BER:** `ExtraTrees` 5.9, `agr-rnd` 5.9, `rnd-rnd` 6.1, `nvs-rnd` 6.3, `GradientBoosting` 6.5, `RandomForest` 6.7, `fit-fit` 7.0, `ads-rnd` 7.1, `MLP` 8.7, `DecisionTree` 9.4, `GaussianNB` 10.7, `LinearSVC` 11.1, `KNeighbors` 11.2, `LogisticRegression` 11.7, `AdaBoost` 13.2, `SVC` 14.2, `SGD` 14.7, `PassiveAggressive` 15.9, `BernoulliNB` 16.2, `Perceptron` 16.3, `NearestCentroid` 16.7. Friedman p-value 7.01e-38.
+
+**The released defaults against three configurations, macro-F1:** `agr-rnd` 1.9, `rnd-rnd` 2.1, `fit-fit` 2.4, `default` 2.8. Friedman p-value 0.0477.
+
+**The released defaults against three configurations, BER:** `default` 1.7, `agr-rnd` 2.1, `rnd-rnd` 2.4, `fit-fit` 3.0. Friedman p-value 0.000126.
+
+Our average rank against the article's, for the systems of each table (macro-F1). The article's ranks are over all its systems (TPOT and auto-sklearn included) and ours over the systems of the table, so they are only roughly comparable.
+
+The combinations of parent and negative selection:
+
+| system | our average rank | article's average rank |
+|---|---:|---:|
+| agr-rnd | 5.4 | 3.6 |
+| agr-fit | 5.0 | 4.9 |
+| rnd-rnd | 5.9 | 5.1 |
+| sim-fit | 6.9 | 5.4 |
+| prs-fit-all | 5.7 | 5.7 |
+| prs-rnd | 6.9 | 5.9 |
+| prs-rnd-all | 6.4 | 5.9 |
+| prs-fit | 5.8 | 5.9 |
+| sim-fit-all | 7.8 | 6.3 |
+| sim-rnd | 7.0 | 6.8 |
+| sim-rnd-all | 8.4 | 7.2 |
+| fit-fit | 7.6 | 7.6 |
+| agr-rnd-all | 5.7 | 11.7 |
+| agr-fit-all | 4.1 | 11.7 |
+
+The selection schemes:
+
+| system | our average rank | article's average rank |
+|---|---:|---:|
+| agr-rnd | 5.5 | 4.3 |
+| agr-fit--fit | 4.6 | 4.7 |
+| agr-fit | 4.8 | 5.7 |
+| rnd-rnd | 5.8 | 5.7 |
+| sim-fit | 6.8 | 6.2 |
+| agr-rnd--fit | 5.1 | 6.3 |
+| prs-fit | 5.6 | 6.6 |
+| prs-rnd | 6.6 | 6.9 |
+| ads-rnd | 8.1 | 7.6 |
+| sim-rnd | 6.9 | 7.7 |
+| ads-fit--fit | 9.3 | 8.2 |
+| fit-fit | 7.4 | 8.5 |
+| nvs-rnd | 7.1 | 8.7 |
+| ads-rnd-all | 10.3 | 9.6 |
+| ads-fit--fit-all | 10.6 | 10.2 |
+
+The classifiers:
+
+| system | our average rank | article's average rank |
+|---|---:|---:|
+| agr-rnd | 6.3 | 5.3 |
+| rnd-rnd | 6.3 | 6.4 |
+| fit-fit | 7.0 | 8.0 |
+| nvs-rnd | 6.8 | 8.2 |
+| ads-rnd | 7.5 | 7.1 |
+| LogisticRegression | 10.6 | 11.7 |
+| SGD | 15.7 | 19.2 |
+| Perceptron | 16.6 | 18.4 |
+| PassiveAggressive | 16.6 | 18.3 |
+| SVC | 13.5 | 15.6 |
+| LinearSVC | 10.8 | 16.0 |
+| KNeighbors | 10.6 | 12.2 |
+| NearestCentroid | 17.7 | 17.4 |
+| GaussianNB | 13.7 | 16.0 |
+| BernoulliNB | 16.9 | 18.5 |
+| DecisionTree | 9.1 | 10.8 |
+| RandomForest | 5.6 | 9.2 |
+| ExtraTrees | 4.9 | 8.5 |
+| AdaBoost | 12.4 | 12.8 |
+| GradientBoosting | 5.4 | 6.9 |
+| MLP | 8.3 | 10.5 |
+
+What agrees with the article: the agreement heuristic is the best family of parent selection in the two tables of selection (`agr-*` take the top places by macro-F1 and by BER, ahead of `rnd-rnd` and `fit-fit`, as in the article's ranks), `fit-fit` is behind the heuristics, the angle-driven selection (`ads-*`) is worse than agreement and than random selection, and `SGD`, `Perceptron`, `PassiveAggressive`, `BernoulliNB` and `NearestCentroid` are at the bottom of the classifiers in both, with EvoDAG much slower than every scikit-learn classifier (time ranks 17 to 21 of 21).
+
+What does not agree: `agr-rnd` is not the best EvoDAG configuration of the tables of selection by macro-F1 (average rank 5.4 of the combinations and 5.5 of the schemes, against 3.6 and 4.3 in the article): `agr-fit-all` (4.1) is the first of the combinations and `agr-fit--fit` (4.6) of the schemes, and by BER `agr-fit-all` and `agr-fit--fit` are again the first (4.4 and 4.2). The `-all` variants of agreement, which the article ranks last (11.7), are among the best here. Against the classifiers, `ExtraTrees`, `GradientBoosting` and `RandomForest` rank ahead of every EvoDAG configuration by macro-F1 (4.9, 5.4 and 5.6 against 6.3 for `agr-rnd` and `rnd-rnd`), whereas in the article `agr-rnd` (5.3) is ahead of them (6.9 to 9.2); by BER `agr-rnd` ties `ExtraTrees` at 5.9. Among the released defaults, `agr-rnd` is the first by macro-F1 (1.9, Friedman p-value 0.0477) and `default` is the first by BER (1.7).
+
+
 ## Profile
 
 The fit of one member was profiled with `profile_fit.py` (cProfile, one core, `--max-seconds 900`, which no profile reached), and the engine was optimised in steps that must give **the same bits**: `parity.py` records 106 small fits (the 22 configurations, the released defaults, two ensembles, extreme values, a regression with the agreement heuristic, a generational population and a test set given to `fit`) before a change and `check` compares them again exactly, including a digest of every individual created, and `tests/test_golden.py` must pass without a skipped test. Measured on 2026-11-17 on one core of a compute node of the cluster (the benchmark runs were on the node `geoint0`; the node of each profile was not recorded; the profiles ran twelve at a time on two nodes, the same load before and after, and the 900-second limit was not reached by any), one member of an ensemble (`seed=0`, the parameters of the configuration without `--quick`).
