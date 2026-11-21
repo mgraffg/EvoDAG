@@ -78,6 +78,7 @@ def test_multiple_outputs_mask():
                 time_limit=0.9,
                 tr_fraction=0.8,
                 multiple_outputs=True,
+                fitness_function='BER',
                 seed=0,
                 popsize=100)
     gp.X = X[:-1]
@@ -97,6 +98,7 @@ def test_multiple_outputs_BER_vs():
                 early_stopping_rounds=100,
                 time_limit=0.9,
                 multiple_outputs=True,
+                fitness_function='BER',
                 seed=0,
                 popsize=100)
     gp.X = X[:-1]
@@ -120,6 +122,7 @@ def test_multiple_outputs_BER_ts():
                 early_stopping_rounds=100,
                 time_limit=0.9,
                 multiple_outputs=True,
+                fitness_function='BER',
                 seed=0,
                 popsize=100)
     gp.X = X[:-1]

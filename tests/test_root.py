@@ -373,7 +373,8 @@ def test_random_leaf_inf():
 
 def test_classification_y():
     from EvoDAG import RootGP
-    gp = RootGP(generations=1, multiple_outputs=True, popsize=4)
+    gp = RootGP(generations=1, multiple_outputs=True, popsize=4,
+                fitness_function='BER')
     assert gp._classifier
     gp.X = X
     y = cl.copy()
@@ -417,7 +418,8 @@ def test_mask_vs():
     from EvoDAG.node import Add
     from EvoDAG import RootGP
     from EvoDAG.utils import BER
-    gp = RootGP(generations=1, popsize=4, multiple_outputs=True)
+    gp = RootGP(generations=1, popsize=4, multiple_outputs=True,
+                fitness_function='BER')
     assert gp._classifier
     gp.X = X
     y = cl.copy()
@@ -440,7 +442,8 @@ def test_BER():
     from EvoDAG.node import Add
     from EvoDAG import RootGP
     from EvoDAG.utils import BER
-    gp = RootGP(generations=1, popsize=4, multiple_outputs=True)
+    gp = RootGP(generations=1, popsize=4, multiple_outputs=True,
+                fitness_function='BER')
     assert gp._classifier
     gp.X = X
     y = cl.copy()
@@ -801,6 +804,7 @@ def test_labels():
                 tournament_size=2,
                 early_stopping_rounds=-1,
                 multiple_outputs=True,
+                fitness_function='BER',
                 seed=0,
                 popsize=100).fit(X, y, test_set=X)
     m = gp.model()

@@ -33,8 +33,11 @@ def fit(seed=0, **kwargs):
 
 
 def test_defaults():
+    # the classification file has the agreement of the paper, the
+    # constructor has no scheme
+    assert RGP.init()._selection == 'agreement'
+    assert RGP()._selection is None
     for engine in (RGP.init(), RGP()):
-        assert engine._selection is None
         assert engine._first_selection == 'random'
         assert engine._heuristic_functions == 'tailored'
     params = RGP(selection='cosine', first_selection='fitness',
@@ -72,7 +75,7 @@ def test_every_selection_fits_and_is_deterministic(selection, first,
 @pytest.mark.parametrize("seed", (0, 1, 2))
 def test_fitness_selection_equals_legacy(seed):
     a = fit(seed=seed, selection='fitness', orthogonal_selection=True)
-    b = fit(seed=seed, orthogonal_selection=False,
+    b = fit(seed=seed, selection=None, orthogonal_selection=False,
             orthogonal_dot_selection=False)
     assert np.array_equal(np.array(a.model().decision_function(X)),
                           np.array(b.model().decision_function(X)))

@@ -314,25 +314,35 @@ def test_claude_md_names_the_test_command():
 
 
 def test_parameters_page_gives_the_selection_defaults():
-    "The page says, for both keys, the value that the files have (review fix-1)"
+    "The page says, for the selection keys, the value that the files have"
     page = (PAGES / "parameters.qmd").read_text(encoding="utf8")
-    with open(ROOT / "EvoDAG" / "conf" / "default_parameters.json") as fpt:
+    conf = ROOT / "EvoDAG" / "conf"
+    with open(conf / "default_parameters.json") as fpt:
         classification = json.load(fpt)
-    with open(ROOT / "EvoDAG" / "conf" / "default_parameters_r.json") as fpt:
+    with open(conf / "default_parameters_r.json") as fpt:
         regression = json.load(fpt)
-    for key in ("orthogonal_selection", "negative_selection"):
+    with open(conf / "parameter_values.json") as fpt:
+        space = json.load(fpt)
+    assert "orthogonal_selection" not in classification
+    for key in ("selection", "first_selection", "heuristic_functions",
+                "negative_selection"):
         assert key in classification and key not in regression
-        value = str(classification[key]).lower()
+        value = classification[key]
+        # a string is written `"agreement"` and a boolean true or false
+        if isinstance(value, str):
+            shown = '`"%s"`' % value
+        else:
+            shown = str(value).lower()
         # the row of the table of the parameters of the evolution
-        row = re.search(r"^\| `%s` \| (\w+) " % key, page, flags=re.MULTILINE)
+        row = re.search(r"^\| `%s` \| (\S+) " % key, page, flags=re.MULTILINE)
         assert row, key
-        assert row.group(1) == value, (key, row.group(1), value)
+        assert row.group(1) == shown, (key, row.group(1), shown)
         # and the row of the table of the search space
-        space = re.search(r"^\| `%s` \| (\w+) \|$" % key, page,
-                          flags=re.MULTILINE)
-        assert space, key
-        with open(ROOT / "EvoDAG" / "conf" / "parameter_values.json") as fpt:
-            assert [space.group(1) == "true"] == json.load(fpt)[key]
+        row = re.search(r"^\| `%s` \| (\S+) \|$" % key, page,
+                        flags=re.MULTILINE)
+        assert row, key
+        assert row.group(1) == shown, (key, row.group(1), shown)
+        assert space[key] == [value], key
 
 
 def test_readme_quick_start_uses_sklearn_classes():

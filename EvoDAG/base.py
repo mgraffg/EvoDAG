@@ -58,10 +58,11 @@ class EvoDAG(object):
     own defaults differ from that file. The defaults documented below are
     those of the constructor; where the configuration file has another value
     it is given as "Key ``name`` (value)". In particular the classification
-    file sets ``orthogonal_selection`` to true and ``negative_selection`` to
-    false (agreement for the parents and a random choice of the individual
-    that leaves, the best-ranked configuration of the selection paper),
-    whereas the constructor keeps the selection by fitness.
+    file is the configuration ``agr-rnd`` of the selection paper (``selection``
+    ``"agreement"``, ``first_selection`` ``"random"``, ``heuristic_functions``
+    ``"tailored"``, ``negative_selection`` false and ``fitness_function``
+    ``"macro-F1"``), whereas the constructor keeps the selection by fitness
+    (its fitness is ``"macro-F1"`` as well).
 
     Parameters
     ----------
@@ -120,16 +121,16 @@ class EvoDAG(object):
     random_generations : int, optional
         Number of generations in which the arguments are drawn at random
         instead of by tournament on fitness (default 0). Key
-        ``random_generations`` (1).
+        ``random_generations`` (0).
     fitness_function : str, optional
-        Fitness in classification (default ``"BER"``); the options are
+        Fitness in classification (default ``"macro-F1"``); the options are
         described in the Parameters page of the user guide. Ignored in
         regression. Key ``fitness_function``.
     orthogonal_selection : bool, optional
         Choose the arguments of the sum, Naive Bayes and Centroid by the
-        smallest agreement with the first argument (default false). Key
-        ``orthogonal_selection`` (true in the classification file, false in
-        the regression one). Ignored when ``selection`` is given.
+        smallest agreement with the first argument (default false). Not a key
+        of the default parameters files since the classification file sets
+        ``selection``. Ignored when ``selection`` is given.
     orthogonal_dot_selection : bool, optional
         Choose those arguments by the smallest dot product with the first
         argument (default false). Not in the default parameters. It has
@@ -145,19 +146,21 @@ class EvoDAG(object):
         ``SteadyState`` only), the schemes of the selection paper. It takes
         precedence over the two ``orthogonal_*`` booleans, which are then
         ignored. With a heuristic (the last five), the functions it does
-        not apply to get their arguments at random. Not a key of the
-        default parameters files.
+        not apply to get their arguments at random. Key ``selection``
+        (``"agreement"`` in the classification file; the regression file does
+        not have it).
     first_selection : str, optional
         How the first (reference) individual of ``"agreement"``,
         ``"cosine"``, ``"pearson"`` and ``"angle"`` is chosen: ``"random"``
-        (default) or ``"fitness"`` (tournament). The reference is not an
-        argument of the function, it only defines the measure. Not a key of
-        the default parameters files.
+        (default) or ``"fitness"`` (tournament). The reference is the first
+        argument of the function. Key ``first_selection`` (``"random"`` in
+        the classification file).
     heuristic_functions : str, optional
         ``"tailored"`` (default): the heuristic is applied only to the
         functions it was designed for (the sum, the two Naive Bayes and the
         Nearest Centroid); ``"all"``: to every function with more than one
-        argument. Not a key of the default parameters files.
+        argument. Key ``heuristic_functions`` (``"tailored"`` in the
+        classification file).
     min_density : float, optional
         When the average fraction of non-zero values in the population is
         below it, only density safe functions are used (default 0.8). Key
@@ -230,7 +233,7 @@ class EvoDAG(object):
                  number_tries_feasible_ind=30, time_limit=None,
                  unique_individuals=True, classifier=True,
                  labels=None, all_inputs=False, random_generations=0,
-                 fitness_function='BER', orthogonal_selection=False, orthogonal_dot_selection=False,
+                 fitness_function='macro-F1', orthogonal_selection=False, orthogonal_dot_selection=False,
                  min_density=0.8, multiple_outputs=False, function_selection=True,
                  fs_tournament_size=2, finite=True, pr_variable=0.33,
                  share_inputs=False, input_functions=None, F1_index=-1,
