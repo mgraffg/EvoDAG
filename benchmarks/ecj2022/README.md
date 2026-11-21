@@ -43,14 +43,14 @@ The scripts (those that run the experiments write only below the experiments dir
 | Script | What it does |
 |---|---|
 | `datasets.py` | downloads and prepares the 30 datasets |
-| `configs.py` | the 22 named configurations, the tables of the article and the common parameters |
+| `configs.py` | the 21 named configurations, the tables of the article and the common parameters |
 | `run.py` | runs one unit: a dataset with a configuration, or with the scikit-learn classifiers |
 | `submit.py` | submits the units to Slurm with the cores and memory of each dataset, shows the state and waits for the queue |
-| `summary.py` | turns the results into the tables of the article, with macro-F1 or the balanced error rate |
+| `summary.py` | turns the results into the tables of the article |
 | `profile_fit.py` | profiles the fit of one member (see Profile) |
 | `parity.py` | records and checks the bit-level parity of the engine (see Profile) |
 
-The measures are the macro-F1 of the article and the balanced error rate (BER, `1 - macro-recall`, the mean over the classes of the test set of the proportion of each class that is predicted correctly), both on the test set.
+The measure is the macro-F1 of the article, on the test set.
 
 ### Configurations
 
@@ -79,9 +79,8 @@ The name is `<parent>-<negative>[--<first>][-all]` (`-all` is the `*` of the art
 | `ads-rnd-all` | ads-rnd--rnd* | ads | rnd | rnd | all |
 | `ads-fit--fit-all` | ads-fit--fit* | ads | fit | fit | all |
 | `nvs-rnd` | nvs-rnd | nvs | rnd | – | tailored |
-| `default` | (not in the article) | released defaults | | | |
 
-Every configuration but `default` also has `fitness_function="macro-F1"`, `random_generations=0` and `time_limit=None`; the rest comes from `EvoDAG/conf/default_parameters.json` (population 4000, early stopping after 4000 evaluations). `default` is the released default, only without the time limit. `--quick` replaces the population and the early stopping by 50 and the 30 members by 3: it tests the pipeline and its numbers are not results.
+Every configuration also has `fitness_function="macro-F1"`, `random_generations=0` and `time_limit=None`; the rest comes from `EvoDAG/conf/default_parameters.json` (population 4000, early stopping after 4000 evaluations). `--quick` replaces the population and the early stopping by 50 and the 30 members by 3: it tests the pipeline and its numbers are not results.
 
 ### Layout of the experiments directory
 
@@ -107,7 +106,7 @@ An ensemble of 30 members is trained, one per seed `0 .. 29`, each on a random h
 
 `--task-file` is the JSON list of configurations that `submit.py` writes for an array (`<dataset>.<time>.tasks.json`, one file per submission) and `--task-index` (default `$SLURM_ARRAY_TASK_ID`) the position of this task in it. `--classifiers` and `--classifier-index` (the position, 0 to 15, in the table of classifiers; the jobs pass `$SLURM_ARRAY_TASK_ID`) select some of the sixteen classifiers; a result is skipped when it exists.
 
-`result.json` has the macro-F1 of the majority vote (`macro_f1`, the prediction of `EvoDAG.predict`) and of the median decision function (`macro_f1_median`), the same for the balanced error rate (`macro_recall`, `ber`, `macro_recall_median`, `ber_median`), the accuracy, the sum of the training times of the members (`fit_seconds`, the one-core time of the article) divided by the training examples (`fit_seconds_per_sample`), the peak memory and the `environment` (versions, `host`, `git_commit` and `git_dirty`, whether the tree had uncommitted changes). `predictions.npz` holds the test labels `y_test`, the predictions of the majority vote `hy` and of the median `hy_median` (all `int64`) and the median decision function (`float32`), so that any other measure can be computed without a new run. Each `member-<i>.json` records the `host`. The scikit-learn classifiers are fitted with default parameters and `random_state=0` on the prepared data without scaling, in a child process with a timeout (24 hours by default); each writes `<Name>.npz` (`y_test`, `hy`) and then `<Name>.json` (with `macro_f1`, `macro_recall`, `ber`); an error or a timeout is recorded as a result, like the `-` cells of the article, and has no `.npz`.
+`result.json` has the macro-F1 of the majority vote (`macro_f1`, the prediction of `EvoDAG.predict`) and of the median decision function (`macro_f1_median`), the macro-recall of both (`macro_recall`, `macro_recall_median`), the accuracy, the sum of the training times of the members (`fit_seconds`, the one-core time of the article) divided by the training examples (`fit_seconds_per_sample`), the peak memory and the `environment` (versions, `host`, `git_commit` and `git_dirty`, whether the tree had uncommitted changes). `predictions.npz` holds the test labels `y_test`, the predictions of the majority vote `hy` and of the median `hy_median` (all `int64`) and the median decision function (`float32`), so that any other measure can be computed without a new run. Each `member-<i>.json` records the `host`. The scikit-learn classifiers are fitted with default parameters and `random_state=0` on the prepared data without scaling, in a child process with a timeout (24 hours by default); each writes `<Name>.npz` (`y_test`, `hy`) and then `<Name>.json` (with `macro_f1`, `macro_recall`); an error or a timeout is recorded as a result, like the `-` cells of the article, and has no `.npz`.
 
 ### Slurm
 
@@ -126,7 +125,7 @@ There is one job array per dataset with one task per pending configuration, and 
 
 `--wait SECONDS` checks the queue once a minute until no job of the campaign (name `ecj-...`) is left or the time runs out, and prints `queue: N jobs left; units finished F/T, failed X`; a failure of `squeue` counts as unknown and the wait goes on.
 
-`summary.py` prints, for the three tables of the article and a fourth with the released defaults (`default`, `agr-rnd`, `fit-fit`, `rnd-rnd`, which the article does not have), the macro-F1 with the rank of each system on each dataset (ties share the best rank), the average rank over the datasets where every system has a result, the Friedman p-value and, for the classifiers, the training time per training example. The datasets of the manifest without a result are listed as incomplete. `--measure ber` prints the balanced error rate instead (lower is better; the comparison with the article is skipped, because the article reports macro-F1 only), `--median` uses the median decision function, `--quick` reads the quick results, `--output FILE` writes the Markdown to a file instead of the standard output, and `--paper-tex PATH` (for example `../articulos/ECJ2022/paper.tex` next to the repository) reads the numbers of the tables of the article from its LaTeX source and prints the differences in macro-F1 and, for the classifiers, the ratio of our training time per example to the article's; if the file or a table cannot be read one sentence says so. No file of the article is ever copied.
+`summary.py` prints, for the three tables of the article, the macro-F1 with the rank of each system on each dataset (ties share the best rank), the average rank over the datasets where every system has a result, the Friedman p-value and, for the classifiers, the training time per training example. The datasets of the manifest without a result are listed as incomplete. `--median` uses the median decision function, `--quick` reads the quick results, `--output FILE` writes the Markdown to a file instead of the standard output, and `--paper-tex PATH` (for example `../articulos/ECJ2022/paper.tex` next to the repository) reads the numbers of the tables of the article from its LaTeX source and prints the differences in macro-F1 and, for the classifiers, the ratio of our training time per example to the article's; if the file or a table cannot be read one sentence says so. No file of the article is ever copied.
 
 ### What differs from the article
 
@@ -134,7 +133,7 @@ There is one job array per dataset with one task per pending configuration, and 
 - The preprocessing of the datasets (see above): the original is lost. The 70/30 splits are ours (stratified, seed 0), and 12 datasets differ from the article's Table 1 by one or two rows, because the article's files were not available; `ad` has 1558 variables against 1557.
 - In `ml-prove` the class is a deterministic function of five other columns (the other one-hot label columns), as in the article, where almost every system scores 1.0. `yeast` keeps the sequence name as an ordinal variable. Class labels that are all numbers are ordered numerically.
 - EvoDAG's prediction is the majority vote of the members (the median is recorded too), while the article says "average of the predictions".
-- The measures are the macro-F1 of the article and, in addition, the balanced error rate (BER); the predictions of the test set are stored.
+- The predictions of the test set are stored.
 - The scikit-learn defaults are those of the installed version, and TPOT and auto-sklearn are not run.
 - It is another machine. The training times are measured with 5 to 8 members sharing a node without CPU binding, so they include contention, and they compare only among themselves. The memory requests are not enforced by this cluster.
 
@@ -165,23 +164,13 @@ The whole campaign was run from 2026-11-18 00:23 to 2026-11-20 01:29 (about 49 h
 
 All 690 units finished (30 datasets, 22 configurations with 30 members each, and the 16 scikit-learn classifiers) at the first submission, with no failed member and no resubmission. The 480 scikit-learn results have no timeout and no error. The EvoDAG members took 1470 CPU hours in total (the sum of `fit_seconds`; `sensorless` 438 h, `census-income` 248 h, `krkopt` 172 h, `letter-recognition` 145 h, `dota2` 139 h, `aps-failure` 65 h, the other 24 datasets 264 h together) and the scikit-learn classifiers 2 CPU hours. The warnings in the logs are those of `EvoDAG/node.py` (overflow in products and sums, invalid values), none from `EvoDAG/base.py`. For five units across datasets, the macro-F1, the BER and the accuracy computed again from `predictions.npz` are equal to the ones in `result.json`.
 
-Average ranks over the 30 datasets (1 is best; ranks are computed within each table, ties share the best rank), sorted, and the p-value of the Friedman test. The per-dataset tables are in `experiments/summary-macro-f1.md`, `experiments/summary-ber.md` and `experiments/summary-macro-f1-median.md`, which are not committed. The prediction is the majority vote of the 30 members.
+Average ranks over the 30 datasets (1 is best; ranks are computed within each table, ties share the best rank), sorted, and the p-value of the Friedman test. The per-dataset tables are in `experiments/summary-macro-f1.md` and `experiments/summary-macro-f1-median.md`, which are not committed. The prediction is the majority vote of the 30 members.
 
 **The 14 combinations of parent and negative selection, macro-F1:** `agr-fit-all` 4.1, `agr-fit` 5.0, `agr-rnd` 5.4, `agr-rnd-all` 5.7, `prs-fit-all` 5.7, `prs-fit` 5.8, `rnd-rnd` 5.9, `prs-rnd-all` 6.4, `sim-fit` 6.9, `prs-rnd` 6.9, `sim-rnd` 7.0, `fit-fit` 7.6, `sim-fit-all` 7.8, `sim-rnd-all` 8.4. Friedman p-value 0.000278.
 
-**The 14 combinations of parent and negative selection, BER:** `agr-fit-all` 4.4, `agr-rnd` 5.0, `agr-fit` 5.0, `prs-fit-all` 5.0, `rnd-rnd` 6.1, `prs-fit` 6.1, `agr-rnd-all` 6.1, `prs-rnd-all` 6.8, `sim-fit` 6.9, `sim-rnd` 6.9, `prs-rnd` 7.1, `sim-fit-all` 7.2, `sim-rnd-all` 7.9, `fit-fit` 8.3. Friedman p-value 0.000564.
-
 **The 15 selection schemes, macro-F1:** `agr-fit--fit` 4.6, `agr-fit` 4.8, `agr-rnd--fit` 5.1, `agr-rnd` 5.5, `prs-fit` 5.6, `rnd-rnd` 5.8, `prs-rnd` 6.6, `sim-fit` 6.8, `sim-rnd` 6.9, `nvs-rnd` 7.1, `fit-fit` 7.4, `ads-rnd` 8.1, `ads-fit--fit` 9.3, `ads-rnd-all` 10.3, `ads-fit--fit-all` 10.6. Friedman p-value 9.73e-11.
 
-**The 15 selection schemes, BER:** `agr-fit--fit` 4.2, `agr-rnd--fit` 4.7, `agr-fit` 5.3, `agr-rnd` 5.4, `prs-fit` 6.0, `rnd-rnd` 6.4, `nvs-rnd` 6.5, `sim-fit` 6.9, `prs-rnd` 7.0, `sim-rnd` 7.0, `ads-rnd` 8.0, `fit-fit` 8.5, `ads-fit--fit` 9.3, `ads-rnd-all` 9.6, `ads-fit--fit-all` 9.6. Friedman p-value 1.8e-08.
-
 **EvoDAG and the 16 scikit-learn classifiers (the time table is in `experiments/summary-macro-f1.md`), macro-F1:** `ExtraTrees` 4.9, `GradientBoosting` 5.4, `RandomForest` 5.6, `rnd-rnd` 6.3, `agr-rnd` 6.3, `nvs-rnd` 6.8, `fit-fit` 7.0, `ads-rnd` 7.5, `MLP` 8.3, `DecisionTree` 9.1, `LogisticRegression` 10.6, `KNeighbors` 10.6, `LinearSVC` 10.8, `AdaBoost` 12.4, `SVC` 13.5, `GaussianNB` 13.7, `SGD` 15.7, `PassiveAggressive` 16.6, `Perceptron` 16.6, `BernoulliNB` 16.9, `NearestCentroid` 17.7. Friedman p-value 1.18e-47.
-
-**EvoDAG and the 16 scikit-learn classifiers (the time table is in `experiments/summary-macro-f1.md`), BER:** `ExtraTrees` 5.9, `agr-rnd` 5.9, `rnd-rnd` 6.1, `nvs-rnd` 6.3, `GradientBoosting` 6.5, `RandomForest` 6.7, `fit-fit` 7.0, `ads-rnd` 7.1, `MLP` 8.7, `DecisionTree` 9.4, `GaussianNB` 10.7, `LinearSVC` 11.1, `KNeighbors` 11.2, `LogisticRegression` 11.7, `AdaBoost` 13.2, `SVC` 14.2, `SGD` 14.7, `PassiveAggressive` 15.9, `BernoulliNB` 16.2, `Perceptron` 16.3, `NearestCentroid` 16.7. Friedman p-value 7.01e-38.
-
-**The released defaults against three configurations, macro-F1:** `agr-rnd` 1.9, `rnd-rnd` 2.1, `fit-fit` 2.4, `default` 2.8. Friedman p-value 0.0477.
-
-**The released defaults against three configurations, BER:** `default` 1.7, `agr-rnd` 2.1, `rnd-rnd` 2.4, `fit-fit` 3.0. Friedman p-value 0.000126.
 
 Our average rank against the article's, for the systems of each table (macro-F1). The article's ranks are over all its systems (TPOT and auto-sklearn included) and ours over the systems of the table, so they are only roughly comparable.
 
@@ -250,9 +239,9 @@ The classifiers:
 | GradientBoosting | 5.4 | 6.9 |
 | MLP | 8.3 | 10.5 |
 
-What agrees with the article: the agreement heuristic is the best family of parent selection in the two tables of selection (`agr-*` take the top places by macro-F1 and by BER, ahead of `rnd-rnd` and `fit-fit`, as in the article's ranks), `fit-fit` is behind the heuristics, the angle-driven selection (`ads-*`) is worse than agreement and than random selection, and `SGD`, `Perceptron`, `PassiveAggressive`, `BernoulliNB` and `NearestCentroid` are at the bottom of the classifiers in both, with EvoDAG much slower than every scikit-learn classifier (time ranks 17 to 21 of 21).
+What agrees with the article: the agreement heuristic is the best family of parent selection in the two tables of selection (`agr-*` take the top places by macro-F1, ahead of `rnd-rnd` and `fit-fit`, as in the article's ranks), `fit-fit` is behind the heuristics, the angle-driven selection (`ads-*`) is worse than agreement and than random selection, and `SGD`, `Perceptron`, `PassiveAggressive`, `BernoulliNB` and `NearestCentroid` are at the bottom of the classifiers in both, with EvoDAG much slower than every scikit-learn classifier (time ranks 17 to 21 of 21).
 
-What does not agree: `agr-rnd` is not the best EvoDAG configuration of the tables of selection by macro-F1 (average rank 5.4 of the combinations and 5.5 of the schemes, against 3.6 and 4.3 in the article): `agr-fit-all` (4.1) is the first of the combinations and `agr-fit--fit` (4.6) of the schemes, and by BER `agr-fit-all` and `agr-fit--fit` are again the first (4.4 and 4.2). The `-all` variants of agreement, which the article ranks last (11.7), are among the best here. Against the classifiers, `ExtraTrees`, `GradientBoosting` and `RandomForest` rank ahead of every EvoDAG configuration by macro-F1 (4.9, 5.4 and 5.6 against 6.3 for `agr-rnd` and `rnd-rnd`), whereas in the article `agr-rnd` (5.3) is ahead of them (6.9 to 9.2); by BER `agr-rnd` ties `ExtraTrees` at 5.9. Among the released defaults, `agr-rnd` is the first by macro-F1 (1.9, Friedman p-value 0.0477) and `default` is the first by BER (1.7).
+What does not agree: `agr-rnd` is not the best EvoDAG configuration of the tables of selection by macro-F1 (average rank 5.4 of the combinations and 5.5 of the schemes, against 3.6 and 4.3 in the article): `agr-fit-all` (4.1) is the first of the combinations and `agr-fit--fit` (4.6) of the schemes. The `-all` variants of agreement, which the article ranks last (11.7), are among the best here. Against the classifiers, `ExtraTrees`, `GradientBoosting` and `RandomForest` rank ahead of every EvoDAG configuration by macro-F1 (4.9, 5.4 and 5.6 against 6.3 for `agr-rnd` and `rnd-rnd`), whereas in the article `agr-rnd` (5.3) is ahead of them (6.9 to 9.2).
 
 
 ## Profile

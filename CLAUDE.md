@@ -85,7 +85,7 @@ Modules in the order the data flows; each is documented in the developer referen
   reproduce the experiments of the selection heuristics article, starting with `benchmarks/ecj2022/datasets.py` and followed by `benchmarks/ecj2022/configs.py`,
   `benchmarks/ecj2022/run.py`, `benchmarks/ecj2022/submit.py` and `benchmarks/ecj2022/summary.py`, with
   `benchmarks/ecj2022/profile_fit.py` (profile one member) and `benchmarks/ecj2022/parity.py` (the bit-level parity check,
-  106 cases, among them an ensemble of each kind; the profile and the speed-ups it recorded are in `benchmarks/ecj2022/README.md`);
+  102 cases, among them an ensemble of each kind; the profile and the speed-ups it recorded are in `benchmarks/ecj2022/README.md`);
   their data and results go to a directory named experiments at the repository root that git ignores.
   `scripts/`: the PyPI version check.
 - `.github/workflows/`: `.github/workflows/test.yml`, `.github/workflows/website.yml`,
