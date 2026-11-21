@@ -24,6 +24,12 @@ import run as runner  # noqa: E402
 import submit  # noqa: E402
 import summary  # noqa: E402
 
+# the scripts run on a Slurm cluster: the members are forked processes and the
+# tests kill one with SIGKILL and write shell stand-ins for sbatch and squeue
+pytestmark = pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="the experiment scripts need a POSIX platform")
+
 
 def make_root(tmp_path, names=("toy",), n=120, n_train=84):
     "An experiments directory with synthetic prepared datasets"

@@ -50,7 +50,6 @@ import json  # noqa: E402
 import multiprocessing  # noqa: E402
 import pickle  # noqa: E402
 import platform  # noqa: E402
-import resource  # noqa: E402
 import socket  # noqa: E402
 import io  # noqa: E402
 import subprocess  # noqa: E402
@@ -195,6 +194,20 @@ def write_npz(path, **arrays):
     write_atomic(path, buffer.getvalue())
 
 
+try:
+    import resource  # noqa: E402
+except ImportError:  # Windows has no resource module
+    resource = None
+
+
+def max_rss_kb():
+    """Peak resident set size of this process, as ``getrusage`` reports it
+    (kilobytes on Linux); 0 where the ``resource`` module does not exist"""
+    if resource is None:
+        return 0
+    return int(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+
+
 def mp_context():
     "``fork`` when available (the children share the loaded modules)"
     methods = multiprocessing.get_all_start_methods()
@@ -230,8 +243,7 @@ def fit_member(task):
         info = {"seed": i, "fit_seconds": seconds,
                 "host": socket.gethostname(),
                 "size": int(model.size), "height": int(model.height),
-                "max_rss_kb": int(resource.getrusage(
-                    resource.RUSAGE_SELF).ru_maxrss)}
+                "max_rss_kb": max_rss_kb()}
         try:
             info["fitness_vs"] = float(model.fitness_vs)
         except Exception:
@@ -438,8 +450,7 @@ def _fit_classifier(name, root, dataset, quick, conn):
                   "n_train": int(len(y_train)), "n_test": int(len(y_test)),
                   "n_classes": int(len(np.unique(
                       np.concatenate([y_train, y_test])))),
-                  "max_rss_kb": int(resource.getrusage(
-                      resource.RUSAGE_SELF).ru_maxrss),
+                  "max_rss_kb": max_rss_kb(),
                   # the predictions cross the pipe as a list; the parent
                   # stores them in <Name>.npz, not in the JSON
                   "hy": hy.astype(np.int64).tolist()}

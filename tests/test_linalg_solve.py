@@ -94,15 +94,24 @@ def exact(a, b):
 
 
 def _probe():
+    """Whether the kernel gives the bits of the reference on a few small
+    systems. One variable is not enough: the two share ``array_utils.dot``,
+    and the products that a compiler may fuse with an addition or a
+    subtraction are those of the elimination, which needs two variables"""
     rng = np.random.RandomState(12345)
-    r = rng.randn(200)
-    t = rng.randn(200)
-    return compute_weight([r], t, np.ones(200)), reference([r], t, np.ones(200))
+    for size in (1, 2, 3, 5, 8):
+        r = [rng.randn(200) for _ in range(size)]
+        t = rng.randn(200)
+        if not exact(compute_weight(r, t, np.ones(200)),
+                     reference(r, t, np.ones(200))):
+            return False
+    return True
 
 
-# A build whose compiler fuses a multiply and an add (FMA contraction) does
-# not give the bits of the unfused Python reference: detect it once
-FUSED = not exact(*_probe())
+# A build whose compiler fuses a multiply and an add (FMA contraction, the
+# default of GCC and Clang when the target has the instruction) does not give
+# the bits of the unfused Python reference: detect it once
+FUSED = not _probe()
 
 
 def same(a, b):
@@ -113,7 +122,13 @@ def same(a, b):
     if a is None or b is None:
         # a singular system that only one of the two sees as singular
         pytest.skip("the system is singular for one of the two only")
-    return bool(np.allclose(a, b, rtol=1e-9, atol=0, equal_nan=True))
+    # a coefficient that is a cancellation (zero up to rounding) has no
+    # correct digits in either: the absolute tolerance is relative to the
+    # largest coefficient
+    finite = np.abs(b[np.isfinite(b)])
+    scale = float(finite.max()) if finite.size else 0.0
+    return bool(np.allclose(a, b, rtol=1e-9, atol=1e-9 * scale,
+                            equal_nan=True))
 
 
 def make_case(rs, n, size, density, kind):
