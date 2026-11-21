@@ -13,10 +13,7 @@
 # limitations under the License.
 import importlib.util
 import re
-try:
-    import tomllib
-except ImportError:  # Python 3.10
-    import tomli as tomllib
+import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -102,7 +99,7 @@ def test_readme_has_only_absolute_links_and_no_dead_ones():
 def test_cibuildwheel_test_requires_are_shell_safe():
     # cibuildwheel splits test-requires on whitespace and, on Windows, runs pip
     # through cmd.exe, where < > | & ^ are redirections or operators: a marker
-    # such as "tomli; python_version < '3.11'" or a bound such as ">=1.6"
+    # such as "pkg; python_version < '3.12'" or a bound such as ">=1.6"
     # breaks the wheel builds or is silently dropped. Only plain names and
     # characters that no shell interprets are allowed.
     with open(ROOT / "pyproject.toml", "rb") as fpt:
@@ -110,3 +107,45 @@ def test_cibuildwheel_test_requires_are_shell_safe():
     requires = pyproject["tool"]["cibuildwheel"]["test-requires"]
     for requirement in requires:
         assert re.fullmatch(r"[A-Za-z0-9._\-\[\],]+", requirement), requirement
+
+
+SUPPORTED = ["3.11", "3.12", "3.13", "3.14", "3.15"]
+
+
+def test_supported_python_versions_agree():
+    # Every place that declares, builds, tests or documents the supported
+    # Python versions must say the same thing.
+    with open(ROOT / "pyproject.toml", "rb") as fpt:
+        pyproject = tomllib.load(fpt)
+    project = pyproject["project"]
+    assert project["requires-python"] == ">=" + SUPPORTED[0]
+    prefix = "Programming Language :: Python :: "
+    declared = [c[len(prefix):] for c in project["classifiers"]
+                if re.fullmatch(re.escape(prefix) + r"3\.\d+", c)]
+    assert declared == SUPPORTED
+    cibw = pyproject["tool"]["cibuildwheel"]
+    assert cibw["build"].split() == [
+        "cp" + v.replace(".", "") + "-*" for v in SUPPORTED]
+    # The tomli fallback is gone: tomllib is in the standard library.
+    assert not any("tomli" in r for r in project["optional-dependencies"]["test"])
+    assert not any("tomli" in r for r in cibw["test-requires"])
+
+    workflow = (ROOT / ".github" / "workflows" / "test.yml").read_text()
+    matrix = re.search(r"python-version:\s*\[([^\]]*)\]", workflow)
+    assert matrix is not None
+    assert re.findall(r"\"([^\"]+)\"", matrix.group(1)) == SUPPORTED
+
+    install = (ROOT / "website" / "pages" / "install.qmd").read_text()
+    assert "Python " + SUPPORTED[0] + " or newer" in install
+    for version in SUPPORTED:
+        assert version in install
+
+    tags = set()
+    for name in ("wheels.yml", "publish-pypi.yml"):
+        text = (ROOT / ".github" / "workflows" / name).read_text()
+        found = re.findall(r"pypa/cibuildwheel@(\S+)", text)
+        assert len(found) == 1, name
+        tags.update(found)
+    assert len(tags) == 1, tags
+    (tag,) = tags
+    assert int(re.match(r"v(\d+)\.", tag).group(1)) >= 4

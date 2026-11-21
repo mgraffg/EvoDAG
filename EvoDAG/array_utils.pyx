@@ -207,19 +207,26 @@ def density(a):
     return np.count_nonzero(a) / float(len(a))
 
 
+cdef union double_bits:
+    double value
+    unsigned long long bits
+
+
 def mul(const double[::1] a, const double[::1] b):
     "``a * b``; it is 0 wherever one of them is, also if the other is inf"
     cdef Py_ssize_t i, n = a.shape[0]
     cdef double x, y
+    cdef double_bits p
     res = np.empty(n)
     cdef double[::1] out = res
     for i in range(n):
         x = a[i]
         y = b[i]
-        if x == 0 or y == 0:
-            out[i] = 0
-        else:
-            out[i] = x * y
+        # the product where both are not zero and +0.0 elsewhere, without a
+        # branch (the zeros of a mask are unpredictable)
+        p.value = x * y
+        p.bits &= -(<unsigned long long> ((x != 0) & (y != 0)))
+        out[i] = p.value
     return res
 
 

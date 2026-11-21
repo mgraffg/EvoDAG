@@ -27,7 +27,9 @@ Modules in the order the data flows; each is documented in the developer referen
 - **`EvoDAG/population.py` and `EvoDAG/function_selection.pyx`.** The population (`SteadyState`,
   `Generational`), tournament and negative selection, the early stopping individual, and the
   tournament that chooses a function. Parent selection by agreement or dot product is in
-  `EvoDAG/base.py` (`orthogonal_selection`, `orthogonal_dot_selection`); there is no Pearson heuristic.
+  `EvoDAG/base.py` (`orthogonal_selection`, `orthogonal_dot_selection`). The engine parameters `selection`,
+  `first_selection` and `heuristic_functions` (off by default) select the schemes of the selection article (fitness,
+  random, agreement, cosine, Pearson, angle-driven, novelty search) and override the two `orthogonal_*` flags.
   The classification defaults use agreement for the parents and random negative selection
   (`orthogonal_selection` true, `negative_selection` false); regression uses the tournaments on fitness.
 - **`EvoDAG/node.py` and `EvoDAG/naive_bayes.py`.** An individual is a node: `Variable` or a
@@ -36,7 +38,9 @@ Modules in the order the data flows; each is documented in the developer referen
   examples and `hy_test` on the test set (`None` when none was given); with several outputs
   (always in classification, one per class) they are lists of arrays. Weights come from least
   squares (`EvoDAG/linalg_solve.pyx`) except for the Naive Bayes and Centroid nodes, which use the
-  class labels.
+  class labels. A node also keeps the
+  predicted labels of its outputs (`labels`, read by the agreement heuristic); the cache is dropped whenever
+  `hy` is replaced or released and it is not part of a stored model.
 - **`EvoDAG/bagging_fitness.py`.** The training/validation split (`tr_fraction`), the masks and
   the fitness on each part. A fit is deterministic for a fixed `seed`.
 - **`EvoDAG/model.py`.** `Model` (the nodes the early stopping individual depends on, with their
@@ -77,7 +81,13 @@ Modules in the order the data flows; each is documented in the developer referen
   and their recorder `tests/golden/record.py`.
 - `docs/`: the Sphinx developer reference (`docs/source/`). `website/`: the Quarto user site
   (`website/pages/`, `website/figures/`).
-- `benchmarks/`: `benchmarks/bench.py` and its recorded results. `scripts/`: the PyPI version check.
+- `benchmarks/`: `benchmarks/bench.py` and its recorded results. `benchmarks/ecj2022/` holds the scripts that
+  reproduce the experiments of the selection heuristics article, starting with `benchmarks/ecj2022/datasets.py` and followed by `benchmarks/ecj2022/configs.py`,
+  `benchmarks/ecj2022/run.py`, `benchmarks/ecj2022/submit.py` and `benchmarks/ecj2022/summary.py`, with
+  `benchmarks/ecj2022/profile_fit.py` (profile one member) and `benchmarks/ecj2022/parity.py` (the bit-level parity check,
+  106 cases, among them an ensemble of each kind; the profile and the speed-ups it recorded are in `benchmarks/ecj2022/README.md`);
+  their data and results go to a directory named experiments at the repository root that git ignores.
+  `scripts/`: the PyPI version check.
 - `.github/workflows/`: `.github/workflows/test.yml`, `.github/workflows/website.yml`,
   `.github/workflows/publish-pypi.yml` and `.github/workflows/wheels.yml` (the same wheel build, without
   the upload, on pull requests that touch the packaging). `.issue-pilot.json`: the
@@ -98,6 +108,9 @@ quarto render website
 .venv/bin/python website/figures/make_figures.py
 .venv/bin/python tests/golden/record.py --output /tmp/golden-check
 .venv/bin/python benchmarks/bench.py --output /tmp/bench.json
+.venv/bin/python benchmarks/ecj2022/submit.py --dry-run
+.venv/bin/python benchmarks/ecj2022/parity.py record --output /tmp/parity
+.venv/bin/python benchmarks/ecj2022/parity.py check --reference /tmp/parity
 .venv/bin/python scripts/check_package_versions.py
 ```
 
@@ -105,6 +118,10 @@ The second line is the test command of `.issue-pilot.json` (about 1 to 2 minutes
 build and the doctest take seconds (the build downloads the intersphinx inventories, so it needs
 network). `website/figures/make_figures.py` needs Graphviz (`dot`); `scripts/check_package_versions.py`
 queries PyPI.
+The full campaign of the selection heuristics experiments is thousands of CPU hours on Slurm and is launched
+by the maintainer; the dry run prints the `sbatch` commands and writes nothing (it needs the prepared datasets).
+The parity check is the bit-level check for any change that claims to be an optimisation: record the reference before the
+change and check after it (about a minute and a half each).
 The benchmark takes about a minute; run it alone, and repeat it before trusting a difference
 under 5 to 10 percent. Times only compare on the same machine. The development environment is a
 `.venv` with the package installed in editable mode; do not reinstall packages in it casually.
@@ -123,7 +140,7 @@ under 5 to 10 percent. Times only compare on the same machine. The development e
   holds its fingerprint); elsewhere, CI included, those groups are skipped and the node, kernel,
   mask and reader groups still run.
 - **Performance claims need the benchmark**: run `benchmarks/bench.py` and compare it with the
-  recorded results (`benchmarks/results-numpy.json`, `benchmarks/results-optimized.json`).
+  recorded results (`benchmarks/results-numpy.json`, `benchmarks/results-optimized.json`, `benchmarks/results-profiled.json`).
   `benchmarks/raetsch.py` reproduces the Performance table; its full run is long and done by the author.
 - **Public names need a docstring and a verified example**, as `tests/test_docs.py` enforces:
   every public name has a docstring, every engine parameter is described, the Sphinx build is
@@ -132,7 +149,7 @@ under 5 to 10 percent. Times only compare on the same machine. The development e
   scikit-learn is allowed only as the optional `sklearn` extra, imported by `EvoDAG/estimators.py` alone.
   Build requirements are Cython and NumPy.
 - Keep the Cython extensions and the density mechanism. Scratch files go in `tmp_path`, never in
-  the repository root; do not commit build output (the generated C files and shared libraries,
+  the repository root, and the files of the experiments go to the ignored experiments directory; do not commit build output (the generated C files and shared libraries,
   the build and dist directories, the Sphinx build under docs and the rendered site under website).
 
 ## Documentation
@@ -162,7 +179,7 @@ it, pushes to `master` deploy it; Pages has to be enabled once with the source "
 reads it without importing the package; keep it a plain literal). `scripts/check_package_versions.py`,
 run by the `check-package-versions` job of `.github/workflows/test.yml`, requires the version to be the next patch or
 the next minor after the one on PyPI. A release is a tag `v<version>`: `.github/workflows/publish-pypi.yml` checks
-that the tag matches the version, builds wheels with cibuildwheel (Python 3.10 to 3.13, Linux,
+that the tag matches the version, builds wheels with cibuildwheel (Python 3.11 to 3.15, Linux,
 macOS, Windows; its test command is `pytest tests`) and the sdist, runs `twine check` and uploads
 to PyPI with the repository secret `TWINE`. Do not tag, upload or change repository settings
 unless asked. The conda-forge feedstock is a separate repository.
@@ -177,5 +194,8 @@ unless asked. The conda-forge feedstock is a separate repository.
   a commit.
 - Tests live in `tests/`, mostly one file per module (for instance `tests/test_node.py` and `tests/test_model.py`), plus
   `tests/test_docs.py`,
-  `tests/test_packaging.py`, `tests/test_public_api.py` and `tests/test_golden.py`.
-- The package supports Python 3.10 or newer (`requires-python` in `pyproject.toml`).
+  `tests/test_packaging.py`, `tests/test_public_api.py` and `tests/test_golden.py`. The selection
+  schemes are in `tests/test_selection.py`, the optimisations in `tests/test_optimisations.py`,
+  and the scripts of the experiments in `tests/test_ecj2022_datasets.py`, `tests/test_ecj2022_run.py`
+  and `tests/test_ecj2022_parity.py`.
+- The package supports Python 3.11 or newer (`requires-python` in `pyproject.toml`).

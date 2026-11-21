@@ -308,6 +308,8 @@ class BasePopulation(object):
             return
         v.y = None
         v.hy = None
+        # the cache of the density keeps a reference to the outputs
+        v._density_cache = None
 
     def random_selection(self, negative=False):
         """Return the index of an individual selected uniformly at random."""
@@ -410,6 +412,8 @@ class BasePopulation(object):
         self.bsf = v
         self.estopping = v
         self._density += self.get_density(v)
+        if getattr(self._base, '_novelty_labels', None) is not None:
+            self._base._novelty_add(v)
 
     def replace(self, v):
         """Replace an individual selected by negative tournament selection with
@@ -419,6 +423,8 @@ class BasePopulation(object):
         k = self.tournament(negative=True)
         self.clean(self.population[k])
         self.population[k] = v
+        if getattr(self._base, '_novelty_labels', None) is not None:
+            self._base._novelty_replace(k, v)
         v.position = len(self._hist)
         self._hist.append(v)
         self.bsf = v
@@ -440,6 +446,8 @@ class SteadyState(BasePopulation):
             self.population.sort(key=lambda x: x.fitness, reverse=True)
             [self.clean(x) for x in self.population[self._popsize:]]
             self.population = self.population[:self._popsize]
+        if getattr(self._base, '_novelty_labels', None) is not None:
+            self._base._novelty_reset()
 
 
 class Generational(BasePopulation):

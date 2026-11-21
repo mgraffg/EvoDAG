@@ -4,7 +4,7 @@ title: "Install"
 
 ## Requirements
 
-EvoDAG needs Python 3.10 or newer and [NumPy](https://numpy.org). Those are the only runtime dependencies; scikit-learn is optional (see [Optional packages](#optional-packages)). Part of the library is written in Cython, so a compiled extension is shipped with it; the packaging files of the repository declare Python 3.10, 3.11, 3.12 and 3.13 as the versions that are built and tested, on Linux, macOS and Windows.
+EvoDAG needs Python 3.11 or newer and [NumPy](https://numpy.org). Those are the only runtime dependencies; scikit-learn is optional (see [Optional packages](#optional-packages)). Part of the library is written in Cython, so a compiled extension is shipped with it; the packaging files of the repository declare Python 3.11, 3.12, 3.13, 3.14 and 3.15 as the versions that are built and tested, on Linux, macOS and Windows.
 
 ## From PyPI
 

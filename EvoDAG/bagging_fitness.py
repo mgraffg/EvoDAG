@@ -46,13 +46,14 @@ class BaggingFitness(object):
 
     @property
     def nclasses(self):
-        """Number of classes (3 for orthogonal selection in regression)."""
+        """Number of classes (3 for orthogonal or agreement selection in regression)."""
         try:
             return self._nclasses
         except AttributeError:
             if self._base.classifier:
                 self._nclasses = self._base._labels.shape[0]
-            elif self._base._orthogonal_selection:
+            elif (self._base._orthogonal_selection or
+                  self._base._selection == 'agreement'):
                 self._nclasses = 3
         return self._nclasses
 

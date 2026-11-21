@@ -462,6 +462,29 @@ cdef class Score:
         self.recall2accuracy()
         return self._accuracy, self._accuracy2
         
+    @cython.cdivision(True)
+    def _accuracy_index(self, double[::1] y, double[::1] hy, unsigned int[::1] index):
+        """Accuracy on the positions in ``index`` only: the first element of ``accuracy``, without counting the rest.
+
+        It is the same number (the hits and the positions are integers, so
+        the counts are exact) in a fraction of the time. It is private
+        (the golden test asks every public kernel to be recorded): the
+        agreement heuristic of the engine uses it.
+        """
+        cdef unsigned int size = y.shape[0], end = index.shape[0]
+        cdef unsigned int i, k, den = 0, hits = 0
+        cdef int _y, _hy
+        for k in range(end):
+            i = index[k]
+            if i >= size:
+                continue
+            _y = <int> y[i]
+            _hy = <int> hy[i]
+            den += 1
+            if _y == _hy:
+                hits += 1
+        return (<double> hits) / den
+
     @cython.cdivision(True)    
     def accDotMacroF1(self, double[::1] y, double[::1] hy, unsigned int[::1] index):
         """Accuracy times macro F1, as a pair for the positions in ``index`` and for the rest."""

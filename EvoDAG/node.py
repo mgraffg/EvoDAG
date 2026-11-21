@@ -228,6 +228,26 @@ class Variable(object):
     @hy.setter
     def hy(self, v):
         self._eval_tr = v
+        if self._labels_cache is not None:
+            self._labels_cache = None
+
+    # predicted labels of the node (see ``labels``); it is only set on the
+    # individuals of the population and is dropped when ``hy`` is replaced
+    _labels_cache = None
+
+    def labels(self, classifier=True):
+        """Labels predicted by the node on the training examples, remembered
+        until ``hy`` is replaced or released: ``argmax`` of the outputs in
+        classification and ``sign + 1`` of the output in regression. They are
+        what the agreement heuristic compares, thousands of times per fit."""
+        labels = self._labels_cache
+        if labels is None:
+            if classifier:
+                labels = au.argmax(self.hy)
+            else:
+                labels = au.sign(self.hy) + 1.0
+            self._labels_cache = labels
+        return labels
 
     # set by the nodes whose output stores entries that are zero (see
     # cython_utils._naive_bayes_MN_stored)
