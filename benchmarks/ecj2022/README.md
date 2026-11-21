@@ -130,6 +130,7 @@ There is one job array per dataset with one task per pending configuration, and 
 
 ### What differs from the article
 
+- The first individual of a heuristic is the first argument of the function, as the article describes. The program that produced the article's results left it out (the sum of 60 received at most 59 arguments), and so did this repository when the campaign below was run.
 - The preprocessing of the datasets (see above): the original is lost. The 70/30 splits are ours (stratified, seed 0), and 12 datasets differ from the article's Table 1 by one or two rows, because the article's files were not available; `ad` has 1558 variables against 1557.
 - In `ml-prove` the class is a deterministic function of five other columns (the other one-hot label columns), as in the article, where almost every system scores 1.0. `yeast` keeps the sequence name as an ordinal variable. Class labels that are all numbers are ordered numerically.
 - EvoDAG's prediction is the majority vote of the members (the median is recorded too), while the article says "average of the predictions".
@@ -157,6 +158,8 @@ The largest ratio is 1.43 (`census-income` with `agr-rnd`; the earlier measureme
 The fit times are the best estimate of the cost of the campaign for the large datasets (one member, one core, a node with other jobs): a member takes 1 to 10 minutes with `agr-rnd` (65 s to 569 s here) and 0.5 to 2.3 hours with `ads-rnd` (1927 s to 8329 s, `sensorless` being the slowest of the four), and a unit has 30 members.
 
 ## Results of the campaign
+
+**These results were obtained before the selection was corrected.** The campaign ran from commit `e6b1e3f`, where the first individual of a heuristic was not passed to the function as an argument. The correction changes every configuration whose parents are chosen by agreement, cosine, Pearson's correlation or Angle-Driven Selection, and the configuration `default`: 19 of the 22. Their numbers below are kept as the record of that campaign and do not describe the current code. `fit-fit`, `rnd-rnd`, `nvs-rnd` and the scikit-learn classifiers do not use the corrected code and their results stand. On the machine of the campaign the results of the 19 configurations were moved to `experiments/results-before-fix/`, so that they are run again; the average ranks of that second campaign are added at the end of this section when it finishes.
 
 The whole campaign was run from 2026-11-18 00:23 to 2026-11-20 01:29 (about 49 hours of wall time) on the three nodes of the cluster (`geoint0`, `geoint1`, `geoint2`, 60 to 62 cores and about 240 GB each, Slurm partition `compute`), from commit `e6b1e3f` with a clean tree (`environment.git_dirty` is false and `git_commit` the same in all 660 EvoDAG results), with `submit.py` as described above and the default caps (up to 8 members at a time per task, memory factor 1.8).
 

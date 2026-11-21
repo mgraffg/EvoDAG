@@ -588,13 +588,13 @@ class EvoDAG(object):
         other one is the individual, among ``tournament_size`` drawn at
         random, whose predicted labels agree least with those of the first
         argument on the training part. Returns the list of positions in the
-        population of the other arguments, or ``None`` if there are fewer
-        than ``func.min_nargs``.
+        population of the arguments, the first argument first, or ``None`` if
+        there are fewer than ``func.min_nargs``.
         """
         first = self.population.tournament()
         args = {first: 1}
+        res = [first]
         first = self.population.population[first].labels(self.classifier)
-        res = []
         sel = self._get_args_orthogonal
         n_tries = self._number_tries_unique_args
         for j in range(func.nargs - 1):
@@ -637,7 +637,8 @@ class EvoDAG(object):
 
         Same procedure as ``get_args_orthogonal`` but the measure is the
         dot product of the masked outputs. Returns the list of positions of
-        the other arguments, or ``None`` if there are too few.
+        the arguments, the first argument first, or ``None`` if there are too
+        few.
         """
         first = self.population.tournament()
         args = {first: 1}
@@ -652,7 +653,7 @@ class EvoDAG(object):
         else:
             first_hy = au.mul(self.population.population[first].hy, mask)
             
-        res = []
+        res = [first]
         sel = self._get_args_orthogonal_dot
         n_tries = self._number_tries_unique_args
         for j in range(func.nargs - 1):
@@ -827,15 +828,18 @@ class EvoDAG(object):
         return self.population.random_selection
 
     def _heuristic_args(self, func, first, choose):
-        """Arguments of ``func`` chosen by ``choose()`` given the reference ``first``.
+        """Arguments of ``func``: the reference ``first`` and the winners of ``choose()``.
 
-        ``first`` (a position) is only the reference of the measure: it is
-        excluded from the arguments but not returned, so the function
-        receives at most ``func.nargs - 1`` arguments. This is how the code
-        that produced the selection paper behaves.
+        ``first`` (a position) is the first argument, as the selection paper
+        describes; each call of ``choose()`` gives one of the other
+        ``func.nargs - 1``. A winner that is already an argument is drawn
+        again a few times and then dropped, so the list can be shorter
+        than ``func.nargs``; ``None`` if it is shorter than the minimum of
+        the function. (Up to version 0.18, and in the program of the
+        paper, the reference was left out of the list.)
         """
         used = {first: 1}
-        res = []
+        res = [first]
         n_tries = self._number_tries_unique_args
         for j in range(func.nargs - 1):
             k = choose()
