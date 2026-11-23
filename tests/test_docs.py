@@ -366,3 +366,13 @@ def test_python_page_points_to_the_native_api():
     code = "\n".join(python_blocks(PAGES / "python.qmd"))
     assert "EvoDAGE" not in code and "RGP" not in code
     assert "RGP" not in page
+
+
+def test_selection_page_compares_the_defaults_with_the_article():
+    page = (PAGES / "selection.qmd").read_text(encoding="utf8")
+    assert "## The defaults against the article" in page
+    section = page[page.index("## The defaults against the article"):]
+    for title in ("### What is the same", "### What still differs",
+                  "### What is not known yet"):
+        assert title in section, title
+    assert "The reference is not an argument" not in page

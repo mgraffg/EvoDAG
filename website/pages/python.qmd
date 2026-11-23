@@ -6,7 +6,7 @@ EvoDAG offers scikit-learn estimators: they have `fit`, `predict` and `score`, t
 
 Every Python block on this page is executed by the test suite of the repository (`tests/test_docs.py`), so the examples match the code of the release they were written for. They use small synthetic data and small populations so that they finish quickly; the library's own defaults are much larger (see [Parameters](parameters.qmd)). The blocks share state: each one builds on the variables of the previous one, so you can paste the whole page into a script.
 
-What the defaults are, and how they differ from the paper's setup, is explained at the beginning of [Parameters](parameters.qmd). In particular, in classification the arguments of the sum and of the classifiers are chosen by agreement and the individual that an offspring replaces is chosen at random; `orthogonal_selection=False, negative_selection=True` gives the selection that earlier releases used.
+What the defaults are, and how they differ from the paper's setup, is explained at the beginning of [Parameters](parameters.qmd). In particular, in classification the defaults are the configuration of the selection paper: the arguments of the sum and of the classifiers are chosen by agreement, the individual that an offspring replaces is chosen at random and the fitness is macro-F1; `params={"selection": "fitness", "negative_selection": True}` gives the classical selection by fitness.
 
 ## Which class do I use?
 

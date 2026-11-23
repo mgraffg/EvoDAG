@@ -82,6 +82,8 @@ The name is `<parent>-<negative>[--<first>][-all]` (`-all` is the `*` of the art
 
 Every configuration also has `fitness_function="macro-F1"`, `random_generations=0` and `time_limit=None`; the rest comes from `EvoDAG/conf/default_parameters.json` (population 4000, early stopping after 4000 evaluations). `--quick` replaces the population and the early stopping by 50 and the 30 members by 3: it tests the pipeline and its numbers are not results.
 
+Since the campaign, the configuration `agr-rnd` is the default of classification of the library (`EvoDAG/conf/default_parameters.json`), so `agr-rnd` is the configuration of the released defaults.
+
 ### Layout of the experiments directory
 
 ```
