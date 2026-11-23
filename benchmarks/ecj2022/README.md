@@ -243,6 +243,18 @@ What agrees with the article: the agreement heuristic is the best family of pare
 
 What does not agree: `agr-rnd` is not the best EvoDAG configuration of the tables of selection by macro-F1 (average rank 5.4 of the combinations and 5.5 of the schemes, against 3.6 and 4.3 in the article): `agr-fit-all` (4.1) is the first of the combinations and `agr-fit--fit` (4.6) of the schemes. The `-all` variants of agreement, which the article ranks last (11.7), are among the best here. Against the classifiers, `ExtraTrees`, `GradientBoosting` and `RandomForest` rank ahead of every EvoDAG configuration by macro-F1 (4.9, 5.4 and 5.6 against 6.3 for `agr-rnd` and `rnd-rnd`), whereas in the article `agr-rnd` (5.3) is ahead of them (6.9 to 9.2).
 
+### After the correction
+
+The 18 configurations that the correction changes (540 units) were run again from commit `d63da96`, in which the first individual of a heuristic is the first argument of the function. The submission was on 2026-11-21 at 13:29 and the last result was written on 2026-11-23 at 01:41 (CST), about 36 hours of wall time; no resubmission was needed, and all 660 units finished with no failed member. The sum of `fit_seconds` over the 630 EvoDAG units (the 90 kept ones included) is 1144 CPU hours. The results of `fit-fit`, `rnd-rnd`, `nvs-rnd` and the scikit-learn classifiers are those of the first campaign (commit `e6b1e3f`), kept because their fits do not change. Every configuration has macro-F1 as fitness, and the prediction is the majority vote of the 30 members, as before.
+
+**Combinations of parent and negative selection, macro-F1:** `agr-fit` 4.9, `agr-rnd-all` 5.1, `agr-fit-all` 5.1, `rnd-rnd` 5.1, `agr-rnd` 5.6, `sim-fit` 5.8, `prs-fit-all` 5.8, `prs-rnd-all` 6.6, `sim-rnd` 6.7, `prs-fit` 7.1, `fit-fit` 7.3, `prs-rnd` 7.4, `sim-fit-all` 8.6, `sim-rnd-all` 8.6. Friedman p-value 1.91e-05.
+
+**Selection schemes, macro-F1:** `agr-fit` 4.6, `rnd-rnd` 4.8, `agr-rnd` 5.1, `sim-fit` 6.3, `agr-fit--fit` 6.6, `sim-rnd` 6.6, `nvs-rnd` 6.8, `agr-rnd--fit` 7.0, `fit-fit` 7.0, `prs-fit` 7.2, `ads-rnd` 7.3, `prs-rnd` 7.6, `ads-fit--fit-all` 8.5, `ads-fit--fit` 8.7, `ads-rnd-all` 9.3. Friedman p-value 0.000228.
+
+**Comparison with classifiers, macro-F1:** `ExtraTrees` 4.9, `GradientBoosting` 5.5, `RandomForest` 5.5, `agr-rnd` 6.0, `rnd-rnd` 6.2, `fit-fit` 6.9, `nvs-rnd` 7.1, `ads-rnd` 7.6, `MLP` 8.2, `DecisionTree` 9.0, `LogisticRegression` 10.6, `KNeighbors` 10.6, `LinearSVC` 10.7, `AdaBoost` 12.4, `SVC` 13.5, `GaussianNB` 13.6, `SGD` 15.8, `PassiveAggressive` 16.6, `Perceptron` 16.7, `BernoulliNB` 16.9, `NearestCentroid` 17.7. Friedman p-value 4.53e-48.
+
+The per-dataset tables are in `experiments/summary-macro-f1.md` and `experiments/summary-macro-f1-median.md`, which are not committed, and the results of the first campaign for the configurations that were run again are in `experiments/results-before-fix/`.
+
 
 ## Profile
 
