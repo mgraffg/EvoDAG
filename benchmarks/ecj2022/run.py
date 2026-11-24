@@ -121,7 +121,7 @@ def macro_f1(y, hy):
 def recall_macro(y, hy):
     """Macro-recall: the mean, over the classes that are in ``y``, of the
     proportion of the examples of the class that ``hy`` predicts as that
-    class. The balanced error rate (BER) is ``1 - recall_macro``."""
+    class."""
     y = np.asarray(y)
     hy = np.asarray(hy)
     recalls = [float(np.sum((y == c) & (hy == c))) / float(np.sum(y == c))
@@ -306,8 +306,8 @@ def build_result(root, dataset, config, quick, members, params):
         "members": members,
         "macro_f1": macro_f1(y_test, hy),
         "macro_f1_median": macro_f1(y_test, hy_median),
-        "macro_recall": recall, "ber": 1.0 - recall,
-        "macro_recall_median": recall_median, "ber_median": 1.0 - recall_median,
+        "macro_recall": recall,
+        "macro_recall_median": recall_median,
         "accuracy": accuracy(y_test, hy),
         "fit_seconds": fit_seconds,
         "fit_seconds_per_sample": fit_seconds / len(y_train),
@@ -442,7 +442,7 @@ def _fit_classifier(name, root, dataset, quick, conn):
         t2 = time.perf_counter()
         recall = recall_macro(y_test, hy)
         result = {"macro_f1": macro_f1(y_test, hy),
-                  "macro_recall": recall, "ber": 1.0 - recall,
+                  "macro_recall": recall,
                   "accuracy": accuracy(y_test, hy),
                   "fit_seconds": t1 - t0,
                   "fit_seconds_per_sample": (t1 - t0) / len(y_train),

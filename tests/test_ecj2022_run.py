@@ -54,8 +54,12 @@ def make_root(tmp_path, names=("toy",), n=120, n_train=84):
 
 # -- configurations --------------------------------------------------------
 
-def test_configs_are_the_22_of_the_article():
-    assert len(configs.CONFIGS) == 22
+def test_configs_are_the_21_of_the_article():
+    assert len(configs.CONFIGS) == 21
+    assert "default" not in configs.CONFIGS
+    # every configuration has the fitness of the article
+    assert all(configs.params_for(c)["fitness_function"] == "macro-F1"
+               for c in configs.CONFIGS)
     assert configs.CONFIGS["agr-rnd"] == dict(
         selection="agreement", negative_selection=False,
         first_selection="random", heuristic_functions="tailored")
@@ -69,8 +73,6 @@ def test_configs_are_the_22_of_the_article():
         selection="fitness", negative_selection=True)
     assert configs.CONFIGS["rnd-rnd"] == dict(
         selection="random", negative_selection=False)
-    assert configs.CONFIGS["default"] == {"time_limit": None}
-    assert configs.params_for("default") == {"time_limit": None}
     assert configs.params_for("fit-fit") == dict(
         fitness_function="macro-F1", random_generations=0, time_limit=None,
         selection="fitness", negative_selection=True)
@@ -314,7 +316,7 @@ def test_a_member_killed_by_a_signal_is_a_failure_not_a_hang(
     assert (directory / "result.json").exists()
 
 
-def test_predictions_ber_and_provenance_are_stored(tmp_path):
+def test_predictions_and_provenance_are_stored(tmp_path):
     root = make_root(tmp_path)
     assert runner.run_evodag_unit(root, "toy", "fit-fit", workers=2,
                                   quick=True, log=lambda *a: None) == 0
@@ -333,11 +335,9 @@ def test_predictions_ber_and_provenance_are_stored(tmp_path):
         y, hy, hy_median = (stored["y_test"], stored["hy"],
                             stored["hy_median"])
     assert result["macro_recall"] == pytest.approx(runner.recall_macro(y, hy))
-    assert result["ber"] == pytest.approx(1 - runner.recall_macro(y, hy))
-    assert result["ber_median"] == pytest.approx(
-        1 - runner.recall_macro(y, hy_median))
     assert result["macro_recall_median"] == pytest.approx(
-        1 - result["ber_median"])
+        runner.recall_macro(y, hy_median))
+    assert "ber" not in result and "ber_median" not in result
     assert result["macro_f1"] == pytest.approx(runner.macro_f1(y, hy))
     assert not list(directory.glob("*.tmp"))
     # provenance
@@ -417,7 +417,7 @@ def test_sklearn_unit(tmp_path, monkeypatch):
             assert stored["hy"].dtype == np.int64
             assert record["macro_recall"] == pytest.approx(
                 runner.recall_macro(stored["y_test"], stored["hy"]))
-            assert record["ber"] == pytest.approx(1 - record["macro_recall"])
+            assert "ber" not in record
     stamp = (directory / "GaussianNB.json").stat().st_mtime_ns
     runner.run_sklearn_unit(root, "toy", quick=True, names=["GaussianNB"],
                             log=lambda *a: None)
@@ -540,7 +540,7 @@ def test_dry_run_prints_the_commands_and_submits_nothing(
     assert len(commands) == 4 and len(notes) == 4
     alpha, alpha_sk, beta, beta_sk = commands
     assert alpha.startswith("sbatch --parsable --job-name=ecj-alpha ")
-    assert "--array=0-20 " in alpha and "--array=0-21 " in beta
+    assert "--array=0-19 " in alpha and "--array=0-20 " in beta
     assert "--cpus-per-task=8 --mem=12120M" in alpha
     assert "--job-name=ecj-alpha-sklearn" in alpha_sk
     assert "--array=0-15 " in alpha_sk
@@ -550,7 +550,7 @@ def test_dry_run_prints_the_commands_and_submits_nothing(
     assert "--workers 8" in alpha and "--quick" not in alpha
     assert str(root / "logs" / "%x-%A_%a.out") in alpha
     assert "fit-fit" not in notes[0] and "rnd-rnd" in notes[0]
-    assert len(notes[0].split(": ")[-1].split()) == 21
+    assert len(notes[0].split(": ")[-1].split()) == 20
     assert "task file %s" % (root / "logs") in notes[0]
     assert ".tasks.json" in notes[0] and ".tasks.json" in alpha
     assert "LogisticRegression" in notes[1]
@@ -722,14 +722,14 @@ def test_wait(tmp_path, monkeypatch, capsys):
     before = snapshot(root)
     assert submit.main(["--wait", "3600", "--root", str(root)]) == 0
     line, = capsys.readouterr().out.splitlines()
-    assert line == "queue: 0 jobs left; units finished 1/23, failed 0"
+    assert line == "queue: 0 jobs left; units finished 1/22, failed 0"
     assert sleeps == [60, 60, 60] and not answers
     assert snapshot(root) == before  # it submits and writes nothing
     # the time runs out: one line and a zero exit status
     monkeypatch.setattr(submit, "running_jobs", lambda **kw: ["ecj-toy"] * 3)
     assert submit.main(["--wait", "0", "--root", str(root)]) == 0
     assert capsys.readouterr().out.strip() == (
-        "queue: 3 jobs left; units finished 1/23, failed 0")
+        "queue: 3 jobs left; units finished 1/22, failed 0")
     # a queue that cannot be read is unknown
     def broken(**kwargs):
         raise SystemExit("squeue failed")
@@ -818,18 +818,18 @@ def test_status(tmp_path, monkeypatch, capsys):
     (sk / "SVC.json").write_text("{}")
     assert submit.main(["--status", "--root", str(root)]) == 0
     out = capsys.readouterr().out
-    assert "toy" in out and "1/23 finished, 2 partial, 1 failed" in out
+    assert "toy" in out and "1/22 finished, 2 partial, 1 failed" in out
     assert "rnd-rnd: 2/30 members" in out
     assert "agr-rnd: 1 members with errors" in out
     assert "sklearn: 1/16 classifiers" in out
     assert "in the queue: ecj-toy" in out
-    assert "total: 1/23 units finished" in out
+    assert "total: 1/22 units finished" in out
 
 
 # -- the summary -----------------------------------------------------------
 
 def write_result(root, dataset, system, f1=None, seconds=None, error=None,
-                 ber=None, members=None):
+                 members=None):
     if system in configs.CONFIGS:
         directory = runner.unit_dir(root, dataset, system)
         path = directory / "result.json"
@@ -841,8 +841,6 @@ def write_result(root, dataset, system, f1=None, seconds=None, error=None,
         content = {"error": error}
     else:
         content = {"macro_f1": f1, "macro_f1_median": f1 - 0.1,
-                   "ber": 1 - f1 if ber is None else ber,
-                   "ber_median": (1 - f1 if ber is None else ber) + 0.1,
                    "fit_seconds_per_sample": seconds,
                    "members": members or configs.n_members()}
         if system not in configs.CONFIGS:
@@ -916,77 +914,18 @@ def test_summary_tables(tmp_path):
     assert header.count("|") == ranks.count("|")
 
 
-def test_summary_prints_the_released_defaults_table(tmp_path):
-    root = make_root(tmp_path, names=("d1", "d2"))
-    for dataset in ("d1", "d2"):
-        for system in configs.TABLE_DEFAULTS:
-            write_result(root, dataset, system, f1=0.7, seconds=0.1)
-    assert configs.TABLE_DEFAULTS == ["default", "agr-rnd", "fit-fit",
-                                      "rnd-rnd"]
-    text = summary.summarize(root)
-    assert "### Released defaults" in text
-    table = text[text.index("### Released defaults"):]
-    header = [x for x in table.splitlines() if x.startswith("| dataset")][0]
-    assert {"default", "agr-rnd", "fit-fit", "rnd-rnd"} <= set(
-        x.strip() for x in header.split("|"))
-    assert "uses the 2 datasets where every system has a result." in table
-
-
 def test_summary_lists_the_datasets_that_were_not_started(tmp_path):
     root = make_root(tmp_path, names=("d1", "d2", "d3"))
-    for system in configs.TABLE_DEFAULTS:
+    for system in configs.TABLE_SCHEMES:
         write_result(root, "d1", system, f1=0.7, seconds=0.1)
     assert not (runner.results_dir(root) / "d2").exists()
     text = summary.summarize(root)
-    defaults = text[text.index("### Released defaults"):]
-    assert "incomplete: d2, d3." in defaults
-    line = [x for x in defaults.splitlines() if x.startswith("| d3 ")][0]
+    assert "Released defaults" not in text
+    schemes = text[text.index("### Selection schemes"):
+                   text.index("### Comparison with classifiers")]
+    assert "incomplete: d2, d3." in schemes
+    line = [x for x in schemes.splitlines() if x.startswith("| d3 ")][0]
     assert set(line.replace("|", " ").split()) == {"d3", "-"}
-
-
-def test_summary_measure_ber(tmp_path):
-    root = make_root(tmp_path, names=("d1", "d2"))
-    # macro-F1 and BER disagree: agr-rnd has the best macro-F1 but the worst BER
-    for dataset in ("d1", "d2"):
-        write_result(root, dataset, "agr-rnd", f1=0.9, seconds=0.1, ber=0.4)
-        write_result(root, dataset, "fit-fit", f1=0.8, seconds=0.1, ber=0.1)
-        write_result(root, dataset, "rnd-rnd", f1=0.7, seconds=0.1, ber=0.2)
-        write_result(root, dataset, "default", f1=0.6, seconds=0.1, ber=0.3)
-    text = summary.summarize(root, measure="ber")
-    assert "Balanced error rate (BER) on the test set" in text
-    table = text[text.index("### Released defaults"):]
-    row = [x for x in table.splitlines() if x.startswith("| d1 ")][0]
-    cells = dict(zip([x.strip() for x in table.splitlines()[
-        [i for i, x in enumerate(table.splitlines())
-         if x.startswith("| dataset")][0]].split("|")[2:-1]],
-        [x.strip() for x in row.split("|")[2:-1]]))
-    # lower is better: the smallest BER has the rank 1
-    assert cells["fit-fit"] == "0.10 (1)" and cells["rnd-rnd"] == "0.20 (2)"
-    assert cells["default"] == "0.30 (3)" and cells["agr-rnd"] == "0.40 (4)"
-    # the average rank puts the best system first
-    ranks = [x for x in table.splitlines()
-             if x.startswith("| **Average rank**")][0]
-    assert [float(v) for v in ranks.split("|")[2:-1]] == [1.0, 2.0, 3.0, 4.0]
-    # the median uses ber_median (the helper adds 0.1)
-    median = summary.summarize(root, median=True, measure="ber")
-    assert "0.20 (1)" in median
-    f1_text = summary.summarize(root)
-    assert "0.90 (1)" in f1_text and "Balanced" not in f1_text
-    # a result without the key (written before BER existed): a missing value
-    # for BER only
-    path = runner.unit_dir(root, "d1", "fit-fit") / "result.json"
-    old = json.loads(path.read_text())
-    del old["ber"], old["ber_median"]
-    path.write_text(json.dumps(old))
-    ber, _ = summary.collect(root, ["d1"], ["fit-fit"], measure="ber")
-    f1, _ = summary.collect(root, ["d1"], ["fit-fit"])
-    assert ber == {"d1": {"fit-fit": None}} and f1 == {"d1": {"fit-fit": 0.8}}
-    assert "0.80 (" in summary.summarize(root)
-    # the command line
-    out = tmp_path / "ber.md"
-    assert summary.main(["--root", str(root), "--measure", "ber",
-                         "--output", str(out)]) == 0
-    assert "Balanced error rate" in out.read_text()
 
 
 def test_summary_ignores_a_result_with_the_wrong_number_of_members(tmp_path):
@@ -1067,13 +1006,9 @@ def test_summary_with_paper_tex_option(tmp_path):
     assert "| d1 | -0.24 |" in text
     # the tables of time are not in this fake: one sentence, no failure
     assert "The comparison with the article could not be made" in text
-    # the table of the defaults has no counterpart, and neither has BER
-    assert "### Released defaults" in text
-    assert summary.main(["--root", str(root), "--paper-tex", str(tex),
-                         "--measure", "ber", "--output", str(out)]) == 0
-    text = out.read_text()
-    assert "#### Against the article" not in text
-    assert "article reports macro-F1 only" in text
+    # only macro-F1 is reported: the option of another measure is gone
+    with pytest.raises(SystemExit):
+        summary.main(["--root", str(root), "--measure", "ber"])
     # an article that cannot be read
     assert summary.main(["--root", str(root), "--paper-tex",
                          str(tmp_path / "missing.tex"),

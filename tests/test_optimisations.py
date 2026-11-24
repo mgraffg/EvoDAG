@@ -42,7 +42,9 @@ def test_the_cached_labels_are_the_plain_ones(classifier):
 
 
 def test_the_labels_are_dropped_with_the_outputs():
-    engine = fitted()
+    # a population smaller than the number of evaluations, so that
+    # individuals are replaced and their outputs released
+    engine = fitted(popsize=20)
     node = engine.population.population[0]
     node.labels()
     assert node._labels_cache is not None
@@ -67,8 +69,13 @@ def test_models_do_not_carry_the_caches():
     for node in model._hist:
         assert "_labels_cache" not in vars(node)
         assert "_density_cache" not in vars(node)
-    clone = pickle.loads(pickle.dumps(model))
-    assert len(pickle.dumps(clone)) == len(pickle.dumps(model))
+    data = pickle.dumps(model)
+    assert b"_labels_cache" not in data and b"_density_cache" not in data
+    clone = pickle.loads(data)
+    assert len(clone._hist) == len(model._hist)
+    for node in clone._hist:
+        assert "_labels_cache" not in vars(node)
+        assert "_density_cache" not in vars(node)
 
 
 def test_selection_uses_the_same_numbers():

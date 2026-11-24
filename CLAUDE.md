@@ -28,10 +28,11 @@ Modules in the order the data flows; each is documented in the developer referen
   `Generational`), tournament and negative selection, the early stopping individual, and the
   tournament that chooses a function. Parent selection by agreement or dot product is in
   `EvoDAG/base.py` (`orthogonal_selection`, `orthogonal_dot_selection`). The engine parameters `selection`,
-  `first_selection` and `heuristic_functions` (off by default) select the schemes of the selection article (fitness,
+  `first_selection` and `heuristic_functions` (keys of the classification file; `None`, `"random"` and `"tailored"` in the constructor) select the schemes of the selection article (fitness,
   random, agreement, cosine, Pearson, angle-driven, novelty search) and override the two `orthogonal_*` flags.
-  The classification defaults use agreement for the parents and random negative selection
-  (`orthogonal_selection` true, `negative_selection` false); regression uses the tournaments on fitness.
+  The classification defaults are the configuration `agr-rnd` of the selection article (`selection` `"agreement"`,
+  `first_selection` `"random"`, `heuristic_functions` `"tailored"`, `negative_selection` false, `fitness_function`
+  `"macro-F1"`); regression uses the tournaments on fitness.
 - **`EvoDAG/node.py` and `EvoDAG/naive_bayes.py`.** An individual is a node: `Variable` or a
   `Function` subclass. A node stores the positions of its arguments in the history
   (`population.hist`), its `weight`, `height` and fitness. `hy` holds its values on the training
@@ -85,7 +86,7 @@ Modules in the order the data flows; each is documented in the developer referen
   reproduce the experiments of the selection heuristics article, starting with `benchmarks/ecj2022/datasets.py` and followed by `benchmarks/ecj2022/configs.py`,
   `benchmarks/ecj2022/run.py`, `benchmarks/ecj2022/submit.py` and `benchmarks/ecj2022/summary.py`, with
   `benchmarks/ecj2022/profile_fit.py` (profile one member) and `benchmarks/ecj2022/parity.py` (the bit-level parity check,
-  106 cases, among them an ensemble of each kind; the profile and the speed-ups it recorded are in `benchmarks/ecj2022/README.md`);
+  102 cases, among them an ensemble of each kind; the profile and the speed-ups it recorded are in `benchmarks/ecj2022/README.md`);
   their data and results go to a directory named experiments at the repository root that git ignores.
   `scripts/`: the PyPI version check.
 - `.github/workflows/`: `.github/workflows/test.yml`, `.github/workflows/website.yml`,

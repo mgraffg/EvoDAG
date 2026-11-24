@@ -29,7 +29,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-# keyword arguments of every configuration except ``default``
+# keyword arguments of every configuration
 COMMON = dict(fitness_function="macro-F1", random_generations=0,
               time_limit=None)
 # replace the population, the early stopping and the members in --quick mode
@@ -82,14 +82,10 @@ def _config(parent, negative, first, functions):
 
 CONFIGS = {name: _config(parent, negative, first, functions)
            for name, _, parent, negative, first, functions in _ROWS}
-# the released defaults, untouched; only the time limit is removed, because
-# it would make a fit depend on the load of the machine
-CONFIGS["default"] = {"time_limit": None}
 
 # column headers the article uses for each configuration
 ARTICLE_NAMES = {name: [x.strip() for x in article.split(",")]
                  for name, article, *_ in _ROWS}
-ARTICLE_NAMES["default"] = []
 
 TABLE_HEURISTICS = [
     "agr-rnd", "agr-fit", "rnd-rnd", "sim-fit", "prs-fit-all", "prs-rnd",
@@ -100,9 +96,6 @@ TABLE_SCHEMES = [
     "agr-rnd--fit", "prs-fit", "prs-rnd", "ads-rnd", "sim-rnd",
     "ads-fit--fit", "fit-fit", "nvs-rnd", "ads-rnd-all", "ads-fit--fit-all"]
 EVODAG_CLASSIFIERS = ["agr-rnd", "rnd-rnd", "fit-fit", "nvs-rnd", "ads-rnd"]
-# the released defaults against three of the configurations (the table has no
-# counterpart in the article)
-TABLE_DEFAULTS = ["default", "agr-rnd", "fit-fit", "rnd-rnd"]
 
 # labels of the tables of the article (several when a table is in parts)
 PAPER_LABELS = {
@@ -143,7 +136,7 @@ SKLEARN_NAMES = [name for name, _, _ in SKLEARN]
 TABLE_CLASSIFIERS = EVODAG_CLASSIFIERS + SKLEARN_NAMES
 
 TABLES = {"heuristics": TABLE_HEURISTICS, "schemes": TABLE_SCHEMES,
-          "classifiers": TABLE_CLASSIFIERS, "defaults": TABLE_DEFAULTS}
+          "classifiers": TABLE_CLASSIFIERS}
 
 
 def params_for(config, quick=False):
@@ -152,8 +145,7 @@ def params_for(config, quick=False):
     if config not in CONFIGS:
         raise ValueError("unknown configuration %r; choose among %s"
                          % (config, sorted(CONFIGS)))
-    params = dict(CONFIGS[config]) if config == "default" else \
-        {**COMMON, **CONFIGS[config]}
+    params = {**COMMON, **CONFIGS[config]}
     if quick:
         params.update(QUICK)
     return params

@@ -225,6 +225,7 @@ def test_multiple_outputs_ensemble():
     gp = [EvoDAG(generations=np.inf,
                  tournament_size=2,
                  multiple_outputs=True,
+                 fitness_function='BER',
                  early_stopping_rounds=-1,
                  seed=x,
                  popsize=10).fit(X[:-10], y[:-10], test_set=X[-10:])

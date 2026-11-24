@@ -44,7 +44,7 @@ def test_the_case_list_covers_what_the_issue_asks():
     assert "default-regression-s0" in names
     assert any(n.startswith("ensemble-") for n in names)
     assert any(n.startswith("extremes-") for n in names)
-    assert len(names) == 106
+    assert len(names) == 102
     for extra in ("regression-orthogonal", "generational-3c", "test-set-3c"):
         assert extra in names
     assert all(c["params"]["popsize"] == 200 for c in cases)
@@ -124,7 +124,7 @@ def test_profile_fit_prints_the_time_and_a_table(tmp_path, capsys):
 def test_profile_fit_options(tmp_path):
     write_dataset(tmp_path)
     X, y, _, _ = runner.load_data(tmp_path, "toy")
-    result = profile_fit.profile_member(X, y, "default", max_seconds=60)
+    result = profile_fit.profile_member(X, y, "agr-rnd", max_seconds=60)
     assert result["truncated"] is False and result["individuals"] > 0
     assert result["params"]["time_limit"] == 60
     with pytest.raises(SystemExit):

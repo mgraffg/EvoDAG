@@ -746,9 +746,10 @@ class EvoDAGE(object):
     learns from its own random split of the training data. The default
     parameters are those of ``EvoDAG/conf/default_parameters.json`` (or
     ``default_parameters_r.json`` when ``classifier=False``); in classification
-    they include the agreement selection of the parents and the random choice
-    of the individual that leaves (``orthogonal_selection=True``,
-    ``negative_selection=False``). Note that
+    they are the configuration ``agr-rnd`` of the selection paper: the
+    agreement selection of the parents, the random choice of the individual
+    that leaves and macro-F1 as fitness (``selection="agreement"``,
+    ``negative_selection=False``, ``fitness_function="macro-F1"``). Note that
     ``fit`` returns an ``Ensemble``, not the ``EvoDAGE`` instance.
 
     Parameters

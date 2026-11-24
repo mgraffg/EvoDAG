@@ -26,14 +26,14 @@ bytes of the pickled model. ``check`` runs the same fits again and compares
 every stored value with ``np.array_equal`` (NaN in the same place is equal);
 it exits with status 1 and lists the cases that differ.
 
-The cases are the 22 configurations of ``configs.py`` with the parameters of
+The cases are the 21 configurations of ``configs.py`` with the parameters of
 the experiments (population and early stopping reduced to 200) on a 3-class
 and a 2-class problem with seeds 0 and 1, the released defaults for
 classification (with and without multiple outputs) and regression, two
 ``EvoDAGE`` ensembles, cases with a column of huge values and a constant
 column, and three cases of paths the others do not take (the agreement
 heuristic in regression, the generational population and a test set given to
-``fit``, whose outputs on it are recorded too); 106 cases in all. Record the reference from the tree **before** an optimisation and
+``fit``, whose outputs on it are recorded too); 102 cases in all. Record the reference from the tree **before** an optimisation and
 check after each change; the golden files of the tests do not cover the
 selection schemes nor these configurations.
 """

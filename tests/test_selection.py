@@ -33,8 +33,11 @@ def fit(seed=0, **kwargs):
 
 
 def test_defaults():
+    # the classification file has the agreement of the paper, the
+    # constructor has no scheme
+    assert RGP.init()._selection == 'agreement'
+    assert RGP()._selection is None
     for engine in (RGP.init(), RGP()):
-        assert engine._selection is None
         assert engine._first_selection == 'random'
         assert engine._heuristic_functions == 'tailored'
     params = RGP(selection='cosine', first_selection='fitness',
@@ -72,7 +75,7 @@ def test_every_selection_fits_and_is_deterministic(selection, first,
 @pytest.mark.parametrize("seed", (0, 1, 2))
 def test_fitness_selection_equals_legacy(seed):
     a = fit(seed=seed, selection='fitness', orthogonal_selection=True)
-    b = fit(seed=seed, orthogonal_selection=False,
+    b = fit(seed=seed, selection=None, orthogonal_selection=False,
             orthogonal_dot_selection=False)
     assert np.array_equal(np.array(a.model().decision_function(X)),
                           np.array(b.model().decision_function(X)))
@@ -242,7 +245,7 @@ def test_heuristic_functions_all(monkeypatch):
 
 @pytest.mark.parametrize("selection", ('agreement', 'cosine', 'pearson',
                                        'angle'))
-def test_reference_is_not_an_argument(selection, monkeypatch):
+def test_reference_is_the_first_argument(selection, monkeypatch):
     engine = fit()
     monkeypatch.setattr(Mul, 'nargs', 2)
     monkeypatch.setattr(Add, 'nargs', 5)
@@ -260,14 +263,20 @@ def test_reference_is_not_an_argument(selection, monkeypatch):
         return draw
     engine._first_draw = first_draw
     method = getattr(engine, '_get_args_' + selection)
+    sizes = set()
     for _ in range(50):
         args = method(Add)
-        # the winner of an angle tournament repeats, and the tries to find
-        # a different one are limited, so that scheme may return fewer
-        wanted = range(2, 5) if selection == 'angle' else (4,)
-        assert args is not None and len(args) in wanted and 3 not in args \
+        # a tournament whose winner was already chosen is repeated a limited
+        # number of times, so a call may return fewer than five arguments
+        assert args is not None and 2 <= len(args) <= 5 and args[0] == 3 \
             and len(set(args)) == len(args)
-    assert method(Mul) is None
+        sizes.add(len(args))
+    if selection != 'angle':
+        # the reference and four winners: the five arguments of the sum
+        assert max(sizes) == 5
+    # a function of two arguments gets the reference and one winner
+    args = method(Mul)
+    assert len(args) == 2 and args[0] == 3 and args[1] != 3
 
 
 def test_random_selection_for_the_other_functions(monkeypatch):
@@ -298,8 +307,9 @@ def test_tournament_min_picks_the_smallest(selection, name, monkeypatch):
     monkeypatch.setattr(Add, 'min_nargs', 1)
     engine._first_draw = lambda: (lambda: 3)
     method = getattr(engine, '_get_args_' + selection)
-    for values, expected in (({4: 0.9, 7: 0.1}, [7]), ({4: 0.1, 7: 0.9}, [4]),
-                             ({4: 0.5, 7: 0.5}, [4])):
+    for values, expected in (({4: 0.9, 7: 0.1}, [3, 7]),
+                             ({4: 0.1, 7: 0.9}, [3, 4]),
+                             ({4: 0.5, 7: 0.5}, [3, 4])):
         two_candidates(engine, monkeypatch, [4, 7])
         monkeypatch.setattr(engine, name, lambda ref, x, v=values: v[x])
         assert method(Add) == expected
@@ -333,11 +343,11 @@ def test_angle_draws_ten_candidates_and_picks_the_largest(monkeypatch):
                         lambda reference, x, target: float(x))
     args = engine._get_args_angle(Add)
     assert len(draws) == 1 + ANGLE_CANDIDATES
-    assert args == [ANGLE_CANDIDATES]
+    assert args == [0, ANGLE_CANDIDATES]
     monkeypatch.setattr(engine, '_angle_value',
                         lambda reference, x, target: -float(x))
     del draws[:]
-    assert engine._get_args_angle(Add) == [1]
+    assert engine._get_args_angle(Add) == [0, 1]
 
 
 def test_novelty_picks_the_largest(monkeypatch):
@@ -421,3 +431,18 @@ def test_agreement_in_regression():
         selection='agreement'))
     # the same as the legacy flag
     assert np.array_equal(a, run(orthogonal_selection=True))
+
+
+@pytest.mark.parametrize("kwargs", (
+    dict(selection='agreement'), dict(selection='cosine'),
+    dict(selection='pearson'), dict(selection='angle'),
+    dict(selection=None, orthogonal_selection=True),
+    dict(selection=None, orthogonal_selection=False,
+         orthogonal_dot_selection=True)))
+def test_a_fit_builds_sums_with_all_their_arguments(kwargs):
+    # the sum is given three arguments: the reference and two winners. When
+    # the reference was left out no sum could have more than two
+    engine = fit(Add=3, **kwargs)
+    sizes = [len(v.variable) for v in engine.population.hist
+             if isinstance(v, Add)]
+    assert sizes and max(sizes) == 3
