@@ -15,7 +15,7 @@ The default configuration is what you get from `EvoDAGClassifier()` and `Ensembl
 | Stopping | `early_stopping_rounds` 4000; `time_limit` 3600 seconds for one model, none for an ensemble |
 | Validation split | `tr_fraction` 0.5 |
 | Fitness | `fitness_function` `"macro-F1"` (the macro-averaged F1 score) |
-| Selection of the arguments | the agreement heuristic of the selection paper (`selection` `"agreement"`, `first_selection` `"random"`, `heuristic_functions` `"tailored"`): for `Add`, `NaiveBayes`, `NaiveBayesMN` and `Centroid` the first argument is drawn at random and each other argument is, among `tournament_size` (2) individuals drawn at random, the one whose predicted labels agree least with the first; the arguments of the other functions are drawn at random |
+| Selection of the arguments | the agreement heuristic (see [Selection](selection.qmd); `selection` `"agreement"`, `first_selection` `"random"`, `heuristic_functions` `"tailored"`): for `Add`, `NaiveBayes`, `NaiveBayesMN` and `Centroid` the first argument is drawn at random and each other argument is, among `tournament_size` (2) individuals drawn at random, the one whose predicted labels agree least with the first; the arguments of the other functions are drawn at random |
 | Selection of the individual that leaves | random (`negative_selection` false) |
 | Ensemble (`EnsembleClassifier`, `EvoDAGE`) | `n_estimators` 30, seeds 0 to 29 |
 
@@ -23,18 +23,7 @@ Regression has its own file with a different function set (no `NaiveBayes`, `Nai
 
 ### Where they come from
 
-The second EvoDAG paper (see [Citing](citing.qmd)) reports that the default parameters, the number of arguments of each function included, were found by a random search over the parameter space on a benchmark of classification problems (several sentiment analysis problems and problems from the UCI repository, not the ones used to measure the selection heuristics), and that the values kept are the consensus of the parameters that obtained the best performance. The function set, the population size, the early stopping, the validation split and the ensemble size above are those that the paper describes for the system it evaluates.
-
-The paper's best-ranked configuration for the selection is agreement for the parents together with a random choice of the individual that leaves (it is called `agr-rnd` there; see [Selection](selection.qmd)), and it is statistically better than the classical selection, a tournament on fitness for both the parents and the individual that leaves (`fit-fit` there). Since this release (0.19) the classification defaults are the paper's `agr-rnd` configuration as a whole: agreement with a random reference for the four functions, random arguments for the others, a random choice of the individual that leaves and macro-F1 as fitness. **Earlier releases (0.18 and before) used the classical selection and the balanced error rate as fitness**, so a model trained now with the defaults is not the model an earlier release produced.
-
-### What still differs from the paper's setup
-
-* **The first individual is the first argument**, as the paper describes; a winner that repeats an argument is drawn again up to three times and then dropped, so a function receives up to its number of arguments. (Up to version 0.18, and in the program that produced the paper's results, the first individual was left out of the arguments; see [Selection](selection.qmd).)
-* **Time limit.** A single model stops after `time_limit` (3600 seconds); the paper has no time limit. An ensemble (`EvoDAGE`, `EnsembleClassifier`) has none unless it is given.
-* **Prediction of the ensemble.** The paper says the prediction is the average of the models; `predict` of `EvoDAGE` is the majority vote and `decision_function` is the median.
-* **Coefficients.** The coefficients of a node are fitted on a random subsample of the training part (see [How it works](how-it-works.qmd)); the paper says the training set.
-
-There are other, smaller differences that are listed in [How it works](how-it-works.qmd) and in [Selection](selection.qmd).
+The default parameters, the number of arguments of each function included, were found by a random search over the parameter space on a benchmark of classification problems (several sentiment analysis problems and problems from the UCI repository), keeping the consensus of the parameters that obtained the best performance (see [Citing](citing.qmd)). The selection is the agreement with a random first argument for `Add`, `NaiveBayes`, `NaiveBayesMN` and `Centroid`, random arguments for the other functions, a random choice of the individual that leaves, and macro-F1 as fitness. The [Performance](performance.qmd) page calls this configuration `agr-rnd` and compares it with the others.
 
 ### The parameters of the scikit-learn classes
 
@@ -46,20 +35,12 @@ There are other, smaller differences that are listed in [How it works](how-it-wo
 from EvoDAG import EvoDAGClassifier
 
 # the classical selection: fitness tournaments for the parents and for the
-# individual that leaves (the fit-fit of the selection paper)
+# individual that leaves (the fit-fit of the Performance page)
 classic = EvoDAGClassifier(params={"selection": "fitness",
                                    "negative_selection": True})
-
-# the legacy form of the agreement: the first argument and the functions
-# without the heuristic are chosen by the tournament on fitness
-legacy = EvoDAGClassifier(params={"selection": None,
-                                  "orthogonal_selection": True,
-                                  "negative_selection": False})
 ```
 
 The native form is the same keywords given to `EvoDAGE(...)`; on the command line, `EvoDAG-train -C --kw '{"selection": "fitness", "negative_selection": true}'`.
-
-Releases up to 0.18 used the classical selection with the balanced error rate as fitness; since this release the fitness is macro-F1 in every default, as in the selection paper.
 
 ### Two layers of defaults
 
@@ -88,7 +69,7 @@ There are two sets of default values and they differ.
 
 The two coincide in `tournament_size`, `fs_tournament_size`, `tr_fraction`, `fitness_function`, `random_generations`, `first_selection`, `heuristic_functions`, `min_density`, `finite`, `seed` and `population_class`. Use `init` unless you want the constructor's own values.
 
-A parameters file replaces the default file; it is not merged with it. A file written by `EvoDAG-params` of this release contains the selection keys (`selection`, `first_selection`, `heuristic_functions`, `negative_selection`) and `fitness_function`; a file written by an earlier release has neither the selection keys nor macro-F1, so a model trained from it (`-P`, or `params_fname`) uses the constructor's values for the selection (the tournaments on fitness) and the fitness the file has.
+A parameters file replaces the default file; it is not merged with it. A file written by `EvoDAG-params` contains the selection keys (`selection`, `first_selection`, `heuristic_functions`, `negative_selection`) and `fitness_function`; a model trained from a file that lacks the selection keys (`-P`, or `params_fname`) uses the constructor's values for the selection (the tournaments on fitness) and the fitness the file has.
 
 ## Where the values come from
 
@@ -164,7 +145,7 @@ the regression configuration they are 0.
 | `pr_variable` | 0.9 | probability that an initial individual is a single input variable rather than an input function over several variables |
 | `input_functions` | `["NaiveBayes", "NaiveBayesMN", "Centroid"]` (`null` in regression) | functions used to build the initial individuals that combine inputs; names of functions among `NaiveBayes`, `NaiveBayesMN`, `Centroid` and `MultipleVariables` (all four at most) |
 | `use_all_vars_input_functions` | true | first create one individual for each input function applied to all the variables |
-| `share_inputs` | false | has no effect in this release: the lists of inputs that it is meant to share are rebuilt right after |
+| `share_inputs` | false | has no effect: the lists of inputs that it is meant to share are rebuilt right after |
 
 ## Other parameters of the engine
 
@@ -172,7 +153,7 @@ These are not in the default configuration files, but they are accepted by the c
 
 | Parameter | Default | What it does |
 |:-----------------------|:------------|:------------------------------------------------|
-| `orthogonal_selection` | false | the legacy form of the agreement heuristic (the first argument and the functions without the heuristic are chosen by the tournament on fitness; see [Selection](selection.qmd)); it is used only when `selection` is `None` |
+| `orthogonal_selection` | false | the agreement heuristic with the first argument and the functions without the heuristic chosen by the tournament on fitness (see [Selection](selection.qmd)); it is used only when `selection` is `None` |
 | `orthogonal_dot_selection` | false | choose the arguments by a dot-product measure (see [Selection](selection.qmd)) |
 | `F1_index` | -1 | class used by `fitness_function="F1"`; -1 means the smallest class |
 | `remove_raw_inputs` | true | free the training inputs once the initial population exists |

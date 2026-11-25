@@ -98,7 +98,7 @@ EvoDAG-train (-C | -R | -P FILE) [-n N] [-m FILE] [options] training_set
 | Option | Meaning |
 |:--------------------------------|:--------------------------------------------------|
 | `training_set` | the training file (positional) |
-| `-C`, `--classifier` | classification with the default parameters (`default_parameters.json`, described in [Parameters](parameters.qmd): the configuration of the selection paper: the agreement selection, the random choice of the individual that leaves and macro-F1 as fitness) |
+| `-C`, `--classifier` | classification with the default parameters (`default_parameters.json`, described in [Parameters](parameters.qmd): the agreement selection, the random choice of the individual that leaves and macro-F1 as fitness) |
 | `-R`, `--regressor` | regression with the default parameters (`default_parameters_r.json`, the ordinary selections) |
 | `-P FILE`, `--parameters FILE` | use the parameters of a file written by `EvoDAG-params`; the first configuration (the best) is used. The task is read from the file; `-C`, `-R` and `-P` are mutually exclusive, and one of them is required |
 | `--kw JSON` | a JSON object with parameters that override the defaults, for instance `--kw '{"popsize": 500}'` |

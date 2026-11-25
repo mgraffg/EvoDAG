@@ -368,11 +368,67 @@ def test_python_page_points_to_the_native_api():
     assert "RGP" not in page
 
 
-def test_selection_page_compares_the_defaults_with_the_article():
+def test_selection_page_has_one_footnote_about_the_first_argument():
     page = (PAGES / "selection.qmd").read_text(encoding="utf8")
-    assert "## The defaults against the article" in page
-    section = page[page.index("## The defaults against the article"):]
-    for title in ("### What is the same", "### What still differs",
-                  "### What is not known yet"):
-        assert title in section, title
-    assert "The reference is not an argument" not in page
+    footnotes = re.findall(r"^\[\^[^\]]+\]:.*$", page, flags=re.MULTILINE)
+    assert len(footnotes) == 1
+    assert "0.18" in footnotes[0]
+    for title in ("The defaults against the article", "What the paper reports",
+                  "What the released code has", "The legacy booleans"):
+        assert title not in page, title
+    # the Performance page points at the section the footnote belongs to
+    assert "### The first argument is the reference" in page
+    assert "selection.qmd#the-first-argument-is-the-reference" in \
+        (PAGES / "performance.qmd").read_text(encoding="utf8")
+
+
+def site_texts():
+    "The files of the user site and the README"
+    return [WEBSITE / "index.qmd", *sorted(PAGES.glob("*.qmd")),
+            ROOT / "README.md"]
+
+
+def test_site_does_not_speak_of_the_repository_or_of_earlier_versions():
+    for path in site_texts():
+        text = path.read_text(encoding="utf8")
+        for number, line in enumerate(text.splitlines(), 1):
+            where = "%s:%d" % (path.name, number)
+            for word in ("benchmarks/", "tests/test_", "ecj2022", "raetsch"):
+                assert word not in line, (where, word)
+            # a table cell may be 0.18; prose may not, but for the footnote
+            if line.startswith("|") or line.startswith("[^first-argument]:"):
+                continue
+            assert not re.search(r"\b0\.18\b", line), where
+    page = (PAGES / "parameters.qmd").read_text(encoding="utf8")
+    assert "What still differs" not in page
+    page = (PAGES / "how-it-works.qmd").read_text(encoding="utf8")
+    assert "Where the papers and the code differ" not in page
+
+
+DATASETS = """ad adult agaricus-lepiota aps-failure banknote bank biodeg car
+census-income cmc dota2 drug-consumption fertility IndianLiverPatient iris
+krkopt letter-recognition magic04 ml-prove musk1 musk2 optdigits page-blocks
+parkinsons pendigits segmentation sensorless tae wine yeast""".split()
+CLASSIFIERS = """LogisticRegression SGD Perceptron PassiveAggressive SVC LinearSVC
+KNeighbors NearestCentroid GaussianNB BernoulliNB DecisionTree RandomForest
+ExtraTrees AdaBoost GradientBoosting MLP""".split()
+
+
+def test_performance_page_has_the_results_of_the_selection_experiments():
+    page = (PAGES / "performance.qmd").read_text(encoding="utf8")
+    assert len(DATASETS) == 30 and len(CLASSIFIERS) == 16
+    for name in DATASETS:
+        assert re.search(r"^\|%s\|" % re.escape(name), page,
+                         flags=re.MULTILINE), name
+    for name in CLASSIFIERS:
+        assert "`%s`" % name in page, name
+    # the rows of the tables of average ranks
+    for row in (r"`agr-rnd`\|EvoDAG\|6\.0", r"`ExtraTrees`\|scikit-learn\|4\.9",
+                r"`agr-rnd`\|5\.6", r"`agr-fit`\|4\.9", r"`agr-fit`\|4\.6",
+                r"`fit-fit`\|7\.3"):
+        assert re.search(r"^\|%s\|$" % row, page, flags=re.MULTILINE), row
+    for pvalue in ("1.91e-05", "0.000228", "4.53e-48"):
+        assert "p = " + pvalue in page, pvalue
+    # honest about where the default stands, and no result of old versions
+    assert "fifth" in page and "fourth" in page
+    assert "0.10." not in page and "PSMS" not in page

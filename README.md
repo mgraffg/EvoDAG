@@ -68,7 +68,7 @@ hy = m.predict(X)
 `EvoDAGClassifier` alone is one model, and `EvoDAGRegressor` and
 `EnsembleRegressor` are their counterparts for regression. EvoDAG's own
 classes (`EvoDAGE`, the search engine `EvoDAG.EvoDAG`, `Model` and `Ensemble`)
-keep working and do not need scikit-learn; they are described in the
+do not need scikit-learn; they are described in the
 [Native API](https://mgraffg.github.io/EvoDAG/pages/native-api.html) page.
 
 ### Using EvoDAG from the command line
@@ -113,10 +113,12 @@ contains the model, and `iris.data` is the test set.
 
 # Performance #
 
-The benchmark results (EvoDAG against the classifiers of scikit-learn, PSMS,
-auto-sklearn and an SVM) are in the
-[Performance](https://mgraffg.github.io/EvoDAG/pages/performance.html) page
-of the documentation.
+On 30 classification problems the default EvoDAG, an ensemble of 30 models, is
+fourth of 21 systems in average rank of the macro-F1, behind `ExtraTrees`,
+`GradientBoosting` and `RandomForest` of scikit-learn and ahead of the other
+13 classifiers, and it is slower to train than all of them. The
+[Performance](https://mgraffg.github.io/EvoDAG/pages/performance.html) page has
+the tables.
 
 ## Development ##
 
