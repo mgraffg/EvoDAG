@@ -95,7 +95,8 @@ TABLE_SCHEMES = [
     "agr-rnd", "agr-fit--fit", "agr-fit", "rnd-rnd", "sim-fit",
     "agr-rnd--fit", "prs-fit", "prs-rnd", "ads-rnd", "sim-rnd",
     "ads-fit--fit", "fit-fit", "nvs-rnd", "ads-rnd-all", "ads-fit--fit-all"]
-EVODAG_CLASSIFIERS = ["agr-rnd", "rnd-rnd", "fit-fit", "nvs-rnd", "ads-rnd"]
+# the table of the comparison with the classifiers has every configuration
+EVODAG_CLASSIFIERS = list(CONFIGS)
 
 # labels of the tables of the article (several when a table is in parts)
 PAPER_LABELS = {

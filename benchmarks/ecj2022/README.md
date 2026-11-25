@@ -166,9 +166,9 @@ The results of the 21 configurations and the 16 classifiers on the 30 datasets, 
 
 **Selection schemes, macro-F1:** `agr-fit` 4.6, `rnd-rnd` 4.8, `agr-rnd` 5.1, `sim-fit` 6.3, `agr-fit--fit` 6.6, `sim-rnd` 6.6, `nvs-rnd` 6.8, `agr-rnd--fit` 7.0, `fit-fit` 7.0, `prs-fit` 7.2, `ads-rnd` 7.3, `prs-rnd` 7.6, `ads-fit--fit-all` 8.5, `ads-fit--fit` 8.7, `ads-rnd-all` 9.3. Friedman p-value 0.000228.
 
-**Comparison with classifiers, macro-F1:** `ExtraTrees` 4.9, `GradientBoosting` 5.5, `RandomForest` 5.5, `agr-rnd` 6.0, `rnd-rnd` 6.2, `fit-fit` 6.9, `nvs-rnd` 7.1, `ads-rnd` 7.6, `MLP` 8.2, `DecisionTree` 9.0, `LogisticRegression` 10.6, `KNeighbors` 10.6, `LinearSVC` 10.7, `AdaBoost` 12.4, `SVC` 13.5, `GaussianNB` 13.6, `SGD` 15.8, `PassiveAggressive` 16.6, `Perceptron` 16.7, `BernoulliNB` 16.9, `NearestCentroid` 17.7. Friedman p-value 4.53e-48.
+**Comparison with classifiers, macro-F1:** `ExtraTrees` 10.2, `agr-fit` 10.4, `rnd-rnd` 10.8, `agr-rnd` 11.0, `RandomForest` 11.0, `agr-fit-all` 11.0, `GradientBoosting` 11.0, `agr-rnd-all` 11.1, `prs-fit-all` 11.9, `sim-fit` 12.2, `prs-rnd-all` 12.9, `agr-fit--fit` 13.2, `sim-rnd` 13.4, `nvs-rnd` 13.5, `prs-fit` 13.8, `agr-rnd--fit` 13.8, `fit-fit` 14.0, `prs-rnd` 14.3, `ads-rnd` 14.7, `ads-fit--fit-all` 15.5, `sim-fit-all` 16.1, `ads-fit--fit` 16.2, `sim-rnd-all` 16.2, `MLP` 16.3, `ads-rnd-all` 17.3, `DecisionTree` 17.3, `KNeighbors` 21.5, `LinearSVC` 21.6, `LogisticRegression` 22.0, `SVC` 25.3, `AdaBoost` 25.8, `GaussianNB` 26.8, `SGD` 29.6, `PassiveAggressive` 31.5, `Perceptron` 31.7, `BernoulliNB` 31.9, `NearestCentroid` 32.8. Friedman p-value 8.41e-68.
 
-EvoDAG is slower to train than every scikit-learn classifier (time ranks 17 to 21 of 21).
+EvoDAG is slower to train than every scikit-learn classifier (time ranks 17 to 37 of 37).
 
 ## Profile
 

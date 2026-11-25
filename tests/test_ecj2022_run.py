@@ -89,7 +89,9 @@ def test_the_tables_resolve():
     allowed = set(configs.CONFIGS) | set(configs.SKLEARN_NAMES)
     for names in configs.TABLES.values():
         assert set(names) <= allowed and len(set(names)) == len(names)
-    assert len(configs.TABLE_CLASSIFIERS) == 21
+    # the comparison with the classifiers has every configuration
+    assert configs.EVODAG_CLASSIFIERS == list(configs.CONFIGS)
+    assert len(configs.TABLE_CLASSIFIERS) == 37
     assert set(configs.ARTICLE_NAMES) == set(configs.CONFIGS)
     assert set(configs.SKLEARN_ARTICLE_NAMES) == set(configs.SKLEARN_NAMES)
 
@@ -864,7 +866,9 @@ def test_rank_rule():
 
 def test_summary_tables(tmp_path):
     root = make_root(tmp_path, names=("d1", "d2", "d3"))
-    systems = configs.TABLE_HEURISTICS
+    # every system of the other two tables is a system of this one
+    assert set(configs.TABLE_HEURISTICS + configs.TABLE_SCHEMES) <= set(
+        configs.TABLE_CLASSIFIERS)
     for d, dataset in enumerate(("d1", "d2", "d3")):
         for k, system in enumerate(configs.TABLE_CLASSIFIERS):
             if dataset == "d3" and system == "LinearSVC":
@@ -878,10 +882,6 @@ def test_summary_tables(tmp_path):
                     f1 = 0.9
                 write_result(root, dataset, system, f1=f1,
                              seconds=0.001 * (k + 1))
-    for system in systems:
-        if system not in configs.TABLE_CLASSIFIERS:
-            for dataset in ("d1", "d2", "d3"):
-                write_result(root, dataset, system, f1=0.6, seconds=0.1)
     text = summary.summarize(root)
     assert "Combinations of parent and negative selection" in text
     assert "Selection schemes" in text

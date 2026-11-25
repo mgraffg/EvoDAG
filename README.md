@@ -114,9 +114,11 @@ contains the model, and `iris.data` is the test set.
 # Performance #
 
 On 30 classification problems the default EvoDAG, an ensemble of 30 models, is
-fourth of 21 systems in average rank of the macro-F1, behind `ExtraTrees`,
-`GradientBoosting` and `RandomForest` of scikit-learn and ahead of the other
-13 classifiers, and it is slower to train than all of them. The
+fourth of 37 systems (the 21 EvoDAG configurations and 16 classifiers of
+scikit-learn) in average rank of the macro-F1. Of the classifiers of
+scikit-learn only `ExtraTrees` ranks ahead of it, `RandomForest` and
+`GradientBoosting` are level with it and the other 13 are behind, and it is
+slower to train than all of them. The
 [Performance](https://mgraffg.github.io/EvoDAG/pages/performance.html) page has
 the tables.
 
