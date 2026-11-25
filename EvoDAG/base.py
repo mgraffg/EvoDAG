@@ -783,9 +783,8 @@ class EvoDAG(object):
         sel = self._selection
         if sel in _HEURISTICS and self._heuristic_applies(func):
             # outputs are finite but can exceed 1e154, so a squared norm can
-            # overflow; the code of the article computed the same inf/nan
-            # silently (such an output contributes 0 to the cosine and to
-            # Pearson and pi/2 to the angle)
+            # overflow; the inf/nan is ignored (such an output contributes 0
+            # to the cosine and to Pearson and pi/2 to the angle)
             with np.errstate(over='ignore', invalid='ignore'):
                 return getattr(self, '_get_args_' + sel)(func)
         draw = (self.population.tournament if sel == 'fitness'
@@ -838,8 +837,9 @@ class EvoDAG(object):
         ``func.nargs - 1``. A winner that is already an argument is drawn
         again a few times and then dropped, so the list can be shorter
         than ``func.nargs``; ``None`` if it is shorter than the minimum of
-        the function. (Up to version 0.18, and in the program of the
-        paper, the reference was left out of the list.)
+        the function. (Note: up to version 0.18, and in the program that
+        produced the results of the article, the reference was not passed to
+        the function; version 0.19 corrects it.)
         """
         used = {first: 1}
         res = [first]
@@ -1079,9 +1079,8 @@ class EvoDAG(object):
         """Sum over the training examples of the inverse frequency of the label of ``x``.
 
         The frequency of an example is the fraction of the population that
-        predicts, for it, the same class as ``x`` (the code of the paper
-        divided by inconsistent denominators; here it is always the
-        population size).
+        predicts, for it, the same class as ``x``; the denominator is always the
+        population size.
         """
         counts = self._novelty_counts[self._novelty_arange,
                                       self._novelty_labels[x]]

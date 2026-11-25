@@ -432,3 +432,27 @@ def test_performance_page_has_the_results_of_the_selection_experiments():
     # honest about where the default stands, and no result of old versions
     assert "fifth" in page and "fourth" in page
     assert "0.10." not in page and "PSMS" not in page
+
+
+def test_the_package_and_the_reference_mention_version_0_18_once():
+    hits = []
+    for pattern in ("*.py", "*.pyx"):
+        for path in sorted(PACKAGE.glob(pattern)):
+            for number, line in enumerate(
+                    path.read_text(encoding="utf8").splitlines(), 1):
+                if "0.18" in line:
+                    hits.append("%s:%d" % (path.name, number))
+    assert len(hits) <= 1, hits
+    for path in sorted(DOCS.glob("*.rst")):
+        assert "0.18" not in path.read_text(encoding="utf8"), path.name
+
+
+def test_the_experiments_readme_gives_only_the_current_results():
+    text = (ROOT / "benchmarks" / "ecj2022" / "README.md").read_text(
+        encoding="utf8")
+    for phrase in ("results-before-fix", "before the correction",
+                   "After the correction"):
+        assert phrase not in text, phrase
+    assert "`agr-rnd` 6.0" in text and "`ExtraTrees` 4.9" in text
+    for pvalue in ("1.91e-05", "0.000228", "4.53e-48"):
+        assert "Friedman p-value " + pvalue in text, pvalue

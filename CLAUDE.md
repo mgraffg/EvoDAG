@@ -142,7 +142,7 @@ under 5 to 10 percent. Times only compare on the same machine. The development e
   mask and reader groups still run.
 - **Performance claims need the benchmark**: run `benchmarks/bench.py` and compare it with the
   recorded results (`benchmarks/results-numpy.json`, `benchmarks/results-optimized.json`, `benchmarks/results-profiled.json`).
-  `benchmarks/raetsch.py` reproduces the Performance table; its full run is long and done by the author.
+  `benchmarks/raetsch.py` compares EvoDAG with the scikit-learn classifiers on the Rätsch benchmark problems; its full run is long and done by the author.
 - **Public names need a docstring and a verified example**, as `tests/test_docs.py` enforces:
   every public name has a docstring, every engine parameter is described, the Sphinx build is
   strict and its doctests run. Documentation changes must not change behaviour.
@@ -165,8 +165,12 @@ it, pushes to `master` deploy it; Pages has to be enabled once with the source "
   `website/index.qmd`, `website/pages/python.qmd`, `website/pages/native-api.qmd` and
   `website/pages/selection.qmd`, checks that
   `website/pages/cli.qmd` names every option of the four commands and that
-  `website/pages/parameters.qmd` names every key of the JSON files, and that the navbar and
-  figures exist.
+  `website/pages/parameters.qmd` names every key of the JSON files, that the navbar and
+  figures exist, and that the pages say nothing of the repository or of earlier versions (the
+  one footnote of `website/pages/selection.qmd` about the first argument of the heuristics is the
+  exception). `website/pages/performance.qmd` holds the results of the experiments of
+  `benchmarks/ecj2022/` (average ranks, macro-F1 per problem, training time), copied from the
+  summary those scripts write; no number on it is computed when the site is built.
 - **Developer reference** (Sphinx, `docs/`, served under the path dev of the site): one `automodule` per module of
   the package, NumPy-style docstrings, doctests. The user site says how to use EvoDAG; the
   reference says what each name does.
