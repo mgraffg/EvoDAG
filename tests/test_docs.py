@@ -412,6 +412,10 @@ parkinsons pendigits segmentation sensorless tae wine yeast""".split()
 CLASSIFIERS = """LogisticRegression SGD Perceptron PassiveAggressive SVC LinearSVC
 KNeighbors NearestCentroid GaussianNB BernoulliNB DecisionTree RandomForest
 ExtraTrees AdaBoost GradientBoosting MLP""".split()
+EVODAG_SYSTEMS = """agr-rnd agr-fit rnd-rnd sim-fit prs-fit-all prs-rnd
+prs-rnd-all prs-fit sim-fit-all sim-rnd sim-rnd-all fit-fit agr-rnd-all
+agr-fit-all agr-fit--fit agr-rnd--fit ads-rnd ads-fit--fit ads-rnd-all
+ads-fit--fit-all nvs-rnd""".split()
 
 
 def test_performance_page_has_the_results_of_the_selection_experiments():
@@ -423,12 +427,23 @@ def test_performance_page_has_the_results_of_the_selection_experiments():
     for name in CLASSIFIERS:
         assert "`%s`" % name in page, name
     # the rows of the tables of average ranks
-    for row in (r"`agr-rnd`\|EvoDAG\|6\.0", r"`ExtraTrees`\|scikit-learn\|4\.9",
+    for row in (r"`agr-rnd`\|EvoDAG\|11\.0",
+                r"`ExtraTrees`\|scikit-learn\|10\.2",
                 r"`agr-rnd`\|5\.6", r"`agr-fit`\|4\.9", r"`agr-fit`\|4\.6",
                 r"`fit-fit`\|7\.3"):
         assert re.search(r"^\|%s\|$" % row, page, flags=re.MULTILINE), row
-    for pvalue in ("1.91e-05", "0.000228", "4.53e-48"):
+    for pvalue in ("1.91e-05", "0.000228", "8.41e-68", "3.56e-195"):
         assert "p = " + pvalue in page, pvalue
+    # the macro-F1 table and the table of time have the 37 systems
+    assert len(EVODAG_SYSTEMS) == 21 and len(set(EVODAG_SYSTEMS)) == 21
+    for name in EVODAG_SYSTEMS:
+        rows = re.findall(r"^\|`%s`\|EvoDAG\|\d+\.\d\|$" % re.escape(name),
+                          page, flags=re.MULTILINE)
+        assert len(rows) >= 2, name
+    for name in CLASSIFIERS:
+        rows = re.findall(r"^\|`%s`\|scikit-learn\|\d+\.\d\|$" % name,
+                          page, flags=re.MULTILINE)
+        assert len(rows) >= 2, name
     # honest about where the default stands, and no result of old versions
     assert "fifth" in page and "fourth" in page
     assert "0.10." not in page and "PSMS" not in page
@@ -453,6 +468,6 @@ def test_the_experiments_readme_gives_only_the_current_results():
     for phrase in ("results-before-fix", "before the correction",
                    "After the correction"):
         assert phrase not in text, phrase
-    assert "`agr-rnd` 6.0" in text and "`ExtraTrees` 4.9" in text
-    for pvalue in ("1.91e-05", "0.000228", "4.53e-48"):
+    assert "`agr-rnd` 11.0" in text and "`ExtraTrees` 10.2" in text
+    for pvalue in ("1.91e-05", "0.000228", "8.41e-68"):
         assert "Friedman p-value " + pvalue in text, pvalue

@@ -48,35 +48,51 @@ The results differ from those printed in the selection article for the same conf
 
 ## EvoDAG against the classifiers of scikit-learn
 
-The table has the 21 systems: the default EvoDAG, `agr-rnd`, four other EvoDAG configurations that [the next section](#the-selection-schemes) explains, and the 16 classifiers of scikit-learn. Friedman test over the 30 problems: p = 4.53e-48.
+The table has the 37 systems: the 21 EvoDAG configurations that [the next section](#the-selection-schemes) names and explains, among them the default, `agr-rnd`, and the 16 classifiers of scikit-learn. Friedman test over the 30 problems: p = 8.41e-68.
 
 |System|Family|Average rank|
 |:---|:---|---:|
-|`ExtraTrees`|scikit-learn|4.9|
-|`GradientBoosting`|scikit-learn|5.5|
-|`RandomForest`|scikit-learn|5.5|
-|`agr-rnd`|EvoDAG|6.0|
-|`rnd-rnd`|EvoDAG|6.2|
-|`fit-fit`|EvoDAG|6.9|
-|`nvs-rnd`|EvoDAG|7.1|
-|`ads-rnd`|EvoDAG|7.6|
-|`MLP`|scikit-learn|8.2|
-|`DecisionTree`|scikit-learn|9.0|
-|`LogisticRegression`|scikit-learn|10.6|
-|`KNeighbors`|scikit-learn|10.6|
-|`LinearSVC`|scikit-learn|10.7|
-|`AdaBoost`|scikit-learn|12.4|
-|`SVC`|scikit-learn|13.5|
-|`GaussianNB`|scikit-learn|13.6|
-|`SGD`|scikit-learn|15.8|
-|`PassiveAggressive`|scikit-learn|16.6|
-|`Perceptron`|scikit-learn|16.7|
-|`BernoulliNB`|scikit-learn|16.9|
-|`NearestCentroid`|scikit-learn|17.7|
+|`ExtraTrees`|scikit-learn|10.2|
+|`agr-fit`|EvoDAG|10.4|
+|`rnd-rnd`|EvoDAG|10.8|
+|`agr-rnd`|EvoDAG|11.0|
+|`RandomForest`|scikit-learn|11.0|
+|`agr-fit-all`|EvoDAG|11.0|
+|`GradientBoosting`|scikit-learn|11.0|
+|`agr-rnd-all`|EvoDAG|11.1|
+|`prs-fit-all`|EvoDAG|11.9|
+|`sim-fit`|EvoDAG|12.2|
+|`prs-rnd-all`|EvoDAG|12.9|
+|`agr-fit--fit`|EvoDAG|13.2|
+|`sim-rnd`|EvoDAG|13.4|
+|`nvs-rnd`|EvoDAG|13.5|
+|`prs-fit`|EvoDAG|13.8|
+|`agr-rnd--fit`|EvoDAG|13.8|
+|`fit-fit`|EvoDAG|14.0|
+|`prs-rnd`|EvoDAG|14.3|
+|`ads-rnd`|EvoDAG|14.7|
+|`ads-fit--fit-all`|EvoDAG|15.5|
+|`sim-fit-all`|EvoDAG|16.1|
+|`ads-fit--fit`|EvoDAG|16.2|
+|`sim-rnd-all`|EvoDAG|16.2|
+|`MLP`|scikit-learn|16.3|
+|`ads-rnd-all`|EvoDAG|17.3|
+|`DecisionTree`|scikit-learn|17.3|
+|`KNeighbors`|scikit-learn|21.5|
+|`LinearSVC`|scikit-learn|21.6|
+|`LogisticRegression`|scikit-learn|22.0|
+|`SVC`|scikit-learn|25.3|
+|`AdaBoost`|scikit-learn|25.8|
+|`GaussianNB`|scikit-learn|26.8|
+|`SGD`|scikit-learn|29.6|
+|`PassiveAggressive`|scikit-learn|31.5|
+|`Perceptron`|scikit-learn|31.7|
+|`BernoulliNB`|scikit-learn|31.9|
+|`NearestCentroid`|scikit-learn|32.8|
 
-The default EvoDAG is **fourth**, with an average rank of 6.0, behind `ExtraTrees` (4.9), `GradientBoosting` (5.5) and `RandomForest` (5.5), and ahead of every other classifier, among them the neural network (`MLP`, 8.2), a single decision tree (9.0) and the support vector machines (`LinearSVC` 10.7, `SVC` 13.5). The Friedman test says that the 21 systems are not equivalent; it does not compare pairs, so the table does not say whether the differences between neighbouring systems are significant.
+The default EvoDAG is **fourth** of the 37, with an average rank of 11.0, behind `ExtraTrees` (10.2) and two other EvoDAG configurations, `agr-fit` (10.4) and `rnd-rnd` (10.8). `RandomForest` and `GradientBoosting` have the same rank, 11.0, so the table does not put the default ahead of them; `ExtraTrees` is the only classifier of scikit-learn ranked ahead of it. Every one of the 21 EvoDAG configurations is ahead of a single decision tree (17.3), of the support vector machines (`LinearSVC` 21.6, `SVC` 25.3) and of the linear and Bayesian classifiers, and the neural network (`MLP`, 16.3) is ahead of only one of them, `ads-rnd-all`. The Friedman test says that the 37 systems are not equivalent; it does not compare pairs, so the table does not say whether the differences between neighbouring systems are significant. A rank depends on the systems of its table, so these ranks are not comparable with those of the two tables of [the selection schemes](#the-selection-schemes).
 
-Here is the macro-F1 of the default EvoDAG and of the 16 classifiers on each problem (the columns are in the order of the table above):
+Here is the macro-F1 of the default EvoDAG and of the 16 classifiers on each problem (the columns are in the order of the table above, leaving out the other 20 EvoDAG configurations):
 
 ::: {style="overflow-x: auto; font-size: 0.8em;"}
 
@@ -115,11 +131,11 @@ Here is the macro-F1 of the default EvoDAG and of the 16 classifiers on each pro
 
 :::
 
-EvoDAG obtains the best macro-F1 of the 21 systems on `agaricus-lepiota` and the second best on `bank`, `census-income` and `cmc`. It does poorly on the problems with many classes: on `krkopt` (18 classes) its macro-F1 is 0.25 against 0.79 of `ExtraTrees` and 0.82 of `RandomForest`, and on `letter-recognition` (26 classes) 0.65 against 0.97 of `ExtraTrees` and 0.96 of `RandomForest`. The classifiers based on decision trees do well on those problems.
+Among the 17 systems of this table the default EvoDAG has the best macro-F1 on `agaricus-lepiota`, `banknote`, `bank`, `census-income`, `dota2`, `IndianLiverPatient` and `ml-prove` (some of them tied). It does poorly on the problems with many classes: on `krkopt` (18 classes) its macro-F1 is 0.25 against 0.79 of `ExtraTrees` and 0.82 of `RandomForest`, and on `letter-recognition` (26 classes) 0.65 against 0.97 of `ExtraTrees` and 0.96 of `RandomForest`. The classifiers based on decision trees do well on those problems.
 
 ## Training time
 
-EvoDAG is slower than every classifier of scikit-learn. The table has the average rank of the time that each system takes to train, in seconds per training example (for EvoDAG, the sum over the 30 models); 1 is the fastest. Friedman test over the 30 problems: p = 2.32e-102.
+EvoDAG is slower than every classifier of scikit-learn. The table has the average rank of the time that each system takes to train, in seconds per training example (for EvoDAG, the sum over the 30 models); 1 is the fastest. Friedman test over the 30 problems: p = 3.56e-195.
 
 |System|Family|Average rank|
 |:---|:---|---:|
@@ -139,13 +155,29 @@ EvoDAG is slower than every classifier of scikit-learn. The table has the averag
 |`RandomForest`|scikit-learn|13.5|
 |`MLP`|scikit-learn|14.8|
 |`GradientBoosting`|scikit-learn|15.3|
-|`rnd-rnd`|EvoDAG|17.4|
-|`fit-fit`|EvoDAG|18.3|
-|`agr-rnd`|EvoDAG|18.7|
-|`nvs-rnd`|EvoDAG|19.5|
-|`ads-rnd`|EvoDAG|21.0|
+|`rnd-rnd`|EvoDAG|17.9|
+|`fit-fit`|EvoDAG|20.4|
+|`agr-rnd--fit`|EvoDAG|20.7|
+|`agr-rnd`|EvoDAG|21.0|
+|`agr-fit`|EvoDAG|21.3|
+|`agr-rnd-all`|EvoDAG|21.4|
+|`agr-fit--fit`|EvoDAG|21.5|
+|`agr-fit-all`|EvoDAG|22.4|
+|`nvs-rnd`|EvoDAG|24.2|
+|`sim-fit`|EvoDAG|27.2|
+|`sim-rnd-all`|EvoDAG|27.5|
+|`sim-rnd`|EvoDAG|27.6|
+|`sim-fit-all`|EvoDAG|27.8|
+|`prs-rnd`|EvoDAG|30.0|
+|`prs-fit`|EvoDAG|30.4|
+|`prs-rnd-all`|EvoDAG|31.8|
+|`prs-fit-all`|EvoDAG|32.0|
+|`ads-rnd`|EvoDAG|34.2|
+|`ads-rnd-all`|EvoDAG|35.3|
+|`ads-fit--fit`|EvoDAG|35.9|
+|`ads-fit--fit-all`|EvoDAG|36.6|
 
-On every problem the five EvoDAG systems are the five slowest. The times are the sum over the 30 models of the ensemble; since the models are independent they can be trained in parallel (`n_jobs`), which reduces the time you wait.
+On every problem the 21 EvoDAG systems are the 21 slowest; `rnd-rnd` is the fastest of them and the four configurations of Angle-Driven Selection (`ads`) the slowest. The times are the sum over the 30 models of the ensemble; since the models are independent they can be trained in parallel (`n_jobs`), which reduces the time you wait.
 
 ## The selection schemes
 
