@@ -344,9 +344,8 @@ class CommandLineParams(CommandLine):
                     params[k] = [v]
         self.fs_type_constraint(params)
         if not self.data.classifier and not self.data.parameters_values:
-            # Review fix-1: the selection keys are the defaults of
-            # classification only; regression keeps its previous behaviour
-            # and the search must not sample them.
+            # the selection keys are the defaults of classification only;
+            # the regression search must not sample them.
             for key in ('selection', 'first_selection',
                         'heuristic_functions', 'orthogonal_selection',
                         'negative_selection'):

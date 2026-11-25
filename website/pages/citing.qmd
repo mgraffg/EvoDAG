@@ -21,7 +21,7 @@ Claudia N. Sánchez and Mario Graff. *Selection Heuristics on Semantic Genetic P
 }
 ```
 
-The page [Selection](selection.qmd) says which of the heuristics of this paper are in the released code.
+The page [Selection](selection.qmd) describes the heuristics of this paper.
 
 ## The library
 

@@ -2,11 +2,11 @@
 title: "Using EvoDAG from Python"
 ---
 
-EvoDAG offers scikit-learn estimators: they have `fit`, `predict` and `score`, they can be cloned, put in a `Pipeline` and tuned with `GridSearchCV`, as any other estimator. This page covers those classes. The classes that EvoDAG had before (`EvoDAGE`, the search engine, the model objects) are still there and are described in [Native API](native-api.qmd).
+EvoDAG offers scikit-learn estimators: they have `fit`, `predict` and `score`, they can be cloned, put in a `Pipeline` and tuned with `GridSearchCV`, as any other estimator. This page covers those classes. EvoDAG's own classes (`EvoDAGE`, the search engine, the model objects) are described in [Native API](native-api.qmd).
 
-Every Python block on this page is executed by the test suite of the repository (`tests/test_docs.py`), so the examples match the code of the release they were written for. They use small synthetic data and small populations so that they finish quickly; the library's own defaults are much larger (see [Parameters](parameters.qmd)). The blocks share state: each one builds on the variables of the previous one, so you can paste the whole page into a script.
+The examples on this page use small synthetic data and small populations so that they finish quickly; the library's own defaults are much larger (see [Parameters](parameters.qmd)). The blocks share state: each one builds on the variables of the previous one, so you can paste the whole page into a script.
 
-What the defaults are, and how they differ from the paper's setup, is explained at the beginning of [Parameters](parameters.qmd). In particular, in classification the defaults are the configuration of the selection paper: the arguments of the sum and of the classifiers are chosen by agreement, the individual that an offspring replaces is chosen at random and the fitness is macro-F1; `params={"selection": "fitness", "negative_selection": True}` gives the classical selection by fitness.
+What the defaults are is explained at the beginning of [Parameters](parameters.qmd). In particular, in classification the arguments of the sum and of the classifiers are chosen by agreement, the individual that an offspring replaces is chosen at random and the fitness is macro-F1; `params={"selection": "fitness", "negative_selection": True}` gives the classical selection by fitness.
 
 ## Which class do I use?
 
@@ -14,7 +14,7 @@ What the defaults are, and how they differ from the paper's setup, is explained 
 |:------------------------------------|:-------------------------------------------------|
 | `EnsembleClassifier`, `EnsembleRegressor` | an ensemble of independent EvoDAG runs (or of any other estimator); **the usual choice** |
 | `EvoDAGClassifier`, `EvoDAGRegressor` | **one** EvoDAG run, that is, one model |
-| [Native API](native-api.qmd) | EvoDAG's own classes, for the command line's models, a time limit for a whole ensemble and old code |
+| [Native API](native-api.qmd) | EvoDAG's own classes, for the command line's models, a time limit for a whole ensemble and programs that already use them |
 
 For example, with a small synthetic problem (the sections below explain each piece):
 

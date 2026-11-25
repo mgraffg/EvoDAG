@@ -14,13 +14,12 @@
 # limitations under the License.
 """Operations on vectors, i.e. 1-D C-contiguous float64 numpy arrays.
 
-EvoDAG used to keep its vectors as sparse objects that only stored the
-entries that are not zero. The functions here reproduce their
-semantics on dense arrays so that the results do not change:
+The vectors of EvoDAG are dense arrays with the semantics of sparse
+vectors, which only store the entries that are not zero:
 
 * the C library's math functions are used (not numpy's, whose SIMD versions
   can differ in the last bit), through typed memoryviews;
-* where one operand is zero the sparse operations did not compute anything
+* where one operand is zero nothing is computed
   (e.g. ``0 * inf`` is 0, ``x / 0`` is infinity for any non-zero ``x`` and
   ``nan`` for ``x == 0``): ``mul``, ``mul_scalar``, ``div`` and ``atan2``
   follow that;
